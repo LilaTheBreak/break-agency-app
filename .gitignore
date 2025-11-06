@@ -1,0 +1,25 @@
+# Node & Monorepo ignores
+node_modules/
+pnpm-lock.yaml
+dist/
+build/
+.next/
+.out/
+coverage/
+.tmp/
+.cache/
+.vite/
+.vercel/
+.netlify/
+
+# System / editor
+.DS_Store
+*.log
+
+# Env files (secrets)
+.env
+.env.*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo

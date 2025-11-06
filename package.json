@@ -1,0 +1,21 @@
+{
+  "name": "home-break-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@8.15.4",
+  "scripts": {
+    "dev": "pnpm -r --filter web --filter api --parallel dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "db:migrate": "pnpm --filter @home/api db:migrate",
+    "db:push": "pnpm --filter @home/api db:push",
+    "db:seed": "pnpm --filter @home/api db:seed",
+    "prisma:generate": "pnpm --filter @home/api prisma:generate",
+    "clean": "pnpm -r exec -- rimraf dist"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5"
+  }
+}

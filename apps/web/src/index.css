@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+
+/* --- SHINE over the word "home" --- */
+.shine-text{
+  background: linear-gradient(90deg, rgba(255,255,255,.25), rgba(255,255,255,1), rgba(255,255,255,.25));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 200% 100%;
+  animation: shine 2.6s ease-in-out infinite;
+}
+@keyframes shine{
+  0%{ background-position: -200% 0; }
+  100%{ background-position: 200% 0; }
+}
+
+
