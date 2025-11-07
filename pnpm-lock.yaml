@@ -18,7 +18,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/shared
       '@prisma/client':
-        specifier: ^5.22.0
+        specifier: ^5.15.1
         version: 5.22.0(prisma@5.22.0)
       cookie-parser:
         specifier: ^1.4.7
@@ -79,7 +79,7 @@ importers:
         specifier: ^7.1.1
         version: 7.2.1(eslint@9.39.1)
       prisma:
-        specifier: ^5.22.0
+        specifier: ^5.15.1
         version: 5.22.0
       tsx:
         specifier: ^4.19.1
