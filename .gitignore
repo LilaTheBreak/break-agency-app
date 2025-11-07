@@ -1,6 +1,5 @@
 # Node & Monorepo ignores
 node_modules/
-pnpm-lock.yaml
 dist/
 build/
 .next/
