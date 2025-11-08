@@ -20,7 +20,7 @@ const listQuerySchema = z.object({
 const updateViewingSchema = withViewingTimeValidation(ViewingSchemaBase.partial());
 
 type ViewingPayload = z.infer<typeof ViewingSchema>;
-type ViewingAttendeePayload = ViewingPayload["attendees"][number];
+type ViewingAttendeePayload = NonNullable<ViewingPayload["attendees"]>[number];
 
 export const viewingsRouter: Router = Router();
 
@@ -103,10 +103,11 @@ viewingsRouter.put("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, nex
     });
 
     if (data.attendees !== undefined) {
+      const nextAttendees = data.attendees;
       await prisma.viewingAttendee.deleteMany({ where: { viewingId: viewing.id } });
-      if (data.attendees.length) {
+      if (nextAttendees.length) {
         await prisma.viewingAttendee.createMany({
-          data: data.attendees.map((attendee: ViewingAttendeePayload) => ({
+          data: nextAttendees.map((attendee: ViewingAttendeePayload) => ({
             viewingId: viewing.id,
             contactId: attendee.contactId,
             userId: attendee.userId,
@@ -148,10 +149,26 @@ viewingsRouter.delete("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, 
 });
 
 async function createViewing(payload: ViewingPayload, createdByUserId?: string) {
-  const { attendees, ...data } = payload;
+  const {
+    attendees = [],
+    listingId,
+    start,
+    end,
+    status,
+    notes,
+    feedback
+  } = payload;
+  const listingIdValue = listingId!;
+  const startValue = start!;
+  const endValue = end!;
   const viewing = await prisma.viewing.create({
     data: {
-      ...data,
+      listingId: listingIdValue,
+      start: startValue,
+      end: endValue,
+      status,
+      notes,
+      feedback,
       createdByUserId,
       attendees: attendees.length
         ? {
