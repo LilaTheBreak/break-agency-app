@@ -2,24 +2,28 @@ import { ContactType, Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 
-import { ContactSchema } from "@home/shared";
+import {
+  ContactCreateSchema as SharedContactCreateSchema,
+  ContactUpdateSchema as SharedContactUpdateSchema,
+  ContactQuerySchema
+} from "@home/shared/schemas/contact.js";
 
 import { prisma } from "../db/client.js";
 import { requireRole } from "../middlewares/auth.js";
 import { HttpError } from "../middlewares/problem-details.js";
 
-const listQuerySchema = z.object({
+const listQuerySchema = ContactQuerySchema.extend({
   type: z.nativeEnum(ContactType).optional(),
-  q: z.string().trim().optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20)
+  q: z.string().trim().optional()
 });
 
-const createContactSchema = ContactSchema.extend({
+const createContactSchema = SharedContactCreateSchema.extend({
   createdByUserId: z.string().optional()
 });
 
-const updateContactSchema = createContactSchema.partial();
+const updateContactSchema = SharedContactUpdateSchema.extend({
+  createdByUserId: z.string().optional()
+});
 
 const mergeSchema = z.object({
   sourceIds: z.array(z.string().min(1)).min(1)

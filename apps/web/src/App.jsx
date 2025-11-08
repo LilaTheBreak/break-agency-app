@@ -10,6 +10,7 @@ import { isEmail, isNumber, notEmpty, isUKPostcode } from "./lib/validators";
 import { saveSection, getSection } from "./lib/store";
 import { Roles, getSession, clearSession, signInSession, SESSION_CHANGED_EVENT } from "./auth/session.js";
 import { MOCK_ACCOUNTS } from "./auth/mockAccounts.js";
+import ComingSoon from "./pages/ComingSoon.jsx";
 import CrmLayout, {
   CrmDashboardPage,
   CrmContactsPage,
@@ -5734,7 +5735,8 @@ function AppInner() {
     <>
       {!hideNav && <TopNav />}
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<ComingSoon />} />
+        <Route path="/login" element={<Landing />} />
         <Route path="/seller" element={<SellerStart />} />
         <Route path="/seller/valuation" element={<SellerValuation />} />
         <Route path="/seller/how-home-ai-works" element={<SellerHowItWorks />} />

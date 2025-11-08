@@ -5,11 +5,18 @@ import { ALLOWED_ADMINS } from "./config";
 import { MOCK_ACCOUNTS } from "./mockAccounts";
 import { Roles, signInSession } from "./session";
 
-export default function GoogleSignIn({ open, onClose, onSignedIn }) {
+export default function GoogleSignIn({
+  open,
+  onClose,
+  onSignedIn,
+  allowedDomain,
+  enableTestAccounts = true
+}) {
   if (!open) return null;
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const domainSuffix = allowedDomain ? `@${allowedDomain.replace(/^@/, "")}` : null;
 
   const sortedAccounts = useMemo(
     () => MOCK_ACCOUNTS.slice().sort((a, b) => a.email.localeCompare(b.email)),
@@ -20,6 +27,11 @@ export default function GoogleSignIn({ open, onClose, onSignedIn }) {
     event.preventDefault();
     const email = form.email.trim().toLowerCase();
     const password = form.password;
+
+     if (domainSuffix && !email.endsWith(domainSuffix)) {
+       setError(`Only ${domainSuffix} accounts can sign in here.`);
+       return;
+     }
 
     const account = sortedAccounts.find((acc) => acc.email.toLowerCase() === email);
     if (!account || account.password !== password) {
@@ -59,6 +71,11 @@ export default function GoogleSignIn({ open, onClose, onSignedIn }) {
                   picture: payload?.picture,
                 };
 
+                if (domainSuffix && !email.toLowerCase().endsWith(domainSuffix)) {
+                  setError(`Only ${domainSuffix} accounts can sign in here.`);
+                  return;
+                }
+
                 const isAdmin = ALLOWED_ADMINS.includes(email);
                 const roles = isAdmin ? [Roles.ADMIN, Roles.AGENT] : [Roles.BUYER];
                 const session = signInSession({
@@ -84,7 +101,8 @@ export default function GoogleSignIn({ open, onClose, onSignedIn }) {
           />
         </div>
 
-        <div className="mt-6 border-t border-neutral-200 pt-5">
+        {enableTestAccounts && (
+          <div className="mt-6 border-t border-neutral-200 pt-5">
           <p className="text-sm font-medium text-neutral-800">Test personas</p>
           <p className="text-xs text-neutral-500 mt-1">
             Email + password (`password`) to explore buyer, seller, agent, and hybrid views.
@@ -142,7 +160,8 @@ export default function GoogleSignIn({ open, onClose, onSignedIn }) {
               </li>
             ))}
           </ul>
-        </div>
+          </div>
+        )}
 
         <button
           className="mt-3 text-sm text-neutral-500 hover:text-neutral-700"
