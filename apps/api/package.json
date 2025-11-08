@@ -7,12 +7,14 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "prebuild": "pnpm --filter @home/shared build",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
     "start": "ts-node src/server.ts",
     "start:prod": "node dist/server.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
+    "prisma": "prisma",
     "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "db:migrate": "prisma migrate dev --name init",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts"
@@ -44,6 +46,7 @@
     "eslint-plugin-n": "^17.10.6",
     "eslint-plugin-promise": "^7.1.1",
     "prisma": "^5.15.1",
+    "rimraf": "^6.0.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.1",
