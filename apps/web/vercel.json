@@ -1,7 +1,7 @@
 {
   "framework": "vite",
-  "installCommand": "pnpm -w --filter @home/shared --filter @home/web install --frozen-lockfile",
-  "buildCommand": "pnpm -w --filter @home/web build",
+  "installCommand": "pnpm --dir .. install --filter @home/shared --filter @home/web --frozen-lockfile",
+  "buildCommand": "pnpm --dir .. --filter @home/web build",
   "outputDirectory": "dist",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
