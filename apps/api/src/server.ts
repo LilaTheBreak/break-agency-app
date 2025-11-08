@@ -18,8 +18,10 @@ app.get("/health", (_req, res) => {
 app.get("/favicon.ico", (_req, res) => res.status(204).end());
 /* --- end add --- */
 
-const server = app.listen(env.PORT, () => {
-  console.log(`[home-api] listening on http://localhost:${env.PORT} (${env.NODE_ENV})`);
+const PORT = env.PORT || 5000;
+
+const server = app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
 
 const shutdown = (signal: string) => {

@@ -9,6 +9,7 @@ import { notFoundHandler } from "./middlewares/not-found.js";
 import { problemDetailsHandler } from "./middlewares/problem-details.js";
 import { apiRouter } from "./routes/api.js";
 import { healthRouter } from "./routes/health.js";
+import { interestRouter } from "./routes/interest.js";
 
 export function createApp(): Express {
   const app = express();
@@ -100,6 +101,8 @@ export function createApp(): Express {
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
   app.use("/healthz", healthRouter);
+  app.use("/interest", interestRouter);
+  app.use("/api/interest", interestRouter);
 
   app.get("/api/status", (_, res) => {
     res.json({

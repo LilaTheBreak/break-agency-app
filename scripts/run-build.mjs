@@ -22,12 +22,6 @@ if (isVercel) {
   run("pnpm -C apps/web build");
 } else {
   // Render/local: full monorepo build (shared → api → web)
-  // Ensure deps are installed at the workspace root first if needed
-  try {
-    run("pnpm -v"); // basic check
-  } catch {
-    run("corepack enable && corepack prepare pnpm@9 --activate");
-  }
   run("pnpm install --frozen-lockfile");
   run("pnpm -r build");
 }
