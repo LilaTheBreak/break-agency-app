@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import GoogleSignIn from "../auth/GoogleSignIn.jsx";
 
+const apiBase = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const interestEndpoint = apiBase ? `${apiBase}/api/interest` : "/api/interest";
+
 export default function ComingSoon() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -19,7 +22,7 @@ export default function ComingSoon() {
     setStatus("loading");
     setMessage("");
     try {
-      const response = await fetch("/api/interest", {
+      const response = await fetch(interestEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })

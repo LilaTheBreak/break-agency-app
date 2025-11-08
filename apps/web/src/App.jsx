@@ -5730,6 +5730,8 @@ function DevRoleToggle() {
 function AppInner() {
   const location = useLocation();
   const hideNav = location.pathname === "/";
+  const showDevControls =
+    import.meta.env.DEV || String(import.meta.env.VITE_SHOW_DEV_CONTROLS).toLowerCase() === "true";
 
   return (
     <>
@@ -5759,7 +5761,7 @@ function AppInner() {
         <Route path="/crm/*" element={<CrmRouter />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <DevRoleToggle />
+      {showDevControls && <DevRoleToggle />}
     </>
   );
 }

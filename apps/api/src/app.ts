@@ -1,5 +1,5 @@
 import cookieParser from "cookie-parser";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import express, { type Express } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -13,14 +13,36 @@ import { healthRouter } from "./routes/health.js";
 export function createApp(): Express {
   const app = express();
 
+  app.enable("trust proxy");
   app.disable("x-powered-by");
 
-  app.use(
-    cors({
-      origin: env.WEB_APP_URL,
-      credentials: true
-    })
-  );
+  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ extended: true }));
+
+  const allowedOrigins = ["https://www.home-ai.uk", "https://home-ai.uk"];
+  if (env.WEB_APP_URL && !allowedOrigins.includes(env.WEB_APP_URL)) {
+    allowedOrigins.push(env.WEB_APP_URL);
+  }
+  if (env.NODE_ENV !== "production") {
+    allowedOrigins.push("http://localhost:5173");
+  }
+  const vercelPreview = /\.vercel\.app$/i;
+
+  const corsOptions: CorsOptions = {
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || vercelPreview.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("CORS blocked"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  };
+
+  app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions));
 
   const defaultDirectives = helmet.contentSecurityPolicy.getDefaultDirectives();
   delete defaultDirectives["upgrade-insecure-requests"];
@@ -66,8 +88,14 @@ export function createApp(): Express {
     })
   );
 
-  app.use(express.json({ limit: "2mb" }));
-  app.use(express.urlencoded({ extended: true }));
+  if (env.NODE_ENV === "production") {
+    app.use((req, res, next) => {
+      if (req.secure || req.headers["x-forwarded-proto"] === "https") return next();
+      if (!req.headers.host) return next();
+      return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+    });
+  }
+
   app.use(cookieParser());
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
