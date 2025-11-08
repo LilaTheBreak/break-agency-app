@@ -14,6 +14,13 @@ import { interestRouter } from "./routes/interest.js";
 export function createApp(): Express {
   const app = express();
 
+  process.on("unhandledRejection", (reason) => {
+    console.error("UNHANDLED REJECTION:", reason);
+  });
+  process.on("uncaughtException", (error) => {
+    console.error("UNCAUGHT EXCEPTION:", error);
+  });
+
   app.enable("trust proxy");
   app.disable("x-powered-by");
 
