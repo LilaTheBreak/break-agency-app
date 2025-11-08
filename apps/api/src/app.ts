@@ -1,6 +1,6 @@
 import cookieParser from "cookie-parser";
 import cors, { type CorsOptions } from "cors";
-import express, { type Express } from "express";
+import express, { type Express, type RequestHandler } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
@@ -19,6 +19,11 @@ export function createApp(): Express {
 
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: true }));
+
+  app.use((req, _res, next) => {
+    console.log(`[REQ] ${req.method} ${req.originalUrl}`);
+    next();
+  });
 
   const allowedOrigins = ["https://www.home-ai.uk", "https://home-ai.uk"];
   if (env.WEB_APP_URL && !allowedOrigins.includes(env.WEB_APP_URL)) {
@@ -101,6 +106,36 @@ export function createApp(): Express {
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
   app.use("/healthz", healthRouter);
+  app.get("/__whoami", (_req, res) => {
+    res.json({
+      pid: process.pid,
+      port: process.env.PORT,
+      build: process.env.BUILD_SHA ?? "unknown",
+      time: new Date().toISOString()
+    });
+  });
+
+  app.post("/api/interest/ping", ((req, res) => res.json({ ok: true })) as RequestHandler);
+
+  app.get("/__routes", (_req, res) => {
+    const walk = (stack: any, base = ""): string[] => {
+      const out: string[] = [];
+      for (const layer of stack ?? []) {
+        if (layer.route?.path) {
+          const methods = Object.keys(layer.route.methods)
+            .map((m) => m.toUpperCase())
+            .join(",");
+          out.push(`${methods} ${base}${layer.route.path}`);
+        } else if (layer.name === "router" && layer.handle?.stack) {
+          out.push(...walk(layer.handle.stack, `${base}${layer.regexp?.fast_slash ? "" : ""}`));
+        }
+      }
+      return out;
+    };
+    // @ts-ignore private API
+    const routes = walk(app._router?.stack).sort();
+    res.json({ routes });
+  });
   app.use("/interest", interestRouter);
   app.use("/api/interest", interestRouter);
 
