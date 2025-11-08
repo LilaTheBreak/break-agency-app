@@ -7,6 +7,22 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./schemas/*.js": {
+      "types": "./dist/schemas/*.d.ts",
+      "default": "./dist/schemas/*.js"
+    },
+    "./schemas/*": {
+      "types": "./dist/schemas/*.d.ts",
+      "default": "./dist/schemas/*.js"
+    },
+    "./types/*.js": {
+      "types": "./dist/types/*.d.ts",
+      "default": "./dist/types/*.js"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts",
+      "default": "./dist/types/*.js"
     }
   },
   "types": "dist/index.d.ts",
