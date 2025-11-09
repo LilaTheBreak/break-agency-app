@@ -6,8 +6,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "prebuild": "pnpm --filter @home/shared build",
-    "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "prebuild": "rimraf dist && prisma generate",
+    "build": "tsc -p tsconfig.build.json",
     "start": "ts-node src/server.ts",
     "start:prod": "node dist/server.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",

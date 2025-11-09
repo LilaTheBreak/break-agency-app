@@ -1,21 +1,23 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": false,
     "rootDir": "src",
     "outDir": "dist",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "target": "ES2020",
-    "baseUrl": ".",
-    "paths": {
-      "@home/shared/*": ["../../packages/shared/dist/*"]
-    },
+    "target": "ES2022",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": true
+    "sourceMap": false,
+    "noEmit": false,
+    "baseUrl": ".",
+    "paths": {
+      "@home/shared/*": ["../../packages/shared/dist/*"],
+      "cors": ["./src/types/cors.d.ts"],
+      "morgan": ["./src/types/morgan.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+  "exclude": ["**/*.spec.ts", "node_modules"]
 }
