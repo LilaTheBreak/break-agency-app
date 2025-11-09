@@ -16,10 +16,14 @@ const transporter = env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS
 
 export async function sendNotification(to: string, subject: string, html: string) {
   if (!transporter) return;
-  await transporter.sendMail({
-    from: env.SMTP_FROM || env.SMTP_USER,
-    to,
-    subject,
-    html
-  });
+  try {
+    await transporter.sendMail({
+      from: env.SMTP_FROM || env.SMTP_USER,
+      to,
+      subject,
+      html
+    });
+  } catch (error) {
+    console.error("[mailer] failed to send notification:", error);
+  }
 }

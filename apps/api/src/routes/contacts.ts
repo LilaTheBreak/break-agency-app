@@ -35,13 +35,15 @@ contactsRouter.get("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next) 
   try {
     const { type, q, page, pageSize } = listQuerySchema.parse(req.query);
 
+    const search = typeof q === "string" && q.length ? q : undefined;
+
     const where: Prisma.ContactWhereInput = {};
     if (type) where.type = type;
-    if (q) {
+    if (search) {
       where.OR = [
-        { name: { contains: q, mode: "insensitive" } },
-        { emails: { hasSome: [q] } },
-        { phones: { hasSome: [q] } }
+        { name: { contains: search, mode: "insensitive" } },
+        { emails: { hasSome: [search] } },
+        { phones: { hasSome: [search] } }
       ];
     }
 
@@ -99,12 +101,15 @@ contactsRouter.get("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, nex
 contactsRouter.post("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next) => {
   try {
     const payload = createContactSchema.parse(req.body);
+    const { createdByUserId: _ignored, ...rest } = payload;
+    const createdByUserId = typeof req.user?.id === "string" ? req.user.id : undefined;
     const contact = await prisma.contact.create({
       data: {
-        ...payload,
-        emails: payload.emails ?? [],
-        phones: payload.phones ?? [],
-        tags: payload.tags ?? []
+        ...rest,
+        emails: rest.emails ?? [],
+        phones: rest.phones ?? [],
+        tags: rest.tags ?? [],
+        ...(createdByUserId ? { createdByUserId } : {})
       }
     });
     res.status(201).json(contact);
@@ -115,10 +120,15 @@ contactsRouter.post("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next)
 
 contactsRouter.put("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, next) => {
   try {
-    const data = updateContactSchema.parse(req.body);
+    const parsed = updateContactSchema.parse(req.body);
+    const { createdByUserId: _ignored, ...rest } = parsed;
+    const createdByUserId = typeof req.user?.id === "string" ? req.user.id : undefined;
     const contact = await prisma.contact.update({
       where: { id: req.params.id },
-      data
+      data: {
+        ...rest,
+        ...(createdByUserId ? { createdByUserId } : {})
+      }
     });
     res.json(contact);
   } catch (error) {

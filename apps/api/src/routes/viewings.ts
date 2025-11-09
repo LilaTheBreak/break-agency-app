@@ -19,8 +19,21 @@ const listQuerySchema = z.object({
 
 const updateViewingSchema = withViewingTimeValidation(ViewingSchemaBase.partial());
 
-type ViewingPayload = z.infer<typeof ViewingSchema>;
-type ViewingAttendeePayload = NonNullable<ViewingPayload["attendees"]>[number];
+type ViewingAttendeePayload = {
+  contactId?: string;
+  userId?: string;
+  role?: string;
+};
+
+type ViewingPayload = {
+  listingId: string;
+  start: Date;
+  end: Date;
+  status?: ViewingStatus;
+  notes?: string;
+  feedback?: Record<string, unknown>;
+  attendees?: ViewingAttendeePayload[];
+};
 
 export const viewingsRouter: Router = Router();
 
@@ -79,7 +92,7 @@ viewingsRouter.get("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, nex
 
 viewingsRouter.post("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next) => {
   try {
-    const payload = ViewingSchema.parse(req.body);
+    const payload = ViewingSchema.parse(req.body) as ViewingPayload;
     const viewing = await createViewing(payload, req.user?.id);
     res.status(201).json(viewing);
   } catch (error) {
@@ -89,7 +102,7 @@ viewingsRouter.post("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next)
 
 viewingsRouter.put("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, next) => {
   try {
-    const data = updateViewingSchema.parse(req.body);
+    const data = updateViewingSchema.parse(req.body) as Partial<ViewingPayload>;
 
     const viewing = await prisma.viewing.update({
       where: { id: req.params.id },
@@ -98,7 +111,9 @@ viewingsRouter.put("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, nex
         end: data.end,
         status: data.status,
         notes: data.notes,
-        feedback: data.feedback
+        ...(data.feedback !== undefined
+          ? { feedback: (data.feedback ?? Prisma.JsonNull) as Prisma.InputJsonValue }
+          : {})
       }
     });
 
@@ -168,7 +183,7 @@ async function createViewing(payload: ViewingPayload, createdByUserId?: string) 
       end: endValue,
       status,
       notes,
-      feedback,
+      feedback: (feedback ?? Prisma.JsonNull) as Prisma.InputJsonValue,
       createdByUserId,
       attendees: attendees.length
         ? {

@@ -5,16 +5,20 @@ import { authenticate } from "../middlewares/auth.js";
 
 export const interestRouter: Router = Router();
 
-interestRouter.post("/", async (req, res, next) => {
+interestRouter.post("/", async (req, res) => {
   try {
-    const email = String(req.body?.email || "").trim();
-    if (!email) {
-      return res.status(400).json({ message: "Email is required." });
+    const { email, name } = req.body ?? {};
+    const normalizedEmail = String(email || "").trim();
+    if (!normalizedEmail) {
+      return res.status(400).json({ error: "email required" });
     }
-    const entry = await addInterest(email);
-    res.status(201).json({ id: entry.id, email: entry.email, createdAt: entry.createdAt });
+    const entry = await addInterest(normalizedEmail);
+    res
+      .status(201)
+      .json({ id: entry.id, email: entry.email, name: name ?? null, createdAt: entry.createdAt });
   } catch (error) {
-    next(error);
+    console.error("[interest] failed:", error);
+    res.status(500).json({ error: "internal_error" });
   }
 });
 

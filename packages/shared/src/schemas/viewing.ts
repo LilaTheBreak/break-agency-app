@@ -19,7 +19,7 @@ const viewingCoreSchema = z.object({
   end: z.coerce.date(),
   status: ViewingStatus.default("REQUESTED"),
   notes: z.string().optional(),
-  feedback: z.record(z.any()).optional(),
+  feedback: z.record(z.string(), z.any()).optional(),
   attendees: z.array(ViewingAttendeeSchema).default([])
 });
 

@@ -83,14 +83,31 @@ listingsRouter.get("/:id", async (req, res, next) => {
 
 listingsRouter.post("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next) => {
   try {
-    const payload = createListingSchema.parse(req.body);
+    const payload = createListingSchema.parse(req.body) as Record<string, any>;
+
+    const listingData: Prisma.ListingUncheckedCreateInput = {
+      refCode: payload.refCode as string,
+      status: (payload.status as ListingStatus) ?? ListingStatus.ACTIVE,
+      address: payload.address as Prisma.InputJsonValue,
+      priceGuide: payload.priceGuide as number,
+      tenure: payload.tenure ?? undefined,
+      beds: payload.beds as number,
+      baths: payload.baths as number,
+      sqft: (payload.sqft as number | undefined) ?? undefined,
+      features: (payload.features as string[] | undefined) ?? [],
+      description: payload.description ?? undefined,
+      media: (payload.media ?? []) as Prisma.InputJsonValue,
+      floorplans: (payload.floorplans ?? []) as Prisma.InputJsonValue
+    };
+    if (typeof payload.ownerContactId === "string") {
+      listingData.ownerContactId = payload.ownerContactId;
+    }
+    if (typeof payload.negotiatorUserId === "string") {
+      listingData.negotiatorUserId = payload.negotiatorUserId;
+    }
+
     const listing = await prisma.listing.create({
-      data: {
-        ...payload,
-        features: payload.features ?? [],
-        media: payload.media ?? [],
-        floorplans: payload.floorplans ?? []
-      }
+      data: listingData
     });
     res.status(201).json(listing);
   } catch (error) {
@@ -100,10 +117,28 @@ listingsRouter.post("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next)
 
 listingsRouter.put("/:id", requireRole(["AGENT", "ADMIN"]), async (req, res, next) => {
   try {
-    const data = updateListingSchema.parse(req.body);
+    const data = updateListingSchema.parse(req.body) as Record<string, any>;
+    const listingData: Prisma.ListingUncheckedUpdateInput = {};
+    if (data.refCode) listingData.refCode = data.refCode as string;
+    if (data.status) listingData.status = data.status as ListingStatus;
+    if (data.address) listingData.address = data.address as Prisma.InputJsonValue;
+    if (typeof data.priceGuide === "number") listingData.priceGuide = data.priceGuide;
+    if (data.tenure !== undefined) listingData.tenure = data.tenure as string | undefined;
+    if (typeof data.beds === "number") listingData.beds = data.beds;
+    if (typeof data.baths === "number") listingData.baths = data.baths;
+    if (typeof data.sqft === "number") listingData.sqft = data.sqft;
+    if (data.features) listingData.features = data.features as string[];
+    if (data.description !== undefined) listingData.description = data.description as string | undefined;
+    if (data.media) listingData.media = data.media as Prisma.InputJsonValue;
+    if (data.floorplans) listingData.floorplans = data.floorplans as Prisma.InputJsonValue;
+    if (typeof data.ownerContactId === "string") listingData.ownerContactId = data.ownerContactId;
+    if (typeof data.negotiatorUserId === "string") {
+      listingData.negotiatorUserId = data.negotiatorUserId;
+    }
+
     const listing = await prisma.listing.update({
       where: { id: req.params.id },
-      data
+      data: listingData
     });
     res.json(listing);
   } catch (error) {
