@@ -19,8 +19,8 @@ const listQuerySchema = z.object({
 const createListingSchema = ListingSchema.extend({
   refCode: z.string().min(3),
   status: z.nativeEnum(ListingStatus).default(ListingStatus.ACTIVE),
-  media: z.array(z.record(z.any())).optional(),
-  floorplans: z.array(z.record(z.any())).optional(),
+  media: z.array(z.record(z.string(), z.any())).optional(),
+  floorplans: z.array(z.record(z.string(), z.any())).optional(),
   ownerContactId: z.string().optional(),
   negotiatorUserId: z.string().optional()
 });
