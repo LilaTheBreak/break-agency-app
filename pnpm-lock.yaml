@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      zod:
-        specifier: ^4.1.12
-        version: 4.1.12
     devDependencies:
       rimraf:
         specifier: ^5.0.5
@@ -171,8 +167,8 @@ importers:
   packages/shared:
     dependencies:
       zod:
-        specifier: ^3.25.76
-        version: 3.25.76
+        specifier: ^4.1.12
+        version: 4.1.12
     devDependencies:
       rimraf:
         specifier: ^5.0.5
