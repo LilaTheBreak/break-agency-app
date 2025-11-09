@@ -2,7 +2,7 @@
   "name": "home-app",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@9.12.3",
   "scripts": {
     "dev": "pnpm -r --filter @home/web --filter @home/api --parallel dev",
     "dev:web": "pnpm --filter @home/web dev",
@@ -18,7 +18,7 @@
     "clean": "pnpm -r exec -- rimraf dist"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "devDependencies": {
     "rimraf": "^5.0.5"

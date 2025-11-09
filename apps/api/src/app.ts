@@ -113,6 +113,12 @@ export function createApp(): Express {
   app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
 
   app.use("/healthz", healthRouter);
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", uptime: process.uptime() });
+  });
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", uptime: process.uptime() });
+  });
   app.get("/__whoami", (_req, res) => {
     res.json({
       pid: process.pid,
