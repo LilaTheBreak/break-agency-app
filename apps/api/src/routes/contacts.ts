@@ -33,19 +33,22 @@ export const contactsRouter: Router = Router();
 
 contactsRouter.get("/", requireRole(["AGENT", "ADMIN"]), async (req, res, next) => {
   try {
-    const { type, q, page, pageSize } = listQuerySchema.parse(req.query);
+    const { type, page, pageSize } = listQuerySchema.parse(req.query);
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
 
-    const search = typeof q === "string" && q.length ? q : undefined;
-
-    const where: Prisma.ContactWhereInput = {};
-    if (type) where.type = type;
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { emails: { hasSome: [search] } },
-        { phones: { hasSome: [search] } }
-      ];
+    const or: Prisma.ContactWhereInput[] = [];
+    if (q) {
+      or.push(
+        { name: { contains: q, mode: "insensitive" } },
+        { emails: { hasSome: [q] } },
+        { phones: { hasSome: [q] } }
+      );
     }
+
+    const where: Prisma.ContactWhereInput = {
+      ...(type ? { type } : {}),
+      ...(or.length ? { OR: or } : {})
+    };
 
     const [items, total] = await Promise.all([
       prisma.contact.findMany({

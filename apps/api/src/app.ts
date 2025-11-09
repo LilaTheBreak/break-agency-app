@@ -10,6 +10,7 @@ import { problemDetailsHandler } from "./middlewares/problem-details.js";
 import { apiRouter } from "./routes/api.js";
 import { healthRouter } from "./routes/health.js";
 import { interestRouter } from "./routes/interest.js";
+import { dev } from "./routes/dev.js";
 
 export function createApp(): Express {
   const app = express();
@@ -168,6 +169,10 @@ export function createApp(): Express {
     const routes = walk(app._router?.stack).sort();
     res.json({ routes });
   });
+  if (env.NODE_ENV !== "production" || process.env.ENABLE_DEV_MAIL === "true") {
+    app.use("/dev", dev);
+  }
+
   app.use("/interest", interestRouter);
   app.use("/api/interest", interestRouter);
 
