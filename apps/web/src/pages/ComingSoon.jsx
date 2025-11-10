@@ -12,6 +12,18 @@ export default function ComingSoon() {
   const [message, setMessage] = useState("");
   const [showSignIn, setShowSignIn] = useState(false);
 
+  const storeInterestLocally = (value) => {
+    try {
+      if (typeof window === "undefined") return false;
+      const existing = JSON.parse(localStorage.getItem("offlineInterest") ?? "[]");
+      existing.push({ email: value, storedAt: new Date().toISOString() });
+      localStorage.setItem("offlineInterest", JSON.stringify(existing));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!email.trim()) {
@@ -32,8 +44,15 @@ export default function ComingSoon() {
       setMessage("Thanks! We’ll keep you in the loop.");
       setEmail("");
     } catch (error) {
-      setStatus("error");
-      setMessage(error.message || "Something went wrong. Please try again later.");
+      const saved = storeInterestLocally(email);
+      if (saved) {
+        setStatus("success");
+        setMessage("Thanks! We saved your interest offline and will follow up.");
+        setEmail("");
+      } else {
+        setStatus("error");
+        setMessage(error.message || "Something went wrong. Please try again later.");
+      }
     }
   };
 
