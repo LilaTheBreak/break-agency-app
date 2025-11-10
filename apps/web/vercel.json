@@ -3,5 +3,8 @@
   "installCommand": "pnpm --dir .. install --filter @home/shared --filter @home/web --frozen-lockfile",
   "buildCommand": "pnpm --dir .. --filter @home/web build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
+  ]
 }
