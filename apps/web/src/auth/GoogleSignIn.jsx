@@ -55,9 +55,6 @@ export default function GoogleSignIn({
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
       <div className="bg-white text-black rounded-2xl p-6 w-[480px] max-w-[92vw]">
         <h3 className="text-xl font-semibold">Sign in</h3>
-        <p className="text-sm text-neutral-600 mt-1">
-          Use Google for production credentials or the test accounts below for persona previews.
-        </p>
 
         <div className="mt-5 flex justify-center">
           <GoogleLogin
