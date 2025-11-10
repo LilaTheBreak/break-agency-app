@@ -185,18 +185,20 @@ export default function ComingSoon() {
           </div>
           <p className="text-[10px] uppercase tracking-[0.35em] text-white/30">Coming soon • home-ai.uk</p>
         </div>
-        <button
-          type="button"
-          onClick={handleScrollToFAQ}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/70 hover:text-white transition flex flex-col items-center gap-2"
-        >
-          <span className="text-xs tracking-[0.5em] uppercase">More</span>
-          <span className="animate-bounce">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path d="M6 10l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-        </button>
+        <div className="absolute bottom-8 inset-x-0 flex justify-center">
+          <button
+            type="button"
+            onClick={handleScrollToFAQ}
+            className="text-white/70 hover:text-white transition flex flex-col items-center gap-2"
+          >
+            <span className="text-xs tracking-[0.5em] uppercase">More</span>
+            <span className="animate-bounce">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                <path d="M6 10l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </button>
+        </div>
         <GoogleSignIn
           open={showSignIn}
           onClose={() => setShowSignIn(false)}
