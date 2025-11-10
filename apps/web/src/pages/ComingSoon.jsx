@@ -57,17 +57,17 @@ export default function ComingSoon() {
   };
 
   return (
-    <main className="landing-shell relative min-h-screen bg-black text-white overflow-hidden">
+    <main className="relative min-h-screen bg-black text-white overflow-hidden">
       <button
         type="button"
-        className="landing-admin absolute top-4 right-4 rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.35em] hover:bg-white/10 z-20"
+        className="absolute top-4 right-4 rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.35em] hover:bg-white/10 z-20"
         onClick={() => setShowSignIn(true)}
       >
         Admin access
       </button>
       <div className="absolute inset-0 grid-bg pointer-events-none" aria-hidden="true" />
-      <div className="landing-panel relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center space-y-8">
-        <div className="landing-copy space-y-3">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center space-y-8">
+        <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.35em] text-white/40">home ai</p>
           <h1 className="text-4xl md:text-6xl font-light">
             welcome <span className="shine-text font-semibold">home</span>
@@ -76,7 +76,7 @@ export default function ComingSoon() {
             We’re preparing a new era of AI-guided home selling and buying. Be the first to know when we launch.
           </p>
         </div>
-        <div className="landing-form rounded-3xl border border-white/10 bg-white/5 p-6 max-w-md w-full">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 max-w-md w-full">
           <p className="text-xs uppercase tracking-[0.35em] text-white/50">Register interest</p>
           <form onSubmit={handleSubmit} className="mt-4 space-y-3">
             <input
@@ -89,7 +89,7 @@ export default function ComingSoon() {
             />
             <button
               type="submit"
-              className="landing-submit w-full rounded-2xl bg-white text-black py-3 text-sm font-medium hover:bg-white/90"
+              className="w-full rounded-2xl bg-white text-black py-3 text-sm font-medium hover:bg-white/90"
               disabled={status === "loading"}
             >
               {status === "loading" ? "Sending…" : "Notify me"}
