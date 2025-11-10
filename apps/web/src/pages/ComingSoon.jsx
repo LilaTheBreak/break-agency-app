@@ -57,7 +57,7 @@ export default function ComingSoon() {
   };
 
   return (
-    <main className="relative min-h-screen bg-black text-white overflow-hidden">
+    <main className="relative min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.08),transparent_60%)] text-white overflow-hidden bg-black">
       <button
         type="button"
         className="absolute top-4 right-4 rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.35em] hover:bg-white/10 z-20"
@@ -76,26 +76,30 @@ export default function ComingSoon() {
             We’re preparing a new era of AI-guided home selling and buying. Be the first to know when we launch.
           </p>
         </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 max-w-md w-full">
-          <p className="text-xs uppercase tracking-[0.35em] text-white/50">Register interest</p>
-          <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+        <div className="rounded-[32px] border border-white/10 bg-black/60 p-6 max-w-md w-full backdrop-blur-2xl shadow-[0_25px_80px_rgba(0,0,0,0.65)] space-y-4">
+          <p className="text-xs uppercase tracking-[0.35em] text-white/60">Register interest</p>
+          <form onSubmit={handleSubmit} className="space-y-3">
             <input
               type="email"
               placeholder="you@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-2xl bg-black/40 border border-white/15 px-4 py-3 text-sm focus:border-white/40 focus:outline-none"
+              className="w-full rounded-full bg-black/60 border border-white/20 px-5 py-3.5 text-sm text-white placeholder-white/40 focus:border-white/50 focus:outline-none focus:ring-0"
               required
             />
             <button
               type="submit"
-              className="w-full rounded-2xl bg-white text-black py-3 text-sm font-medium hover:bg-white/90"
+              className="w-full rounded-full bg-gradient-to-r from-white via-white to-white/80 text-black py-3.5 text-sm font-semibold tracking-[0.2em] uppercase shadow-[0_18px_45px_rgba(255,255,255,0.35)] hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed"
               disabled={status === "loading"}
             >
               {status === "loading" ? "Sending…" : "Notify me"}
             </button>
             {message && (
-              <p className={`text-xs ${status === "success" ? "text-emerald-300" : "text-rose-300"}`}>
+              <p
+                className={`text-xs ${
+                  status === "success" ? "text-emerald-200 uppercase tracking-[0.2em]" : "text-rose-300"
+                }`}
+              >
                 {message}
               </p>
             )}
