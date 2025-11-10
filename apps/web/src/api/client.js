@@ -77,3 +77,7 @@ export function getViewings(params = {}) {
   const qs = query.toString();
   return request(`/api/viewings${qs ? `?${qs}` : ""}`);
 }
+
+export function getInterestLeads() {
+  return request("/api/interest");
+}

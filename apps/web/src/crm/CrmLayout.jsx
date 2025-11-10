@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
+import { getInterestLeads } from "../api/client.js";
 import { LISTINGS } from "../data/listings";
 
 const NAV_ITEMS = [
@@ -1641,8 +1642,81 @@ export function CrmContactsPage() {
   const { contacts } = useCrmData();
   const [typeFilter, setTypeFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [interestLeads, setInterestLeads] = useState([]);
+  const [interestStatus, setInterestStatus] = useState("idle");
+  const [interestError, setInterestError] = useState("");
+  const [interestReloadKey, setInterestReloadKey] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+    let initial = true;
+
+    async function loadInterest() {
+      if (!active) return;
+      if (initial) setInterestStatus("loading");
+      try {
+        const data = await getInterestLeads();
+        if (!active) return;
+        setInterestLeads(Array.isArray(data) ? data : []);
+        setInterestError("");
+        setInterestStatus("success");
+      } catch (error) {
+        console.error("[crm] failed to load website registrations", error);
+        if (!active) return;
+        const detail =
+          error instanceof Error ? error.message : "Unable to load website sign-ups.";
+        setInterestError(detail);
+        setInterestStatus("error");
+      } finally {
+        initial = false;
+      }
+    }
+
+    loadInterest();
+    const timer = setInterval(loadInterest, 60_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [interestReloadKey]);
 
   const typeOptions = ["All", "Seller", "Buyer", "Buyer & Seller", "Legal", "Agent", "Site member"];
+
+  const websiteLeads = useMemo(() => {
+    return interestLeads
+      .slice()
+      .sort((a, b) => {
+        const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      })
+      .map((lead) => {
+        const rawLabel = typeof lead?.name === "string" && lead.name.trim().length
+          ? lead.name.trim()
+          : deriveDisplayName(lead.email);
+        const createdAtDate = lead?.createdAt ? new Date(lead.createdAt) : null;
+        const validDate =
+          createdAtDate && !Number.isNaN(createdAtDate.getTime()) ? createdAtDate : null;
+        return {
+          ...lead,
+          label: rawLabel,
+          createdAtDate: validDate,
+          createdAtDisplay: validDate ? formatShortDateTime(validDate) : "Awaiting timestamp",
+          createdAtRelative: validDate ? formatRelative(validDate) : ""
+        };
+      });
+  }, [interestLeads]);
+
+  const latestWebsiteLeadDate =
+    websiteLeads.find((lead) => lead.createdAtDate)?.createdAtDate || null;
+  const websiteLeadCount = websiteLeads.length;
+  const isInterestLoading = interestStatus === "loading";
+  const handleInterestRefresh = () => setInterestReloadKey((value) => value + 1);
+  const interestHeadlineCopy = websiteLeads.length
+    ? latestWebsiteLeadDate
+      ? `Last captured ${formatRelative(latestWebsiteLeadDate)}`
+      : "Recent submissions"
+    : "No submissions yet";
 
   const countsByType = contacts.reduce((acc, contact) => {
     acc[contact.type] = (acc[contact.type] || 0) + 1;
@@ -1674,6 +1748,69 @@ export function CrmContactsPage() {
           Central directory for sellers, buyers, legal partners, and site members.
         </p>
       </header>
+
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-950/70 via-black/40 to-slate-900/50 p-5 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">Website leads</p>
+            <h2 className="text-2xl font-semibold text-white">Interest registrations</h2>
+            <p className="text-sm text-slate-400">{interestHeadlineCopy}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-4xl font-semibold text-white">{websiteLeadCount}</p>
+            <p className="text-[11px] uppercase tracking-[0.35em] text-white/40">total</p>
+            <button
+              type="button"
+              onClick={handleInterestRefresh}
+              disabled={isInterestLoading}
+              className="mt-3 rounded-full border border-white/20 px-4 py-1.5 text-[10px] uppercase tracking-[0.35em] text-white hover:border-white/40 disabled:opacity-40"
+            >
+              {isInterestLoading ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/40 divide-y divide-white/5">
+          {interestStatus === "loading" && (
+            <p className="px-5 py-4 text-sm text-slate-300">Loading latest registrations…</p>
+          )}
+          {interestStatus === "error" && (
+            <div className="px-5 py-4 text-sm text-rose-200 flex flex-wrap items-center gap-3">
+              <span>{interestError || "Unable to load sign-ups."}</span>
+              <button
+                type="button"
+                onClick={handleInterestRefresh}
+                className="rounded-full border border-rose-200/40 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-rose-50 hover:border-rose-200/70"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {interestStatus !== "loading" && interestStatus !== "error" && websiteLeads.length === 0 && (
+            <p className="px-5 py-4 text-sm text-slate-400">
+              No registrations captured yet. Share the landing page to build your pipeline.
+            </p>
+          )}
+          {websiteLeads.length > 0 && interestStatus !== "loading" && (
+            <ul className="divide-y divide-white/5">
+              {websiteLeads.slice(0, 8).map((lead) => (
+                <li
+                  key={lead.id}
+                  className="flex flex-col gap-1 px-5 py-4 text-sm text-slate-200 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="text-white font-medium">{lead.label}</p>
+                    <p className="text-xs text-slate-400">{lead.email}</p>
+                  </div>
+                  <div className="text-xs text-slate-400 text-left sm:text-right">
+                    <p>{lead.createdAtDisplay}</p>
+                    {lead.createdAtRelative && <p>{lead.createdAtRelative}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       <section className="rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

@@ -41,13 +41,13 @@ export default function ComingSoon() {
       });
       if (!response.ok) throw new Error("Unable to save your interest right now.");
       setStatus("success");
-      setMessage("Thanks! We’ll keep you in the loop.");
+      setMessage("Thanks! We will be in touch!");
       setEmail("");
     } catch (error) {
       const saved = storeInterestLocally(email);
       if (saved) {
         setStatus("success");
-        setMessage("Thanks! We saved your interest offline and will follow up.");
+        setMessage("Thanks! We will be in touch!");
         setEmail("");
       } else {
         setStatus("error");
