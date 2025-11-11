@@ -2140,9 +2140,12 @@ function createRefinementState(profile, subject = {}) {
   };
 }
 
+const formatUpfrontFee = (fee) => `£${fee.toLocaleString()} + VAT`;
+
 function determineSellerPlan(valuation, fallbackPrice) {
-  const anchor = valuation?.midpoint ?? valuation?.baseline ?? fallbackPrice ?? 0;
-  const premium = anchor >= SELLER_PREMIUM_THRESHOLD;
+  const fallback = fallbackPrice ?? 0;
+  const upperBound = valuation?.upper ?? valuation?.midpoint ?? valuation?.baseline ?? fallback;
+  const premium = upperBound >= SELLER_PREMIUM_THRESHOLD;
   if (premium) {
     return {
       key: "premier",
@@ -3069,7 +3072,7 @@ function SellerValuation() {
                     <div className="text-left sm:text-right">
                       <p className="text-xs uppercase tracking-[0.28em] text-white/45">Commercials</p>
                       <p className="mt-1 text-lg font-semibold text-white">
-                        £{plan.upfrontFee.toLocaleString()} upfront
+                        {formatUpfrontFee(plan.upfrontFee)} upfront
                       </p>
                       <p className="text-sm text-white/70">+ {plan.successFeePercent}% on exchange</p>
                     </div>
@@ -3527,7 +3530,7 @@ function SellerHowItWorks() {
             <div className="text-right">
               <p className="text-xs uppercase tracking-[0.3em] text-white/50">Fees</p>
               <p className="mt-1 text-xl font-semibold text-white">
-                £{plan.upfrontFee.toLocaleString()} upfront
+                {formatUpfrontFee(plan.upfrontFee)} upfront
               </p>
               <p className="text-sm text-white/70">+ {plan.successFeePercent}% on exchange</p>
             </div>
@@ -3681,7 +3684,7 @@ function SellerCheckout() {
           <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">Summary</p>
             <p className="mt-1 font-medium text-white">{plan.label}</p>
-            <p>£{plan.upfrontFee.toLocaleString()} upfront • {plan.successFeePercent}% on exchange</p>
+                <p>{formatUpfrontFee(plan.upfrontFee)} upfront • {plan.successFeePercent}% on exchange</p>
             <p className="mt-1 text-xs text-white/60">
               Listing: {insights.matched?.title || sellerProfile?.address || "TBC"}
             </p>
@@ -3818,7 +3821,7 @@ function SellerCheckout() {
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-white/80">
               <span>Today&rsquo;s onboarding fee</span>
               <span className="text-2xl font-semibold text-white">
-                £{plan.upfrontFee.toLocaleString()}
+                {formatUpfrontFee(plan.upfrontFee)}
               </span>
             </div>
             <div className="text-xs text-white/60">
@@ -3831,7 +3834,7 @@ function SellerCheckout() {
               type="submit"
               className="rounded-xl bg-white text-black px-6 h-12 text-sm font-medium hover:bg-white/90"
             >
-              Pay £{plan.upfrontFee.toLocaleString()} &amp; sign agreement
+              Pay {formatUpfrontFee(plan.upfrontFee)} &amp; sign agreement
             </button>
             <button
               type="button"
@@ -3877,7 +3880,7 @@ function SellerCheckoutSuccess() {
           <p className="text-lg font-semibold text-white">Package confirmed: {plan.label}</p>
           <p>Payment reference: {sellerProfile.paymentReference || "Pending confirmation"}</p>
           <p>
-            Upfront fee received: £{plan.upfrontFee.toLocaleString()} • Success fee: {plan.successFeePercent}% on exchange.
+            Upfront fee received: {formatUpfrontFee(plan.upfrontFee)} • Success fee: {plan.successFeePercent}% on exchange.
           </p>
         </div>
 
