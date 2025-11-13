@@ -35,7 +35,7 @@ export default function GoogleSignIn({
 
     const account = sortedAccounts.find((acc) => acc.email.toLowerCase() === email);
     if (!account || account.password !== password) {
-      setError("Invalid test credentials. Try buyer@test.com / password.");
+      setError("Invalid test credentials. Try creator@test.com / password.");
       return;
     }
 
@@ -74,7 +74,7 @@ export default function GoogleSignIn({
                 }
 
                 const isAdmin = ALLOWED_ADMINS.includes(email);
-                const roles = isAdmin ? [Roles.ADMIN, Roles.AGENT] : [Roles.BUYER];
+                const roles = isAdmin ? [Roles.ADMIN, Roles.TALENT_MANAGER] : [Roles.CREATOR];
                 const session = signInSession({
                   email,
                   name: profile.name,
@@ -102,7 +102,7 @@ export default function GoogleSignIn({
           <div className="mt-6 border-t border-neutral-200 pt-5">
           <p className="text-sm font-medium text-neutral-800">Test personas</p>
           <p className="text-xs text-neutral-500 mt-1">
-            Email + password (`password`) to explore buyer, seller, agent, and hybrid views.
+            Email + password (`password`) to explore creator, brand, and talent manager views.
           </p>
           <form className="mt-4 space-y-3" onSubmit={handleManualLogin}>
             <div>

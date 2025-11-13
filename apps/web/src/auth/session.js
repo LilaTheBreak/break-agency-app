@@ -1,23 +1,20 @@
-const SESSION_KEY = "home_session_v1";
-export const SESSION_CHANGED_EVENT = "home-session-changed";
+const SESSION_KEY = "break_agency_session_v1";
+export const SESSION_CHANGED_EVENT = "break-agency-session-changed";
 
 export const Roles = {
   ADMIN: "admin",
-  AGENT: "agent",
-  SELLER: "seller",
-  BUYER: "buyer"
+  BRAND: "brand",
+  CREATOR: "creator",
+  TALENT_MANAGER: "talent-manager"
 };
 
-const rolePriority = [Roles.ADMIN, Roles.AGENT, Roles.SELLER, Roles.BUYER];
+const rolePriority = [Roles.ADMIN, Roles.TALENT_MANAGER, Roles.BRAND, Roles.CREATOR];
 
 function derivePrimaryRole(roles = []) {
   for (const role of rolePriority) {
     if (roles.includes(role)) return role;
   }
-  if (roles.length > 1 && roles.includes(Roles.SELLER) && roles.includes(Roles.BUYER)) {
-    return "buyer-seller";
-  }
-  return roles[0] || "consumer";
+  return roles[0] || "visitor";
 }
 
 function emitSessionChanged() {
@@ -41,7 +38,7 @@ export function setSession(session) {
   if (typeof window === "undefined") return;
   if (!session) {
     localStorage.removeItem(SESSION_KEY);
-    localStorage.setItem("role", "consumer");
+    localStorage.setItem("role", "visitor");
   } else {
     const payload = { ...session, roles: Array.from(new Set(session.roles || [])) };
     localStorage.setItem(SESSION_KEY, JSON.stringify(payload));

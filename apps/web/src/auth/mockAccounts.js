@@ -2,38 +2,31 @@ import { Roles } from "./session";
 
 export const MOCK_ACCOUNTS = [
   {
-    email: "buyer@test.com",
+    email: "creator@test.com",
     password: "password",
-    name: "Buyer Beta",
-    roles: [Roles.BUYER],
+    name: "Creator Nova",
+    roles: [Roles.CREATOR],
     avatar: null
   },
   {
-    email: "seller@test.com",
+    email: "brand@test.com",
     password: "password",
-    name: "Seller Summit",
-    roles: [Roles.SELLER],
+    name: "Brand Orbit",
+    roles: [Roles.BRAND],
     avatar: null
   },
   {
-    email: "valuation@test.com",
+    email: "manager@test.com",
     password: "password",
-    name: "Valuation Preview",
-    roles: [Roles.SELLER],
+    name: "Talent Manager",
+    roles: [Roles.TALENT_MANAGER],
     avatar: null
   },
   {
-    email: "agent@test.com",
+    email: "admin@test.com",
     password: "password",
-    name: "Agent Apex",
-    roles: [Roles.AGENT],
-    avatar: null
-  },
-  {
-    email: "buyerseller@test.com",
-    password: "password",
-    name: "Hybrid Hero",
-    roles: [Roles.BUYER, Roles.SELLER],
+    name: "Break Admin",
+    roles: [Roles.ADMIN, Roles.TALENT_MANAGER],
     avatar: null
   }
 ];

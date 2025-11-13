@@ -4,7 +4,7 @@ import App from "./App.jsx";
 import "./index.css";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { GOOGLE_CLIENT_ID } from "./auth/config";
+import { GOOGLE_CLIENT_ID } from "./auth/config.js";
 
 console.log("[GIS] VITE_GOOGLE_CLIENT_ID =", import.meta.env.VITE_GOOGLE_CLIENT_ID);
 

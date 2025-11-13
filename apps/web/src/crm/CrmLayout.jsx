@@ -3,6 +3,12 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { getInterestLeads } from "../api/client.js";
 import { LISTINGS } from "../data/listings";
+import {
+  BUYER_VIEWING_FEEDBACK_KEY,
+  BUYER_SUBMITTED_OFFERS_KEY,
+  BUYER_FEEDBACK_EVENT,
+  BUYER_OFFERS_EVENT
+} from "../lib/workspace";
 
 const NAV_ITEMS = [
   { to: "/crm/dashboard", label: "Dashboard", icon: "🏠" },
@@ -118,6 +124,34 @@ function loadJSONSafe(key, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function persistBuyerOffers(updater) {
+  if (typeof window === "undefined") return [];
+  const current = loadJSONSafe(BUYER_SUBMITTED_OFFERS_KEY, []);
+  const next = typeof updater === "function" ? updater(current) : updater;
+  window.localStorage.setItem(BUYER_SUBMITTED_OFFERS_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event(BUYER_OFFERS_EVENT));
+  return next;
+}
+
+function patchBuyerOffer(id, patch) {
+  return persistBuyerOffers((current) =>
+    current.map((offer) =>
+      offer.id === id ? { ...offer, ...patch, updated: new Date().toISOString() } : offer
+    )
+  );
+}
+
+function addBuyerOfferFromCrm(entry) {
+  const record = {
+    ...entry,
+    id: entry.id || `agent-${Date.now()}`,
+    updated: new Date().toISOString(),
+    source: entry.source || "agent"
+  };
+  persistBuyerOffers((current) => [record, ...current]);
+  return record;
 }
 
 function deriveDisplayName(email, fallback = "Contact") {
@@ -495,6 +529,8 @@ function buildDashboardData() {
   const userProfiles = collectUserProfiles();
   const listingMap = Object.fromEntries(LISTINGS.map((listing) => [listing.id, listing]));
   const contacts = buildContactDirectory({ sellers, userProfiles, listingMap });
+  const buyerFeedbackMap = loadJSONSafe(BUYER_VIEWING_FEEDBACK_KEY, {});
+  const buyerOfferSubmissions = loadJSONSafe(BUYER_SUBMITTED_OFFERS_KEY, []);
 
   const viewings = CRM_VIEWINGS_BASELINE.map((viewing) => {
     const occursAt = combineDateTime(viewing.date, viewing.time);
@@ -507,7 +543,8 @@ function buildDashboardData() {
       occursAt,
       listing,
       seller,
-      buyerLabel
+      buyerLabel,
+      feedbackEntry: buyerFeedbackMap[viewing.id] || null
     };
   }).sort((a, b) => {
     const aTime = a.occursAt ? a.occursAt.getTime() : Number.MAX_SAFE_INTEGER;
@@ -515,25 +552,32 @@ function buildDashboardData() {
     return aTime - bTime;
   });
 
-  const offers = CRM_OFFERS_BASELINE.map((offer) => {
-    const listing = listingMap[offer.listingId] || null;
-    const seller = sellers.find((candidate) => candidate.email === offer.sellerEmail) || null;
-    const buyerProfile = userProfiles[offer.buyerEmail] || {};
-    const buyerLabel = offer.buyerName || buyerProfile.displayName || deriveDisplayName(offer.buyerEmail);
-    const updatedAt = offer.updatedAt ? new Date(offer.updatedAt) : null;
-    return {
-      ...offer,
-      listing,
-      seller,
-      buyerLabel,
-      amountDisplay: formatCurrency(offer.amount || listing?.price || 0),
-      updatedAt
-    };
-  }).sort((a, b) => {
-    const aTime = a.updatedAt ? a.updatedAt.getTime() : 0;
-    const bTime = b.updatedAt ? b.updatedAt.getTime() : 0;
-    return bTime - aTime;
-  });
+  const combinedOffers = [...CRM_OFFERS_BASELINE, ...buyerOfferSubmissions];
+
+  const offers = combinedOffers
+    .map((offer) => {
+      const listing = listingMap[offer.listingId] || null;
+      const seller =
+        sellers.find((candidate) => candidate.email === offer.sellerEmail) || sellers[0] || null;
+      const buyerProfile = userProfiles[offer.buyerEmail] || {};
+      const buyerLabel = offer.buyerName || buyerProfile.displayName || deriveDisplayName(offer.buyerEmail);
+      const updatedAt = offer.updatedAt ? new Date(offer.updatedAt) : offer.updated ? new Date(offer.updated) : null;
+      return {
+        ...offer,
+        listing,
+        seller,
+        buyerLabel,
+        amountDisplay: formatCurrency(offer.amount || listing?.price || 0),
+        updatedAt,
+        editable: Boolean(offer.source),
+        documents: offer.documents || []
+      };
+    })
+    .sort((a, b) => {
+      const aTime = a.updatedAt ? a.updatedAt.getTime() : 0;
+      const bTime = b.updatedAt ? b.updatedAt.getTime() : 0;
+      return bTime - aTime;
+    });
 
   const counts = sellers.reduce(
     (acc, seller) => {
@@ -798,7 +842,10 @@ function buildDashboardData() {
     activeListings,
     counts,
     sellers,
-    userProfiles
+    userProfiles,
+    preferences: {
+      viewingStyle: sellers[0]?.viewingStyle || "hosted"
+    }
   };
 }
 
@@ -818,9 +865,13 @@ function useCrmData(extraDeps = []) {
     };
     window.addEventListener("storage", handle);
     window.addEventListener("focus", handle);
+    window.addEventListener(BUYER_FEEDBACK_EVENT, handle);
+    window.addEventListener(BUYER_OFFERS_EVENT, handle);
     return () => {
       window.removeEventListener("storage", handle);
       window.removeEventListener("focus", handle);
+      window.removeEventListener(BUYER_FEEDBACK_EVENT, handle);
+      window.removeEventListener(BUYER_OFFERS_EVENT, handle);
     };
   }, []);
 
@@ -2131,7 +2182,8 @@ export function CrmListingsPage() {
 }
 
 export function CrmViewingsPage() {
-  const { viewings } = useCrmData();
+  const { viewings, preferences } = useCrmData();
+  const viewingStyle = preferences?.viewingStyle || "hosted";
   const [selectedId, setSelectedId] = useState(null);
   const [focusId, setFocusId] = useState(null);
 
@@ -2202,6 +2254,10 @@ export function CrmViewingsPage() {
           <h1 className="text-3xl font-semibold text-white">Viewings calendar</h1>
           <p className="text-sm text-slate-400">
             Weekly overview with quick links to confirm, reschedule, or capture feedback.
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Current hosting preference:{" "}
+            {viewingStyle === "owner_led" ? "Owner-led slots" : "Hosted by HOME AI team"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -2349,6 +2405,39 @@ export function CrmViewingsPage() {
                 </p>
               </div>
             </div>
+
+            {selectedViewing.feedbackEntry ? (
+              <div className="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-4 text-sm text-emerald-50 space-y-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-emerald-200">Buyer workspace</p>
+                <p className="text-sm">
+                  Sentiment: <span className="font-semibold">{selectedViewing.feedbackEntry.sentiment}</span>
+                </p>
+                {selectedViewing.feedbackEntry.offerAmount ? (
+                  <p className="text-sm">
+                    Submitted offer: {formatCurrency(selectedViewing.feedbackEntry.offerAmount)}
+                  </p>
+                ) : (
+                  <p className="text-sm">No offer attached yet.</p>
+                )}
+                {selectedViewing.feedbackEntry.comments && (
+                  <p className="text-xs text-emerald-100/80">“{selectedViewing.feedbackEntry.comments}”</p>
+                )}
+                {selectedViewing.feedbackEntry.documents?.length ? (
+                  <div>
+                    <p className="text-xs text-emerald-200 uppercase tracking-[0.3em]">Documents</p>
+                    <ul className="text-xs text-emerald-100 list-disc pl-5">
+                      {selectedViewing.feedbackEntry.documents.map((doc) => (
+                        <li key={doc}>{doc}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/60">
+                Awaiting buyer feedback from workspace. Nudge them via CRM chat if needed.
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -2391,6 +2480,7 @@ export function CrmOffersPage() {
     { label: "Accepted", value: "accept" },
     { label: "Completed", value: "complete" },
     { label: "Withdrawn", value: "withdraw" },
+     { label: "Agent logged", value: "agent" },
     { label: "All stages", value: "all" }
   ];
 
@@ -2399,6 +2489,9 @@ export function CrmOffersPage() {
       const status = (offer.status || "").toLowerCase();
       const isArchived =
         status.includes("complete") || status.includes("withdraw") || status.includes("declin");
+      if (stageFilter === "agent") {
+        return offer.source === "agent";
+      }
       if (!showArchived && isArchived) return stageFilter === "complete" || stageFilter === "withdraw" ? status.includes(stageFilter) : false;
       if (stageFilter === "active") {
         return !isArchived;
@@ -2418,6 +2511,60 @@ export function CrmOffersPage() {
   }, [filteredOffers, selectedId]);
 
   const selectedOffer = offers.find((offer) => offer.id === selectedId) || null;
+
+  const [editForm, setEditForm] = useState(null);
+
+  useEffect(() => {
+    if (!selectedOffer || !selectedOffer.editable) {
+      setEditForm(null);
+      return;
+    }
+    setEditForm({
+      status: selectedOffer.status || "",
+      stage: selectedOffer.stage || "",
+      notes: selectedOffer.notes || "",
+      outstanding: (selectedOffer.outstanding || []).join(", "),
+      document: ""
+    });
+  }, [selectedOffer]);
+
+  const handleOfferUpdate = () => {
+    if (!selectedOffer || !editForm) return;
+    patchBuyerOffer(selectedOffer.id, {
+      status: editForm.status,
+      stage: editForm.stage,
+      notes: editForm.notes,
+      outstanding: editForm.outstanding
+        ? editForm.outstanding.split(",").map((item) => item.trim()).filter(Boolean)
+        : [],
+      documents: editForm.document
+        ? [...(selectedOffer.documents || []), editForm.document.trim()]
+        : selectedOffer.documents || []
+    });
+  };
+
+  const handleAgentOfferCreate = (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const buyerEmail = String(form.get("buyerEmail") || "").trim();
+    const amount = Number.parseInt(form.get("offerAmount"), 10);
+    if (!buyerEmail || Number.isNaN(amount)) return;
+    const created = addBuyerOfferFromCrm({
+      buyerEmail,
+      buyerName: deriveDisplayName(buyerEmail),
+      listingId: BASE_LISTING_ID,
+      listingTitle: "Instruction listing",
+      amount,
+      status: "Submitted",
+      stage: "Draft",
+      outstanding: ["Proof of funds"],
+      actions: ["Chase buyer for docs"],
+      notes: form.get("notes") || ""
+    });
+    event.currentTarget.reset();
+    setSelectedId(created.id);
+    setFocusId(created.id);
+  };
 
   return (
     <div className="space-y-6">
@@ -2570,10 +2717,106 @@ export function CrmOffersPage() {
                   Asking {selectedOffer.listing ? formatCurrency(selectedOffer.listing.price) : "—"}
                 </p>
               </div>
+              {selectedOffer.editable && editForm && (
+                <div className="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-4 space-y-3 text-sm text-emerald-50">
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-200">Buyer workspace offer</p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="text-xs text-emerald-100">
+                      Status
+                      <input
+                        className="mt-1 w-full rounded-xl border border-emerald-400/40 bg-black/30 px-3 py-2 text-sm text-white"
+                        value={editForm.status}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}
+                      />
+                    </label>
+                    <label className="text-xs text-emerald-100">
+                      Stage
+                      <input
+                        className="mt-1 w-full rounded-xl border border-emerald-400/40 bg-black/30 px-3 py-2 text-sm text-white"
+                        value={editForm.stage}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, stage: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                  <label className="text-xs text-emerald-100">
+                    Notes
+                    <textarea
+                      className="mt-1 w-full rounded-xl border border-emerald-400/40 bg-black/30 px-3 py-2 text-sm text-white"
+                      rows={3}
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                    />
+                  </label>
+                  <label className="text-xs text-emerald-100">
+                    Outstanding items (comma separated)
+                    <input
+                      className="mt-1 w-full rounded-xl border border-emerald-400/40 bg-black/30 px-3 py-2 text-sm text-white"
+                      value={editForm.outstanding}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, outstanding: e.target.value }))}
+                    />
+                  </label>
+                  <label className="text-xs text-emerald-100">
+                    Add document reference
+                    <input
+                      className="mt-1 w-full rounded-xl border border-emerald-400/40 bg-black/30 px-3 py-2 text-sm text-white"
+                      value={editForm.document}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, document: e.target.value }))}
+                      placeholder="Proof of funds.pdf"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleOfferUpdate}
+                    className="w-full rounded-full bg-white text-black py-3 text-sm font-semibold uppercase tracking-[0.3em] hover:bg-white/90"
+                  >
+                    Update offer record
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>
       </div>
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Log manual offer</h2>
+            <p className="text-sm text-white/70">
+              Capture phone-in offers or note buyer interest directly from the CRM.
+            </p>
+          </div>
+        </div>
+        <form className="grid gap-3 md:grid-cols-3" onSubmit={handleAgentOfferCreate}>
+          <input
+            name="buyerEmail"
+            type="email"
+            placeholder="buyer@example.com"
+            className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none md:col-span-1"
+            required
+          />
+          <input
+            name="offerAmount"
+            type="number"
+            placeholder="Offer amount"
+            className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none md:col-span-1"
+            required
+          />
+          <input
+            name="notes"
+            type="text"
+            placeholder="Notes / conditions"
+            className="rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none md:col-span-1"
+          />
+          <div className="md:col-span-3 flex justify-end">
+            <button
+              type="submit"
+              className="rounded-xl bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90"
+            >
+              Add offer
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }
