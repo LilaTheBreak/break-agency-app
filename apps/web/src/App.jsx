@@ -8,8 +8,6 @@ import {
   useLocation,
   Navigate
 } from "react-router-dom";
-import { Analytics } from "@vercel/analytics/next";
-
 import GoogleSignIn from "./auth/GoogleSignIn.jsx";
 import { Roles, SESSION_CHANGED_EVENT, clearSession, getSession } from "./auth/session.js";
 
@@ -220,7 +218,6 @@ function App() {
         onSignedIn={() => setAuthModalOpen(false)}
         allowedDomain={null}
       />
-      <Analytics />
     </BrowserRouter>
   );
 }
