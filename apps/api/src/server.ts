@@ -1,24 +1,26 @@
-import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import routes from "./routes/index.js";
+import dotenv from "dotenv";
 
-import { createApp } from "./app.js";
-import { env } from "./env.js";
+dotenv.config();
 
-const app = createApp();
+const app = express();
+app.use(cors());
+app.use(helmet());
+app.use(morgan("dev"));
+app.use(express.json());
 
-const PORT = env.PORT || 5000;
-const HOST = "0.0.0.0";
-
-const server = app.listen(PORT, HOST, () => {
-  console.log(`[home-api] listening on http://${HOST}:${PORT} (${env.NODE_ENV})`);
+app.get("/", (_req, res) => {
+  res.json({ status: "ok", message: "Break Agency API is running" });
 });
 
-const shutdown = (signal: string) => {
-  console.log(`[home-api] received ${signal}, shutting down...`);
-  server.close(() => {
-    console.log("[home-api] server closed");
-    process.exit(0);
-  });
-};
+app.use("/api", routes);
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+const PORT = process.env.PORT || 3001;
+
+app.listen(PORT, () => {
+  console.log(`API running at http://localhost:${PORT}`);
+});

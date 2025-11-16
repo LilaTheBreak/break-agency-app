@@ -1,12 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@home/shared/*": ["../../packages/shared/src/*"],
-      "cors": ["./src/types/cors.d.ts"],
-      "morgan": ["./src/types/morgan.d.ts"]
-    }
+    "baseUrl": "."
   },
   "include": ["src"]
 }

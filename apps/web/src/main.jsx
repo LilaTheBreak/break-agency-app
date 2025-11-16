@@ -3,17 +3,21 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
 
-import { Analytics } from "@vercel/analytics/react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GOOGLE_CLIENT_ID } from "./auth/config.js";
 
-console.log("[GIS] VITE_GOOGLE_CLIENT_ID =", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+const googleClientId = GOOGLE_CLIENT_ID?.trim();
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+const Root = (
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    {googleClientId ? (
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <App />
+      </GoogleOAuthProvider>
+    ) : (
       <App />
-      <Analytics />
-    </GoogleOAuthProvider>
+    )}
   </React.StrictMode>
 );
+
+ReactDOM.createRoot(document.getElementById("root")).render(Root);

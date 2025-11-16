@@ -1,4 +1,4 @@
-import { Roles } from "./session";
+import { Roles } from "./session.js";
 
 export const MOCK_ACCOUNTS = [
   {

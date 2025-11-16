@@ -1,21 +1,77 @@
+@import url("https://fonts.cdnfonts.com/css/delirium-ncv");
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Poppins:wght@400;500;600&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
-
-/* --- SHINE over the word "home" --- */
-.shine-text{
-  background: linear-gradient(90deg, rgba(255,255,255,.25), rgba(255,255,255,1), rgba(255,255,255,.25));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  background-size: 200% 100%;
-  animation: shine 2.6s ease-in-out infinite;
-}
-@keyframes shine{
-  0%{ background-position: -200% 0; }
-  100%{ background-position: 200% 0; }
+:root {
+  --brand-black: #000000;
+  --brand-red: #a70f0c;
+  --brand-ivory: #fafaf6;
+  --brand-linen: #f1ece6;
+  --brand-white: #ffffff;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
 
+body {
+  background: var(--brand-ivory);
+  color: var(--brand-black);
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.brand-grid {
+  position: relative;
+}
+
+.brand-grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.4;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: "Delirium NCV", "Antonio", sans-serif;
+    letter-spacing: 0.025em;
+  }
+}
+
+@layer utilities {
+  .bg-brand-black {
+    background-color: var(--brand-black);
+  }
+  .bg-brand-red {
+    background-color: var(--brand-red);
+  }
+  .bg-brand-ivory {
+    background-color: var(--brand-ivory);
+  }
+  .bg-brand-linen {
+    background-color: var(--brand-linen);
+  }
+  .text-brand-black {
+    color: var(--brand-black);
+  }
+  .text-brand-red {
+    color: var(--brand-red);
+  }
+}
