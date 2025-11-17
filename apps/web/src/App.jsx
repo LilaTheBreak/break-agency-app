@@ -23,6 +23,7 @@ import { AdminDashboard } from "./pages/AdminDashboard.jsx";
 import { ExclusiveTalentDashboard } from "./pages/ExclusiveTalentDashboard.jsx";
 import { UgcTalentDashboard } from "./pages/UgcTalentDashboard.jsx";
 import { OtherUsersDashboard } from "./pages/OtherUsersDashboard.jsx";
+import { FounderDashboard } from "./pages/FounderDashboard.jsx";
 import { AdminQueuesPage } from "./pages/AdminQueuesPage.jsx";
 import { AdminApprovalsPage } from "./pages/AdminApprovalsPage.jsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.jsx";
@@ -30,6 +31,8 @@ import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
 import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
 import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
+import { ProfilePage } from "./pages/ProfilePage.jsx";
+import { MessagingContext, useMessaging } from "./context/messaging.js";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -97,6 +100,30 @@ const CASE_STUDIES = [
 ];
 
 
+const INITIAL_MESSAGES = [
+  {
+    id: 1,
+    subject: "UGC board feedback",
+    persona: "Creators",
+    participants: ["ugc@creator.com"],
+    preview: "Thanks for the notes—I'll revise the draft tonight."
+  },
+  {
+    id: 2,
+    subject: "Budget confirmation",
+    persona: "Brands",
+    participants: ["brand@client.com"],
+    preview: "Confirming the new £45k cap for Paid media."
+  },
+  {
+    id: 3,
+    subject: "Roster onboarding",
+    persona: "Talent Managers",
+    participants: ["manager@breaktalent.com"],
+    preview: "Need a quick check on the exclusivity clause."
+  }
+];
+
 function useCurrentSession() {
   const [session, setSession] = useState(() => getSession());
   useEffect(() => {
@@ -128,20 +155,30 @@ function useCountUp(target, duration = 1400) {
 function App() {
   const session = useCurrentSession();
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [messages, setMessages] = useState(INITIAL_MESSAGES);
 
   const handleSignOut = () => {
     clearSession();
   };
 
+  const addMessage = (entry) => {
+    setMessages((prev) => [
+      { id: Date.now(), ...entry },
+      ...prev
+    ]);
+  };
+
   return (
-    <BrowserRouter>
-      <AppRoutes
-        session={session}
-        authModalOpen={authModalOpen}
-        setAuthModalOpen={setAuthModalOpen}
-        handleSignOut={handleSignOut}
-      />
-    </BrowserRouter>
+    <MessagingContext.Provider value={{ messages, addMessage }}>
+      <BrowserRouter>
+        <AppRoutes
+          session={session}
+          authModalOpen={authModalOpen}
+          setAuthModalOpen={setAuthModalOpen}
+          handleSignOut={handleSignOut}
+        />
+      </BrowserRouter>
+    </MessagingContext.Provider>
   );
 }
 
@@ -172,6 +209,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
         <Route
           path="/brand"
           element={<BrandEntryPage onRequestSignIn={() => setAuthModalOpen(true)} />}
+        />
+        <Route
+          path="/account/profile"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={session?.roles?.length ? session.roles : [Roles.ADMIN, Roles.BRAND, Roles.CREATOR, Roles.TALENT_MANAGER]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <ProfilePage session={session} />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/creator/dashboard"
@@ -293,42 +342,28 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/exclusive"
-          element={
-            <ProtectedRoute
-              session={session}
-              allowed={[Roles.ADMIN]}
-              onRequestSignIn={() => setAuthModalOpen(true)}
-            >
-              <ExclusiveTalentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/ugc"
-          element={
-            <ProtectedRoute
-              session={session}
-              allowed={[Roles.ADMIN]}
-              onRequestSignIn={() => setAuthModalOpen(true)}
-            >
-              <UgcTalentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/other"
-          element={
-            <ProtectedRoute
-              session={session}
-              allowed={[Roles.ADMIN]}
-              onRequestSignIn={() => setAuthModalOpen(true)}
-            >
-              <OtherUsersDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {[
+          { path: "/admin/view/brand", element: <BrandDashboard /> },
+          { path: "/admin/view/talent", element: <CreatorDashboard /> },
+          { path: "/admin/view/exclusive", element: <ExclusiveTalentDashboard /> },
+          { path: "/admin/view/ugc", element: <UgcTalentDashboard /> },
+          { path: "/admin/view/founder", element: <FounderDashboard /> },
+          { path: "/admin/view/other", element: <OtherUsersDashboard /> }
+        ].map(({ path, element }) => (
+          <Route
+            key={path}
+            path={path}
+            element={
+              <ProtectedRoute
+                session={session}
+                allowed={[Roles.ADMIN]}
+                onRequestSignIn={() => setAuthModalOpen(true)}
+              >
+                {element}
+              </ProtectedRoute>
+            }
+          />
+        ))}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />
@@ -354,6 +389,10 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
       setAdminMenuOpen(false);
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    setAdminMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <header className="sticky top-0 z-30 border-b border-brand-white/10 bg-brand-black/95 text-brand-white backdrop-blur">
@@ -400,41 +439,68 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => {
-                      setAdminMenuOpen(false);
-                      session?.email && navigate("/admin/dashboard");
-                    }}
+                    onClick={() => setAdminMenuOpen((prev) => !prev)}
                     className="rounded-full border border-brand-red px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red/10"
                   >
                     {session.email?.split("@")[0]?.split(".")[0] || "Admin"}
                   </button>
                   {adminMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-lg">
-                      {[
-                        { to: "/admin/dashboard", label: "Control room" },
-                        { to: "/admin/queues", label: "Queues" },
-                        { to: "/admin/approvals", label: "Approvals" },
-                        { to: "/admin/users", label: "Users" },
-                        { to: "/admin/messaging", label: "Messaging" },
-                        { to: "/admin/finance", label: "Finance" },
-                        { to: "/admin/settings", label: "Settings" },
-                        { to: "/admin/exclusive", label: "Exclusive talent view" },
-                        { to: "/admin/ugc", label: "UGC talent view" },
-                        { to: "/admin/other", label: "Other users view" }
-                      ].map((item) => (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          onClick={() => setAdminMenuOpen(false)}
-                          className="block rounded-xl px-4 py-2 text-sm hover:bg-brand-black/5"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
+                    <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-lg">
+                      <div>
+                        <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
+                          Control room
+                        </p>
+                        {[
+                          { to: "/admin/dashboard", label: "Overview" },
+                          { to: "/admin/queues", label: "Queues" },
+                          { to: "/admin/approvals", label: "Approvals" },
+                          { to: "/admin/users", label: "Users" },
+                          { to: "/admin/messaging", label: "Messaging" },
+                          { to: "/admin/finance", label: "Finance" },
+                          { to: "/admin/settings", label: "Settings" }
+                        ].map((item) => (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            onClick={() => setAdminMenuOpen(false)}
+                            className="block rounded-xl px-4 py-2 text-sm hover:bg-brand-black/5"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                      <div className="mt-3 border-t border-brand-black/10 pt-3">
+                        <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
+                          View as
+                        </p>
+                        {[
+                          { to: "/admin/view/brand", label: "Brand preview" },
+                          { to: "/admin/view/talent", label: "Talent preview" },
+                          { to: "/admin/view/exclusive", label: "Exclusive talent preview" },
+                          { to: "/admin/view/ugc", label: "UGC talent preview" },
+                          { to: "/admin/view/founder", label: "Founder view" },
+                          { to: "/admin/view/other", label: "Other user preview" }
+                        ].map((item) => (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            onClick={() => setAdminMenuOpen(false)}
+                            className="block rounded-xl px-4 py-2 text-sm hover:bg-brand-black/5"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
+              <Link
+                to="/account/profile"
+                className="rounded-full border border-brand-white/30 px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white hover:bg-brand-white/10"
+              >
+                Profile
+              </Link>
               <button
                 type="button"
                 onClick={onSignOut}
@@ -459,6 +525,9 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
 }
 
 function LandingPage({ onRequestSignIn }) {
+  const { addMessage } = useMessaging();
+  const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
+  const [contactStatus, setContactStatus] = useState("");
   const heroStats = [
     {
       title: "Creators vetted",
@@ -479,6 +548,22 @@ function LandingPage({ onRequestSignIn }) {
       suffix: "h"
     }
   ];
+
+  const handleContactSubmit = (event) => {
+    event.preventDefault();
+    if (!contactForm.email || !contactForm.message) {
+      setContactStatus("Please share an email and message.");
+      return;
+    }
+    addMessage({
+      subject: `Contact from ${contactForm.name || contactForm.email}`,
+      persona: "External",
+      participants: [contactForm.email],
+      preview: contactForm.message
+    });
+    setContactStatus("Message sent. We'll reply shortly.");
+    setContactForm({ name: "", email: "", message: "" });
+  };
 
   return (
     <div className="bg-brand-linen text-brand-black">
@@ -712,28 +797,46 @@ function LandingPage({ onRequestSignIn }) {
               <p className="text-sm text-brand-black/70">
                 Have a briefing, a deck, or a wild idea? Drop us a line and we'll get back within two business days.
               </p>
-              <form className="space-y-3">
+              <form className="space-y-3" onSubmit={handleContactSubmit}>
                 <input
                   type="text"
                   placeholder="Name"
                   className="w-full rounded-full border border-brand-black/10 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+                  value={contactForm.name}
+                  onChange={(e) => {
+                    setContactStatus("");
+                    setContactForm((prev) => ({ ...prev, name: e.target.value }));
+                  }}
                 />
                 <input
                   type="email"
                   placeholder="Email"
                   className="w-full rounded-full border border-brand-black/10 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+                  value={contactForm.email}
+                  onChange={(e) => {
+                    setContactStatus("");
+                    setContactForm((prev) => ({ ...prev, email: e.target.value }));
+                  }}
                 />
                 <textarea
                   placeholder="Tell us what you need"
                   rows={3}
                   className="w-full rounded-3xl border border-brand-black/10 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+                  value={contactForm.message}
+                  onChange={(e) => {
+                    setContactStatus("");
+                    setContactForm((prev) => ({ ...prev, message: e.target.value }));
+                  }}
                 />
                 <button
-                  type="button"
+                  type="submit"
                   className="w-full rounded-full bg-brand-black px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
                 >
                   Send message
                 </button>
+                {contactStatus ? (
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-red">{contactStatus}</p>
+                ) : null}
               </form>
             </div>
           </div>

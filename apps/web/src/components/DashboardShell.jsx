@@ -34,14 +34,27 @@ export function DashboardShell({ title, subtitle, navigation, navLinks = [], chi
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {(navigation || []).map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-brand-black/20 px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em]"
-              >
-                {item}
-              </span>
-            ))}
+            {(navigation || []).map((item) => {
+              if (item && typeof item === "object" && item.anchor) {
+                return (
+                  <a
+                    key={item.anchor}
+                    href={item.anchor}
+                    className="rounded-full border border-brand-black/20 px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em] hover:bg-brand-black/5"
+                  >
+                    {item.label}
+                  </a>
+                );
+              }
+              return (
+                <span
+                  key={item}
+                  className="rounded-full border border-brand-black/20 px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em]"
+                >
+                  {item}
+                </span>
+              );
+            })}
           </div>
         )}
         <div className="rounded-billboard border border-brand-black/10 bg-brand-white/70 p-6 shadow-brand">

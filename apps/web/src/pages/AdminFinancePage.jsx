@@ -138,7 +138,7 @@ export function AdminFinancePage() {
       </section>
 
       {modalVisible && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-white/90 p-4">
           <div className="w-full max-w-lg rounded-[36px] border border-brand-black/15 bg-brand-white p-8 text-left text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
             <h3 className="font-display text-3xl uppercase">{modalHeader}</h3>
             <p className="text-sm text-brand-black/70">
