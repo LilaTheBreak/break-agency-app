@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
+import { FileUploadPanel } from "../components/FileUploadPanel.jsx";
 
 const FINANCE_SUMMARY = [
   { label: "Payouts pending", value: "£94k", detail: "Across 12 creators" },
@@ -40,7 +41,7 @@ const DETAILS = [
   }
 ];
 
-export function AdminFinancePage() {
+export function AdminFinancePage({ session }) {
   const [editingEntry, setEditingEntry] = useState(null);
   const [modalData, setModalData] = useState({ label: "", amount: "", status: "" });
   const [addModal, setAddModal] = useState(null);
@@ -85,6 +86,12 @@ export function AdminFinancePage() {
       subtitle="Track payouts, invoicing, and reconciliation tasks."
       navLinks={ADMIN_NAV_LINKS}
     >
+      <FileUploadPanel
+        session={session}
+        folder="finance-receipts"
+        title="Finance receipts"
+        description="Attach payout receipts, invoices, or payment proofs for reconciliation."
+      />
       <section className="grid gap-4 md:grid-cols-3">
         {FINANCE_SUMMARY.map((tile) => (
           <div key={tile.label} className="rounded-3xl border border-brand-black/10 bg-brand-linen/80 p-5 text-center">

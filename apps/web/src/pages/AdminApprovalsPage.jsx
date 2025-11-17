@@ -3,6 +3,7 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { ContactAutocomplete } from "../components/ContactAutocomplete.jsx";
+import { FileUploadPanel } from "../components/FileUploadPanel.jsx";
 
 const createId = () => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -56,7 +57,7 @@ const INITIAL_APPROVALS = [
   }
 ];
 
-export function AdminApprovalsPage() {
+export function AdminApprovalsPage({ session }) {
   const [approvals, setApprovals] = useState(INITIAL_APPROVALS);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeApproval, setActiveApproval] = useState(null);
@@ -132,6 +133,12 @@ export function AdminApprovalsPage() {
       subtitle="Review and clear anything that needs a human sign-off."
       navLinks={ADMIN_NAV_LINKS}
     >
+      <FileUploadPanel
+        session={session}
+        folder="admin-contracts"
+        title="Contract attachments"
+        description="Store signed contracts, NDAs, and compliance docs tied to approvals."
+      />
       <div className="mb-4 flex justify-end">
         <button
           type="button"
@@ -291,6 +298,13 @@ export function AdminApprovalsPage() {
                   <p className="mt-2 text-xs text-brand-black/50">No attachments uploaded.</p>
                 )}
               </div>
+              <VersionHistoryCard
+                session={session}
+                briefId={formState.id}
+                data={formState}
+                allowCreate
+                allowRestore
+              />
               <div className="flex justify-between">
                 {activeApproval ? (
                   <button

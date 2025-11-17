@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -12,27 +12,50 @@ import {
 import GoogleSignIn from "./auth/GoogleSignIn.jsx";
 import { Roles, SESSION_CHANGED_EVENT, clearSession, getSession } from "./auth/session.js";
 import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
+import { RoleGate } from "./components/RoleGate.jsx";
 import { Footer } from "./components/Footer.jsx";
 import { Badge } from "./components/Badge.jsx";
 import { UgcBoard } from "./components/UgcBoard.jsx";
 import { DashboardShell } from "./components/DashboardShell.jsx";
 import { resourceItems as RESOURCE_ITEMS, questionnaires as QUESTIONNAIRES } from "./data/platform.js";
-import { BrandDashboard } from "./pages/BrandDashboard.jsx";
+import BrandDashboardLayout, {
+  BrandOverviewPage,
+  BrandProfilePage,
+  BrandSocialsPage,
+  BrandCampaignsPage,
+  BrandOpportunitiesPage,
+  BrandContractsPage,
+  BrandFinancialsPage,
+  BrandMessagesPage,
+  BrandSettingsPage
+} from "./pages/BrandDashboard.jsx";
 import { CreatorDashboard } from "./pages/CreatorDashboard.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
-import { ExclusiveTalentDashboard } from "./pages/ExclusiveTalentDashboard.jsx";
+import { AdminActivityPage } from "./pages/AdminActivity.jsx";
+import ExclusiveTalentDashboardLayout, {
+  ExclusiveOverviewPage,
+  ExclusiveProfilePage,
+  ExclusiveSocialsPage,
+  ExclusiveCampaignsPage,
+  ExclusiveOpportunitiesPage,
+  ExclusiveContractsPage,
+  ExclusiveFinancialsPage,
+  ExclusiveMessagesPage,
+  ExclusiveSettingsPage
+} from "./pages/ExclusiveTalentDashboard.jsx";
 import { UgcTalentDashboard } from "./pages/UgcTalentDashboard.jsx";
-import { OtherUsersDashboard } from "./pages/OtherUsersDashboard.jsx";
 import { FounderDashboard } from "./pages/FounderDashboard.jsx";
 import { AdminQueuesPage } from "./pages/AdminQueuesPage.jsx";
 import { AdminApprovalsPage } from "./pages/AdminApprovalsPage.jsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.jsx";
 import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
+import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
 import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
 import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { MessagingContext, useMessaging } from "./context/messaging.js";
+import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -61,7 +84,7 @@ const CREATOR_PANELS = [
       "Content calendar, deliverable tracker, and template library.",
       "Upgrade to concierge once minimum paces are met."
     ],
-    cta: "Join the UGC board"
+    cta: "Explore opportunities board"
   }
 ];
 
@@ -100,28 +123,149 @@ const CASE_STUDIES = [
 ];
 
 
-const INITIAL_MESSAGES = [
+const DEFAULT_ACTOR_EMAIL = "admin@thebreakco.com";
+
+const MESSAGE_TEMPLATES = [
   {
-    id: 1,
-    subject: "UGC board feedback",
-    persona: "Creators",
-    participants: ["ugc@creator.com"],
-    preview: "Thanks for the notes—I'll revise the draft tonight."
+    id: "template-followup",
+    label: "Follow-up: Deliverables check-in",
+    body: "Hi team — just checking the status of today's deliverable. Let me know if you need any edits or clarification from the brand side."
   },
   {
-    id: 2,
+    id: "template-budget",
+    label: "Budget reminder",
+    body: "Thanks for the update. Confirming the approved budget cap and reminding finance to release the next tranche as soon as assets are approved."
+  },
+  {
+    id: "template-approval",
+    label: "Approval request",
+    body: "Flagging this for approval — once you green-light the edit we can route it through paid amplification and report back on initial KPIs."
+  }
+];
+
+const SIMULATED_ALERT_SCENARIOS = [
+  { title: "Task due", detail: "Creator storyboard needs review within 4 hours.", type: "task" },
+  { title: "Brief update", detail: "Luxury travel drop brief received a revision.", type: "brief" },
+  { title: "Approval needed", detail: "Finance wants confirmation before releasing payouts.", type: "finance" },
+  { title: "System notice", detail: "Webhooks delayed—falling back to polling for 30s.", type: "system" }
+];
+
+const SIMULATED_INCOMING_PINGS = [
+  {
+    body: "Dropping the latest storyboard link here—let me know if legal needs adjustments.",
+    attachments: [{ id: "att-storyboard", label: "Storyboard_v3.pdf", type: "pdf" }]
+  },
+  { body: "Any update on the paid media CTA lock? We are queued to post tomorrow.", attachments: [] },
+  { body: "Travel team confirmed availability for next week. Need ticketing info.", attachments: [] },
+  {
+    body: "Uploading product shots tonight. Prefer Google Drive or Break drive?",
+    attachments: [{ id: "att-drive", label: "Drive link", type: "link" }]
+  },
+  { body: "Reminder: hero edit still waiting for approvals before we can post.", attachments: [] }
+];
+
+function createMessage({ id, sender, senderRole, body, timestamp = Date.now(), attachments = [], readBy = [] }) {
+  return {
+    id: id || `msg-${timestamp}`,
+    sender,
+    senderRole,
+    body,
+    timestamp,
+    attachments,
+    readBy
+  };
+}
+
+const NOW = Date.now();
+
+const INITIAL_THREADS = [
+  {
+    id: "thread-creators-feedback",
+    subject: "Opportunities board feedback",
+    persona: "Creators",
+    participants: ["ugc@creator.com", DEFAULT_ACTOR_EMAIL],
+    tags: ["UGC", "Pipeline"],
+    lastUpdated: NOW - 1000 * 60 * 30,
+    messages: [
+      createMessage({
+        id: "msg-creators-1",
+        sender: "ugc@creator.com",
+        senderRole: "Creator",
+        body: "Thanks for the notes—I'll revise the draft tonight.",
+        timestamp: NOW - 1000 * 60 * 55,
+        attachments: [{ id: "att-ugc-1", label: "UGC-draft.mov", type: "video" }],
+        readBy: []
+      }),
+      createMessage({
+        id: "msg-creators-2",
+        sender: DEFAULT_ACTOR_EMAIL,
+        senderRole: "Admin",
+        body: "Appreciate the quick turnaround—flag once the revised cut is ready and we can route approvals.",
+        timestamp: NOW - 1000 * 60 * 32,
+        attachments: [],
+        readBy: [DEFAULT_ACTOR_EMAIL]
+      })
+    ]
+  },
+  {
+    id: "thread-brand-budget",
     subject: "Budget confirmation",
     persona: "Brands",
-    participants: ["brand@client.com"],
-    preview: "Confirming the new £45k cap for Paid media."
+    participants: ["brand@client.com", DEFAULT_ACTOR_EMAIL],
+    tags: ["Finance", "Campaign"],
+    lastUpdated: NOW - 1000 * 60 * 90,
+    messages: [
+      createMessage({
+        id: "msg-brand-1",
+        sender: "brand@client.com",
+        senderRole: "Brand",
+        body: "Confirming the new £45k cap for paid media plus organic boost.",
+        timestamp: NOW - 1000 * 60 * 120,
+        attachments: [{ id: "att-budget", label: "Budget.xlsx", type: "sheet" }],
+        readBy: []
+      }),
+      createMessage({
+        id: "msg-brand-2",
+        sender: DEFAULT_ACTOR_EMAIL,
+        senderRole: "Admin",
+        body: "Logged and shared with finance—once creator invoices hit we will reconcile automatically.",
+        timestamp: NOW - 1000 * 60 * 95,
+        readBy: [DEFAULT_ACTOR_EMAIL]
+      })
+    ]
   },
   {
-    id: 3,
+    id: "thread-roster-onboarding",
     subject: "Roster onboarding",
     persona: "Talent Managers",
-    participants: ["manager@breaktalent.com"],
-    preview: "Need a quick check on the exclusivity clause."
+    participants: ["manager@breaktalent.com", DEFAULT_ACTOR_EMAIL],
+    tags: ["Onboarding"],
+    lastUpdated: NOW - 1000 * 60 * 15,
+    messages: [
+      createMessage({
+        id: "msg-onboard-1",
+        sender: "manager@breaktalent.com",
+        senderRole: "Talent Manager",
+        body: "Need a quick check on the exclusivity clause before I sign.",
+        timestamp: NOW - 1000 * 60 * 25,
+        attachments: [{ id: "att-contract", label: "Exclusivity.pdf", type: "pdf" }],
+        readBy: []
+      }),
+      createMessage({
+        id: "msg-onboard-2",
+        sender: DEFAULT_ACTOR_EMAIL,
+        senderRole: "Admin",
+        body: "Clause 4.1 only applies to fintech verticals—happy to hop on a call if helpful.",
+        timestamp: NOW - 1000 * 60 * 15,
+        readBy: [DEFAULT_ACTOR_EMAIL]
+      })
+    ]
   }
+];
+
+const INITIAL_ALERTS = [
+  { id: "alert-brief", title: "Brief update", detail: "AI banking launch brief moved to Approvals.", type: "brief", timestamp: NOW - 1000 * 60 * 90 },
+  { id: "alert-task", title: "Task due", detail: "Exclusive Creator owes draft edits at 18:00 GMT.", type: "task", timestamp: NOW - 1000 * 60 * 20 }
 ];
 
 function useCurrentSession() {
@@ -155,21 +299,159 @@ function useCountUp(target, duration = 1400) {
 function App() {
   const session = useCurrentSession();
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [threads, setThreads] = useState(INITIAL_THREADS);
+  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
+  const [connectionStatus, setConnectionStatus] = useState("connected");
+  const remoteMessaging = useRemoteMessaging(session);
+  const isRemoteMessagingEnabled = remoteMessaging.enabled;
+
+  const currentActor = session?.email || DEFAULT_ACTOR_EMAIL;
+  const actorRole = session?.roles?.[0] || Roles.ADMIN;
+
+  const threadSource = isRemoteMessagingEnabled ? remoteMessaging.threads : threads;
+  const messagingConnectionStatus = isRemoteMessagingEnabled ? remoteMessaging.connectionStatus : connectionStatus;
 
   const handleSignOut = () => {
     clearSession();
   };
 
-  const addMessage = (entry) => {
-    setMessages((prev) => [
-      { id: Date.now(), ...entry },
-      ...prev
-    ]);
-  };
+  const addMessage = useCallback(
+    (entry) => {
+      if (isRemoteMessagingEnabled) return;
+      setThreads((prev) => {
+        const timestamp = Date.now();
+        const sender = entry.participants?.[0] || entry.email || "external@breakagency.com";
+        const starterMessage = createMessage({
+          sender,
+          senderRole: entry.persona || "External",
+          body: entry.preview || entry.body || entry.message || "New inquiry received.",
+          attachments: entry.attachments || [],
+          timestamp,
+          readBy: []
+        });
+        const newThread = {
+          id: `thread-${timestamp}`,
+          subject: entry.subject || "External inquiry",
+          persona: entry.persona || "External",
+          participants: entry.participants || [sender, currentActor],
+          tags: entry.tags || ["Inbound"],
+          lastUpdated: timestamp,
+          messages: [starterMessage]
+        };
+        return [newThread, ...prev];
+      });
+    },
+    [currentActor, isRemoteMessagingEnabled]
+  );
+
+  const sendMessage = useCallback(
+    async (threadId, payload) => {
+      const actor = payload?.sender || currentActor;
+      const role = payload?.senderRole || actorRole || "Admin";
+      const body = payload?.body?.trim();
+      if (!threadId || !body) return;
+      if (isRemoteMessagingEnabled) {
+        await remoteMessaging.sendMessage(threadId, payload);
+        return;
+      }
+      setThreads((prev) =>
+        prev.map((thread) => {
+          if (thread.id !== threadId) return thread;
+          const timestamp = Date.now();
+          const outgoing = createMessage({
+            sender: actor,
+            senderRole: role,
+            body,
+            attachments: payload.attachments || [],
+            timestamp,
+            readBy: [actor]
+          });
+          return {
+            ...thread,
+            messages: [...thread.messages, outgoing],
+            lastUpdated: timestamp
+          };
+        })
+      );
+    },
+    [actorRole, currentActor, isRemoteMessagingEnabled, remoteMessaging]
+  );
+
+  const markThreadRead = useCallback(
+    async (threadId, actor = currentActor) => {
+      if (!threadId || !actor) return;
+      if (isRemoteMessagingEnabled) {
+        await remoteMessaging.markThreadRead(threadId);
+        return;
+      }
+      setThreads((prev) =>
+        prev.map((thread) => {
+          if (thread.id !== threadId) return thread;
+          const updatedMessages = thread.messages.map((message) =>
+            message.readBy.includes(actor) ? message : { ...message, readBy: [...message.readBy, actor] }
+          );
+          return { ...thread, messages: updatedMessages };
+        })
+      );
+    },
+    [currentActor, isRemoteMessagingEnabled, remoteMessaging]
+  );
+
+  useEffect(() => {
+    if (isRemoteMessagingEnabled) return;
+    const interval = setInterval(() => {
+      setConnectionStatus("syncing");
+      setTimeout(() => {
+        setThreads((prev) => {
+          if (!prev.length) return prev;
+          const targetIndex = Math.floor(Math.random() * prev.length);
+          const ping = SIMULATED_INCOMING_PINGS[Math.floor(Math.random() * SIMULATED_INCOMING_PINGS.length)];
+          const timestamp = Date.now();
+          return prev.map((thread, index) => {
+            if (index !== targetIndex) return thread;
+            const incoming = createMessage({
+              sender: thread.participants[0],
+              senderRole: thread.persona,
+              body: ping.body,
+              attachments: ping.attachments || [],
+              timestamp,
+              readBy: []
+            });
+            return {
+              ...thread,
+              messages: [...thread.messages, incoming],
+              lastUpdated: timestamp
+            };
+          });
+        });
+        setAlerts((prev) => {
+          const scenario = SIMULATED_ALERT_SCENARIOS[Math.floor(Math.random() * SIMULATED_ALERT_SCENARIOS.length)];
+          const entry = { ...scenario, id: `alert-${Date.now()}`, timestamp: Date.now() };
+          return [entry, ...prev].slice(0, 6);
+        });
+        setConnectionStatus("connected");
+      }, 700);
+    }, 25000);
+    return () => clearInterval(interval);
+  }, [isRemoteMessagingEnabled]);
+
+  const messagingValue = useMemo(
+    () => ({
+      messages: threadSource,
+      threads: threadSource,
+      addMessage,
+      sendMessage,
+      markThreadRead,
+      templates: MESSAGE_TEMPLATES,
+      alerts,
+      connectionStatus: messagingConnectionStatus,
+      currentUser: currentActor
+    }),
+    [threadSource, addMessage, sendMessage, markThreadRead, alerts, messagingConnectionStatus, currentActor]
+  );
 
   return (
-    <MessagingContext.Provider value={{ messages, addMessage }}>
+    <MessagingContext.Provider value={messagingValue}>
       <BrowserRouter>
         <AppRoutes
           session={session}
@@ -227,25 +509,49 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.CREATOR, Roles.ADMIN]}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <CreatorDashboard />
+              <CreatorDashboard session={session} />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/brand/dashboard"
+          path="/brand/dashboard/*"
           element={
             <ProtectedRoute
               session={session}
               allowed={[Roles.BRAND, Roles.ADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <BrandDashboard />
+              <BrandDashboardLayout basePath="/brand/dashboard" session={session} />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<BrandOverviewPage />} />
+          <Route path="profile" element={<BrandProfilePage />} />
+          <Route path="socials" element={<BrandSocialsPage />} />
+          <Route path="campaigns" element={<BrandCampaignsPage />} />
+          <Route
+            path="opportunities"
+            element={
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT, Roles.BRAND]}>
+                <BrandOpportunitiesPage />
+              </RoleGate>
+            }
+          />
+          <Route
+            path="contracts"
+            element={
+              <RoleGate session={session} allowed={[Roles.BRAND, Roles.ADMIN, Roles.AGENT]}>
+                <BrandContractsPage />
+              </RoleGate>
+            }
+          />
+          <Route path="financials" element={<BrandFinancialsPage />} />
+          <Route path="messages" element={<BrandMessagesPage />} />
+          <Route path="settings" element={<BrandSettingsPage />} />
+        </Route>
         <Route
           path="/admin/dashboard"
           element={
@@ -254,7 +560,19 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
               allowed={[Roles.ADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminDashboard />
+              <AdminDashboard session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/activity"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminActivityPage />
             </ProtectedRoute>
           }
         />
@@ -278,7 +596,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
               allowed={[Roles.ADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminApprovalsPage />
+              <AdminApprovalsPage session={session} />
             </ProtectedRoute>
           }
         />
@@ -311,10 +629,30 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[
+                Roles.ADMIN,
+                Roles.AGENT,
+                Roles.BRAND,
+                Roles.CREATOR,
+                Roles.EXCLUSIVE_TALENT,
+                Roles.UGC,
+                Roles.FOUNDER
+              ]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminMessagingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/contracts"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.AGENT]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminContractsPage session={session} />
             </ProtectedRoute>
           }
         />
@@ -323,10 +661,10 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.FOUNDER]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminFinancePage />
+              <AdminFinancePage session={session} />
             </ProtectedRoute>
           }
         />
@@ -342,13 +680,82 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/view/brand/*"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <BrandDashboardLayout basePath="/admin/view/brand" session={session} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<BrandOverviewPage />} />
+          <Route path="profile" element={<BrandProfilePage />} />
+          <Route path="socials" element={<BrandSocialsPage />} />
+          <Route path="campaigns" element={<BrandCampaignsPage />} />
+          <Route
+            path="opportunities"
+            element={
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+                <BrandOpportunitiesPage />
+              </RoleGate>
+            }
+          />
+          <Route
+            path="contracts"
+            element={
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+                <BrandContractsPage />
+              </RoleGate>
+            }
+          />
+          <Route path="financials" element={<BrandFinancialsPage />} />
+          <Route path="messages" element={<BrandMessagesPage />} />
+          <Route path="settings" element={<BrandSettingsPage />} />
+        </Route>
+        <Route
+          path="/admin/view/exclusive/*"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <ExclusiveTalentDashboardLayout basePath="/admin/view/exclusive" session={session} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ExclusiveOverviewPage />} />
+          <Route path="profile" element={<ExclusiveProfilePage />} />
+          <Route path="socials" element={<ExclusiveSocialsPage />} />
+          <Route path="campaigns" element={<ExclusiveCampaignsPage />} />
+          <Route
+            path="opportunities"
+            element={
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+                <ExclusiveOpportunitiesPage />
+              </RoleGate>
+            }
+          />
+          <Route
+            path="contracts"
+            element={
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+                <ExclusiveContractsPage />
+              </RoleGate>
+            }
+          />
+          <Route path="financials" element={<ExclusiveFinancialsPage />} />
+          <Route path="messages" element={<ExclusiveMessagesPage />} />
+          <Route path="settings" element={<ExclusiveSettingsPage />} />
+        </Route>
         {[
-          { path: "/admin/view/brand", element: <BrandDashboard /> },
-          { path: "/admin/view/talent", element: <CreatorDashboard /> },
-          { path: "/admin/view/exclusive", element: <ExclusiveTalentDashboard /> },
-          { path: "/admin/view/ugc", element: <UgcTalentDashboard /> },
-          { path: "/admin/view/founder", element: <FounderDashboard /> },
-          { path: "/admin/view/other", element: <OtherUsersDashboard /> }
+          { path: "/admin/view/talent", element: <CreatorDashboard session={session} /> },
+          { path: "/admin/view/ugc", element: <UgcTalentDashboard session={session} /> },
+          { path: "/admin/view/founder", element: <FounderDashboard session={session} /> }
         ].map(({ path, element }) => (
           <Route
             key={path}
@@ -445,13 +852,14 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                     {session.email?.split("@")[0]?.split(".")[0] || "Admin"}
                   </button>
                   {adminMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-lg">
+                    <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
                       <div>
                         <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
                           Control room
                         </p>
                         {[
                           { to: "/admin/dashboard", label: "Overview" },
+                          { to: "/admin/activity", label: "Activity" },
                           { to: "/admin/queues", label: "Queues" },
                           { to: "/admin/approvals", label: "Approvals" },
                           { to: "/admin/users", label: "Users" },
@@ -478,8 +886,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           { to: "/admin/view/talent", label: "Talent preview" },
                           { to: "/admin/view/exclusive", label: "Exclusive talent preview" },
                           { to: "/admin/view/ugc", label: "UGC talent preview" },
-                          { to: "/admin/view/founder", label: "Founder view" },
-                          { to: "/admin/view/other", label: "Other user preview" }
+                          { to: "/admin/view/founder", label: "Founder view" }
                         ].map((item) => (
                           <Link
                             key={item.to}
@@ -651,7 +1058,7 @@ function LandingPage({ onRequestSignIn }) {
                 <span className="ml-3 align-middle">Creating legacies</span>
               </h2>
               <p className="text-sm text-brand-black/70">
-                Marketplace → UGC board, intake, approvals, payouts. Workflows → Creator/brand questionnaires + AI pre-reads.
+                Marketplace → Opportunities board, intake, approvals, payouts. Workflows → Creator/brand questionnaires + AI pre-reads.
                 Resource hub → Case studies, decks, talent & brand splits.
               </p>
             </div>
@@ -745,7 +1152,7 @@ function LandingPage({ onRequestSignIn }) {
           <p className="font-subtitle text-xs uppercase tracking-[0.35em]">The Break Co.</p>
           <h2 className="font-display text-5xl uppercase">Ready to build what's next</h2>
           <p className="text-brand-white/80">
-            Secure access to the dashboard to view briefs, submit to the UGC board, or open a brand request. White-glove onboarding in under three days.
+            Secure access to the dashboard to view briefs, submit to the Opportunities board, or open a brand request. White-glove onboarding in under three days.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4">
             <button
@@ -911,7 +1318,7 @@ function CreatorEntryPage({ onRequestSignIn }) {
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator pathway</p>
           <h1 className="font-display text-5xl uppercase">
             <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-            <span className="ml-3 align-middle">View UGC briefs, create your profile, join campaigns.</span>
+            <span className="ml-3 align-middle">Explore opportunities, create your profile, join campaigns.</span>
           </h1>
           <p className="text-brand-black/70">
             Visitors can browse the opportunities board. Applying requires a Break profile and
@@ -927,17 +1334,17 @@ function CreatorEntryPage({ onRequestSignIn }) {
               Create profile
             </button>
             <a
-              href="#ugc-board"
+              href="#opportunities-board"
               className="rounded-full border border-brand-black/20 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
             >
-              Browse UGC board
+              Browse opportunities
             </a>
           </div>
         </div>
       </section>
-      <section id="ugc-board" className="mx-auto max-w-6xl px-6 py-12 space-y-6">
+      <section id="opportunities-board" className="mx-auto max-w-6xl px-6 py-12 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-4xl uppercase">UGC Opportunities</h2>
+          <h2 className="font-display text-4xl uppercase">Opportunities board</h2>
           <Badge>Visible to all · Apply requires login</Badge>
         </div>
         <UgcBoard canApply={false} />
@@ -960,8 +1367,59 @@ function CreatorEntryPage({ onRequestSignIn }) {
               <li>• Performance & metrics (platform APIs).</li>
               <li>• AI agent for deals, reminders, rate guidance.</li>
               <li>• Content calendar, tasks, and files.</li>
-              <li>• UGC board with autofill + priority briefs.</li>
+              <li>• Opportunities board with autofill + priority briefs.</li>
             </ul>
+          </div>
+        </div>
+      </section>
+      <section className="border-t border-brand-black/10 bg-brand-white">
+        <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
+          <h3 className="font-display text-3xl uppercase">Questionnaire preview</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
+              Revenue target
+              <input
+                type="number"
+                placeholder="£120000"
+                className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
+              />
+            </label>
+            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
+              Affiliate linking
+              <select className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none">
+                <option>Yes</option>
+                <option>No</option>
+                <option>Open to it</option>
+              </select>
+            </label>
+          </div>
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Platforms</p>
+            <div className="mt-2 flex flex-wrap gap-2 text-sm text-brand-black/80">
+              {["Instagram", "TikTok", "YouTube", "Newsletter", "Pinterest"].map((platform) => (
+                <span key={platform} className="rounded-full border border-brand-black/20 px-3 py-1 text-xs uppercase tracking-[0.3em]">
+                  {platform}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Gaps analysis</p>
+              <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
+                <li>• Missing affiliate integrations.</li>
+                <li>• Add finance case studies to media kit.</li>
+                <li>• Post cadence dips on weekends.</li>
+              </ul>
+            </div>
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Quick wins</p>
+              <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
+                <li>• Enable auto-invoice for opportunities board submissions.</li>
+                <li>• Refresh travel pitch template with luxury-inclusivity proof points.</li>
+                <li>• Publish one long-form video per month.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -980,7 +1438,7 @@ function BrandEntryPage({ onRequestSignIn }) {
           </h1>
           <p className="text-brand-black/70">
             Brands can browse public case studies, complete the needs questionnaire, and then unlock
-            the dashboard to manage campaigns. UGC boards stay creator-side only.
+            the dashboard to manage campaigns. Opportunities board stays creator-side only.
           </p>
           <div className="flex flex-wrap gap-3">
             <button
@@ -1029,7 +1487,7 @@ function BrandEntryPage({ onRequestSignIn }) {
           <h3 className="font-display text-4xl uppercase">Brand Needs Questionnaire</h3>
           <p className="text-brand-white/70">
             Qualifies scope, budget, and readiness; prompts profile creation to proceed. Campaign
-            creation stays brand-only, UGC routing happens automatically to approved creators.
+            creation stays brand-only, opportunities routing happens automatically to approved creators.
           </p>
           <button
             type="button"
@@ -1038,6 +1496,46 @@ function BrandEntryPage({ onRequestSignIn }) {
           >
             Launch questionnaire
           </button>
+        </div>
+      </section>
+      <section className="border-t border-brand-black/10 bg-brand-white">
+        <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
+          <h3 className="font-display text-3xl uppercase">Onboarding preview</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
+              Account details
+              <input
+                placeholder="Brand legal name"
+                className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
+              />
+            </label>
+            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
+              Bank details (IBAN / ACH)
+              <input
+                placeholder="GB00 BUKB 1234 5678"
+                className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
+              />
+            </label>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
+              Retainer type
+              <select className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none">
+                <option>3-month retainer (default)</option>
+                <option>6-month retainer</option>
+                <option>12-month retainer</option>
+              </select>
+            </label>
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Talent application</p>
+              <p className="mt-2 text-sm text-brand-black/70">
+                Only 12 spaces per year. Brands apply, creators self-identify — we never rewrite how talent describes themselves.
+              </p>
+              <button className="mt-4 w-full rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]">
+                Submit info
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

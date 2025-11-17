@@ -1,6 +1,5 @@
 import { DEFAULT_PROFILE, USER_PROFILES } from "../data/users.js";
-
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+import { apiFetch } from "./apiClient.js";
 
 function mergeWithStatic(email, remoteProfile = {}) {
   const fallback = USER_PROFILES[email.toLowerCase()] || { ...DEFAULT_PROFILE, email };
@@ -28,7 +27,7 @@ export async function fetchProfile(email) {
     return { ...DEFAULT_PROFILE };
   }
   try {
-    const response = await fetch(`${API_BASE}/profiles/${encodeURIComponent(email)}`);
+    const response = await apiFetch(`/profiles/${encodeURIComponent(email)}`);
     const data = await handleResponse(response);
     return mergeWithStatic(email, data.profile);
   } catch (error) {
@@ -45,7 +44,7 @@ export async function saveProfile(email, payload) {
     ...payload,
     status: payload.status ?? payload.accountType ?? null
   });
-  const response = await fetch(`${API_BASE}/profiles/${encodeURIComponent(email)}`, {
+  const response = await apiFetch(`/profiles/${encodeURIComponent(email)}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body

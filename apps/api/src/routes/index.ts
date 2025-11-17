@@ -1,12 +1,41 @@
 import { Router } from "express";
 import type { User } from "@prisma/client";
 import prisma from "../lib/prisma.js";
+import socialRouter from "./social.js";
+import emailRouter from "./email.js";
+import systemRouter from "./system.js";
+import { logAuditEvent } from "../lib/auditLogger.js";
+import auditRouter from "./audit.js";
+import adminActivityRouter from "./adminActivity.js";
+import payoutsRouter from "./payouts.js";
+import dashboardRouter from "./dashboard.js";
+import messagesRouter from "./messages.js";
+import filesRouter from "./files.js";
+import contractsRouter from "./contracts.js";
+import briefsRouter from "./briefs.js";
+import aiRouter from "./ai.js";
+import campaignsRouter from "./campaigns.js";
+import { logAdminActivity } from "../lib/adminActivityLogger.js";
 
 const router = Router();
 
 router.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+router.use(socialRouter);
+router.use(emailRouter);
+router.use(systemRouter);
+router.use(auditRouter);
+router.use(adminActivityRouter);
+router.use(payoutsRouter);
+router.use(dashboardRouter);
+router.use(messagesRouter);
+router.use(filesRouter);
+router.use(contractsRouter);
+router.use(briefsRouter);
+router.use(aiRouter);
+router.use(campaignsRouter);
 
 router.get("/profiles/:email", async (req, res) => {
   const email = (req.params.email || "").toLowerCase();
@@ -54,7 +83,18 @@ router.put("/profiles/:email", async (req, res) => {
       update: data
     });
 
-    res.json({ profile: formatProfile(user) });
+    const profile = formatProfile(user);
+    await logAuditEvent(req, {
+      action: "profile.update",
+      entityType: "user",
+      entityId: user.id,
+      metadata: profile
+    });
+    await logAdminActivity(req, {
+      event: "admin.profile.update",
+      metadata: { userId: user.id, email }
+    });
+    res.json({ profile });
   } catch (error) {
     console.error("Error saving profile", error);
     res.status(500).json({ error: "Failed to save profile" });
@@ -90,6 +130,7 @@ function normalizeLinks(links?: Array<{ label?: string; url?: string }>) {
 
 function formatProfile(user: User) {
   return {
+    id: user.id,
     email: user.email,
     name: user.name ?? user.email,
     location: user.location ?? "",
@@ -105,6 +146,7 @@ function formatProfile(user: User) {
 
 function createDefaultProfile(email: string) {
   return {
+    id: null,
     email,
     name: email,
     location: "",

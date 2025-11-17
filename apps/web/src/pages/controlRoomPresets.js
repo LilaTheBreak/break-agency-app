@@ -2,6 +2,7 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 
 export const CONTROL_ROOM_PRESETS = {
   admin: {
+    role: "admin",
     title: "Admin Control Room",
     subtitle: "Monitor pipelines, unblock campaigns, and dispatch briefings across the platform.",
     navLinks: ADMIN_NAV_LINKS,
@@ -59,20 +60,23 @@ export const CONTROL_ROOM_PRESETS = {
     ]
   },
   exclusive: {
+    role: "exclusive-talent",
     title: "Exclusive Talent Control Room",
     subtitle: "Preview the concierge roster — pitching, deal flow, and AI assistance for white-glove creators.",
     tabs: [
-      { label: "Overview", anchor: "#exclusive-overview" },
-      { label: "Roster", anchor: "#exclusive-roster" },
-      { label: "Opportunities", anchor: "#exclusive-opportunities" },
-      { label: "Concierge", anchor: "#exclusive-concierge" },
+      { label: "Overview", anchor: "#exclusive-overview", default: true },
+      { label: "My Profile", anchor: "#exclusive-profile" },
       { label: "Socials", anchor: "#exclusive-socials" },
+      { label: "Campaigns", anchor: "#exclusive-campaigns" },
+      { label: "Opportunities", anchor: "#exclusive-opportunities" },
+      { label: "Financials", anchor: "#exclusive-financials" },
       { label: "Messages", anchor: "#exclusive-messages" },
+      { label: "Contracts", anchor: "#exclusive-contracts" },
       { label: "Settings", anchor: "#exclusive-settings" }
     ],
     metrics: [
-      { label: "Invite-only creators", value: "24", sub: "Active roster" },
-      { label: "Concierge requests", value: "9", sub: "Pending uplifts" },
+      { label: "Active campaigns", value: "8", sub: "Live creator projects" },
+      { label: "Revenue earned", value: "£1.2M", sub: "Past 12 months" },
       { label: "Task queue", value: "18", sub: "Awaiting updates" }
     ],
     queue: {
@@ -93,9 +97,18 @@ export const CONTROL_ROOM_PRESETS = {
     ]
   },
   talent: {
+    role: "talent",
     title: "Talent Control Room",
     subtitle: "See what a vetted creator experiences — briefs, revenue, and automations in one place.",
-    tabs: ["Overview", "Campaigns", "UGC Board", "Agent", "Messages", "Account"],
+    tabs: [
+      { label: "Overview", anchor: "#creator-overview", default: true },
+      { label: "Campaigns", anchor: "#creator-campaigns" },
+      { label: "Opportunities", anchor: "#creator-opportunities" },
+      { label: "Agent", anchor: "#creator-agent" },
+      { label: "Messages", anchor: "#creator-messages" },
+      { label: "Contracts", anchor: "#creator-contracts" },
+      { label: "Account", anchor: "#creator-account" }
+    ],
     metrics: [
       { label: "Active campaigns", value: "6", sub: "Deliverables due this week" },
       { label: "Projected revenue", value: "£74K", sub: "Next 90 days" },
@@ -113,12 +126,13 @@ export const CONTROL_ROOM_PRESETS = {
     },
     quickLinks: [
       { title: "Campaign pipeline", copy: "View every signed brief with budgets, deliverables, and chat." },
-      { title: "UGC board", copy: "Public + priority briefs filtered to your markets and platforms." },
+      { title: "Opportunities", copy: "Public + priority briefs filtered to your markets and platforms." },
       { title: "AI agent", copy: "Prep responses, rate cards, and trackers via natural language." },
       { title: "Finance", copy: "Invoices sent, payouts pending, compliance docs on file." }
     ]
   },
   ugc: {
+    role: "ugc",
     title: "UGC Talent Control Room",
     subtitle: "The lightweight console for UGC creators shipping briefs via the public board.",
     tabs: ["Overview", "Briefs", "Submissions", "Education", "Messages"],
@@ -145,6 +159,7 @@ export const CONTROL_ROOM_PRESETS = {
     ]
   },
   founder: {
+    role: "founder",
     title: "Founder Control Room",
     subtitle: "High-level view for founders to scan growth, GTM signals, and revenue flows.",
     tabs: ["Overview", "Growth", "Product", "People", "Investors"],
@@ -171,13 +186,21 @@ export const CONTROL_ROOM_PRESETS = {
     ]
   },
   brand: {
+    role: "brand",
     title: "Brand Control Room",
     subtitle: "Campaign controls, creator match, contracts, messaging, and reporting in one lane.",
-    tabs: ["Overview", "Campaigns", "Creator Match", "Reports", "Messages", "Account"],
+    tabs: [
+      { label: "Overview", anchor: "#brand-overview", default: true },
+      { label: "Campaigns", anchor: "#brand-campaigns" },
+      { label: "Creators", anchor: "#brand-creators" },
+      { label: "Reports", anchor: "#brand-reports" },
+      { label: "Messages", anchor: "#brand-messages" },
+      { label: "Account", anchor: "#brand-account" }
+    ],
     metrics: [
       { label: "Live campaigns", value: "8", sub: "Running this week" },
-      { label: "Creator shortlist", value: "34", sub: "Awaiting feedback" },
-      { label: "Budget committed", value: "£510K", sub: "Q4 allocations" }
+      { label: "Budget committed", value: "£510K", sub: "Q4 allocations" },
+      { label: "Spaces remaining", value: "3", sub: "Annual intake" }
     ],
     queue: {
       label: "Brand queues",

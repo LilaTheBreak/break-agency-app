@@ -12,7 +12,7 @@ export function BrandPage({ onRequestSignIn }) {
           <h1 className="text-3xl font-semibold">Campaign creation, creator match, contracts, reporting.</h1>
           <p className="text-white/70">
             Brands browse public case studies, complete the needs questionnaire, then unlock the
-            dashboard to manage campaigns. UGC stays creator-side; brands only create briefs that
+            dashboard to manage campaigns. Opportunities board stays creator-side; brands only create briefs that
             route to eligible creators.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -48,7 +48,7 @@ export function BrandPage({ onRequestSignIn }) {
           <h3 className="text-xl font-semibold">Brand Needs Questionnaire</h3>
           <p className="text-white/70">
             Qualifies scope, budget, and readiness; prompts profile creation to proceed. Campaign
-            creation stays brand-only, UGC routing happens automatically to approved creators.
+            creation stays brand-only, opportunities routing happens automatically to approved creators.
           </p>
           <button
             type="button"

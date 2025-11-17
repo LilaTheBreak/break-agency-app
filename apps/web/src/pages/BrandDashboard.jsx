@@ -1,7 +1,1006 @@
-import React from "react";
-import { ControlRoomView } from "./ControlRoomView.jsx";
-import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, Outlet, useOutletContext } from "react-router-dom";
+import { DashboardShell } from "../components/DashboardShell.jsx";
+import { ProgressBar } from "../components/ProgressBar.jsx";
+import { Badge } from "../components/Badge.jsx";
+import { usePayoutSummary } from "../hooks/usePayoutSummary.js";
+import { FileUploadPanel } from "../components/FileUploadPanel.jsx";
+import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
+import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
+import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
+import { useCampaigns } from "../hooks/useCampaigns.js";
+import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
 
-export function BrandDashboard() {
-  return <ControlRoomView config={CONTROL_ROOM_PRESETS.brand} />;
+const CREATOR_ROSTER = [
+  { name: "Exclusive Creator", email: "exclusive@talent.com", vertical: "Lifestyle · Residency" },
+  { name: "UGC Creator", email: "ugc@creator.com", vertical: "UGC storyteller" },
+  { name: "Break Talent", email: "talent@thebreakco.com", vertical: "Fintech explainers" }
+];
+
+const CAMPAIGN_REPORTS = [
+  { label: "Reach", value: "4.1M", delta: "+14%", context: "Paid + organic" },
+  { label: "Engagement rate", value: "5.2%", delta: "+0.8%", context: "30-day blended" },
+  { label: "Conversions", value: "2,341", delta: "+18%", context: "Attributed checkouts" }
+];
+
+const ANALYTICS_METRICS = [
+  { label: "Reach", value: "4.1M", context: "30-day blended", delta: "+14%" },
+  { label: "Engagement rate", value: "5.2%", context: "Creators + brand surface", delta: "+0.8%" },
+  { label: "Revenue", value: "£320K", context: "Retainer YTD", delta: "+18%" },
+  { label: "Conversion lift", value: "+18%", context: "Versus control", delta: "+3pts" }
+];
+
+const ANALYTICS_SIGNALS = [
+  { label: "Inbox health", value: "92%", context: "Replies within SLA" },
+  { label: "Social velocity", value: "1.8x", context: "Posts vs. baseline" },
+  { label: "Deliverables due", value: "14", context: "Next 7 days" }
+];
+
+const POD_EFFICIENCY = [
+  { pod: "Luxury pod", efficiency: "92% SLA", cycle: "6.2 days", utilization: "88%" },
+  { pod: "Fintech pod", efficiency: "89% SLA", cycle: "5.4 days", utilization: "81%" },
+  { pod: "UGC pod", efficiency: "95% SLA", cycle: "4.1 days", utilization: "76%" }
+];
+
+const AI_AUTOMATIONS = [
+  {
+    label: "Next steps",
+    items: ["Launch QA checklist for Luxury drop", "Remind finance about £22K invoice", "Draft recap for GCC brief"]
+  },
+  {
+    label: "Risk alerts",
+    items: ["Creator backlog > 3 tasks", "Contract signature overdue 48h", "Inbox SLA trending down"]
+  },
+  {
+    label: "Recommendations",
+    items: ["Shift budget to pod with fastest cycle", "Deploy concierge to AI banking nurture", "Add creator to Doha pipeline"]
+  },
+  {
+    label: "Contract summaries",
+    items: ["AI-terse summary ready for Residency v4", "Highlight exclusivity clause change", "Flag shortened payment terms"]
+  },
+  {
+    label: "Brief generation",
+    items: ["Drafted ‘Creator Residency’ iteration", "UGC set outline ready", "Concierge script suggestions posted"]
+  },
+  {
+    label: "Suggested pricing",
+    items: ["Luxury pod median £12.4K", "UGC edits pack recommended £4K", "Concierge add-on priced £1.2K"]
+  },
+  {
+    label: "Content scoring",
+    items: ["Residency Reel score 92/100", "AI Banking draft 78/100 (CTA low)", "Retail capsule teaser 88/100"]
+  }
+];
+
+const BRAND_NAV_LINKS = (basePath) => [
+  { label: "Overview", to: `${basePath}`, end: true },
+  { label: "My Profile", to: `${basePath}/profile` },
+  { label: "Socials", to: `${basePath}/socials` },
+  { label: "Campaigns", to: `${basePath}/campaigns` },
+  { label: "Opportunities", to: `${basePath}/opportunities` },
+  { label: "Contracts", to: `${basePath}/contracts` },
+  { label: "Financials", to: `${basePath}/financials` },
+  { label: "Messages", to: `${basePath}/messages` },
+  { label: "Settings", to: `${basePath}/settings` }
+];
+
+export default function BrandDashboardLayout({ basePath = "/brand/dashboard", session }) {
+  return (
+    <DashboardShell
+      title="Brand Control Room"
+      subtitle="Campaign controls, creator match, contracts, messaging, and reporting in one lane."
+      role="brand"
+      navLinks={BRAND_NAV_LINKS(basePath)}
+    >
+      <Outlet context={{ session }} />
+    </DashboardShell>
+  );
+}
+
+export function BrandOverviewPage() {
+  const { session } = useOutletContext() || {};
+  return <BrandOverviewSection session={session} />;
+}
+
+export function BrandProfilePage() {
+  return <BrandProfileSection />;
+}
+
+export function BrandSocialsPage() {
+  return <BrandSocialsSection />;
+}
+
+export function BrandCampaignsPage() {
+  const { session } = useOutletContext() || {};
+  return <BrandCampaignSection session={session} />;
+}
+
+export function BrandOpportunitiesPage() {
+  const { session } = useOutletContext() || {};
+  return <BrandOpportunitiesSection session={session} />;
+}
+
+export function BrandContractsPage() {
+  const { session } = useOutletContext() || {};
+  return (
+    <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6" id="brand-contracts">
+      <ContractsPanel
+        session={session}
+        title="Contracts"
+        description="Track briefs sent for signature and monitor who has signed."
+      />
+    </section>
+  );
+}
+
+export function BrandFinancialsPage() {
+  return <BrandFinancialSection />;
+}
+
+export function BrandMessagesPage() {
+  return <BrandMessagesSection />;
+}
+
+export function BrandSettingsPage() {
+  return <BrandSettingsSection />;
+}
+
+function BrandOverviewSection({ session }) {
+  const overview = {
+    description:
+      "A Break campaign is a scoped engagement spanning ideation, creator sourcing, production, and measurement. The system tracks every touchpoint so brand, creator, and ops stay aligned.",
+    progress: 62,
+    phase: "Creative production",
+    nextSteps: ["Approve creator travel budget", "Upload legal addendum", "Schedule edit review"],
+    results: [
+      { label: "Reach", value: "4.1M", context: "Paid + organic" },
+      { label: "Engagement rate", value: "5.2%", context: "30-day blended" },
+      { label: "Conversion lift", value: "+18%", context: "Versus control" }
+    ]
+  };
+
+  return (
+    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <AiAssistantCard
+        session={session}
+        role="brand"
+        title="AI Assistant"
+        description="Ask AI for brief optimization or risk alerts."
+      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Overview</p>
+          <h3 className="font-display text-3xl uppercase">What is a campaign?</h3>
+        </div>
+        <Badge tone="neutral">{overview.phase}</Badge>
+      </div>
+      <p className="text-sm text-brand-black/70">{overview.description}</p>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-brand-black/60">
+          <span>Progress</span>
+          <span>{overview.progress}%</span>
+        </div>
+        <ProgressBar value={overview.progress} />
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Next steps</p>
+          <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
+            {overview.nextSteps.map((item) => (
+              <li key={item}>• {item}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Results summary</p>
+          <div className="mt-3 grid gap-3 text-brand-black">
+            {overview.results.map((result) => (
+              <div key={result.label}>
+                <p className="text-sm uppercase tracking-[0.3em] text-brand-black/60">{result.label}</p>
+                <p className="font-display text-2xl uppercase">{result.value}</p>
+                <p className="text-xs text-brand-black/50">{result.context}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="space-y-4 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Analytics + reporting</p>
+            <h4 className="font-display text-2xl uppercase">Signal pulse</h4>
+          </div>
+          <button className="rounded-full border border-brand-black px-4 py-1 text-[0.65rem] uppercase tracking-[0.3em]">
+            Export report
+          </button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-4">
+          {ANALYTICS_METRICS.map((metric) => (
+            <article key={metric.label} className="rounded-2xl border border-brand-black/10 bg-white/80 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{metric.label}</p>
+              <p className="font-display text-2xl uppercase text-brand-black">{metric.value}</p>
+              <p className="text-xs text-brand-black/60">{metric.context}</p>
+              <p className="text-xs text-brand-red">{metric.delta}</p>
+            </article>
+          ))}
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {ANALYTICS_SIGNALS.map((signal) => (
+            <article key={signal.label} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{signal.label}</p>
+              <p className="font-display text-xl uppercase text-brand-black">{signal.value}</p>
+              <p className="text-xs text-brand-black/60">{signal.context}</p>
+            </article>
+          ))}
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-white/80 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Efficiency per pod</p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="min-w-full text-left text-sm text-brand-black/80">
+              <thead>
+                <tr className="text-xs uppercase tracking-[0.3em] text-brand-black/50">
+                  <th className="py-2">Pod</th>
+                  <th className="py-2">Efficiency</th>
+                  <th className="py-2">Cycle time</th>
+                  <th className="py-2">Utilization</th>
+                </tr>
+              </thead>
+              <tbody>
+                {POD_EFFICIENCY.map((pod) => (
+                  <tr key={pod.pod} className="border-t border-brand-black/10">
+                    <td className="py-2 font-semibold text-brand-black">{pod.pod}</td>
+                    <td className="py-2">{pod.efficiency}</td>
+                    <td className="py-2">{pod.cycle}</td>
+                    <td className="py-2">{pod.utilization}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">AI assistant</p>
+              <h4 className="font-display text-2xl uppercase">Automation desk</h4>
+            </div>
+            <button className="rounded-full border border-brand-black px-4 py-1 text-[0.65rem] uppercase tracking-[0.3em]">
+              Open workspace
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {AI_AUTOMATIONS.map((block) => (
+              <article
+                key={block.label}
+                className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm text-brand-black/80"
+              >
+                <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{block.label}</p>
+                <ul className="mt-2 space-y-1">
+                  {block.items.map((item) => (
+                    <li key={item}>• {item}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const BRAND_SOCIALS = [
+  { channel: "Instagram", followers: "1.2M", cadence: "5 posts / week", highlight: "Top carousel 6.2% ER" },
+  { channel: "TikTok", followers: "640K", cadence: "3 posts / week", highlight: "Live shopping pilot" },
+  { channel: "YouTube", followers: "210K", cadence: "2 videos / month", highlight: "Residency vlog series" }
+];
+
+const OPPORTUNITY_PIPELINE = [
+  {
+    id: "luxury-travel",
+    title: "Luxury travel drop",
+    stage: "Pitch",
+    value: "£32K",
+    audience: "500K+",
+    demographics: "GCC diaspora",
+    style: "Elevated travel diaries",
+    performance: "Lifestyle CTR > 3%",
+    availability: "Nov weeks 1-3",
+    pricing: "£15K budget per creator",
+    affinity: "Hospitality partnerships"
+  },
+  {
+    id: "ai-banking",
+    title: "AI banking launch",
+    stage: "Contract out",
+    value: "£58K",
+    audience: "250K+",
+    demographics: "Millennial finance",
+    style: "Explainers + talking head",
+    performance: "Finance avg watch 45s",
+    availability: "Dec",
+    pricing: "£12K ceiling",
+    affinity: "Fintech credibility"
+  },
+  {
+    id: "heritage-pop",
+    title: "Heritage pop-up",
+    stage: "Briefing",
+    value: "£18K",
+    audience: "200K",
+    demographics: "Fashion-forward EU",
+    style: "Street/editorial hybrid",
+    performance: "Retail swipe-up 4%",
+    availability: "Jan",
+    pricing: "£8K package",
+    affinity: "Retail collabs"
+  }
+];
+
+const CREATOR_MATCH_POOL = [
+  {
+    name: "Exclusive Creator",
+    audience: "750K",
+    demographics: "GCC + diaspora",
+    style: "Elevated travel vlogs",
+    performance: "ER 5.1%",
+    availability: "Nov",
+    pricing: "£14K",
+    affinity: "Luxury + hospitality"
+  },
+  {
+    name: "UGC Creator",
+    audience: "260K",
+    demographics: "Millennial finance",
+    style: "Talking-head explainers",
+    performance: "ER 4.7%",
+    availability: "Dec",
+    pricing: "£10K",
+    affinity: "Fintech + SaaS"
+  },
+  {
+    name: "Break Talent",
+    audience: "180K",
+    demographics: "EU fashion lovers",
+    style: "Street/editorial hybrid",
+    performance: "Retail CTR 4%",
+    availability: "Jan",
+    pricing: "£6K",
+    affinity: "Retail collabs"
+  },
+  {
+    name: "Concierge Squad",
+    audience: "500K",
+    demographics: "US premium lifestyle",
+    style: "Cinematic travel diaries",
+    performance: "Views 1.2M avg",
+    availability: "Nov-Dec",
+    pricing: "£18K",
+    affinity: "Hospitality"
+  }
+];
+
+const FINANCIAL_PROFILES = {
+  brand: {
+    name: "Primary Brand Retainer",
+    revenue30: 82000,
+    revenue90: 245000,
+    projected: 360000,
+    grossMargin: 0.42,
+    payoutsPending: [
+      { id: "pay-001", recipient: "Exclusive Creator", amount: 12000, status: "Pending Stripe release" },
+      { id: "pay-002", recipient: "UGC Creator", amount: 4200, status: "Scheduled tomorrow" }
+    ],
+    invoices: [
+      { id: "inv-9102", amount: 18000, due: "12 Dec", status: "Awaiting brand payment" },
+      { id: "inv-9103", amount: 9500, due: "18 Dec", status: "Sent" }
+    ],
+    taxForms: [
+      { label: "W-8BEN", status: "Submitted", updated: "Sep 12" },
+      { label: "VAT return", status: "In review", updated: "Nov 30" }
+    ],
+    payments: [
+      { label: "Stripe transfer", amount: 20000, date: "Nov 28" },
+      { label: "PayPal payout", amount: 6500, date: "Nov 24" }
+    ]
+  },
+  "Exclusive Creator": {
+    name: "Exclusive Creator",
+    revenue30: 24000,
+    revenue90: 72000,
+    projected: 110000,
+    grossMargin: 0.35,
+    payoutsPending: [{ id: "pay-003", recipient: "Exclusive Creator", amount: 7800, status: "Docs pending approval" }],
+    invoices: [{ id: "invoice-tal-001", amount: 7800, due: "14 Dec", status: "Draft" }],
+    taxForms: [{ label: "1099-MISC", status: "Awaiting signature", updated: "Dec 03" }],
+    payments: [{ label: "Stripe transfer", amount: 5200, date: "Nov 10" }]
+  }
+};
+
+
+function BrandCampaignSection({ session }) {
+  const { campaigns, loading, error } = useCampaigns({ session });
+  const data = campaigns.length ? campaigns : FALLBACK_CAMPAIGNS;
+  const [notes, setNotes] = useState({});
+  useEffect(() => {
+    setNotes((prev) => {
+      const next = {};
+      data.forEach((campaign) => {
+        next[campaign.id] = prev[campaign.id] ?? campaign.metadata?.notes ?? "";
+      });
+      return next;
+    });
+  }, [data]);
+  return (
+    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Campaign management</p>
+          <h3 className="font-display text-3xl uppercase">Live campaigns</h3>
+        </div>
+        <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+          Add campaign
+        </button>
+      </div>
+      {error ? <p className="text-sm text-brand-red">{error}</p> : null}
+      {loading && !campaigns.length ? (
+        <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+      ) : (
+        <div className="space-y-4">
+          {data.map((campaign) => (
+            <MultiBrandCampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              notes={notes[campaign.id]}
+              onNotesChange={(id, value) => setNotes((prev) => ({ ...prev, [id]: value }))}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BrandSocialsSection() {
+  return (
+    <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-center justify-between">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Socials</p>
+          <h3 className="font-display text-3xl uppercase">Brand amplification</h3>
+        </div>
+        <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+          Export metrics
+        </button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {BRAND_SOCIALS.map((social) => (
+          <article key={social.channel} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{social.channel}</p>
+            <p className="text-2xl font-semibold text-brand-black">{social.followers}</p>
+            <p className="text-xs text-brand-black/60">{social.cadence}</p>
+            <p className="text-xs text-brand-red">{social.highlight}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BrandOpportunitiesSection({ session }) {
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState(OPPORTUNITY_PIPELINE[0]?.id ?? null);
+  const [shortlists, setShortlists] = useState({});
+  const [approvals, setApprovals] = useState({});
+
+  const selectedOpportunity = useMemo(
+    () => OPPORTUNITY_PIPELINE.find((deal) => deal.id === selectedOpportunityId) ?? null,
+    [selectedOpportunityId]
+  );
+
+  const recommendedMatches = useMemo(() => {
+    if (!selectedOpportunity) return [];
+    return computeCreatorMatches(selectedOpportunity, CREATOR_MATCH_POOL);
+  }, [selectedOpportunity]);
+
+  const shortlistedNames = selectedOpportunity ? shortlists[selectedOpportunity.id] ?? [] : [];
+  const approvedNames = selectedOpportunity ? approvals[selectedOpportunity.id] ?? [] : [];
+
+  const handleShortlist = (creatorName) => {
+    if (!selectedOpportunity) return;
+    setShortlists((prev) => {
+      const existing = new Set(prev[selectedOpportunity.id] ?? []);
+      existing.add(creatorName);
+      return { ...prev, [selectedOpportunity.id]: Array.from(existing) };
+    });
+  };
+
+  const handleApprove = (creatorName) => {
+    if (!selectedOpportunity) return;
+    handleShortlist(creatorName);
+    setApprovals((prev) => {
+      const existing = new Set(prev[selectedOpportunity.id] ?? []);
+      existing.add(creatorName);
+      return { ...prev, [selectedOpportunity.id]: Array.from(existing) };
+    });
+  };
+
+  const handleSaveRecommended = () => {
+    if (!selectedOpportunity) return;
+    const topNames = recommendedMatches.slice(0, 3).map((match) => match.creator.name);
+    setShortlists((prev) => {
+      const merged = new Set([...(prev[selectedOpportunity.id] ?? []), ...topNames]);
+      return { ...prev, [selectedOpportunity.id]: Array.from(merged) };
+    });
+  };
+
+  return (
+    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities</p>
+          <h3 className="font-display text-3xl uppercase">Automated creator matching</h3>
+        </div>
+        <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+          Add opportunity
+        </button>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
+        <div className="space-y-3">
+          {OPPORTUNITY_PIPELINE.map((deal) => {
+            const isActive = deal.id === selectedOpportunityId;
+            return (
+              <button
+                key={deal.id}
+                onClick={() => setSelectedOpportunityId(deal.id)}
+                className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                  isActive ? "border-brand-black bg-brand-linen/80" : "border-brand-black/10 bg-brand-linen/40 hover:border-brand-black/40"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-brand-black">{deal.title}</p>
+                    <p className="text-xs text-brand-black/60">{deal.stage}</p>
+                  </div>
+                  <Badge tone="positive">{deal.value}</Badge>
+                </div>
+                <p className="mt-1 text-xs text-brand-black/60">Audience: {deal.audience}</p>
+              </button>
+            );
+          })}
+        </div>
+        <div className="space-y-6">
+          {selectedOpportunity ? (
+            <>
+              <article className="space-y-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Campaign brief</p>
+                    <h4 className="font-display text-2xl uppercase">{selectedOpportunity.title}</h4>
+                  </div>
+                  <Badge tone="neutral">{selectedOpportunity.stage}</Badge>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <OpportunityFact label="Audience size" value={selectedOpportunity.audience} />
+                  <OpportunityFact label="Demographics" value={selectedOpportunity.demographics} />
+                  <OpportunityFact label="Content style" value={selectedOpportunity.style} />
+                  <OpportunityFact label="Past performance" value={selectedOpportunity.performance} />
+                  <OpportunityFact label="Availability" value={selectedOpportunity.availability} />
+                  <OpportunityFact label="Pricing" value={selectedOpportunity.pricing} />
+                  <OpportunityFact label="Brand affinity" value={selectedOpportunity.affinity} />
+                </div>
+                <div className="rounded-2xl border border-dashed border-brand-black/20 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Shortlist progress</p>
+                  <p className="mt-2 text-sm text-brand-black/70">
+                    {shortlistedNames.length || approvedNames.length ? (
+                      <>
+                        {shortlistedNames.length} shortlisted · {approvedNames.length} approved
+                      </>
+                    ) : (
+                      "No creators shortlisted yet."
+                    )}
+                  </p>
+                </div>
+              </article>
+              <VersionHistoryCard
+                session={session}
+                briefId={selectedOpportunity.id}
+                data={selectedOpportunity}
+                allowCreate={Boolean(session?.roles?.some((role) => ["admin", "agent"].includes(role)))}
+                allowRestore={Boolean(session?.roles?.some((role) => ["admin", "agent"].includes(role)))}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-red">Recommended matches</p>
+                  <p className="text-sm text-brand-black/70">
+                    Matching audience, demographic, style, performance, availability, pricing, and affinity signals.
+                  </p>
+                </div>
+                <button
+                  onClick={handleSaveRecommended}
+                  className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                >
+                  Save top matches
+                </button>
+              </div>
+              <div className="space-y-4">
+                {recommendedMatches.map((match) => {
+                  const isShortlisted = shortlistedNames.includes(match.creator.name);
+                  const isApproved = approvedNames.includes(match.creator.name);
+                  return (
+                    <article key={match.creator.name} className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-brand-black">{match.creator.name}</p>
+                          <p className="text-xs text-brand-black/60">{match.creator.style}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge tone="positive">{match.score}% match</Badge>
+                          {isApproved ? (
+                            <Badge tone="positive">Approved</Badge>
+                          ) : isShortlisted ? (
+                            <Badge tone="neutral">Shortlisted</Badge>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="grid gap-3 text-sm text-brand-black/70 md:grid-cols-3">
+                        <OpportunityFact label="Audience" value={match.creator.audience} />
+                        <OpportunityFact label="Demographics" value={match.creator.demographics} />
+                        <OpportunityFact label="Availability" value={match.creator.availability} />
+                        <OpportunityFact label="Pricing" value={match.creator.pricing} />
+                        <OpportunityFact label="Performance" value={match.creator.performance} />
+                        <OpportunityFact label="Affinity" value={match.creator.affinity} />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {match.signals.map((signal) => (
+                          <span
+                            key={signal}
+                            className="rounded-full border border-brand-black/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.2em]"
+                          >
+                            {signal}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={() => handleShortlist(match.creator.name)}
+                          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                        >
+                          {isShortlisted ? "Shortlisted" : "Shortlist"}
+                        </button>
+                        <button
+                          onClick={() => handleApprove(match.creator.name)}
+                          className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em] ${
+                            isApproved ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black"
+                          }`}
+                        >
+                          {isApproved ? "Approved" : "Approve"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-6 text-sm text-brand-black/60">
+              Select an opportunity to view the auto-matched roster.
+            </div>
+          )}
+        </div>
+      </div>
+      <FileUploadPanel
+        session={session}
+        folder="brand-briefs"
+        title="Brief attachments"
+        description="Upload decks, scope docs, and example assets for this opportunity pipeline."
+      />
+    </section>
+  );
+}
+
+function BrandFinancialSection() {
+  const profiles = Object.keys(FINANCIAL_PROFILES);
+  const [activeProfile, setActiveProfile] = useState(profiles[0]);
+  const profileData = FINANCIAL_PROFILES[activeProfile];
+  const { data: payoutSummary, loading: payoutLoading, error: payoutError } = usePayoutSummary();
+
+  const statBlocks = [
+    { label: "Revenue · 30 days", value: profileData.revenue30, detail: "Gross" },
+    { label: "Revenue · 90 days", value: profileData.revenue90, detail: "Gross" },
+    { label: "Projected revenue", value: profileData.projected, detail: "Forward 3 months" },
+    { label: "Gross margin", value: `${Math.round(profileData.grossMargin * 100)}%`, detail: "After ops fees" }
+  ];
+
+  return (
+    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Financials & payouts</p>
+          <h3 className="font-display text-3xl uppercase">Revenue health</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {profiles.map((profile) => (
+            <button
+              key={profile}
+              onClick={() => setActiveProfile(profile)}
+              className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] ${
+                activeProfile === profile ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black/30"
+              }`}
+            >
+              {profile}
+            </button>
+          ))}
+          <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+            Export CSV
+          </button>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        {statBlocks.map((item) => (
+          <article key={item.label} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{item.label}</p>
+            <p className="text-2xl font-semibold text-brand-black">
+              {typeof item.value === "number" ? `£${item.value.toLocaleString()}` : item.value}
+            </p>
+            <p className="text-xs text-brand-black/50">{item.detail}</p>
+          </article>
+        ))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <FinanceListCard title="Payouts pending" items={profileData.payoutsPending} />
+        <FinanceListCard title="Invoices" items={profileData.invoices} />
+        <FinanceListCard title="Tax forms" items={profileData.taxForms} />
+        <FinanceListCard title="Payment history" items={profileData.payments} />
+      </div>
+      <div className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-linen/40 p-4">
+        <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Stripe Connect · PayPal</p>
+        <p className="mt-2 text-sm text-brand-black/70">
+          Stripe Connect handles primary settlement, with PayPal as a backup rail for creators who cannot receive
+          bank transfers. Toggle per profile to see wallet IDs, transfer cadence, and audit trails.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2 text-[0.6rem] uppercase tracking-[0.35em]">
+          <span className="rounded-full border border-brand-black/15 bg-white px-3 py-1">Stripe connected</span>
+          <span className="rounded-full border border-brand-black/15 bg-white px-3 py-1">PayPal active</span>
+          <span className="rounded-full border border-brand-black/15 bg-white px-3 py-1">2FA enforced</span>
+        </div>
+      </div>
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Live payouts</p>
+            <h4 className="font-display text-2xl uppercase">Creator settlement</h4>
+          </div>
+          <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">
+            {payoutLoading ? "Syncing" : "Updated"}
+          </span>
+        </div>
+        {payoutError ? (
+          <p className="mt-3 text-sm text-brand-red">{payoutError}</p>
+        ) : payoutSummary ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {Object.entries(payoutSummary.summary || {}).map(([status, amount]) => (
+              <article key={status} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{status}</p>
+                <p className="font-display text-xl uppercase text-brand-black">£{(amount / 100).toFixed(2)}</p>
+              </article>
+            ))}
+            {!Object.keys(payoutSummary.summary || {}).length ? (
+              <p className="text-sm text-brand-black/60">No payouts yet.</p>
+            ) : null}
+          </div>
+        ) : null}
+        {payoutSummary?.latestPayouts?.length ? (
+          <div className="mt-4 space-y-2">
+            {payoutSummary.latestPayouts.map((payout) => (
+              <div key={payout.id} className="rounded-xl border border-brand-black/10 bg-brand-linen/40 p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-brand-black">£{(payout.amount / 100).toFixed(2)}</p>
+                  <Badge tone={payout.status === "paid" ? "positive" : "neutral"}>{payout.status}</Badge>
+                </div>
+                <p className="text-xs text-brand-black/60">{new Date(payout.createdAt).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function BrandMessagesSection() {
+  const threads = [
+    { subject: "Budget approval", contact: "brand@client.com", status: "Awaiting finance sign-off" },
+    { subject: "Creator roster feedback", contact: "mo@thebreakco.com", status: "Reply drafted" },
+    { subject: "Legal addendum", contact: "legal@breakagency.com", status: "Needs signature" }
+  ];
+
+  return (
+    <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Messages</p>
+          <h3 className="font-display text-3xl uppercase">Threaded comms</h3>
+        </div>
+        <Link
+          to="/admin/messaging"
+          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+        >
+          Open inbox
+        </Link>
+      </div>
+      <div className="space-y-2">
+        {threads.map((thread) => (
+          <div
+            key={thread.subject}
+            className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-3 text-sm text-brand-black/80"
+          >
+            <p className="font-semibold text-brand-black">{thread.subject}</p>
+            <p className="text-xs text-brand-black/60">Contact: {thread.contact}</p>
+            <p className="text-xs text-brand-red">{thread.status}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BrandProfileSection() {
+  return (
+    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Brand onboarding</p>
+      <h3 className="font-display text-3xl uppercase">Account + application</h3>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+          <h4 className="font-semibold uppercase tracking-[0.3em] text-brand-red">Account details</h4>
+          <label className="mt-3 block text-xs uppercase tracking-[0.3em] text-brand-black/60">
+            Brand name
+            <input className="mt-1 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none" />
+          </label>
+          <label className="mt-3 block text-xs uppercase tracking-[0.3em] text-brand-black/60">
+            Primary contact
+            <input className="mt-1 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none" />
+          </label>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+          <h4 className="font-semibold uppercase tracking-[0.3em] text-brand-red">Bank details</h4>
+          <label className="mt-3 block text-xs uppercase tracking-[0.3em] text-brand-black/60">
+            IBAN / Account number
+            <input className="mt-1 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none" />
+          </label>
+          <label className="mt-3 block text-xs uppercase tracking-[0.3em] text-brand-black/60">
+            Billing contact
+            <input className="mt-1 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none" />
+          </label>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-red">Retainer</p>
+          <select className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none">
+            <option>3-month retainer (default)</option>
+            <option>6-month retainer</option>
+            <option>12-month retainer</option>
+          </select>
+          <p className="mt-2 text-xs text-brand-black/60">
+            All retainers include invoicing, ops, and reporting guardrails.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-red">Talent application</p>
+          <p className="mt-2 text-sm text-brand-black/70">
+            Only 12 spaces per year. Brands must apply; creators define how they identify and what markets they support.
+          </p>
+          <button className="mt-4 w-full rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]">
+            Submit application
+          </button>
+        </div>
+      </div>
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+        <p className="text-xs uppercase tracking-[0.3em] text-brand-red">Identity guidelines</p>
+        <p className="mt-2 text-sm text-brand-black/70">
+          Creators self-identify; the platform reflects their wording and categories. Ensure campaign briefs respect how each creator describes their work, culture, and communities.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function BrandSettingsSection() {
+  return (
+    <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-center justify-between">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Settings</p>
+          <h3 className="font-display text-3xl uppercase">Permissions & alerts</h3>
+        </div>
+        <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+          Update policy
+        </button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Notifications</p>
+          <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
+            <li>• Brief approvals → On</li>
+            <li>• Finance alerts → On</li>
+            <li>• Creator messages → Digest</li>
+          </ul>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Access</p>
+          <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
+            <li>• Finance seat — enabled</li>
+            <li>• Messaging — enabled</li>
+            <li>• Opportunities — enabled</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OpportunityFact({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{label}</p>
+      <p className="text-sm text-brand-black/80">{value}</p>
+    </div>
+  );
+}
+
+function FinanceListCard({ title, items }) {
+  return (
+    <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+      <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{title}</p>
+      <div className="mt-3 space-y-3 text-sm text-brand-black/80">
+        {items?.length ? (
+          items.map((item) => (
+            <div key={item.id || item.label} className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+              <p className="font-semibold text-brand-black">{item.recipient || item.label || item.id}</p>
+              {item.amount ? (
+                <p className="text-xs text-brand-black/60">
+                  {typeof item.amount === "number" ? `£${item.amount.toLocaleString()}` : item.amount}
+                </p>
+              ) : null}
+              <p className="text-xs text-brand-black/60">{item.status || item.detail || item.date || item.due}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-brand-black/60">Nothing queued.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function computeCreatorMatches(opportunity, pool) {
+  return pool
+    .map((creator) => {
+      const signals = [];
+      if (sharesLanguage(opportunity.audience, creator.audience)) signals.push("Audience match");
+      if (sharesLanguage(opportunity.demographics, creator.demographics)) signals.push("Demographics");
+      if (sharesLanguage(opportunity.style, creator.style)) signals.push("Content style");
+      if (sharesLanguage(opportunity.performance, creator.performance)) signals.push("Performance");
+      if (sharesLanguage(opportunity.availability, creator.availability)) signals.push("Availability");
+      if (sharesLanguage(opportunity.pricing, creator.pricing)) signals.push("Pricing");
+      if (sharesLanguage(opportunity.affinity, creator.affinity)) signals.push("Brand affinity");
+      const score = Math.min(40 + signals.length * 9, 98);
+      return { creator, score, signals };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+function sharesLanguage(source = "", target = "") {
+  const sourceTokens = normalizeTokens(source);
+  const targetLower = target.toLowerCase();
+  return sourceTokens.some((token) => token && targetLower.includes(token));
+}
+
+function normalizeTokens(value) {
+  return (value ?? "")
+    .toString()
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
 }

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { fetchProfile } from "../services/profileClient.js";
 import { Badge } from "../components/Badge.jsx";
+import { useSocialAnalytics } from "../hooks/useSocialAnalytics.js";
+import { SocialAnalyticsPanel } from "../components/SocialAnalyticsPanel.jsx";
 
 const EXCLUSIVE_EMAIL = "exclusive@talent.com";
 
@@ -13,6 +15,13 @@ const DEFAULT_METRICS = [
 export function ExclusiveSocialPanel() {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
+  const userId = profile?.id || "";
+  const {
+    data: analytics,
+    loading: analyticsLoading,
+    error: analyticsError,
+    refresh: refreshAnalytics
+  } = useSocialAnalytics(userId, { autoRefresh: true });
 
   useEffect(() => {
     let active = true;
@@ -32,7 +41,7 @@ export function ExclusiveSocialPanel() {
     };
   }, []);
 
-  const chartData = useMemo(() => buildChartData(profile), [profile]);
+  const chartData = useMemo(() => buildChartData(profile, analytics), [profile, analytics]);
 
   if (!profile && !error) {
     return (
@@ -57,6 +66,18 @@ export function ExclusiveSocialPanel() {
         <p className="mt-3 text-sm text-brand-red">{error}</p>
       ) : (
         <div className="mt-4 space-y-6">
+          {userId ? (
+            <SocialAnalyticsPanel
+              data={analytics}
+              loading={analyticsLoading}
+              error={analyticsError}
+              onRefresh={refreshAnalytics}
+            />
+          ) : (
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white/80 p-6 text-sm text-brand-black/70">
+              Save this creator profile first to sync real analytics. Showing placeholder metrics below.
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-3">
             {chartData.metrics.map((metric) => (
               <article
@@ -112,7 +133,21 @@ export function ExclusiveSocialPanel() {
   );
 }
 
-function buildChartData(profile) {
+function buildChartData(profile, analyticsData) {
+  if (analyticsData?.accounts?.length) {
+    const metrics = analyticsData.accounts.map((account) => ({
+      label: account.platform,
+      followers: account.followers || 0,
+      growth: (() => {
+        if (!account.trend?.length) return 0;
+        const latest = account.trend[0];
+        const oldest = account.trend[account.trend.length - 1];
+        if (!oldest?.followerCount) return 0;
+        return Math.round(((latest.followerCount - oldest.followerCount) / Math.max(oldest.followerCount, 1)) * 100);
+      })()
+    }));
+    return { metrics, trend: generateTrend(metrics) };
+  }
   if (!profile?.links?.length) {
     return { metrics: DEFAULT_METRICS, trend: generateTrend(DEFAULT_METRICS) };
   }

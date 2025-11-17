@@ -2,8 +2,9 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
+import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 
-export function ControlRoomView({ config, children }) {
+export function ControlRoomView({ config, children, session }) {
   if (!config) {
     return null;
   }
@@ -22,9 +23,18 @@ export function ControlRoomView({ config, children }) {
     <DashboardShell
       title={title}
       subtitle={subtitle}
+      role={config.role}
       navLinks={navLinks}
       navigation={navLinks.length ? undefined : tabs}
     >
+      <div className="mb-6">
+        <AiAssistantCard
+          session={session}
+          role={config.role || "admin"}
+          title="AI Assistant"
+          description="Ask AI how to optimize this week."
+        />
+      </div>
       {metrics.length > 0 ? (
         <section className="grid gap-4 md:grid-cols-3">
           {metrics.map((metric) => (

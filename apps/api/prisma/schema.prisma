@@ -21,4 +21,428 @@ model User {
   socialLinks Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  socialAccounts SocialAccount[]
+  socialAnalytics SocialAnalytics[]
+  socialPosts    SocialPost[]
+  emailLogs      EmailLog[]
+  socialTokens   SocialToken[]
+}
+
+enum SocialPlatform {
+  TIKTOK
+  INSTAGRAM
+  YOUTUBE
+  X
+  LINKEDIN
+}
+
+model SocialAccount {
+  id             String          @id @default(cuid())
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  platform       SocialPlatform
+  platformUserId String
+  username       String
+  displayName    String?
+  profileUrl     String?
+  profileImage   String?
+  bio            String?
+  followers      Int             @default(0)
+  following      Int             @default(0)
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  scopes         String?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  analytics      SocialAnalytics[]
+  posts          SocialPost[]
+
+  @@unique([platform, platformUserId])
+}
+
+model SocialAnalytics {
+  id              String         @id @default(cuid())
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  account         SocialAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId       String
+  capturedAt      DateTime       @default(now())
+  followerCount   Int
+  engagementRate  Float?
+  velocityScore   Float?
+  impressions     Int?
+  reach           Int?
+  profileViews    Int?
+  demographics    Json?
+  raw             Json?
+  createdAt       DateTime       @default(now())
+
+  @@index([userId, accountId, capturedAt])
+}
+
+model SocialPost {
+  id             String         @id @default(cuid())
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  account        SocialAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId      String
+  platform       SocialPlatform
+  platformPostId String
+  caption        String?
+  mediaUrl       String?
+  thumbnailUrl   String?
+  postedAt       DateTime?
+  likes          Int?           @default(0)
+  comments       Int?           @default(0)
+  shares         Int?           @default(0)
+  views          Int?           @default(0)
+  engagementRate Float?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([platform, platformPostId])
+  @@index([userId, accountId, postedAt])
+}
+
+model SocialToken {
+  id          String         @id @default(cuid())
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  platform    SocialPlatform
+  accessToken String?
+  refreshToken String?
+  expiresAt   DateTime?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, platform])
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  to        String
+  subject   String
+  template  String
+  status    String   @default("queued")
+  error     String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([template, status])
+}
+
+model CronLog {
+  id          String   @id @default(cuid())
+  name        String
+  status      String   @default("running")
+  message     String?
+  metadata    Json?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@index([name, startedAt])
+  @@index([status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([action])
+}
+
+model AdminActivity {
+  id        String   @id @default(cuid())
+  actorId   String?
+  event     String
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation("AdminActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([event])
+  @@index([createdAt])
+}
+
+model Payment {
+  id                   String   @id @default(cuid())
+  user                 User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId               String?
+  stripePaymentIntentId String? @unique
+  amount               Int
+  currency             String
+  status               String
+  metadata             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  externalId  String   @unique
+  provider    String   @default("stripe")
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId      String?
+  brandEmail  String?
+  brandName   String?
+  amount      Int      @default(0)
+  currency    String   @default("usd")
+  status      String   @default("pending")
+  dueDate     DateTime?
+  processedAt DateTime?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reconciliations Reconciliation[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+}
+
+model PaymentLog {
+  id          String   @id @default(cuid())
+  provider    String
+  eventType   String
+  referenceId String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([provider, eventType])
+  @@index([referenceId])
+}
+
+model Payout {
+  id             String   @id @default(cuid())
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId         String?
+  referenceId    String   @unique
+  provider       String   @default("stripe")
+  amount         Int
+  currency       String
+  status         String
+  destination    String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  reconciliations Reconciliation[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+}
+
+model CreatorBalance {
+  id        String   @id @default(cuid())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?  @unique
+  available Int      @default(0)
+  pending   Int      @default(0)
+  currency  String   @default("usd")
+  metadata  Json?
+  updatedAt DateTime @updatedAt
+}
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  provider  String
+  eventId   String   @unique
+  eventType String
+  status    String   @default("received")
+  payload   Json?
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([provider])
+  @@index([eventType])
+}
+
+model Reconciliation {
+  id        String   @id @default(cuid())
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  invoiceId String?  @unique
+  payout    Payout?  @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  payoutId  String?  @unique
+  status    String   @default("pending")
+  details   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  content     String
+  read        Boolean  @default(false)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([senderId, recipientId])
+}
+
+model File {
+  id        String   @id @default(cuid())
+  userId    String?
+  key       String
+  url       String?
+  filename  String
+  type      String?
+  folder    String   @default("general")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([folder])
+  @@index([createdAt])
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  title     String
+  role      String   @default("global")
+  status    String   @default("open")
+  priority  String?  @default("normal")
+  assignee  String?
+  dueDate   DateTime?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([status, role])
+  @@index([dueDate])
+}
+
+model Approval {
+  id          String   @id @default(cuid())
+  title       String
+  role        String   @default("global")
+  type        String?  @default("contract")
+  status      String   @default("pending")
+  requestedBy String?
+  dueDate     DateTime?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([role])
+  @@index([status, role])
+}
+
+model Deliverable {
+  id        String   @id @default(cuid())
+  title     String
+  role      String   @default("global")
+  status    String   @default("scheduled")
+  dueDate   DateTime?
+  owner     String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([status, role])
+  @@index([dueDate])
+}
+
+model Brief {
+  id        String   @id @default(cuid())
+  title     String
+  role      String   @default("global")
+  status    String   @default("draft")
+  metadata  Json?
+  currentVersionNumber Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  versions  BriefVersion[]
+
+  @@index([role])
+  @@index([status, role])
+}
+
+model BriefVersion {
+  id            String   @id @default(cuid())
+  brief         Brief    @relation(fields: [briefId], references: [id], onDelete: Cascade)
+  briefId       String
+  versionNumber Int
+  data          Json
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  @@unique([briefId, versionNumber])
+  @@index([briefId])
+}
+
+model AiHistory {
+  id        String   @id @default(cuid())
+  userId    String?
+  role      String
+  prompt    String
+  response  Json?
+  context   Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([role])
+}
+
+enum CampaignStage {
+  PLANNING
+  ACTIVE
+  REVIEW
+  COMPLETE
+}
+
+model Campaign {
+  id             String            @id @default(cuid())
+  title          String
+  ownerId        String?
+  stage          CampaignStage     @default(PLANNING)
+  brands         Json?
+  creatorTeams   Json?
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  brandLinks     CampaignBrandPivot[]
+}
+
+model CampaignBrandPivot {
+  id         String   @id @default(cuid())
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+  brandId    String
+  metrics    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([brandId])
 }

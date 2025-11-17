@@ -33,16 +33,16 @@ export function HomePage({ onRequestSignIn }) {
             <div className="flex flex-wrap gap-6 pt-4 text-sm text-white/60">
               <Stat label="Creators vetted" value="450+" footer="18 markets" />
               <Stat label="Campaigns shipped" value="120+" footer="Last 12 months" />
-              <Stat label="UGC board" value="Public" footer="Apply after login" />
+              <Stat label="Opportunities board" value="Public" footer="Apply after login" />
             </div>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
             <h3 className="text-lg font-semibold">Wireflow overview</h3>
             <ol className="mt-4 space-y-3 text-sm text-white/70">
               <li>Public: Home → Case studies → Resource Hub → Level-one split.</li>
-              <li>Creators: View UGC board, create profile, onboarding, dashboard.</li>
+              <li>Creators: View opportunities board, create profile, onboarding, dashboard.</li>
               <li>Brands: Needs questionnaire, profile, campaign + match tools.</li>
-              <li>Permissions: Resource Hub public, UGC creator-only, campaigns brand-only.</li>
+              <li>Permissions: Resource Hub public, opportunities creator-only, campaigns brand-only.</li>
             </ol>
             <button
               type="button"

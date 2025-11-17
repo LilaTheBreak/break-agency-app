@@ -1,4 +1,5 @@
 import React from "react";
+import { NoAccessCard } from "./NoAccessCard.jsx";
 
 export function ProtectedRoute({ session, allowed, onRequestSignIn, children }) {
   if (!session) {
@@ -14,12 +15,7 @@ export function ProtectedRoute({ session, allowed, onRequestSignIn, children }) 
 
   const canAccess = session.roles?.some((role) => allowed.includes(role));
   if (!canAccess) {
-    return (
-      <Gate
-        title="Permission denied"
-        description="Your role cannot access this view. Contact ops to update permissions."
-      />
-    );
+    return <NoAccessCard description="This module is restricted. Contact operations if you believe this is an error." />;
   }
 
   return children;
