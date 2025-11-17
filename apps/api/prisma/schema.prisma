@@ -8,24 +8,32 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String?
-  name        String?
-  location    String?
-  timezone    String?
-  pronouns    String?
-  accountType String?
-  status      String?
-  bio         String?
-  socialLinks Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  socialAccounts SocialAccount[]
-  socialAnalytics SocialAnalytics[]
-  socialPosts    SocialPost[]
-  emailLogs      EmailLog[]
-  socialTokens   SocialToken[]
+  id            String            @id @default(cuid())
+  email         String            @unique
+  password      String?
+  name          String?
+  location      String?
+  timezone      String?
+  pronouns      String?
+  accountType   String?
+  status        String?
+  bio           String?
+  socialLinks   Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  socialAccounts   SocialAccount[]
+  socialAnalytics  SocialAnalytics[]
+  socialPosts      SocialPost[]
+  emailLogs        EmailLog[]
+  socialTokens     SocialToken[]
+
+  auditLogs        AuditLog[]
+  adminActivities  AdminActivity[] @relation("AdminActivityActor")
+  payments         Payment[]
+  invoices         Invoice[]
+  payouts          Payout[]
+  creatorBalance   CreatorBalance?
 }
 
 enum SocialPlatform {
