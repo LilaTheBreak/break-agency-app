@@ -1,0 +1,7 @@
+{
+  "installCommand": "pnpm install --prefer-offline",
+  "buildCommand": "pnpm --filter @breakagency/web build",
+  "git": {
+    "ignoreCommand": "pnpm i --prefer-offline"
+  }
+}

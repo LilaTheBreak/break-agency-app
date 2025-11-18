@@ -2,7 +2,7 @@
   "name": "break-agency-app",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@9.12.3",
+  "packageManager": "pnpm@8.15.8",
   "scripts": {
     "dev": "pnpm -r --filter @breakagency/web --filter @breakagency/api --parallel dev",
     "dev:web": "pnpm --filter @breakagency/web dev",
