@@ -56,12 +56,12 @@ export async function getAssistantResponse({
 async function buildContext(role: string, userId: string, contextId?: string) {
   const [tasks, briefs, payouts, invoices] = await Promise.all([
     prisma.task.findMany({
-      where: { OR: [{ role }, { role: "global" }, { role: null }] },
+      where: { OR: [{ role }, { role: "global" }, { role: undefined }] },
       orderBy: { dueDate: "asc" },
       take: 5
     }),
     prisma.brief.findMany({
-      where: { OR: [{ role }, { role: "global" }, { role: null }] },
+      where: { OR: [{ role }, { role: "global" }, { role: undefined }] },
       orderBy: { updatedAt: "desc" },
       take: 5
     }),

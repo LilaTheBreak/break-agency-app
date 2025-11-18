@@ -1,11 +1,12 @@
-import { Router } from "express";
+import { Prisma } from "@prisma/client";
+import { Router, Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma.js";
 import { requireRole } from "../middleware/requireRole.js";
 import { createContract, sendForSignature, getSignatureStatus } from "../services/contracts/contractService.js";
 
 const router = Router();
 
-router.get("/contracts", ensureUser, async (req, res) => {
+router.get("/contracts", ensureUser, async (req: Request, res: Response) => {
   const user = req.user!;
   const contracts = await prisma.contract.findMany({
     orderBy: { createdAt: "desc" },
@@ -16,7 +17,7 @@ router.get("/contracts", ensureUser, async (req, res) => {
   res.json({ contracts: filtered });
 });
 
-router.post("/contracts/create", requireRole(["admin", "agent"]), async (req, res) => {
+router.post("/contracts/create", requireRole(["admin", "agent"]), async (req: Request, res: Response) => {
   const { title, parties, variables, templateId } = req.body ?? {};
   if (!title || typeof title !== "string") {
     return res.status(400).json({ error: "Title is required" });
@@ -39,7 +40,7 @@ router.post("/contracts/create", requireRole(["admin", "agent"]), async (req, re
     const contract = await prisma.contract.create({
       data: {
         title,
-        parties: normalizedParties,
+        parties: normalizedParties as Prisma.JsonValue,
         status: external.status || "draft",
         fileUrl: external.fileUrl || "",
         externalId: external.externalId || null
@@ -51,7 +52,7 @@ router.post("/contracts/create", requireRole(["admin", "agent"]), async (req, re
   }
 });
 
-router.post("/contracts/send", requireRole(["admin", "agent"]), async (req, res) => {
+router.post("/contracts/send", requireRole(["admin", "agent"]), async (req: Request, res: Response) => {
   const { contractId, recipients } = req.body ?? {};
   if (!contractId) {
     return res.status(400).json({ error: "contractId is required" });
@@ -76,7 +77,7 @@ router.post("/contracts/send", requireRole(["admin", "agent"]), async (req, res)
   }
 });
 
-router.get("/contracts/:id/status", ensureUser, async (req, res) => {
+router.get("/contracts/:id/status", ensureUser, async (req: Request, res: Response) => {
   const user = req.user!;
   const contract = await prisma.contract.findUnique({ where: { id: req.params.id } });
   if (!contract) {
@@ -104,7 +105,7 @@ router.get("/contracts/:id/status", ensureUser, async (req, res) => {
   }
 });
 
-function ensureUser(req, res, next) {
+function ensureUser(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.id) {
     return res.status(401).json({ error: "Authentication required" });
   }

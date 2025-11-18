@@ -1,15 +1,15 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-router.get("/messages/threads", requireUser, async (req, res) => {
+router.get("/messages/threads", requireUser, async (req: Request, res: Response) => {
   const currentUserId = req.user?.id as string;
   const threads = await buildThreadsForUser(currentUserId);
   res.json({ threads });
 });
 
-router.get("/messages/thread/:userId", requireUser, async (req, res) => {
+router.get("/messages/thread/:userId", requireUser, async (req: Request, res: Response) => {
   const currentUserId = req.user?.id as string;
   const targetId = String(req.params.userId);
   const threads = await buildThreadsForUser(currentUserId, targetId);
@@ -19,7 +19,7 @@ router.get("/messages/thread/:userId", requireUser, async (req, res) => {
   res.json({ thread: threads[0] });
 });
 
-router.post("/messages/send", requireUser, async (req, res) => {
+router.post("/messages/send", requireUser, async (req: Request, res: Response) => {
   const currentUserId = req.user?.id as string;
   const { recipientId, content } = req.body ?? {};
   if (!recipientId || typeof recipientId !== "string") {
@@ -42,7 +42,7 @@ router.post("/messages/send", requireUser, async (req, res) => {
   res.status(201).json({ message });
 });
 
-router.patch("/messages/:id/read", requireUser, async (req, res) => {
+router.patch("/messages/:id/read", requireUser, async (req: Request, res: Response) => {
   const currentUserId = req.user?.id as string;
   const messageId = String(req.params.id);
   const message = await prisma.message.findUnique({ where: { id: messageId } });
@@ -171,7 +171,7 @@ function createEmptyThread(
   };
 }
 
-function requireUser(req, res, next) {
+function requireUser(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.id) {
     return res.status(401).json({ error: "Authentication required" });
   }

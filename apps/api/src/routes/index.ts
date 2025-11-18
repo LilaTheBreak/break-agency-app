@@ -1,5 +1,5 @@
-import { Router } from "express";
-import type { User } from "@prisma/client";
+import { Prisma, type User } from "@prisma/client";
+import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import socialRouter from "./social.js";
 import emailRouter from "./email.js";
@@ -19,7 +19,7 @@ import { logAdminActivity } from "../lib/adminActivityLogger.js";
 
 const router = Router();
 
-router.get("/health", (_req, res) => {
+router.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
@@ -37,7 +37,7 @@ router.use(briefsRouter);
 router.use(aiRouter);
 router.use(campaignsRouter);
 
-router.get("/profiles/:email", async (req, res) => {
+router.get("/profiles/:email", async (req: Request, res: Response) => {
   const email = (req.params.email || "").toLowerCase();
   if (!email) {
     return res.status(400).json({ error: "Email is required" });
@@ -54,7 +54,7 @@ router.get("/profiles/:email", async (req, res) => {
   }
 });
 
-router.put("/profiles/:email", async (req, res) => {
+router.put("/profiles/:email", async (req: Request, res: Response) => {
   const email = (req.params.email || "").toLowerCase();
   if (!email) {
     return res.status(400).json({ error: "Email is required" });
@@ -88,11 +88,11 @@ router.put("/profiles/:email", async (req, res) => {
       action: "profile.update",
       entityType: "user",
       entityId: user.id,
-      metadata: profile
+      metadata: profile as Prisma.JsonObject
     });
     await logAdminActivity(req, {
       event: "admin.profile.update",
-      metadata: { userId: user.id, email }
+      metadata: { userId: user.id, email } as Prisma.JsonObject
     });
     res.json({ profile });
   } catch (error) {

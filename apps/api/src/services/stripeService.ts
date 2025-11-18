@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import Stripe from "stripe";
 import prisma from "../lib/prisma.js";
 import { logError } from "../lib/logger.js";
@@ -6,7 +7,7 @@ const stripeSecret = process.env.STRIPE_SECRET_KEY || "";
 export const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 export const stripeClient = stripeSecret
-  ? new Stripe(stripeSecret, { apiVersion: "2023-10-16" })
+  ? new Stripe(stripeSecret, { apiVersion: "2024-04-10" })
   : null;
 
 export async function handleStripeEvent(event: Stripe.Event) {
@@ -45,7 +46,7 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
       status,
       destination: typeof payout.destination === "string" ? payout.destination : payout.destination?.id,
       provider: "stripe",
-      metadata: payout.metadata || {}
+      metadata: toJson(payout.metadata || {})
     },
     create: {
       userId,
@@ -55,7 +56,7 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
       currency: payout.currency,
       status,
       destination: typeof payout.destination === "string" ? payout.destination : payout.destination?.id,
-      metadata: payout.metadata || {}
+      metadata: toJson(payout.metadata || {})
     }
   });
 
@@ -71,7 +72,7 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
         available: status === "paid" ? 0 : 0,
         pending: status === "paid" ? 0 : amount,
         currency: payout.currency,
-        metadata: payout.metadata || {}
+        metadata: toJson(payout.metadata || {})
       }
     });
   }
@@ -96,7 +97,7 @@ async function handleRefundEvent(charge: Stripe.Charge) {
     where: { stripePaymentIntentId: paymentIntentId },
     data: {
       status: "refunded",
-      metadata: { ...(charge.metadata || {}), refundId: charge.id }
+      metadata: toJson({ ...(charge.metadata || {}), refundId: charge.id })
     }
   });
 }
@@ -109,11 +110,11 @@ async function handlePaymentFailed(payment: Stripe.PaymentIntent) {
       amount: payment.amount ?? 0,
       currency: payment.currency ?? "usd",
       status: payment.status ?? "payment_failed",
-      metadata: payment.metadata || {}
+      metadata: toJson(payment.metadata || {})
     },
     update: {
       status: payment.status ?? "payment_failed",
-      metadata: payment.metadata || {}
+      metadata: toJson(payment.metadata || {})
     }
   });
 }
@@ -121,9 +122,7 @@ async function handlePaymentFailed(payment: Stripe.PaymentIntent) {
 async function handleAccountUpdated(account: Stripe.Account) {
   const userId = (account.metadata?.userId as string) || null;
   if (!userId) return;
-  const metadata = account
-    ? JSON.parse(JSON.stringify(account))
-    : {};
+  const metadata = account ? toJson(account) : null;
   await prisma.creatorBalance.upsert({
     where: { userId },
     update: { metadata },
@@ -135,5 +134,13 @@ async function handleAccountUpdated(account: Stripe.Account) {
       metadata
     }
   }).catch((error) => logError("account update balance failed", error));
+}
+
+function toJson(value: unknown): Prisma.InputJsonValue {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
+  } catch {
+    return (value ?? null) as Prisma.InputJsonValue;
+  }
 }
 *** End of File

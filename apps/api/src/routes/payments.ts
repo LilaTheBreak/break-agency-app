@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import express, { Router, type Request, type Response } from "express";
 import Stripe from "stripe";
 import crypto from "node:crypto";
@@ -119,7 +120,7 @@ async function handleStripeInvoiceEvent(event: Stripe.Event) {
       currency,
       status,
       processedAt: status === "paid" ? new Date() : null,
-      metadata: invoice
+      metadata: serializeJson(invoice)
     },
     create: {
       externalId,
@@ -131,7 +132,7 @@ async function handleStripeInvoiceEvent(event: Stripe.Event) {
       currency,
       status,
       processedAt: status === "paid" ? new Date() : null,
-      metadata: invoice
+      metadata: serializeJson(invoice)
     }
   });
 
@@ -139,12 +140,12 @@ async function handleStripeInvoiceEvent(event: Stripe.Event) {
     where: { invoiceId: record.id },
     update: {
       status: status === "paid" ? "invoice_paid" : status,
-      details: { provider: "stripe", event: event.type, invoiceId: record.externalId }
+      details: serializeJson({ provider: "stripe", event: event.type, invoiceId: record.externalId })
     },
     create: {
       invoiceId: record.id,
       status: status === "paid" ? "invoice_paid" : status,
-      details: { provider: "stripe", event: event.type, invoiceId: record.externalId }
+      details: serializeJson({ provider: "stripe", event: event.type, invoiceId: record.externalId })
     }
   });
 
@@ -162,7 +163,7 @@ async function handleStripePayoutEvent(event: Stripe.Event) {
     where: { referenceId: payout.id },
     data: {
       status,
-      metadata: payout.metadata || {}
+      metadata: serializeJson(payout.metadata || {})
     }
   });
 
@@ -177,23 +178,23 @@ async function handleStripePayoutEvent(event: Stripe.Event) {
         update: {
           payoutId: payoutRecord.id,
           status: status === "paid" ? "payout_paid" : status,
-          details: {
+          details: serializeJson({
             provider: "stripe",
             event: event.type,
             invoiceId: invoiceRecord.externalId,
             payoutId: payoutRecord.referenceId
-          }
+          })
         },
         create: {
           invoiceId: invoiceRecord.id,
           payoutId: payoutRecord.id,
           status: status === "paid" ? "payout_paid" : status,
-          details: {
+          details: serializeJson({
             provider: "stripe",
             event: event.type,
             invoiceId: invoiceRecord.externalId,
             payoutId: payoutRecord.referenceId
-          }
+          })
         }
       });
     }
@@ -263,7 +264,7 @@ async function handlePayPalInvoiceEvent(event: PayPalWebhookEvent) {
       currency,
       status,
       processedAt: status === "paid" ? new Date() : null,
-      metadata: resource
+      metadata: serializeJson(resource)
     },
     create: {
       externalId,
@@ -275,7 +276,7 @@ async function handlePayPalInvoiceEvent(event: PayPalWebhookEvent) {
       currency,
       status,
       processedAt: status === "paid" ? new Date() : null,
-      metadata: resource
+      metadata: serializeJson(resource)
     }
   });
 
@@ -283,20 +284,20 @@ async function handlePayPalInvoiceEvent(event: PayPalWebhookEvent) {
     where: { invoiceId: record.id },
     update: {
       status: status === "paid" ? "invoice_paid" : status,
-      details: {
+      details: serializeJson({
         provider: "paypal",
         event: event.event_type,
         invoiceId: record.externalId
-      }
+      })
     },
     create: {
       invoiceId: record.id,
       status: status === "paid" ? "invoice_paid" : status,
-      details: {
+      details: serializeJson({
         provider: "paypal",
         event: event.event_type,
         invoiceId: record.externalId
-      }
+      })
     }
   });
 
@@ -336,7 +337,7 @@ async function handlePayPalPayoutEvent(event: PayPalWebhookEvent) {
       currency,
       status,
       destination: payoutItem.receiver || payoutItem.receiver_email || null,
-      metadata
+      metadata: serializeJson(metadata)
     },
     create: {
       referenceId,
@@ -346,7 +347,7 @@ async function handlePayPalPayoutEvent(event: PayPalWebhookEvent) {
       currency,
       status,
       destination: payoutItem.receiver || payoutItem.receiver_email || null,
-      metadata
+      metadata: serializeJson(metadata)
     }
   });
 
@@ -362,23 +363,23 @@ async function handlePayPalPayoutEvent(event: PayPalWebhookEvent) {
         update: {
           payoutId: payoutRecord.id,
           status: status === "paid" ? "payout_paid" : status,
-          details: {
+          details: serializeJson({
             provider: "paypal",
             event: event.event_type,
             invoiceId: invoice.externalId,
             payoutId: payoutRecord.referenceId
-          }
+          })
         },
         create: {
           invoiceId: invoice.id,
           payoutId: payoutRecord.id,
           status: status === "paid" ? "payout_paid" : status,
-          details: {
+          details: serializeJson({
             provider: "paypal",
             event: event.event_type,
             invoiceId: invoice.externalId,
             payoutId: payoutRecord.referenceId
-          }
+          })
         }
       });
     }
@@ -401,7 +402,7 @@ async function recordPaymentLog(
         provider,
         eventType,
         referenceId,
-        metadata
+        metadata: serializeJson(metadata)
       }
     });
   } catch (error) {
@@ -516,6 +517,14 @@ function verifyPayPalSignature(req: Request) {
     );
   } catch {
     return false;
+  }
+}
+
+function serializeJson(value: unknown): Prisma.InputJsonValue {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
+  } catch {
+    return (value ?? null) as Prisma.InputJsonValue;
   }
 }
 

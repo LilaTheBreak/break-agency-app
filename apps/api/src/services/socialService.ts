@@ -1,4 +1,4 @@
-import type { SocialPlatform } from "@prisma/client";
+import { Prisma, type SocialPlatform } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 import { TTLCache } from "../lib/cache.js";
 import {
@@ -43,7 +43,7 @@ export async function connectSocialAccount({
       accessToken: tokenResponse.accessToken,
       refreshToken: tokenResponse.refreshToken,
       tokenExpiresAt: tokenResponse.expiresIn ? new Date(Date.now() + tokenResponse.expiresIn * 1000) : null,
-      metadata: profile.metrics ?? {}
+      metadata: toJson(profile.metrics ?? {})
     },
     create: {
       userId,
@@ -59,7 +59,7 @@ export async function connectSocialAccount({
       accessToken: tokenResponse.accessToken,
       refreshToken: tokenResponse.refreshToken,
       tokenExpiresAt: tokenResponse.expiresIn ? new Date(Date.now() + tokenResponse.expiresIn * 1000) : null,
-      metadata: profile.metrics ?? {}
+      metadata: toJson(profile.metrics ?? {})
     }
   });
 
@@ -138,7 +138,9 @@ export async function refreshSocialAnalytics({
       if (error instanceof Error && error.message.includes("expired")) {
         await prisma.socialAccount.update({
           where: { id: account.id },
-          data: { metadata: { ...(account.metadata ?? {}), tokenStatus: "expired" } }
+          data: {
+            metadata: toJson({ ...(account.metadata ?? {}), tokenStatus: "expired" })
+          }
         });
       }
     }
@@ -167,8 +169,10 @@ async function syncAnalyticsForAccount(accountId: string, platform: SocialPlatfo
       velocityScore: analytics.velocityScore ?? null,
       reach: analytics.reach ?? null,
       profileViews: analytics.profileViews ?? null,
-      demographics: analytics.demographics ?? null,
-      raw: analytics
+      demographics: analytics.demographics
+        ? (toJson(analytics.demographics) as Prisma.JsonObject)
+        : null,
+      raw: toJson(analytics)
     }
   });
 
@@ -176,11 +180,11 @@ async function syncAnalyticsForAccount(accountId: string, platform: SocialPlatfo
     where: { id: accountId },
     data: {
       followers: analytics.followerCount,
-      metadata: {
+      metadata: toJson({
         ...(account.metadata ?? {}),
         demographics: analytics.demographics,
         velocityScore: analytics.velocityScore
-      },
+      }) as Prisma.JsonObject,
       updatedAt: new Date()
     }
   });
@@ -202,7 +206,7 @@ async function syncAnalyticsForAccount(accountId: string, platform: SocialPlatfo
         shares: post.shares,
         views: post.views,
         engagementRate: post.engagementRate,
-        metadata: post.metadata ?? {}
+        metadata: toJson(post.metadata ?? {})
       }))
     });
   }
@@ -210,4 +214,12 @@ async function syncAnalyticsForAccount(accountId: string, platform: SocialPlatfo
 
 function cacheKey(userId: string) {
   return `social:${userId}`;
+}
+
+function toJson(value: unknown): Prisma.InputJsonValue {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
+  } catch {
+    return (value ?? null) as Prisma.InputJsonValue;
+  }
 }

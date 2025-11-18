@@ -1,9 +1,10 @@
-import { Router } from "express";
+import { Prisma } from "@prisma/client";
+import { Router, Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-router.post("/campaigns/create", ensureManager, async (req, res) => {
+router.post("/campaigns/create", ensureManager, async (req: Request, res: Response) => {
   const { title, ownerId, stage = "PLANNING", brands = [], creatorTeams = [], metadata = {} } = req.body ?? {};
   if (!title) {
     return res.status(400).json({ error: "Title is required" });
@@ -29,7 +30,7 @@ router.post("/campaigns/create", ensureManager, async (req, res) => {
   }
 });
 
-router.post("/campaigns/:id/addBrand", ensureManager, async (req, res) => {
+router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: Response) => {
   const campaignId = req.params.id;
   const { brand } = req.body ?? {};
   if (!brand || typeof brand !== "object") {
@@ -52,7 +53,7 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req, res) => {
   }
 });
 
-router.get("/campaigns/:id", ensureUser, async (req, res) => {
+router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => {
   try {
     const campaign = await fetchCampaign(req.params.id, req.user!.id);
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
@@ -65,7 +66,7 @@ router.get("/campaigns/:id", ensureUser, async (req, res) => {
   }
 });
 
-router.get("/campaigns/user/:userId", ensureUser, async (req, res) => {
+router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Response) => {
   const requester = req.user!;
   let targetId = req.params.userId;
   if (targetId === "me") targetId = requester.id;
@@ -120,7 +121,7 @@ async function syncBrandPivots(campaignId: string, brands: any[]) {
     data: entries.map((entry) => ({
       campaignId,
       brandId: entry.brandId,
-      metrics: entry.metrics
+      metrics: entry.metrics as Prisma.InputJsonValue
     }))
   });
 }
@@ -184,12 +185,12 @@ function formatCampaign(campaign: any) {
   };
 }
 
-function ensureUser(req, res, next) {
+function ensureUser(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.id) return res.status(401).json({ error: "Authentication required" });
   next();
 }
 
-function ensureManager(req, res, next) {
+function ensureManager(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.id) return res.status(401).json({ error: "Authentication required" });
   if (!isManager(req.user)) return res.status(403).json({ error: "Insufficient permissions" });
   next();
@@ -215,11 +216,11 @@ function normalizeStage(stage: string) {
   return ["PLANNING", "ACTIVE", "REVIEW", "COMPLETE"].includes(upper) ? upper : "PLANNING";
 }
 
-function sanitize(data: unknown) {
+function sanitize(data: unknown): Prisma.InputJsonValue {
   try {
-    return JSON.parse(JSON.stringify(data ?? {}));
+    return JSON.parse(JSON.stringify(data ?? {})) as Prisma.InputJsonValue;
   } catch {
-    return data;
+    return (data ?? null) as Prisma.InputJsonValue;
   }
 }
 

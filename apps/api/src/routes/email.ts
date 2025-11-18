@@ -1,7 +1,8 @@
-import { Router } from "express";
+import { Prisma } from "@prisma/client";
+import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { EMAIL_TEMPLATE_NAMES } from "../emails/templates/index.js";
+import { EMAIL_TEMPLATE_NAMES, type EmailTemplateName } from "../emails/templates/index.js";
 import { logAuditEvent } from "../lib/auditLogger.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { sendTemplatedEmail, listEmailLogs } from "../services/email/emailClient.js";
@@ -28,7 +29,7 @@ const sendSchema = z.object({
   userId: z.string().optional()
 });
 
-router.post("/email/test", async (req, res) => {
+router.post("/email/test", async (req: Request, res: Response) => {
   try {
     const to = typeof req.body?.to === "string" ? req.body.to : process.env.TEST_EMAIL_TO || "";
     if (!to) {
@@ -38,11 +39,11 @@ router.post("/email/test", async (req, res) => {
     await logAuditEvent(req, {
       action: "email.test",
       entityType: "email",
-      metadata: { to }
+      metadata: { to } as Prisma.JsonObject
     });
     await logAdminActivity(req, {
       event: "admin.email.test",
-      metadata: { to }
+      metadata: { to } as Prisma.JsonObject
     });
     res.json({ status: "queued", logId: log.id });
   } catch (error) {
@@ -50,19 +51,19 @@ router.post("/email/test", async (req, res) => {
   }
 });
 
-router.post("/email/send", async (req, res) => {
+router.post("/email/send", async (req: Request, res: Response) => {
   try {
     const payload = sendSchema.parse(req.body ?? {});
-    const response = await sendTemplatedEmail(payload);
+    const response = await sendTemplatedEmail({ ...payload, template: payload.template as EmailTemplateName });
     await logAuditEvent(req, {
       action: "email.send",
       entityType: "email",
       entityId: payload.userId ?? null,
-      metadata: { to: payload.to, template: payload.template }
+      metadata: { to: payload.to, template: payload.template } as Prisma.JsonObject
     });
     await logAdminActivity(req, {
       event: "admin.email.send",
-      metadata: { to: payload.to, template: payload.template }
+      metadata: { to: payload.to, template: payload.template } as Prisma.JsonObject
     });
     res.json({ status: response.status, logId: response.id });
   } catch (error) {
@@ -73,7 +74,7 @@ router.post("/email/send", async (req, res) => {
   }
 });
 
-router.get("/email/logs", async (req, res) => {
+router.get("/email/logs", async (req: Request, res: Response) => {
   try {
     const limit = Math.min(parseInt(String(req.query.limit ?? "50"), 10) || 50, 200);
     const logs = await listEmailLogs(limit);

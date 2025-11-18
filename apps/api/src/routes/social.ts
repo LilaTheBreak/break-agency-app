@@ -1,7 +1,7 @@
-import { Router } from "express";
+import { Prisma, SocialPlatform } from "@prisma/client";
+import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { SocialPlatform } from "@prisma/client";
 import {
   connectSocialAccount,
   getSocialAnalyticsForUser,
@@ -30,7 +30,7 @@ const userParamSchema = z.object({ userId: z.string().min(1) });
 const platformQuerySchema = z.object({ platform: z.nativeEnum(SocialPlatform).optional() });
 const refreshBodySchema = z.object({ platform: z.nativeEnum(SocialPlatform).optional() });
 
-router.post("/social/connect/:platform", async (req, res) => {
+router.post("/social/connect/:platform", async (req: Request, res: Response) => {
   try {
     const platform = parsePlatform(req.params.platform);
     const { code, redirectUri, userId } = req.body ?? {};
@@ -47,11 +47,11 @@ router.post("/social/connect/:platform", async (req, res) => {
       action: "social.connect",
       entityType: "social",
       entityId: userId,
-      metadata: { platform }
+      metadata: { platform } as Prisma.JsonObject
     });
     await logAdminActivity(req, {
       event: "admin.social.connect",
-      metadata: { platform, userId }
+      metadata: { platform, userId } as Prisma.JsonObject
     });
     res.json({ account });
   } catch (error) {
@@ -60,7 +60,7 @@ router.post("/social/connect/:platform", async (req, res) => {
   }
 });
 
-router.get("/social/:userId", async (req, res) => {
+router.get("/social/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     if (!userId) {
@@ -74,7 +74,7 @@ router.get("/social/:userId", async (req, res) => {
   }
 });
 
-router.get("/social/:userId/refresh", async (req, res) => {
+router.get("/social/:userId/refresh", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     if (!userId) {
@@ -93,7 +93,7 @@ router.get("/social/:userId/refresh", async (req, res) => {
   }
 });
 
-router.get("/social/stats/:userId", async (req, res) => {
+router.get("/social/stats/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = userParamSchema.parse(req.params);
     const { platform } = platformQuerySchema.parse({
@@ -110,7 +110,7 @@ router.get("/social/stats/:userId", async (req, res) => {
   }
 });
 
-router.get("/social/posts/:userId", async (req, res) => {
+router.get("/social/posts/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = userParamSchema.parse(req.params);
     const { platform } = platformQuerySchema.parse({
@@ -127,7 +127,7 @@ router.get("/social/posts/:userId", async (req, res) => {
   }
 });
 
-router.post("/social/refresh/:userId", async (req, res) => {
+router.post("/social/refresh/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = userParamSchema.parse(req.params);
     const body = refreshBodySchema.parse(

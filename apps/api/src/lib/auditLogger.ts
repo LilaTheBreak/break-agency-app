@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { Request } from "express";
 import prisma from "./prisma.js";
 
@@ -15,7 +16,7 @@ export async function logAuditEvent(req: Request, payload: AuditPayload) {
       action: payload.action,
       entityType: payload.entityType ?? null,
       entityId: payload.entityId ?? null,
-      metadata: payload.metadata ?? null
+      metadata: (payload.metadata ?? undefined) as Prisma.InputJsonValue
     }
   });
 }

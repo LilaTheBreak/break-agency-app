@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 import { stripeClient, stripeWebhookSecret, handleStripeEvent } from "../services/stripeService.js";
 import prisma from "../lib/prisma.js";
@@ -26,7 +27,7 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
       eventId: event.id,
       eventType: event.type,
       status: "received",
-      payload: event
+      payload: toJson(event)
     }
   });
 
@@ -44,5 +45,13 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
       data: { status: "failed", error: error instanceof Error ? error.message : "Unknown" }
     });
     res.status(500).json({ error: "Failed to process event" });
+  }
+}
+
+function toJson(value: unknown): Prisma.InputJsonValue {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
+  } catch {
+    return (value ?? null) as Prisma.InputJsonValue;
   }
 }

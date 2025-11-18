@@ -1,10 +1,11 @@
-import { Router } from "express";
+import { Prisma } from "@prisma/client";
+import { Router, Request, Response, NextFunction } from "express";
 import { getAssistantResponse } from "../services/ai/aiAssistant.js";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-router.post("/ai/:role", ensureUser, async (req, res) => {
+router.post("/ai/:role", ensureUser, async (req: Request, res: Response) => {
   const role = req.params.role || "admin";
   const userId = req.user!.id;
   const userInput = String(req.body?.userInput || req.body?.message || "").trim();
@@ -20,7 +21,7 @@ router.post("/ai/:role", ensureUser, async (req, res) => {
         role: result.role,
         prompt: userInput,
         response: result.response,
-        context: result.context
+        context: result.context as Prisma.InputJsonValue
       }
     });
     await pruneHistory(userId);
@@ -30,7 +31,7 @@ router.post("/ai/:role", ensureUser, async (req, res) => {
   }
 });
 
-function ensureUser(req, res, next) {
+function ensureUser(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.id) {
     return res.status(401).json({ error: "Authentication required" });
   }

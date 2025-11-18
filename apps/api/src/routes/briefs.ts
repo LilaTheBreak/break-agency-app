@@ -1,4 +1,5 @@
-import { Router } from "express";
+import { Prisma } from "@prisma/client";
+import { Router, Request, Response, NextFunction } from "express";
 import { createVersion, getVersions, restoreVersion } from "../services/briefs/versioning.js";
 import prisma from "../lib/prisma.js";
 import { logAuditEvent } from "../lib/auditLogger.js";
@@ -6,7 +7,7 @@ import { sendTemplatedEmail } from "../services/email/emailClient.js";
 
 const router = Router();
 
-router.get("/briefs/:briefId/versions", ensureUser, async (req, res) => {
+router.get("/briefs/:briefId/versions", ensureUser, async (req: Request, res: Response) => {
   try {
     const versions = await getVersions(req.params.briefId);
     res.json({ versions });
@@ -15,7 +16,7 @@ router.get("/briefs/:briefId/versions", ensureUser, async (req, res) => {
   }
 });
 
-router.post("/briefs/:briefId/version", ensureUser, async (req, res) => {
+router.post("/briefs/:briefId/version", ensureUser, async (req: Request, res: Response) => {
   try {
     const data = req.body?.data ?? {};
     const version = await createVersion(req.params.briefId, req.user?.id ?? null, data);
@@ -25,7 +26,7 @@ router.post("/briefs/:briefId/version", ensureUser, async (req, res) => {
   }
 });
 
-router.post("/briefs/restore/:versionId", ensureUser, async (req, res) => {
+router.post("/briefs/restore/:versionId", ensureUser, async (req: Request, res: Response) => {
   try {
     const { restored, newVersion } = await restoreVersion(req.params.versionId, req.user?.id ?? null);
     const brief = await prisma.brief.findUnique({ where: { id: restored.briefId } });
@@ -34,7 +35,10 @@ router.post("/briefs/restore/:versionId", ensureUser, async (req, res) => {
         action: "brief.restore",
         entityType: "brief",
         entityId: brief.id,
-        metadata: { versionRestored: restored.versionNumber, restoredBy: req.user.id }
+        metadata: {
+          versionRestored: restored.versionNumber,
+          restoredBy: req.user.id
+        } as Prisma.JsonObject
       });
       await notifyParties(brief, restored);
     }
@@ -83,7 +87,7 @@ function extractEmails(metadata: unknown) {
   return [];
 }
 
-function ensureUser(req, res, next) {
+function ensureUser(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.id) {
     return res.status(401).json({ error: "Authentication required" });
   }

@@ -1,5 +1,5 @@
+import { Prisma, type EmailLog } from "@prisma/client";
 import { Resend } from "resend";
-import type { EmailLog } from "@prisma/client";
 import prisma from "../lib/prisma.js";
 import { logError, logInfo } from "../lib/logger.js";
 import { templates, type EmailTemplateName, type EmailTemplateContext } from "../emails/templates/index.js";
@@ -43,7 +43,7 @@ export async function sendEmail({
       subject: subject ?? templateDef.subject(data),
       template,
       status: "queued",
-      metadata: data
+      metadata: (data ?? undefined) as Prisma.InputJsonValue
     }
   });
 

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { Request, Response, NextFunction } from "express";
 import { logAuditEvent } from "../lib/auditLogger.js";
 
@@ -23,7 +24,7 @@ export function auditMiddleware(req: Request, res: Response, next: NextFunction)
         action: entry.action,
         entityType: entry.entityType,
         entityId: typeof entityCandidate === "string" ? entityCandidate : undefined,
-        metadata: { method: req.method, path }
+        metadata: { method: req.method, path } as Prisma.JsonObject
       });
     }
   });

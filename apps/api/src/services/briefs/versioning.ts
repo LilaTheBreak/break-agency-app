@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import prisma from "../../lib/prisma.js";
 
 type VersionPayload = Record<string, unknown>;
@@ -11,13 +12,16 @@ export async function createVersion(briefId: string, userId: string | null, data
     data: {
       briefId,
       versionNumber,
-      data: sanitizedData,
+      data: sanitizedData as Prisma.JsonObject,
       createdBy: userId
     }
   });
   await prisma.brief.update({
     where: { id: briefId },
-    data: { currentVersionNumber: versionNumber, metadata: sanitizedData }
+    data: {
+      currentVersionNumber: versionNumber,
+      metadata: sanitizedData as Prisma.JsonObject
+    }
   });
   return version;
 }
@@ -36,7 +40,11 @@ export async function restoreVersion(versionId: string, userId: string | null) {
   if (!version) throw new Error("Version not found");
   const brief = await prisma.brief.findUnique({ where: { id: version.briefId } });
   if (!brief) throw new Error("Brief not found");
-  const newVersion = await createVersion(version.briefId, userId, version.data as VersionPayload);
+  const newVersion = await createVersion(
+    version.briefId,
+    userId,
+    (version.data ?? {}) as VersionPayload
+  );
   return { restored: version, newVersion };
 }
 
@@ -45,10 +53,10 @@ async function ensureBriefExists(briefId: string) {
   if (!exists) throw new Error("Brief not found");
 }
 
-function sanitizePayload(data: VersionPayload) {
+function sanitizePayload(data: VersionPayload): Prisma.JsonObject {
   try {
-    return JSON.parse(JSON.stringify(data ?? {}));
+    return JSON.parse(JSON.stringify(data ?? {})) as Prisma.JsonObject;
   } catch {
-    return { value: String(data) };
+    return { value: String(data) } as Prisma.JsonObject;
   }
 }

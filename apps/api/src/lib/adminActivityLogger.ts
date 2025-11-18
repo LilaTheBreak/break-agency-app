@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { Request } from "express";
 import prisma from "./prisma.js";
 import { logError } from "./logger.js";
@@ -13,7 +14,7 @@ export async function logAdminActivity(req: Request, payload: AdminActivityPaylo
       data: {
         actorId: req.user?.id ?? null,
         event: payload.event,
-        metadata: payload.metadata ?? null,
+        metadata: (payload.metadata ?? undefined) as Prisma.InputJsonValue,
         ip: req.ipAddress ?? req.ip
       }
     });

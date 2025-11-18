@@ -34,6 +34,7 @@ model User {
   invoices         Invoice[]
   payouts          Payout[]
   creatorBalance   CreatorBalance?
+  contracts        Contract[]
 }
 
 enum SocialPlatform {
@@ -42,6 +43,7 @@ enum SocialPlatform {
   YOUTUBE
   X
   LINKEDIN
+  FACEBOOK
 }
 
 model SocialAccount {
@@ -402,12 +404,26 @@ model BriefVersion {
   brief         Brief    @relation(fields: [briefId], references: [id], onDelete: Cascade)
   briefId       String
   versionNumber Int
-  data          Json
+  data          Json?
   createdBy     String?
   createdAt     DateTime @default(now())
 
   @@unique([briefId, versionNumber])
   @@index([briefId])
+}
+
+model Contract {
+  id        String   @id @default(cuid())
+  title     String
+  status    String   @default("draft")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  parties   Json?
+  fileUrl   String?
+  externalId String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AiHistory {

@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-router.get("/dashboard/:role", async (req, res) => {
+router.get("/dashboard/:role", async (req: Request, res: Response) => {
   const roleParam = String(req.params.role || "admin").toLowerCase();
   const roleFilter = buildRoleFilter(roleParam);
   const now = new Date();
@@ -100,7 +100,7 @@ function buildRoleFilter(role: string) {
       ...values.map((value) => ({
         role: { equals: value, mode: "insensitive" as const }
       })),
-      { role: null }
+      { role: undefined }
     ]
   };
 }
