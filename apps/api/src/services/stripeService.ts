@@ -121,7 +121,9 @@ async function handlePaymentFailed(payment: Stripe.PaymentIntent) {
 async function handleAccountUpdated(account: Stripe.Account) {
   const userId = (account.metadata?.userId as string) || null;
   if (!userId) return;
-  const metadata = account.toJSON ? account.toJSON() : account;
+  const metadata = account
+    ? JSON.parse(JSON.stringify(account))
+    : {};
   await prisma.creatorBalance.upsert({
     where: { userId },
     update: { metadata },
