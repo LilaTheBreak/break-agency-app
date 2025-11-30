@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import { useDashboardSummary } from "../hooks/useDashboardSummary.js";
 
 const DEFAULT_STATUS_SUMMARY = {
@@ -9,7 +9,7 @@ const DEFAULT_STATUS_SUMMARY = {
   contentDue: 6,
   briefsReview: 2,
   nextSteps: [
-    "AI recommends reallocating one concierge to the Luxury drop tasks to maintain SLA.",
+    "AI recommends reallocating one producer to the Luxury drop tasks to maintain SLA.",
     "Send finance reminder for the £22K outstanding invoice tied to Campaign Q3.",
     "Review the AI banking brief comments before tomorrow's stand-up."
   ],
@@ -27,7 +27,8 @@ export function DashboardShell({
   navLinks = [],
   children,
   statusSummary = {},
-  role
+  role,
+  showStatusSummary = false
 }) {
   const location = useLocation();
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
@@ -38,7 +39,12 @@ export function DashboardShell({
   );
   const payoutPending = mergedSummary.payoutTotals?.pending;
   const statusTiles = [
-    { label: "Tasks due", value: formatCount(mergedSummary.tasksDue), detail: "Across all queues" },
+    {
+      label: "Tasks due",
+      value: formatCount(mergedSummary.tasksDue),
+      detail: "Across all queues",
+      to: "/admin/tasks"
+    },
     { label: "Due tomorrow", value: formatCount(mergedSummary.dueTomorrow), detail: "Next 24h" },
     {
       label: "Payouts pending",
@@ -116,12 +122,14 @@ export function DashboardShell({
           </div>
         )}
         <div className="rounded-billboard border border-brand-black/10 bg-brand-white/70 p-6 shadow-brand">
-          <DashboardStatusGrid
-            tiles={statusTiles}
-            nextSteps={mergedSummary.nextSteps}
-            loading={summaryLoading}
-            error={summaryError}
-          />
+          {showStatusSummary ? (
+            <DashboardStatusGrid
+              tiles={statusTiles}
+              nextSteps={mergedSummary.nextSteps}
+              loading={summaryLoading}
+              error={summaryError}
+            />
+          ) : null}
           {children}
         </div>
       </div>
@@ -134,18 +142,33 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error }) {
     <div className="space-y-6">
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-3">
-        {tiles.map((tile) => (
-          <div
-            key={tile.label}
-            className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4"
-          >
-            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{tile.label}</p>
-            <p className="font-display text-3xl uppercase text-brand-black">
-              {loading ? "…" : tile.value ?? "—"}
-            </p>
-            <p className="text-xs text-brand-black/60">{tile.detail}</p>
-          </div>
-        ))}
+        {tiles.map((tile) => {
+          const content = (
+            <>
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{tile.label}</p>
+              <p className="font-display text-3xl uppercase text-brand-black">
+                {loading ? "…" : tile.value ?? "—"}
+              </p>
+              <p className="text-xs text-brand-black/60">{tile.detail}</p>
+            </>
+          );
+          return tile.to ? (
+            <Link
+              key={tile.label}
+              to={tile.to}
+              className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 transition hover:-translate-y-0.5 hover:bg-brand-white"
+            >
+              {content}
+            </Link>
+          ) : (
+            <div
+              key={tile.label}
+              className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4"
+            >
+              {content}
+            </div>
+          );
+        })}
       </div>
       <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
         <p className="text-xs uppercase tracking-[0.35em] text-brand-red">AI-generated next steps</p>

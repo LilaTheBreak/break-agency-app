@@ -1,44 +1,26 @@
 import { apiFetch } from "./apiClient.js";
 
-function buildAuthHeaders(session) {
-  if (!session?.email) return {};
-  const headers = { "x-user-id": session.email };
-  if (session.roles?.length) {
-    headers["x-user-roles"] = session.roles.join(",");
-  }
-  return headers;
-}
-
-export async function fetchThreads(session) {
-  const response = await apiFetch("/messages/threads", {
-    headers: {
-      ...buildAuthHeaders(session)
-    }
-  });
+export async function fetchThreads() {
+  const response = await apiFetch("/messages/threads");
   if (!response.ok) {
     throw new Error("Unable to load messages");
   }
   return response.json();
 }
 
-export async function fetchThread(session, userId) {
-  const response = await apiFetch(`/messages/thread/${encodeURIComponent(userId)}`, {
-    headers: {
-      ...buildAuthHeaders(session)
-    }
-  });
+export async function fetchThread(userId) {
+  const response = await apiFetch(`/messages/thread/${encodeURIComponent(userId)}`);
   if (!response.ok) {
     throw new Error("Unable to load thread");
   }
   return response.json();
 }
 
-export async function sendMessage(session, { recipientId, content }) {
+export async function sendMessage({ recipientId, content }) {
   const response = await apiFetch("/messages/send", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(session)
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({ recipientId, content })
   });
@@ -49,12 +31,9 @@ export async function sendMessage(session, { recipientId, content }) {
   return response.json();
 }
 
-export async function markMessageRead(session, messageId) {
+export async function markMessageRead(messageId) {
   const response = await apiFetch(`/messages/${encodeURIComponent(messageId)}/read`, {
-    method: "PATCH",
-    headers: {
-      ...buildAuthHeaders(session)
-    }
+    method: "PATCH"
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");

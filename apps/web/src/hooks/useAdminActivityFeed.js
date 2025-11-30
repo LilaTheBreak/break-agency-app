@@ -12,9 +12,7 @@ export function useAdminActivityFeed({ interval = 10000 } = {}) {
     let timer;
 
     const fetchActivities = async (params = "") => {
-      const response = await apiFetch(`/admin/activity/live${params}`, {
-        headers: { "x-user-roles": "admin" }
-      });
+      const response = await apiFetch(`/admin/activity/live${params}`);
       if (!response.ok) throw new Error("Unable to load admin activity");
       const payload = await response.json();
       return payload.activities || [];

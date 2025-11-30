@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { ControlRoomView } from "./ControlRoomView.jsx";
 import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 import { ProgressBar } from "../components/ProgressBar.jsx";
@@ -10,16 +11,24 @@ import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
 import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
+import { Roles } from "../auth/session.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import LoadingScreen from "../components/LoadingScreen.jsx";
 
 export function CreatorDashboard({ session }) {
+  const auth = useAuth();
+  const activeSession = session || auth.user;
+  if (auth.loading) return <LoadingScreen />;
+  if (!activeSession) return <Navigate to="/" replace />;
+
   return (
-    <ControlRoomView config={CONTROL_ROOM_PRESETS.talent} session={session}>
+    <ControlRoomView config={CONTROL_ROOM_PRESETS.talent} session={activeSession}>
       <CreatorRevenueSection />
       <CreatorOpportunitiesSection />
-      <CreatorCampaignsPanel session={session} />
-      <CreatorSubmissionsSection session={session} />
+      <CreatorCampaignsPanel session={activeSession} />
+      <CreatorSubmissionsSection session={activeSession} />
       <CreatorOnboardingSection />
-      <CreatorContractsSection session={session} />
+      <CreatorContractsSection session={activeSession} />
     </ControlRoomView>
   );
 }
@@ -140,7 +149,7 @@ const CREATOR_OPPORTUNITY_PIPELINE = [
     due: "Draft due 18 Dec",
     deliverables: "3x TikTok vlogs + itinerary PDF",
     status: "Pending submissions",
-    requirements: ["Focus on concierge experience", "Include Arabic subtitles", "Upload raw files to Break Drive"],
+    requirements: ["Focus on premium experience", "Include Arabic subtitles", "Upload raw files to Break Drive"],
     lastUpdate: "Waiting on final cut"
   },
   {
@@ -194,7 +203,7 @@ const SUBMISSION_PAYLOADS = [
     ],
     revisions: [{ note: "Tweak CTA to emphasise hospitality credit.", date: "Dec 03" }],
     finalLinks: [{ label: "Reel link", url: "https://instagram.com/thebreakco" }],
-    captions: "Traveling through Doha with @FiveStarCollective — tap for concierge perks.",
+    captions: "Traveling through Doha with @FiveStarCollective — tap for premium perks.",
     usageRights: "Global paid + organic 12 months",
     schedule: "Ready to schedule after approval"
   },
@@ -230,7 +239,7 @@ const SUBMISSION_PAYLOADS = [
     ],
     revisions: [],
     finalLinks: [{ label: "Break Drive folder", url: "https://drive.google.com" }],
-    captions: "Slide into Doha with Break Concierge — curated experiences daily.",
+    captions: "Slide into Doha with Break — curated experiences daily.",
     usageRights: "Paid + whitelisting 18 months",
     schedule: "Scheduled for Dec 15 10:00 GMT"
   },
@@ -751,8 +760,8 @@ function SubmissionDetailPanel({ submission, session }) {
         session={session}
         briefId={submission.id}
         data={submission}
-        allowCreate={Boolean(session?.roles?.some((role) => ["admin", "agent"].includes(role)))}
-        allowRestore={Boolean(session?.roles?.some((role) => ["admin", "agent"].includes(role)))}
+        allowCreate={Boolean(session?.roles?.some((role) => [Roles.ADMIN, Roles.AGENT].includes(role)))}
+        allowRestore={Boolean(session?.roles?.some((role) => [Roles.ADMIN, Roles.AGENT].includes(role)))}
       />
     </div>
   );

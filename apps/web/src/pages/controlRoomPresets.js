@@ -18,7 +18,7 @@ export const CONTROL_ROOM_PRESETS = {
       items: [
         { title: "Luxury hospitality roster", owner: "Mo Al Ghazi", status: "Ready for review" },
         { title: "Creator residency NYC", owner: "Lila Prasad", status: "Contracts out" },
-        { title: "AI talent concierge", owner: "Automation Pod", status: "Collecting requirements" }
+        { title: "AI talent desk", owner: "Automation Pod", status: "Collecting requirements" }
       ]
     },
     quickLinks: [
@@ -62,7 +62,7 @@ export const CONTROL_ROOM_PRESETS = {
   exclusive: {
     role: "exclusive-talent",
     title: "Exclusive Talent Control Room",
-    subtitle: "Preview the concierge roster — pitching, deal flow, and AI assistance for white-glove creators.",
+    subtitle: "",
     tabs: [
       { label: "Overview", anchor: "#exclusive-overview", default: true },
       { label: "My Profile", anchor: "#exclusive-profile" },
@@ -90,9 +90,9 @@ export const CONTROL_ROOM_PRESETS = {
       ]
     },
     quickLinks: [
-      { title: "Roster", copy: "Profiles, retainers, and deliverable calendars held by concierge leads." },
+      { title: "Roster", copy: "Profiles, retainers, and deliverable calendars held by lead strategists." },
       { title: "Opportunities", copy: "Direct brand requests before they graduate into UGC board." },
-      { title: "Concierge desk", copy: "Research, budgets, and negotiation transcripts for context." },
+      { title: "Creator desk", copy: "Research, budgets, and negotiation transcripts for context." },
       { title: "Messages", copy: "High-touch comms with assistants and partner teams." }
     ]
   },

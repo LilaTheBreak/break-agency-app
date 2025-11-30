@@ -1,7 +1,8 @@
 import prisma from "../../lib/prisma.js";
+import { safeEnv } from "../../utils/safeEnv.js";
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const OPENAI_API_KEY = safeEnv("OPENAI_API_KEY", "dev-openai-key");
+const OPENAI_MODEL = safeEnv("OPENAI_MODEL", "gpt-4o-mini");
 
 const ROLE_PROMPTS: Record<string, string> = {
   admin:
@@ -11,7 +12,7 @@ const ROLE_PROMPTS: Record<string, string> = {
   talent:
     "You are the Creator AI assistant. Give practical recommendations that keep deliverables, messaging, and approvals on track for premium creators.",
   "exclusive-talent":
-    "You are the Exclusive Talent AI copilot. Prioritize concierge-level suggestions for premium creators spanning campaigns, travel, and finance.",
+    "You are the Exclusive Talent AI copilot. Prioritize premium suggestions for top creators spanning campaigns, travel, and finance.",
   ugc:
     "You are the UGC Creator assistant. Provide actionable advice for hitting deliverables, responding to briefs, and optimizing workflow speed.",
   brand:

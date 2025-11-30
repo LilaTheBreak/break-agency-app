@@ -19,6 +19,9 @@ coverage/
 .env
 .env.*
 !.env.example
+apps/api/.env
+apps/web/.env
+*.env
 
 # TypeScript
 *.tsbuildinfo

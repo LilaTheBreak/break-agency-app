@@ -41,9 +41,7 @@ export function AdminActivityPage() {
       const trimmedUser = filters.userId.trim();
       if (trimmedUser) params.set("userId", trimmedUser);
       if (filters.entityType) params.set("entityType", filters.entityType);
-      const response = await apiFetch(`/audit?${params.toString()}`, {
-        headers: { "x-user-roles": "admin" }
-      });
+      const response = await apiFetch(`/audit?${params.toString()}`);
       if (!response.ok) throw new Error("Unable to load audit logs");
       const payload = await response.json();
       setLogs(payload.logs ?? []);

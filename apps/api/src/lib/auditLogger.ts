@@ -22,5 +22,6 @@ export async function logAuditEvent(req: Request, payload: AuditPayload) {
 }
 
 export function isAdminRequest(req: Request) {
-  return Boolean(req.user?.roles?.includes("admin"));
+  const roles = req.user?.roles || [];
+  return roles.some((role) => String(role).toLowerCase() === "admin");
 }

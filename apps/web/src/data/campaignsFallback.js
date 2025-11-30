@@ -3,7 +3,7 @@ export const FALLBACK_CAMPAIGN_CONFIG = [
     id: "residency",
     title: "Creator Residency NYC",
     stage: "ACTIVE",
-    creatorTeams: [{ name: "Concierge pod", members: ["exclusive@talent.com", "ugc@creator.com"] }],
+    creatorTeams: [{ name: "Premium pod", members: ["exclusive@talent.com", "ugc@creator.com"] }],
     brandSummaries: [
       {
         id: "luxury@brand.com",

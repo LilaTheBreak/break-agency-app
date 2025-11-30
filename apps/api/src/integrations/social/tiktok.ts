@@ -13,7 +13,7 @@ export async function getProfileStats(userId: string) {
       followers: 230000,
       engagementRate: 6.4,
       username: "breakco",
-      bio: "AI prep. concierge ops."
+      bio: "AI prep. ops."
     };
   } catch (error) {
     throw createIntegrationError("tiktok", error);

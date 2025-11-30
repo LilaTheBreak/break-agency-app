@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import express, { Router, type Request, type Response } from "express";
 import Stripe from "stripe";
 import crypto from "node:crypto";
+import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { stripeClient, handleStripeEvent } from "../services/stripeService.js";
 import { sendTemplatedEmail } from "../services/email/emailClient.js";
@@ -13,6 +14,62 @@ const stripePaymentsSecret =
   process.env.STRIPE_PAYMENTS_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET || "";
 const paypalWebhookSecret = process.env.PAYPAL_WEBHOOK_SECRET || "";
 const paypalWebhookId = process.env.PAYPAL_WEBHOOK_ID || "";
+
+const intentSchema = z.object({
+  amount: z.number().int().positive(),
+  currency: z.string().min(1),
+  metadata: z.record(z.any()).optional()
+});
+
+const invoiceSchema = z.object({
+  customerId: z.string().min(1),
+  amount: z.number().int().positive(),
+  description: z.string().min(1)
+});
+
+router.post("/intent", async (req: Request, res: Response) => {
+  if (!stripeClient) {
+    return res.status(503).json({ error: true, message: "Stripe not configured" });
+  }
+  try {
+    const payload = intentSchema.parse(req.body ?? {});
+    const intent = await stripeClient.paymentIntents.create({
+      amount: payload.amount,
+      currency: payload.currency,
+      metadata: payload.metadata
+    });
+    return res.json({ clientSecret: intent.client_secret });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create payment intent";
+    return res.status(400).json({ error: true, message });
+  }
+});
+
+router.post("/invoice", async (req: Request, res: Response) => {
+  if (!stripeClient) {
+    return res.status(503).json({ error: true, message: "Stripe not configured" });
+  }
+  try {
+    const payload = invoiceSchema.parse(req.body ?? {});
+    const item = await stripeClient.invoiceItems.create({
+      customer: payload.customerId,
+      amount: payload.amount,
+      currency: "usd",
+      description: payload.description
+    });
+    const invoice = await stripeClient.invoices.create({
+      customer: payload.customerId,
+      auto_advance: true,
+      collection_method: "send_invoice",
+      days_until_due: 30,
+      metadata: { invoiceItemId: item.id }
+    });
+    return res.json({ invoiceId: invoice.id, hostedInvoiceUrl: invoice.hosted_invoice_url });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create invoice";
+    return res.status(400).json({ error: true, message });
+  }
+});
 
 router.post(
   "/stripe/webhook",

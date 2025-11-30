@@ -1,0 +1,191 @@
+import prisma from "../lib/prisma.js";
+import OpenAI from "openai";
+import { sendSlackAlert } from "../integrations/slack/slackClient.js";
+import { syncCalendarEvent } from "./calendarSyncService.js";
+import { safeEnv } from "../utils/safeEnv.js";
+
+const OPENAI_API_KEY = safeEnv("OPENAI_API_KEY", "");
+const OPENAI_MODEL = safeEnv("OPENAI_MODEL", "gpt-4o-mini");
+const ai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+
+export async function createDeliverable(dealId: string, payload: any) {
+  return prisma.deliverableItem.create({
+    data: { dealId, ...payload }
+  });
+}
+
+export async function updateDeliverable(id: string, payload: any) {
+  return prisma.deliverableItem.update({
+    where: { id },
+    data: payload
+  });
+}
+
+export async function runDeliverableQA(deliverableId: string) {
+  const d = await prisma.deliverableItem.findUnique({
+    where: { id: deliverableId },
+    include: { deal: true }
+  });
+  if (!d) throw new Error("Deliverable not found");
+
+  const prompt = `
+Act as an influencer marketing QA specialist.
+Review this content and return JSON only:
+\nDELIVERABLE:\n${JSON.stringify(d, null, 2)}
+\nReturn:\n{
+  "compliance_score": 0-1,
+  "brand_fit_score": 0-1,
+  "risks": [],
+  "caption_issues": [],
+  "final_recommendation": "",
+  "summary": ""
+}`;
+
+  if (!ai) {
+    const fallback = {
+      compliance_score: 0.5,
+      brand_fit_score: 0.5,
+      risks: ["OpenAI key missing; provide manual review."],
+      caption_issues: [],
+      final_recommendation: "Manual review required.",
+      summary: "AI disabled."
+    };
+    await prisma.deliverableItem.update({ where: { id: deliverableId }, data: { aiQA: fallback as any } });
+    return fallback;
+  }
+
+  const response = await ai.chat.completions.create({
+    model: OPENAI_MODEL || "gpt-4o-mini",
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: "You are an expert content QA reviewer." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const result = JSON.parse(response.choices[0]?.message?.content || "{}");
+
+  await prisma.deliverableItem.update({
+    where: { id: deliverableId },
+    data: { aiQA: result as any }
+  });
+
+  return result;
+}
+
+export async function predictDeliverablePerformance(deliverableId: string) {
+  const d = await prisma.deliverableItem.findUnique({
+    where: { id: deliverableId },
+    include: { deal: true }
+  });
+  if (!d) throw new Error("Deliverable not found");
+
+  const prompt = `
+Predict influencer content performance. Return JSON only.
+\n${JSON.stringify(d, null, 2)}
+\nReturn:\n{
+  "expected_views": <number>,
+  "expected_engagement_rate": <float>,
+  "viral_probability": <0-1>,
+  "confidence": <0-1>,
+  "factors": [],
+  "summary": ""
+}`;
+
+  if (!ai) {
+    const fallback = {
+      expected_views: 0,
+      expected_engagement_rate: 0,
+      viral_probability: 0.1,
+      confidence: 0.1,
+      factors: ["AI disabled; manual estimation required."],
+      summary: "AI disabled."
+    };
+    await prisma.deliverableItem.update({ where: { id: deliverableId }, data: { aiPrediction: fallback as any } });
+    return fallback;
+  }
+
+  const response = await ai.chat.completions.create({
+    model: OPENAI_MODEL || "gpt-4o-mini",
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: "You are an expert social performance model." },
+      { role: "user", content: prompt }
+    ]
+  });
+
+  const data = JSON.parse(response.choices[0]?.message?.content || "{}");
+
+  await prisma.deliverableItem.update({
+    where: { id: deliverableId },
+    data: { aiPrediction: data as any }
+  });
+
+  if ((data.confidence ?? 1) < 0.2) {
+    await sendSlackAlert("Low confidence deliverable prediction", { deliverableId });
+  }
+
+  return data;
+}
+
+export async function createDeliverablesFromContract(contractId: string) {
+  const contract = await prisma.contractReview.findUnique({
+    where: { id: contractId }
+  });
+
+  if (!contract || !contract.aiDealMapping) return { count: 0 };
+
+  const mapping = contract.aiDealMapping as any;
+  const deliverables =
+    mapping?.deliverables?.map((d: string) => ({
+      title: d,
+      description: null,
+      dealId: null,
+      campaignId: null,
+      contractId,
+      userId: contract.userId,
+      dueDate: null,
+      status: "scheduled"
+    })) || [];
+
+  if (!deliverables.length) return { count: 0 };
+
+  const created = await prisma.deliverable.createMany({ data: deliverables });
+
+  await sendSlackAlert("Deliverables auto-created from contract", {
+    contractId,
+    count: created.count
+  });
+
+  return created;
+}
+
+export async function updateDeliverableStatus(id: string, status: string) {
+  const updated = await prisma.deliverable.update({
+    where: { id },
+    data: { status }
+  });
+
+  await syncDeliverableToCalendar(id);
+  return updated;
+}
+
+export async function listDeliverablesForUser(userId: string) {
+  return prisma.deliverable.findMany({
+    where: { userId },
+    orderBy: { dueDate: "asc" }
+  });
+}
+
+export async function syncDeliverableToCalendar(deliverableId: string) {
+  const deliverable = await prisma.deliverable.findUnique({ where: { id: deliverableId } });
+  if (!deliverable || !deliverable.dueDate || !deliverable.userId) return;
+
+  await syncCalendarEvent({
+    userId: deliverable.userId,
+    type: "DELIVERABLE_DUE",
+    title: deliverable.title,
+    date: deliverable.dueDate,
+    metadata: { deliverableId }
+  });
+}

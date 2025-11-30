@@ -17,11 +17,7 @@ export function useAuditLogs({ userId, limit = 50, entityType } = {}) {
     setLoading(true);
     setError("");
     try {
-      const response = await apiFetch(endpoint, {
-        headers: {
-          "x-user-roles": "admin"
-        }
-      });
+      const response = await apiFetch(endpoint);
       if (!response.ok) {
         throw new Error("Unable to load audit logs");
       }

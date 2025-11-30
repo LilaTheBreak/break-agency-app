@@ -4,7 +4,7 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 
-export function ControlRoomView({ config, children, session }) {
+export function ControlRoomView({ config, children, session, showStatusSummary = false }) {
   if (!config) {
     return null;
   }
@@ -26,6 +26,7 @@ export function ControlRoomView({ config, children, session }) {
       role={config.role}
       navLinks={navLinks}
       navigation={navLinks.length ? undefined : tabs}
+      showStatusSummary={showStatusSummary}
     >
       <div className="mb-6">
         <AiAssistantCard

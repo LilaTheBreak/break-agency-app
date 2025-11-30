@@ -2,14 +2,15 @@ const SESSION_KEY = "break_agency_session_v1";
 export const SESSION_CHANGED_EVENT = "break-agency-session-changed";
 
 export const Roles = {
-  ADMIN: "admin",
-  AGENT: "agent",
-  BRAND: "brand",
-  CREATOR: "creator",
-  EXCLUSIVE_TALENT: "exclusive-talent",
-  UGC: "ugc",
-  FOUNDER: "founder",
-  TALENT_MANAGER: "talent-manager"
+  ADMIN: "ADMIN",
+  AGENT: "AGENT",
+  BRAND: "BRAND",
+  CREATOR: "CREATOR",
+  EXCLUSIVE_TALENT: "EXCLUSIVE_TALENT",
+  UGC_TALENT: "UGC_TALENT",
+  UGC: "UGC_TALENT",
+  FOUNDER: "FOUNDER",
+  TALENT_MANAGER: "TALENT_MANAGER"
 };
 
 const rolePriority = [
@@ -20,7 +21,7 @@ const rolePriority = [
   Roles.EXCLUSIVE_TALENT,
   Roles.BRAND,
   Roles.CREATOR,
-  Roles.UGC
+  Roles.UGC_TALENT
 ];
 
 function derivePrimaryRole(roles = []) {

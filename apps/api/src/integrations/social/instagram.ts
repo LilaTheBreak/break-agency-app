@@ -10,7 +10,7 @@ async function simulateApiCall(tokenId: string) {
     followers: 180000,
     engagementRate: 5.1,
     username: "thebreakco",
-    bio: "Creator residency + concierge",
+    bio: "Creator residency + live ops",
     recentPosts: [
       { id: "ig1", caption: "Studio drop", likes: 1200, comments: 54 },
       { id: "ig2", caption: "Residency reel", likes: 1500, comments: 70 }

@@ -92,11 +92,11 @@ async function buildThreadsForUser(currentUserId: string, targetId?: string) {
 
   const users = counterpartIds.size
     ? await prisma.user.findMany({
-        where: { email: { in: Array.from(counterpartIds) } },
-        select: { email: true, name: true, accountType: true, status: true }
+        where: { id: { in: Array.from(counterpartIds) } },
+        select: { id: true, name: true, accountType: true, status: true }
       })
     : [];
-  const userMap = new Map(users.map((user) => [user.email, user]));
+  const userMap = new Map(users.map((user) => [user.id, user]));
 
   const threads = Array.from(counterpartIds).map((counterpartId) => {
     const user = userMap.get(counterpartId);

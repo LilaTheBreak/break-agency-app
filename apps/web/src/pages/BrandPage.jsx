@@ -1,9 +1,43 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { getSuitabilityScore } from "../hooks/useSuitability.js";
+import SuitabilityScore from "../components/SuitabilityScore.jsx";
 
 const brandNav = ["Dashboard", "Campaigns", "Creator Match", "Reports", "Messages", "Account"];
 
 export function BrandPage({ onRequestSignIn }) {
+  const [fitResult, setFitResult] = React.useState(null);
+  const [fitError, setFitError] = React.useState("");
+  const [fitLoading, setFitLoading] = React.useState(false);
+
+  const handleDemoFit = async () => {
+    setFitLoading(true);
+    setFitError("");
+    try {
+      const result = await getSuitabilityScore({
+        talent: {
+          categories: ["fashion", "lifestyle"],
+          audienceInterests: ["beauty", "shopping"],
+          avgEngagementRate: 3.5,
+          platforms: ["instagram", "tiktok"],
+          brandSafetyFlags: []
+        },
+        brief: {
+          industry: "fashion",
+          targetInterests: ["fashion", "beauty"],
+          goals: ["awareness"],
+          requiredPlatforms: ["instagram"],
+          excludedCategories: []
+        }
+      });
+      setFitResult(result);
+    } catch (err) {
+      setFitError(err instanceof Error ? err.message : "Unable to calculate fit");
+    } finally {
+      setFitLoading(false);
+    }
+  };
+
   return (
     <div className="bg-slate-950 text-white">
       <section className="border-b border-white/10 bg-black/40">
@@ -57,6 +91,29 @@ export function BrandPage({ onRequestSignIn }) {
           >
             Launch questionnaire
           </button>
+        </div>
+        <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Suitability</p>
+              <p className="text-lg font-semibold">Talent-brand fit demo</p>
+              <p className="text-sm text-white/70">Pattern-based score using categories, platforms, and engagement.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDemoFit}
+              disabled={fitLoading}
+              className="rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-black disabled:opacity-50"
+            >
+              {fitLoading ? "Calculating..." : "Run demo fit"}
+            </button>
+          </div>
+          {fitError ? <p className="mt-2 text-sm text-brand-red">{fitError}</p> : null}
+          {fitResult ? (
+            <div className="mt-4">
+              <SuitabilityScore {...fitResult} />
+            </div>
+          ) : null}
         </div>
       </section>
     </div>

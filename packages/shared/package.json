@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": false,
   "type": "module",
+  "engines": {
+    "node": ">=22.21.1",
+    "pnpm": ">=8.0.0"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

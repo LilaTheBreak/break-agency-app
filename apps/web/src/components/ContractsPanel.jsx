@@ -6,6 +6,7 @@ import {
   sendContractRequest,
   fetchContractStatus
 } from "../services/contractClient.js";
+import { Roles } from "../auth/session.js";
 
 const STATUS_TONES = {
   draft: "neutral",
@@ -22,7 +23,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [formState, setFormState] = useState({ title: "", parties: "", variables: "" });
   const canManage = useMemo(
-    () => session?.roles?.some((role) => role === "admin" || role === "agent"),
+    () => session?.roles?.some((role) => role === Roles.ADMIN || role === Roles.AGENT),
     [session?.roles]
   );
 
@@ -31,7 +32,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
     setLoading(true);
     setError("");
     try {
-      const response = await listContracts(session);
+      const response = await listContracts();
       setContracts(response.contracts || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load contracts");
@@ -57,7 +58,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
     }
     const variables = parseVariables(formState.variables);
     try {
-      await createContractRequest(session, {
+      await createContractRequest({
         title: formState.title || "Untitled contract",
         parties,
         variables
@@ -72,7 +73,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
 
   const handleSend = async (contractId) => {
     try {
-      await sendContractRequest(session, { contractId });
+      await sendContractRequest({ contractId });
       await loadContracts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send contract");
@@ -81,7 +82,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
 
   const handleRefreshStatus = async (contractId) => {
     try {
-      await fetchContractStatus(session, contractId);
+      await fetchContractStatus(contractId);
       await loadContracts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to refresh status");

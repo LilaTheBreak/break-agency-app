@@ -2,19 +2,23 @@ import React, { useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ExclusiveSocialPanel } from "./ExclusiveSocialPanel.jsx";
 import { Badge } from "../components/Badge.jsx";
-import { Outlet, useOutletContext } from "react-router-dom";
+import { Outlet, useNavigate, useOutletContext } from "react-router-dom";
 import { ContractsPanel } from "../components/ContractsPanel.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
+import { CalendarBoard } from "./AdminCalendarPage.jsx";
 
 const NAV_LINKS = (basePath) => [
   { label: "Overview", to: `${basePath}`, end: true },
   { label: "My Profile", to: `${basePath}/profile` },
   { label: "Socials", to: `${basePath}/socials` },
   { label: "Campaigns", to: `${basePath}/campaigns` },
+  { label: "Calendar", to: `${basePath}/calendar` },
+  { label: "Projects", to: `${basePath}/projects` },
   { label: "Opportunities", to: `${basePath}/opportunities` },
+  { label: "Tasks", to: `${basePath}/tasks` },
   { label: "Financials", to: `${basePath}/financials` },
   { label: "Messages", to: `${basePath}/messages` },
   { label: "Contracts", to: `${basePath}/contracts` },
@@ -23,7 +27,7 @@ const NAV_LINKS = (basePath) => [
 
 const PROFILE_INFO = {
   name: "Exclusive Creator",
-  bio: "Lifestyle + travel creator with concierge support, live residencies, and hybrid IRL launches.",
+  bio: "Lifestyle + travel creator with white-glove support, live residencies, and hybrid IRL launches.",
   location: "New York / Doha",
   email: "exclusive@talent.com",
   agent: "Lila Prasad"
@@ -32,6 +36,134 @@ const PROFILE_INFO = {
 const ACTIVE_CAMPAIGNS = [
   { title: "Residency NYC", phase: "Deliverables", budget: "£42K", due: "Files by Friday" },
   { title: "Luxury hospitality tour", phase: "Pre-pro", budget: "£28K", due: "Scout call tomorrow" }
+];
+
+const PROJECTS = [
+  {
+    id: "proj-1",
+    title: "Launch signature cookbook",
+    summary: "Compile hero recipes, shoot assets, and plan preorders.",
+    status: "In production",
+    owner: "Creator studio",
+    due: "15 May"
+  },
+  {
+    id: "proj-2",
+    title: "IRL activation: Supper club",
+    summary: "Curate guest list, secure venue, and map sponsor integrations.",
+    status: "Pre-production",
+    owner: "Premium pods",
+    due: "22 Jun"
+  },
+  {
+    id: "proj-3",
+    title: "TED Talk roadmap",
+    summary: "Workshop narrative, scout speaker coaching, and film teaser.",
+    status: "Planning",
+    owner: "Break Labs",
+    due: "10 Aug"
+  }
+];
+
+const TASKS = [
+  { id: "task-1", title: "Submit Doha travel docs", status: "Due", due: "Today", brand: "Priority" },
+  { id: "task-2", title: "Send revised hero concept", status: "Blocked", due: "Tomorrow", brand: "Doha Pop-up" },
+  { id: "task-3", title: "Approve creator finance deck", status: "In progress", due: "Fri", brand: "Fintech Labs" }
+];
+
+const SUGGESTED_TASKS = [
+  { id: "sug-1", title: "Share cookbook mockups", brand: "Cookbook launch", due: "Next week" },
+  { id: "sug-2", title: "Draft supper club guest list", brand: "Supper club activation", due: "48h" },
+  { id: "sug-3", title: "Outline TED talk rehearsal plan", brand: "TED Talk roadmap", due: "This weekend" }
+];
+
+const SOCIAL_PLATFORMS = [
+  {
+    id: "instagram",
+    label: "Instagram",
+    handle: "@exclusive.creator",
+    stats: {
+      followers: "320K",
+      growth: "+1.2% WoW",
+      engagement: "5.3%",
+      komiClicks: "1.8K",
+      productClicks: "420"
+    },
+    topContent: [
+      { title: "Runway prep carousel", metric: "68K saves" },
+      { title: "AI copilot reel", metric: "1.2M views" }
+    ],
+    comments: ["Need full fit breakdown!", "AI copilot is genius 🔥"]
+  },
+  {
+    id: "tiktok",
+    label: "TikTok",
+    handle: "@exclusive.talent",
+    stats: {
+      followers: "580K",
+      growth: "+2.8% WoW",
+      engagement: "7.1%",
+      komiClicks: "2.4K",
+      productClicks: "610"
+    },
+    topContent: [
+      { title: "Supper club reveal", metric: "2.8M views" },
+      { title: "35hr residency vlog", metric: "430K likes" }
+    ],
+    comments: ["Need BTS of the supper club", "Where is the dress from??"]
+  },
+  {
+    id: "youtube",
+    label: "YouTube",
+    handle: "Exclusive Creator",
+    stats: {
+      followers: "210K",
+      growth: "+0.8% WoW",
+      engagement: "4.6%",
+      komiClicks: "980",
+      productClicks: "310"
+    },
+    topContent: [
+      { title: "Creator finance AMA", metric: "120K live views" },
+      { title: "Residency docu", metric: "88K watch hours" }
+    ],
+    comments: ["Please drop the deck template", "Post more finance deep dives!"]
+  }
+];
+
+const INITIAL_PILLARS = ["Luxury travel diaries", "AI copilot tips", "Residency IRL drops"];
+
+const TRENDING_CONTENT = [
+  {
+    id: "trend-1",
+    platform: "Instagram",
+    title: "Micro-itineraries carousel",
+    insight: "+24% saves on 5-slide travel story formats."
+  },
+  {
+    id: "trend-2",
+    platform: "TikTok",
+    title: "Ops POV mini-vlogs",
+    insight: "Under 40s prefer vertical tours w/ AI voiceover."
+  },
+  {
+    id: "trend-3",
+    platform: "YouTube",
+    title: "Creator finance AMAs",
+    insight: "Live chat monetisation spikes for finance topics."
+  },
+  {
+    id: "trend-4",
+    platform: "Instagram",
+    title: "Split-frame outfit planning",
+    insight: "Shoppable tags + luxury wardrobe racks trending."
+  },
+  {
+    id: "trend-5",
+    platform: "TikTok",
+    title: "Supper club guest reveals",
+    insight: "Countdown content boosting IRL attendance."
+  }
 ];
 
 const OPPORTUNITIES = [
@@ -62,7 +194,7 @@ const OPPORTUNITIES = [
   {
     title: "GCC Residency series",
     status: "Briefing",
-    brand: "Break Concierge",
+    brand: "Break Agency",
     value: "£40K",
     nextStep: "Share location scouting deck",
     stage: "Briefing"
@@ -86,15 +218,27 @@ const INVOICES = [
 
 const MESSAGES = [
   { subject: "Budget confirmation", context: "Brand ops · 2h ago" },
-  { subject: "Residency travel plan", context: "Concierge desk · 5h ago" },
+  { subject: "Residency travel plan", context: "Ops desk · 5h ago" },
   { subject: "Legal addendum", context: "Break legal · 1d ago" }
+];
+
+const CREATOR_ALERTS = [
+  { id: "alert-1", label: "Komi spike", detail: "+34% click-through on Monaco itinerary", action: "Open dashboard" },
+  { id: "alert-2", label: "Product waitlist", detail: "Cookbook pre-orders crossed 12K", action: "View funnel" },
+  { id: "alert-3", label: "DM backlog", detail: "18 VIP replies waiting on travel upgrade", action: "Assign support" }
+];
+
+const CREATOR_RESOURCES = [
+  { id: "tool-1", title: "Content brief generator", description: "AI prompts to spin new hooks in 3 clicks." },
+  { id: "tool-2", title: "Sponsorship ratecard", description: "Latest blended CPM + premium uplift." },
+  { id: "tool-3", title: "Residency playbook", description: "IRL launch checklist w/ staff ops." }
 ];
 
 export default function ExclusiveTalentDashboardLayout({ basePath = "/admin/view/exclusive", session }) {
   return (
     <DashboardShell
       title="Exclusive Talent Control Room"
-      subtitle="Preview the concierge roster — pitching, deal flow, and AI assistance for white-glove creators."
+      subtitle=""
       navLinks={NAV_LINKS(basePath)}
     >
       <Outlet context={{ session }} />
@@ -112,12 +256,217 @@ export function ExclusiveProfilePage() {
 }
 
 export function ExclusiveSocialsPage() {
-  return <ExclusiveSocialPanel />;
+  const [pillars, setPillars] = useState(INITIAL_PILLARS);
+  const [pillarInput, setPillarInput] = useState("");
+  const [platformFilter, setPlatformFilter] = useState("All");
+  const [platformProfiles, setPlatformProfiles] = useState(SOCIAL_PLATFORMS);
+
+  const handleAddPillar = (event) => {
+    event.preventDefault();
+    const value = pillarInput.trim();
+    if (!value) return;
+    setPillars((prev) => [...prev, value]);
+    setPillarInput("");
+  };
+
+  const filteredTrends = TRENDING_CONTENT.filter(
+    (item) => platformFilter === "All" || item.platform === platformFilter
+  );
+  const platforms = ["All", "Instagram", "TikTok", "YouTube"];
+
+  const handleHandleUpdate = (platformId, value) => {
+    setPlatformProfiles((prev) =>
+      prev.map((platform) =>
+        platform.id === platformId
+          ? {
+              ...platform,
+              handle: value
+            }
+          : platform
+      )
+    );
+  };
+
+  return (
+    <section id="exclusive-socials" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Socials</p>
+      <p className="text-sm text-brand-black/70">Monitor reach, growth, and platform diagnostics.</p>
+      <ExclusiveSocialPanel />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Content pillars</p>
+              <p className="text-sm text-brand-black/70">Save new angles to brief studio editors.</p>
+            </div>
+          </div>
+          <form className="mt-3 flex gap-2" onSubmit={handleAddPillar}>
+            <input
+              type="text"
+              placeholder="Add a new pillar..."
+              value={pillarInput}
+              onChange={(e) => setPillarInput(e.target.value)}
+              className="flex-1 rounded-2xl border border-brand-black/10 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]"
+            >
+              Save
+            </button>
+          </form>
+          <ul className="mt-3 space-y-2">
+            {pillars.map((pillar) => (
+              <li key={pillar} className="rounded-2xl border border-brand-black/10 bg-white/70 px-3 py-2 text-sm text-brand-black/80">
+                {pillar}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Trending formats</p>
+              <p className="text-sm text-brand-black/70">Filter by platform to spot fresh hooks.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.3em]">
+              {platforms.map((platform) => (
+                <button
+                  key={platform}
+                  type="button"
+                  onClick={() => setPlatformFilter(platform)}
+                  className={`rounded-full border px-3 py-1 ${
+                    platformFilter === platform ? "border-brand-red bg-brand-red text-brand-white" : "border-brand-black/20"
+                  }`}
+                >
+                  {platform}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 space-y-3">
+            {filteredTrends.map((trend) => (
+              <article key={trend.id} className="rounded-2xl border border-brand-black/10 bg-white/80 p-3">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-brand-black/60">
+                  <span>{trend.platform}</span>
+                  <Badge tone="neutral">Trending</Badge>
+                </div>
+                <p className="mt-2 font-semibold text-brand-black">{trend.title}</p>
+                <p className="text-sm text-brand-black/70">{trend.insight}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-4">
+        <div className="flex flex-wrap items-center justify-between">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Platform breakdown</p>
+            <p className="text-sm text-brand-black/70">Track handles, engagement, and top-performing drops.</p>
+          </div>
+          <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+            Refresh stats
+          </button>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {platformProfiles.map((platform) => (
+            <article key={platform.id} className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-display text-lg uppercase">{platform.label}</h3>
+                <Badge tone="neutral">Live</Badge>
+              </div>
+              <label className="block text-xs uppercase tracking-[0.35em] text-brand-black/60">
+                Handle
+                <input
+                  type="text"
+                  value={platform.handle}
+                  onChange={(e) => handleHandleUpdate(platform.id, e.target.value)}
+                  className="mt-1 w-full rounded-2xl border border-brand-black/10 px-3 py-2 text-sm"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-2 text-sm text-brand-black/70">
+                <div className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Followers</p>
+                  <p className="text-lg font-semibold">{platform.stats.followers}</p>
+                </div>
+                <div className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Growth</p>
+                  <p className="text-lg font-semibold">{platform.stats.growth}</p>
+                </div>
+                <div className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Engagement</p>
+                  <p className="text-lg font-semibold">{platform.stats.engagement}</p>
+                </div>
+                <div className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Komi clicks</p>
+                  <p className="text-lg font-semibold">{platform.stats.komiClicks}</p>
+                </div>
+                <div className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Product clicks</p>
+                  <p className="text-lg font-semibold">{platform.stats.productClicks}</p>
+                </div>
+                <div className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Engaged fans</p>
+                  <p className="text-lg font-semibold">Coming soon</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Top content</p>
+                <ul className="mt-2 space-y-1 text-sm text-brand-black/80">
+                  {platform.topContent.map((item) => (
+                    <li key={item.title} className="rounded-xl border border-brand-black/10 bg-white/80 px-3 py-2">
+                      <p className="font-semibold">{item.title}</p>
+                      <p className="text-xs text-brand-black/60">{item.metric}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Signal comments</p>
+                <ul className="mt-2 space-y-1 text-sm text-brand-black/80">
+                  {platform.comments.map((comment) => (
+                    <li key={comment} className="rounded-xl border border-brand-black/10 bg-white/80 px-3 py-2">
+                      {comment}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+                  Pull stats
+                </button>
+                <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+                  View Komi report
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function ExclusiveCampaignsPage() {
   const { session } = useOutletContext() || {};
   return <ExclusiveCampaigns session={session} />;
+}
+
+export function ExclusiveCalendarPage() {
+  return (
+    <CalendarBoard
+      headingTitle="Exclusive Talent Calendar"
+      headingSubtitle="Track content drops, travel, and executive meetings."
+    />
+  );
+}
+
+export function ExclusiveProjectsPage() {
+  return <ExclusiveProjects />;
+}
+
+export function ExclusiveTasksPage() {
+  return <ExclusiveTasks />;
 }
 
 export function ExclusiveOpportunitiesPage() {
@@ -136,10 +485,11 @@ export function ExclusiveContractsPage() {
   const { session } = useOutletContext() || {};
   return (
     <section id="exclusive-contracts" className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="text-sm text-brand-black/70">Keep tabs on agreements pending signature.</p>
       <ContractsPanel
         session={session}
         title="Contracts"
-        description="VIP agreements, concierge retainers, and residencies awaiting signature."
+        description="VIP agreements, retainers, and residencies awaiting signature."
       />
     </section>
   );
@@ -150,30 +500,78 @@ export function ExclusiveSettingsPage() {
 }
 
 function ExclusiveOverview({ session }) {
+  const navigate = useNavigate();
+  const metricCards = [
+    { label: "Active projects", value: "3", detail: "Residency + 2 campaigns", to: "projects" },
+    { label: "Projected revenue", value: "£120K", detail: "Next 90 days", to: "financials" },
+    { label: "Tasks due", value: "5", detail: "In priority queue", to: "tasks" }
+  ];
   return (
     <section id="exclusive-overview" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <AiAssistantCard
         session={session}
         role="exclusive"
         title="AI Assistant"
-        description="Ask AI how to balance concierge work this week."
+        description="Ask AI how to balance work this week."
       />
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Overview</p>
       <p className="text-sm text-brand-black/70">
-        Snapshot of concierge activity: pitching status, social velocity, and task queue for the current residency cycle.
+        Snapshot of activity: pitching status, social velocity, and task queue for the current residency cycle.
       </p>
       <div className="grid gap-4 md:grid-cols-3">
-        {[
-          { label: "Active projects", value: "3", detail: "Residency + 2 campaigns" },
-          { label: "Projected revenue", value: "£120K", detail: "Next 90 days" },
-          { label: "Tasks due", value: "5", detail: "In concierge queue" }
-        ].map((metric) => (
-          <article key={metric.label} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-brand-black">
+        {metricCards.map((metric) => (
+          <button
+            key={metric.label}
+            type="button"
+            onClick={() => metric.to && navigate(`/admin/view/exclusive/${metric.to}`)}
+            className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-left text-brand-black transition hover:border-brand-red"
+          >
             <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{metric.label}</p>
             <p className="text-2xl font-semibold">{metric.value}</p>
             <p className="text-xs text-brand-black/60">{metric.detail}</p>
-          </article>
+          </button>
         ))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <div className="flex items-center justify-between">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Priority alerts</p>
+            <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
+              Resolve all
+            </button>
+          </div>
+          <div className="mt-3 space-y-2">
+            {CREATOR_ALERTS.map((alert) => (
+              <article key={alert.id} className="rounded-xl border border-brand-black/10 bg-white/80 p-3 text-sm text-brand-black/80">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold">{alert.label}</p>
+                  <button className="text-xs uppercase tracking-[0.3em] text-brand-red">{alert.action}</button>
+                </div>
+                <p className="text-xs text-brand-black/60">{alert.detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator toolkit</p>
+          <p className="text-sm text-brand-black/70">Quick launches, scripts, and launch collateral.</p>
+          <div className="mt-3 space-y-2">
+            {CREATOR_RESOURCES.map((resource) => (
+              <article key={resource.id} className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
+                <p className="font-semibold text-brand-black">{resource.title}</p>
+                <p className="text-xs text-brand-black/60">{resource.description}</p>
+                <div className="mt-2 flex gap-2">
+                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
+                    Open
+                  </button>
+                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
+                    Duplicate
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
     </section>
   );
@@ -183,6 +581,7 @@ function ExclusiveProfile() {
   return (
     <section id="exclusive-profile" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">My profile</p>
+      <p className="text-sm text-brand-black/70">Identity snapshot for the roster preview.</p>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
           <h3 className="font-display text-xl uppercase">{PROFILE_INFO.name}</h3>
@@ -191,7 +590,7 @@ function ExclusiveProfile() {
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm text-brand-black/80">
           <p>Location: {PROFILE_INFO.location}</p>
           <p>Contact: {PROFILE_INFO.email}</p>
-          <p>Concierge lead: {PROFILE_INFO.agent}</p>
+          <p>Partner lead: {PROFILE_INFO.agent}</p>
         </div>
       </div>
     </section>
@@ -214,6 +613,7 @@ function ExclusiveCampaigns({ session }) {
           Add update
         </button>
       </div>
+      <p className="text-sm text-brand-black/70">Live briefs with deliverables, stages, and budgets.</p>
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       {loading && !campaigns.length ? (
         <p className="text-sm text-brand-black/60">Loading campaigns…</p>
@@ -243,6 +643,109 @@ function ExclusiveCampaigns({ session }) {
           ) : null}
         </>
       )}
+    </section>
+  );
+}
+
+function ExclusiveProjects() {
+  return (
+    <section className="mt-4 space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex items-center justify-between">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Projects</p>
+        <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+          New project
+        </button>
+      </div>
+      <p className="text-sm text-brand-black/70">Personal projects and goals - save edits and track progress.</p>
+      <div className="space-y-3">
+        {PROJECTS.map((project) => (
+          <article key={project.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-display text-lg uppercase">{project.title}</h3>
+              <Badge tone="neutral">{project.status}</Badge>
+            </div>
+            <p className="text-sm text-brand-black/70">{project.summary}</p>
+            <p className="text-xs text-brand-black/60">Owner: {project.owner} • Due: {project.due}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ExclusiveTasks() {
+  const [taskQueue, setTaskQueue] = useState(TASKS);
+  const [suggestedTasks, setSuggestedTasks] = useState(SUGGESTED_TASKS);
+
+  const handleAddSuggested = (taskId) => {
+    const task = suggestedTasks.find((item) => item.id === taskId);
+    if (!task) return;
+    setTaskQueue((prev) => [
+      ...prev,
+      {
+        id: `task-${Date.now()}`,
+        title: task.title,
+        status: "Not started",
+        due: task.due,
+        brand: task.brand
+      }
+    ]);
+    setSuggestedTasks((prev) => prev.filter((item) => item.id !== taskId));
+  };
+
+  return (
+    <section className="mt-4 space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex items-center justify-between">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Task queue</p>
+        <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
+          Assign task
+        </button>
+      </div>
+      <p className="text-sm text-brand-black/70">Follow-ups and creator deliverables awaiting action.</p>
+      <div className="space-y-3">
+        {taskQueue.map((task) => (
+          <article key={task.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="font-semibold text-brand-black">{task.title}</p>
+                <p className="text-xs text-brand-black/60">{task.brand}</p>
+              </div>
+              <Badge tone="neutral">{task.status}</Badge>
+            </div>
+            <p className="text-xs text-brand-black/60">Due: {task.due}</p>
+          </article>
+        ))}
+      </div>
+      <div className="border-t border-brand-black/10 pt-4">
+        <div className="flex flex-wrap items-center justify-between">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">AI suggested tasks</p>
+          <p className="text-xs text-brand-black/60">Curated by AI.</p>
+        </div>
+        <div className="mt-3 space-y-3">
+          {suggestedTasks.length === 0 ? (
+            <p className="text-sm text-brand-black/60">All caught up — no suggestions pending.</p>
+          ) : (
+            suggestedTasks.map((task) => (
+              <article key={task.id} className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-linen/30 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-brand-black">{task.title}</p>
+                    <p className="text-xs text-brand-black/60">{task.brand}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddSuggested(task.id)}
+                    className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                  >
+                    Add to queue
+                  </button>
+                </div>
+                <p className="text-xs text-brand-black/60">Suggested due: {task.due}</p>
+              </article>
+            ))
+          )}
+        </div>
+      </div>
     </section>
   );
 }
@@ -345,6 +848,7 @@ function ExclusiveFinancials() {
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Financials</p>
           <h3 className="font-display text-3xl uppercase">Revenue analytics</h3>
+          <p className="text-sm text-brand-black/70">Forecast payouts, campaign revenue, and invoice status.</p>
         </div>
         <div className="flex gap-2 text-xs uppercase tracking-[0.3em]">
           {["Week", "Month", "YTD"].map((option) => (
@@ -528,6 +1032,7 @@ function ExclusiveMessages() {
   return (
     <section id="exclusive-messages" className="space-y-3 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Messages</p>
+      <p className="text-sm text-brand-black/70">Latest comms and alerts.</p>
       <div className="space-y-2">
         {MESSAGES.map((message) => (
           <div key={message.subject} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-2 text-sm text-brand-black/80">
@@ -545,12 +1050,12 @@ function ExclusiveSettings() {
     <section id="exclusive-settings" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Settings</p>
       <p className="text-sm text-brand-black/70">
-        Configure notifications and concierge access. These controls preview how permissions will display inside the production environment.
+        Configure notifications and access. These controls preview how permissions will display inside the production environment.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm">
           <p className="font-semibold text-brand-black">Alerts</p>
-          <p className="text-xs text-brand-black/60">Concierge updates: Enabled</p>
+          <p className="text-xs text-brand-black/60">Platform updates: Enabled</p>
           <p className="text-xs text-brand-black/60">Finance approvals: Enabled</p>
         </div>
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm">

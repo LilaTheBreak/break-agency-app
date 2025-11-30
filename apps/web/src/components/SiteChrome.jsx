@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
+import { LogoWordmark } from "./LogoWordmark.jsx";
 
 export const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -15,8 +16,8 @@ export function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   return (
     <header className="sticky top-0 z-30 border-b border-brand-white/10 bg-brand-black/95 text-brand-white backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link to="/" className="font-display text-2xl uppercase tracking-[0.2em]">
-          The Break Co.
+        <Link to="/" className="flex items-center gap-2" aria-label="The Break Co. home">
+          <LogoWordmark variant="light" className="h-8 w-auto" />
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {NAV_LINKS.map((item) => (

@@ -10,6 +10,7 @@ import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
 import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
+import { Roles } from "../auth/session.js";
 
 const CREATOR_ROSTER = [
   { name: "Exclusive Creator", email: "exclusive@talent.com", vertical: "Lifestyle · Residency" },
@@ -53,7 +54,7 @@ const AI_AUTOMATIONS = [
   },
   {
     label: "Recommendations",
-    items: ["Shift budget to pod with fastest cycle", "Deploy concierge to AI banking nurture", "Add creator to Doha pipeline"]
+    items: ["Shift budget to pod with fastest cycle", "Deploy specialists to AI banking nurture", "Add creator to Doha pipeline"]
   },
   {
     label: "Contract summaries",
@@ -61,11 +62,11 @@ const AI_AUTOMATIONS = [
   },
   {
     label: "Brief generation",
-    items: ["Drafted ‘Creator Residency’ iteration", "UGC set outline ready", "Concierge script suggestions posted"]
+    items: ["Drafted ‘Creator Residency’ iteration", "UGC set outline ready", "Script suggestions posted"]
   },
   {
     label: "Suggested pricing",
-    items: ["Luxury pod median £12.4K", "UGC edits pack recommended £4K", "Concierge add-on priced £1.2K"]
+    items: ["Luxury pod median £12.4K", "UGC edits pack recommended £4K", "Premium add-on priced £1.2K"]
   },
   {
     label: "Content scoring",
@@ -370,7 +371,7 @@ const CREATOR_MATCH_POOL = [
     affinity: "Retail collabs"
   },
   {
-    name: "Concierge Squad",
+    name: "Premium Squad",
     audience: "500K",
     demographics: "US premium lifestyle",
     style: "Cinematic travel diaries",
@@ -606,8 +607,8 @@ function BrandOpportunitiesSection({ session }) {
                 session={session}
                 briefId={selectedOpportunity.id}
                 data={selectedOpportunity}
-                allowCreate={Boolean(session?.roles?.some((role) => ["admin", "agent"].includes(role)))}
-                allowRestore={Boolean(session?.roles?.some((role) => ["admin", "agent"].includes(role)))}
+                allowCreate={Boolean(session?.roles?.some((role) => [Roles.ADMIN, Roles.AGENT].includes(role)))}
+                allowRestore={Boolean(session?.roles?.some((role) => [Roles.ADMIN, Roles.AGENT].includes(role)))}
               />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>

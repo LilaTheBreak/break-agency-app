@@ -2,16 +2,7 @@ import { apiFetch } from "./apiClient.js";
 
 const ALLOWED_TYPES = ["pdf", "png", "mov", "mp4", "docx"];
 
-function authHeaders(session) {
-  if (!session?.email) return {};
-  const headers = { "x-user-id": session.email };
-  if (session.roles?.length) {
-    headers["x-user-roles"] = session.roles.join(",");
-  }
-  return headers;
-}
-
-export async function uploadFileRequest({ file, folder, session }) {
+export async function uploadFileRequest({ file, folder }) {
   const extension = file.name.split(".").pop()?.toLowerCase();
   if (!extension || !ALLOWED_TYPES.includes(extension)) {
     throw new Error("Unsupported file type");
@@ -20,8 +11,7 @@ export async function uploadFileRequest({ file, folder, session }) {
   const response = await apiFetch("/files/upload", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(session)
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
       filename: file.name,
@@ -36,14 +26,12 @@ export async function uploadFileRequest({ file, folder, session }) {
   return response.json();
 }
 
-export async function listFilesRequest({ folder, session, userId }) {
+export async function listFilesRequest({ folder, userId }) {
   const params = new URLSearchParams();
   if (folder) params.set("folder", folder);
-  if (userId && userId !== session?.email) params.set("userId", userId);
+  if (userId) params.set("userId", userId);
   const query = params.toString();
-  const response = await apiFetch(`/files${query ? `?${query}` : ""}`, {
-    headers: authHeaders(session)
-  });
+  const response = await apiFetch(`/files${query ? `?${query}` : ""}`);
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(text || "Unable to load files");
@@ -51,10 +39,9 @@ export async function listFilesRequest({ folder, session, userId }) {
   return response.json();
 }
 
-export async function deleteFileRequest({ id, session }) {
+export async function deleteFileRequest({ id }) {
   const response = await apiFetch(`/files/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-    headers: authHeaders(session)
+    method: "DELETE"
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");

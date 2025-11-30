@@ -100,7 +100,7 @@ export const USER_PROFILES = {
     ],
     activity: [
       "Cleared 4 payouts awaiting brand confirmation",
-      "Shared AI concierge brief with talent pod",
+      "Shared AI copilot brief with talent pod",
       "Updated FY runway tracker"
     ],
     tags: ["Admin", "Finance"],
@@ -137,8 +137,8 @@ export const USER_PROFILES = {
     location: "New York",
     timezone: "GMT-4",
     pronouns: "She/Her",
-    status: "Concierge roster",
-    bio: "Lifestyle + travel creator with concierge support and hybrid IRL residencies.",
+    status: "Premium roster",
+    bio: "Lifestyle + travel creator with white-glove support and hybrid IRL residencies.",
     personaRoute: "/admin/view/exclusive",
     personaLabel: "Exclusive talent preview",
     stats: [

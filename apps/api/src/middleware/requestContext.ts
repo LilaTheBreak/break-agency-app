@@ -5,6 +5,7 @@ declare global {
     interface Request {
       user?: {
         id: string;
+        email?: string;
         roles: string[];
       };
       ipAddress?: string;
@@ -13,14 +14,17 @@ declare global {
 }
 
 export function requestContextMiddleware(req: Request, _res: Response, next: NextFunction) {
-  const userIdHeader = req.header("x-user-id");
-  const rolesHeader = req.header("x-user-roles");
+  if (!req.user?.id) {
+    const userIdHeader = req.header("x-user-id");
+    const rolesHeader = req.header("x-user-roles");
 
-  if (userIdHeader) {
-    req.user = {
-      id: userIdHeader,
-      roles: rolesHeader ? rolesHeader.split(",").map((role) => role.trim()) : []
-    };
+    if (userIdHeader) {
+      req.user = {
+        id: userIdHeader,
+        email: req.user?.email,
+        roles: rolesHeader ? rolesHeader.split(",").map((role) => role.trim()) : []
+      };
+    }
   }
 
   const forwarded = (req.headers["x-forwarded-for"] as string) || "";

@@ -14,8 +14,16 @@ import filesRouter from "./files.js";
 import contractsRouter from "./contracts.js";
 import briefsRouter from "./briefs.js";
 import aiRouter from "./ai.js";
+import aiFileInsightsRouter from "./aiFileInsights.js";
+import aiSocialInsightsRouter from "./aiSocialInsights.js";
+import aiDealExtractorRouter from "./aiDealExtractor.js";
+import documentExtractionRouter from "./documentExtraction.js";
 import campaignsRouter from "./campaigns.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import authRouter from "./auth.js";
+import onboardingRouter from "./onboarding.js";
+import adminUsersRouter from "./adminUsers.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -23,6 +31,10 @@ router.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
+router.use(authRouter);
+router.use(requireAuth);
+router.use(onboardingRouter);
+router.use(adminUsersRouter);
 router.use(socialRouter);
 router.use(emailRouter);
 router.use(systemRouter);
@@ -35,6 +47,10 @@ router.use(filesRouter);
 router.use(contractsRouter);
 router.use(briefsRouter);
 router.use(aiRouter);
+router.use(aiFileInsightsRouter);
+router.use(aiSocialInsightsRouter);
+router.use("/ai", aiDealExtractorRouter);
+router.use(documentExtractionRouter);
 router.use(campaignsRouter);
 
 router.get("/profiles/:email", async (req: Request, res: Response) => {

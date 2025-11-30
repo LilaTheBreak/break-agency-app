@@ -25,7 +25,7 @@ export function VersionHistoryCard({
     setLoading(true);
     setError("");
     try {
-      const response = await fetchBriefVersions({ briefId, session });
+      const response = await fetchBriefVersions({ briefId });
       setVersions(response.versions || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load versions");
@@ -41,7 +41,7 @@ export function VersionHistoryCard({
   const handleCreate = async () => {
     if (!briefId || !session?.email) return;
     try {
-      await createBriefVersion({ briefId, data: serializedData, session });
+      await createBriefVersion({ briefId, data: serializedData });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save version");
@@ -50,7 +50,7 @@ export function VersionHistoryCard({
 
   const handleRestore = async (versionId) => {
     try {
-      await restoreBriefVersion({ versionId, session });
+      await restoreBriefVersion({ versionId });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to restore version");

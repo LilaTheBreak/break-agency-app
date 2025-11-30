@@ -1,18 +1,7 @@
 import { apiFetch } from "./apiClient.js";
 
-function authHeaders(session) {
-  if (!session?.email) return {};
-  const headers = { "x-user-id": session.email };
-  if (session.roles?.length) {
-    headers["x-user-roles"] = session.roles.join(",");
-  }
-  return headers;
-}
-
-export async function fetchBriefVersions({ briefId, session }) {
-  const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/versions`, {
-    headers: authHeaders(session)
-  });
+export async function fetchBriefVersions({ briefId }) {
+  const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/versions`);
   if (response.status === 404) {
     return { versions: [] };
   }
@@ -23,12 +12,11 @@ export async function fetchBriefVersions({ briefId, session }) {
   return response.json();
 }
 
-export async function createBriefVersion({ briefId, data, session }) {
+export async function createBriefVersion({ briefId, data }) {
   const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/version`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(session)
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({ data })
   });
@@ -39,10 +27,9 @@ export async function createBriefVersion({ briefId, data, session }) {
   return response.json();
 }
 
-export async function restoreBriefVersion({ versionId, session }) {
+export async function restoreBriefVersion({ versionId }) {
   const response = await apiFetch(`/briefs/restore/${encodeURIComponent(versionId)}`, {
-    method: "POST",
-    headers: authHeaders(session)
+    method: "POST"
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");

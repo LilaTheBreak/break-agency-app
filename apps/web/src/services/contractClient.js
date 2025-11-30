@@ -1,66 +1,44 @@
 import { apiFetch } from "./apiClient.js";
 
-function authHeaders(session) {
-  if (!session?.email) return {};
-  const headers = { "x-user-id": session.email };
-  if (session.roles?.length) headers["x-user-roles"] = session.roles.join(",");
-  return headers;
-}
-
-export async function listContracts(session) {
-  const response = await apiFetch("/contracts", {
-    headers: {
-      ...authHeaders(session)
-    }
-  });
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || "Unable to fetch contracts");
-  }
-  return response.json();
-}
-
-export async function createContractRequest(session, payload) {
-  const response = await apiFetch("/contracts/create", {
+export async function processContract({ fileUrl, dealId }) {
+  const res = await apiFetch("/contracts/process", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(session)
-    },
-    body: JSON.stringify(payload)
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileUrl, dealId })
   });
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || "Unable to create contract");
-  }
-  return response.json();
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload?.message || "Contract processing failed");
+  return payload;
 }
 
-export async function sendContractRequest(session, payload) {
-  const response = await apiFetch("/contracts/send", {
+export async function listContracts() {
+  const res = await apiFetch("/contracts");
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload?.message || "Unable to list contracts");
+  return payload;
+}
+
+export async function createContractRequest({ title, parties, variables }) {
+  const res = await apiFetch("/contracts/request", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(session)
-    },
-    body: JSON.stringify(payload)
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, parties, variables })
   });
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || "Unable to send contract");
-  }
-  return response.json();
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload?.message || "Unable to create contract request");
+  return payload;
 }
 
-export async function fetchContractStatus(session, contractId) {
-  const response = await apiFetch(`/contracts/${encodeURIComponent(contractId)}/status`, {
-    headers: {
-      ...authHeaders(session)
-    }
-  });
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || "Unable to check status");
-  }
-  return response.json();
+export async function sendContractRequest({ contractId }) {
+  const res = await apiFetch(`/contracts/${contractId}/send`, { method: "POST" });
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload?.message || "Unable to send contract");
+  return payload;
+}
+
+export async function fetchContractStatus(contractId) {
+  const res = await apiFetch(`/contracts/${contractId}/status`);
+  const payload = await res.json();
+  if (!res.ok) throw new Error(payload?.message || "Unable to fetch contract status");
+  return payload;
 }

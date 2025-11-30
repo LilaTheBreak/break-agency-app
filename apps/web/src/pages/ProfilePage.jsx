@@ -9,6 +9,8 @@ import {
 } from "../data/users.js";
 import { fetchProfile, saveProfile } from "../services/profileClient.js";
 import { Roles } from "../auth/session.js";
+import { getSuitabilityScore } from "../hooks/useSuitability.js";
+import SuitabilityScore from "../components/SuitabilityScore.jsx";
 
 function pickEditableFields(profile = DEFAULT_PROFILE) {
   return {
@@ -31,6 +33,9 @@ export function ProfilePage({ session }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const isAdmin = session?.roles?.includes(Roles.ADMIN);
+   const [fitResult, setFitResult] = useState(null);
+  const [fitError, setFitError] = useState("");
+  const [fitLoading, setFitLoading] = useState(false);
 
   useEffect(() => {
     if (!email) return;
@@ -107,6 +112,34 @@ export function ProfilePage({ session }) {
   const stats = useMemo(() => profile.stats || [], [profile]);
   const activity = useMemo(() => profile.activity || [], [profile]);
   const links = useMemo(() => (profile.links || []).filter((link) => link?.url), [profile]);
+
+  const handleFitScore = async () => {
+    setFitLoading(true);
+    setFitError("");
+    try {
+      const result = await getSuitabilityScore({
+        talent: {
+          categories: ["lifestyle", "travel"],
+          audienceInterests: ["fashion", "tech"],
+          avgEngagementRate: 3.2,
+          platforms: ["instagram", "tiktok"],
+          brandSafetyFlags: []
+        },
+        brief: {
+          industry: "travel",
+          targetInterests: ["travel", "lifestyle"],
+          goals: ["awareness", "ugc"],
+          requiredPlatforms: ["instagram"],
+          excludedCategories: []
+        }
+      });
+      setFitResult(result);
+    } catch (err) {
+      setFitError(err instanceof Error ? err.message : "Unable to calculate fit");
+    } finally {
+      setFitLoading(false);
+    }
+  };
 
   return (
     <DashboardShell
@@ -268,6 +301,26 @@ export function ProfilePage({ session }) {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-black/70">Suitability demo</p>
+              <button
+                type="button"
+                onClick={handleFitScore}
+                disabled={fitLoading}
+                className="rounded-full border border-brand-black px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-brand-black disabled:opacity-50"
+              >
+                {fitLoading ? "Scoring..." : "Score fit"}
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-brand-black/60">Pattern-based match vs sample travel brief (no identity inference).</p>
+            {fitError ? <p className="text-xs text-brand-red">{fitError}</p> : null}
+            {fitResult ? (
+              <div className="mt-2">
+                <SuitabilityScore {...fitResult} />
+              </div>
+            ) : null}
           </div>
           <div className="rounded-3xl border border-brand-black/10 bg-brand-white/90 p-5">
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Recent activity</p>

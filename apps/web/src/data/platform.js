@@ -55,7 +55,7 @@ export const ugcBriefs = [
   },
   {
     id: "ugc-2",
-    title: "Gulf-Air Creator Concierge",
+    title: "Gulf-Air Creator Desk",
     brand: "Gulf Air",
     budget: "£6k flat",
     deliverables: ["Mini vlog", "Stories pack"],

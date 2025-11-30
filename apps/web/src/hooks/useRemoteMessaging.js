@@ -4,25 +4,25 @@ import { fetchThreads, sendMessage as sendMessageApi, markMessageRead } from "..
 
 export function useRemoteMessaging(session) {
   const queryClient = useQueryClient();
-  const userId = session?.email || null;
+  const userId = session?.id || null;
   const enabled = Boolean(userId);
 
   const threadsQuery = useQuery({
     queryKey: ["messages", "threads", userId],
-    queryFn: () => fetchThreads(session),
+    queryFn: () => fetchThreads(),
     enabled,
     staleTime: 1000 * 30
   });
 
   const sendMutation = useMutation({
-    mutationFn: ({ recipientId, content }) => sendMessageApi(session, { recipientId, content }),
+    mutationFn: ({ recipientId, content }) => sendMessageApi({ recipientId, content }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messages", "threads", userId] });
     }
   });
 
   const markMutation = useMutation({
-    mutationFn: (messageId) => markMessageRead(session, messageId),
+    mutationFn: (messageId) => markMessageRead(messageId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["messages", "threads", userId] });
     }

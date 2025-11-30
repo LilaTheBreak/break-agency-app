@@ -10,13 +10,14 @@ import {
   Navigate
 } from "react-router-dom";
 import GoogleSignIn from "./auth/GoogleSignIn.jsx";
-import { Roles, SESSION_CHANGED_EVENT, clearSession, getSession } from "./auth/session.js";
+import { Roles } from "./auth/session.js";
 import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 import { RoleGate } from "./components/RoleGate.jsx";
 import { Footer } from "./components/Footer.jsx";
 import { Badge } from "./components/Badge.jsx";
 import { UgcBoard } from "./components/UgcBoard.jsx";
 import { DashboardShell } from "./components/DashboardShell.jsx";
+import { LogoWordmark } from "./components/LogoWordmark.jsx";
 import { resourceItems as RESOURCE_ITEMS, questionnaires as QUESTIONNAIRES } from "./data/platform.js";
 import BrandDashboardLayout, {
   BrandOverviewPage,
@@ -37,6 +38,9 @@ import ExclusiveTalentDashboardLayout, {
   ExclusiveProfilePage,
   ExclusiveSocialsPage,
   ExclusiveCampaignsPage,
+  ExclusiveCalendarPage,
+  ExclusiveProjectsPage,
+  ExclusiveTasksPage,
   ExclusiveOpportunitiesPage,
   ExclusiveContractsPage,
   ExclusiveFinancialsPage,
@@ -45,9 +49,12 @@ import ExclusiveTalentDashboardLayout, {
 } from "./pages/ExclusiveTalentDashboard.jsx";
 import { UgcTalentDashboard } from "./pages/UgcTalentDashboard.jsx";
 import { FounderDashboard } from "./pages/FounderDashboard.jsx";
+import OnboardingPage from "./pages/OnboardingPage.jsx";
 import { AdminQueuesPage } from "./pages/AdminQueuesPage.jsx";
 import { AdminApprovalsPage } from "./pages/AdminApprovalsPage.jsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.jsx";
+import AdminTasksPage from "./pages/AdminTasksPage.jsx";
+import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
 import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
 import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
@@ -56,33 +63,35 @@ import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { MessagingContext, useMessaging } from "./context/messaging.js";
 import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
+import { useAuth } from "./context/AuthContext.jsx";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
+  { to: "#mission", label: "Mission" },
+  { to: "#solutions", label: "Solutions" },
+  { to: "#how-it-works", label: "How it Works" },
   { to: "/resource-hub", label: "Resource Hub" },
-  { to: "/creator", label: "Creators" },
-  { to: "/brand", label: "Brands" },
   { to: "#contact", label: "Contact" }
 ];
 
 const CREATOR_PANELS = [
   {
-    badge: "Representation + Concierge",
+    badge: "Representation + Premium",
     title: "Exclusive Talent",
     bullets: [
-      "Hands-on management & campaign sourcing.",
-      "Brand partnerships spanning fashion, beauty, finance, and travel.",
-      "Full-service deal flow, invoicing, and compliance."
+      "Dedicated strategists handling sourcing, negotiations, and luxury-ready delivery.",
+      "Cross-category opportunities spanning beauty, finance, travel, and culture.",
+      "Finance, compliance, and production handled under one premium service."
     ],
-    cta: "Apply for roster"
+    cta: "Apply for access"
   },
   {
     badge: "Briefs + Education",
     title: "UGC Creator",
     bullets: [
-      "Access to public UGC opportunities & AI prep tools.",
-      "Content calendar, deliverable tracker, and template library.",
-      "Upgrade to concierge once minimum paces are met."
+      "Immediate access to curated UGC briefs, AI prep guides, and templates.",
+      "Centralized deliverable tracker, billing workflow, and payouts.",
+      "Upgrade into premium management once performance tiers are met."
     ],
     cta: "Explore opportunities board"
   }
@@ -92,15 +101,15 @@ const RESOURCE_PANELS = [
   {
     title: "Creator partnerships",
     description:
-      "Handpicked rosters, compliant onboarding, and talent strategy that respects culture and commerce."
+      "Curated rosters with contract, compliance, and cultural positioning handled end-to-end."
   },
   {
     title: "Brand activations",
-    description: "From hero UGC to experiential pop-ups, we bridge on- and offline to keep audiences immersed."
+    description: "Story-driven programs across hero UGC, experiential drops, and offline moments."
   },
   {
     title: "Intelligence layer",
-    description: "Live performance dashboards, campaign retros, and resource hub playbooks open to both sides."
+    description: "Unified dashboards with pacing, payments, and retros so every team sees the same signal."
   }
 ];
 
@@ -119,6 +128,69 @@ const CASE_STUDIES = [
     label: "Lifestyle",
     title: "Retail capsule tour",
     meta: "Hybrid retail pop-up across two continents."
+  }
+];
+
+const MISSION_POINTS = [
+  {
+    title: "Singular operating system",
+    body: "We give creators, managers, and brands the same living source of truth so briefs, approvals, and payouts never splinter."
+  },
+  {
+    title: "Premium service layer",
+    body: "Premium onboarding, compliance, and finance workflows are engineered for luxury launches, regulated categories, and global drops."
+  },
+  {
+    title: "Creative confidence",
+    body: "Every campaign ships with AI prep, performance context, and live risk signals so decisions are made before momentum slips."
+  }
+];
+
+const HOW_IT_WORKS_STEPS = [
+  {
+    title: "01. Intake & alignment",
+    detail: "Creators and brands complete a structured intake so our team can map objectives, guardrails, and commercial terms in under 48 hours."
+  },
+  {
+    title: "02. Orchestrate & produce",
+    detail: "We assemble curated talent pods, route briefs through the console, and manage deliverables, payments, and compliance end-to-end."
+  },
+  {
+    title: "03. Report & learn",
+    detail: "Live dashboards surface pacing, spend, and cultural insights so teams can iterate in real time and roll wins into the next brief."
+  }
+];
+
+const PRICING_PREVIEW = [
+  {
+    title: "Premium talent management",
+    price: "From 15% of managed revenue",
+    detail: "Full-service representation, finance, and campaign sourcing for exclusive roster talent."
+  },
+  {
+    title: "Brand programs",
+    price: "From $12k per initiative",
+    detail: "Multi-market creator sourcing, production, and reporting for premium launches and seasonal moments."
+  },
+  {
+    title: "Platform access",
+    price: "Custom",
+    detail: "Access to Break console, AI prep tools, and Opportunities board for qualified teams."
+  }
+];
+
+const FAQS = [
+  {
+    question: "Who is Break built for?",
+    answer: "Premium creators, boutique agencies, and brand leaders who need a single workflow for sourcing, executing, and measuring cultural campaigns."
+  },
+  {
+    question: "How fast can we launch?",
+    answer: "After intake, most creator or brand programs are stood up within 72 hours with a curated roster and approval plan."
+  },
+  {
+    question: "Do you support existing teams?",
+    answer: "Yes. We can embed alongside in-house talent, legal, or finance teams and simply become the operating layer."
   }
 ];
 
@@ -268,16 +340,6 @@ const INITIAL_ALERTS = [
   { id: "alert-task", title: "Task due", detail: "Exclusive Creator owes draft edits at 18:00 GMT.", type: "task", timestamp: NOW - 1000 * 60 * 20 }
 ];
 
-function useCurrentSession() {
-  const [session, setSession] = useState(() => getSession());
-  useEffect(() => {
-    const handler = () => setSession(getSession());
-    window.addEventListener(SESSION_CHANGED_EVENT, handler);
-    return () => window.removeEventListener(SESSION_CHANGED_EVENT, handler);
-  }, []);
-  return session;
-}
-
 function useCountUp(target, duration = 1400) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -297,13 +359,19 @@ function useCountUp(target, duration = 1400) {
 }
 
 function App() {
-  const session = useCurrentSession();
+  const { user: session, loading: authLoading, logout } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [threads, setThreads] = useState(INITIAL_THREADS);
   const [alerts, setAlerts] = useState(INITIAL_ALERTS);
   const [connectionStatus, setConnectionStatus] = useState("connected");
   const remoteMessaging = useRemoteMessaging(session);
   const isRemoteMessagingEnabled = remoteMessaging.enabled;
+
+  useEffect(() => {
+    if (session && authModalOpen) {
+      setAuthModalOpen(false);
+    }
+  }, [session, authModalOpen]);
 
   const currentActor = session?.email || DEFAULT_ACTOR_EMAIL;
   const actorRole = session?.roles?.[0] || Roles.ADMIN;
@@ -312,7 +380,7 @@ function App() {
   const messagingConnectionStatus = isRemoteMessagingEnabled ? remoteMessaging.connectionStatus : connectionStatus;
 
   const handleSignOut = () => {
-    clearSession();
+    logout();
   };
 
   const addMessage = useCallback(
@@ -458,21 +526,22 @@ function App() {
           authModalOpen={authModalOpen}
           setAuthModalOpen={setAuthModalOpen}
           handleSignOut={handleSignOut}
+          authLoading={authLoading}
         />
       </BrowserRouter>
     </MessagingContext.Provider>
   );
 }
 
-function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) {
+function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, authLoading }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (session?.roles?.includes(Roles.ADMIN) && location.pathname === "/") {
+    if (!authLoading && session?.roles?.includes(Roles.ADMIN) && location.pathname === "/") {
       navigate("/admin/dashboard");
     }
-  }, [session, location.pathname, navigate]);
+  }, [session, authLoading, location.pathname, navigate]);
 
   return (
     <>
@@ -489,8 +558,35 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
           element={<CreatorEntryPage onRequestSignIn={() => setAuthModalOpen(true)} />}
         />
         <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute session={session}>
+              <OnboardingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/brand"
           element={<BrandEntryPage onRequestSignIn={() => setAuthModalOpen(true)} />}
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[
+                Roles.ADMIN,
+                Roles.BRAND,
+                Roles.CREATOR,
+                Roles.EXCLUSIVE_TALENT,
+                Roles.UGC,
+                Roles.TALENT_MANAGER
+              ]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <DashboardRedirect session={session} />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/account/profile"
@@ -561,6 +657,30 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminDashboard session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/tasks"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminTasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/calendar"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminCalendarPage />
             </ProtectedRoute>
           }
         />
@@ -732,6 +852,8 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
           <Route path="profile" element={<ExclusiveProfilePage />} />
           <Route path="socials" element={<ExclusiveSocialsPage />} />
           <Route path="campaigns" element={<ExclusiveCampaignsPage />} />
+          <Route path="calendar" element={<ExclusiveCalendarPage />} />
+          <Route path="projects" element={<ExclusiveProjectsPage />} />
           <Route
             path="opportunities"
             element={
@@ -740,6 +862,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
               </RoleGate>
             }
           />
+          <Route path="tasks" element={<ExclusiveTasksPage />} />
           <Route
             path="contracts"
             element={
@@ -777,11 +900,29 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut }) 
       <GoogleSignIn
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
-        onSignedIn={() => setAuthModalOpen(false)}
-        allowedDomain={null}
       />
     </>
   );
+}
+
+function DashboardRedirect({ session }) {
+  if (!session) {
+    return <Navigate to="/" replace />;
+  }
+  if (session.roles?.includes(Roles.ADMIN) || session.roles?.includes(Roles.TALENT_MANAGER)) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  if (session.roles?.includes(Roles.BRAND)) {
+    return <Navigate to="/brand/dashboard" replace />;
+  }
+  if (
+    session.roles?.some((role) =>
+      [Roles.EXCLUSIVE_TALENT, Roles.CREATOR, Roles.UGC].includes(role)
+    )
+  ) {
+    return <Navigate to="/creator/dashboard" replace />;
+  }
+  return <Navigate to="/" replace />;
 }
 
 function SiteChrome({ session, onRequestSignIn, onSignOut }) {
@@ -790,6 +931,33 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const isAdmin = session?.roles?.includes(Roles.ADMIN);
   const navigate = useNavigate();
+  const navSplitIndex = Math.ceil(NAV_LINKS.length / 2);
+  const navLeft = NAV_LINKS.slice(0, navSplitIndex);
+  const navRight = NAV_LINKS.slice(navSplitIndex);
+
+  const renderNavItem = (item) =>
+    item.to.startsWith("#") ? (
+      <a
+        key={item.to}
+        href={item.to}
+        className="text-xs font-subtitle uppercase tracking-[0.35em] text-brand-white/70 transition hover:text-brand-white"
+      >
+        {item.label}
+      </a>
+    ) : (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        className={({ isActive }) =>
+          [
+            "text-xs font-subtitle uppercase tracking-[0.35em] transition",
+            isActive ? "text-brand-white" : "text-brand-white/70 hover:text-brand-white"
+          ].join(" ")
+        }
+      >
+        {item.label}
+      </NavLink>
+    );
 
   useEffect(() => {
     if (!isAdmin) {
@@ -804,34 +972,13 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   return (
     <header className="sticky top-0 z-30 border-b border-brand-white/10 bg-brand-black/95 text-brand-white backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link to="/" className="font-display text-2xl uppercase tracking-[0.2em]">
-          The Break Co.
+        <Link to="/" className="flex items-center gap-2" aria-label="The Break Co. home">
+          <LogoWordmark variant="light" className="h-8 w-auto" />
         </Link>
-        <nav className="hidden items-center gap-6 md:flex">
-          {NAV_LINKS.map((item) => (
-            item.to.startsWith("#") ? (
-              <a
-                key={item.to}
-                href={item.to}
-                className="text-xs font-subtitle uppercase tracking-[0.35em] text-brand-white/70 transition hover:text-brand-white"
-              >
-                {item.label}
-              </a>
-            ) : (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  [
-                    "text-xs font-subtitle uppercase tracking-[0.35em] transition",
-                    isActive ? "text-brand-white" : "text-brand-white/70 hover:text-brand-white"
-                  ].join(" ")
-                }
-              >
-                {item.label}
-              </NavLink>
-            )
-          ))}
+        <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
+          {navLeft.map(renderNavItem)}
+          <LogoWordmark variant="mark" className="h-9 w-9 opacity-90" aria-hidden="true" />
+          {navRight.map(renderNavItem)}
         </nav>
         <div className="relative flex items-center gap-3">
           <span className="hidden font-subtitle text-[0.7rem] uppercase tracking-[0.35em] text-brand-white/70 md:inline-flex">
@@ -938,19 +1085,19 @@ function LandingPage({ onRequestSignIn }) {
   const heroStats = [
     {
       title: "Creators vetted",
-      detail: "18 markets & diasporas",
+      detail: "Across 18 markets & diasporas",
       target: 450,
       suffix: "+"
     },
     {
       title: "Campaigns shipped",
-      detail: "Past 12 months",
+      detail: "Executed in the last 12 months",
       target: 120,
       suffix: "+"
     },
     {
       title: "Avg. brief turn",
-      detail: "From intake to shortlist",
+      detail: "Intake to shortlist",
       target: 72,
       suffix: "h"
     }
@@ -977,14 +1124,14 @@ function LandingPage({ onRequestSignIn }) {
       <section className="px-6 py-16">
         <div className="mx-auto max-w-6xl space-y-8 rounded-[48px] bg-brand-white p-10 text-center shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
           <div className="space-y-4">
-            <p className="font-subtitle text-sm uppercase tracking-[0.4em] text-brand-red">// The Break Co.</p>
-          <h1 className="font-display text-5xl uppercase leading-tight">
-            <span className="inline-flex h-1 w-12 rounded-full bg-brand-red align-[0.3em]" />
-            <span className="ml-3 align-middle">Creating legacies by bridging talent, brands, and culture.</span>
-          </h1>
+            <p className="font-subtitle text-sm uppercase tracking-[0.4em] text-brand-red">// Break Console</p>
+            <h1 className="font-display text-5xl uppercase leading-tight">
+              <span className="inline-flex h-1 w-12 rounded-full bg-brand-red align-[0.3em]" />
+              <span className="ml-3 align-middle">A modern control room for talent, brands, and culture.</span>
+            </h1>
             <p className="text-base text-brand-black/70">
-              We are the operating system for creators, talent managers, and brands who need UGC, partnerships,
-              and IRL storytelling without the chaos. Modern workflows, white-glove guidance, and a public resource hub keep everyone aligned.
+              Break is the premium operating system for creators, managers, and brand leaders. One console manages briefs,
+              AI prep, approvals, and payouts so every launch feels deliberate and fast.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4">
@@ -1009,17 +1156,66 @@ function LandingPage({ onRequestSignIn }) {
         </div>
       </section>
 
+      <section id="mission" className="px-6 pb-16">
+        <div className="mx-auto max-w-6xl space-y-8 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
+          <div className="space-y-3 text-center">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Why this exists</p>
+            <h2 className="font-display text-5xl uppercase">
+              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
+              <span className="ml-3 align-middle">Modern infrastructure for creative economies</span>
+            </h2>
+            <p className="text-brand-black/70">
+              We designed Break so premium creators and growth-minded brands can operate inside one calm, accountable workflow.
+            </p>
+          </div>
+          <div className="grid gap-6 text-left md:grid-cols-3">
+            {MISSION_POINTS.map((point) => (
+              <article key={point.title} className="rounded-[32px] border border-brand-black/10 bg-brand-linen/60 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{point.title}</p>
+                <p className="mt-3 text-sm text-brand-black/70">{point.body}</p>
+              </article>
+            ))}
+          </div>
+          <p className="text-center text-xs font-subtitle uppercase tracking-[0.3em] text-brand-black/60">
+            Trusted across hospitality · fintech · retail · culture
+          </p>
+        </div>
+      </section>
+
+      <section id="how-it-works" className="px-6 pb-16">
+        <div className="mx-auto max-w-6xl space-y-8 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
+          <div className="space-y-3 text-center">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">How it works</p>
+            <h2 className="font-display text-5xl uppercase">
+              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
+              <span className="ml-3 align-middle">Clarity from intake to reporting</span>
+            </h2>
+            <p className="text-brand-black/70">
+              Each program follows the same premium workflow so every stakeholder knows what happens next.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {HOW_IT_WORKS_STEPS.map((step) => (
+              <article key={step.title} className="rounded-[32px] border border-brand-black/10 bg-brand-linen/60 p-6 text-left shadow-[0_12px_50px_rgba(0,0,0,0.08)]">
+                <h3 className="font-display text-2xl uppercase">{step.title}</h3>
+                <p className="mt-3 text-sm text-brand-black/70">{step.detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="px-6 pb-16">
         <div className="mx-auto max-w-6xl space-y-10 rounded-[48px] bg-brand-white p-10 text-center shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
           <div className="space-y-2">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator pathway</p>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">For creators & talent</p>
             <h2 className="font-display text-5xl uppercase">
               <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">About the Break creator collective</span>
+              <span className="ml-3 align-middle">Two lanes, one premium console</span>
             </h2>
             <p className="text-brand-black/70">
-              We are a management-first studio for creators who value culture, commerce, and clarity. Our team handles
-              compliant onboarding, AI-assisted deal support, and private briefings so you can focus on storytelling.
+              Select the service that matches your runway. Break handles onboarding, AI prep, negotiation, and finance
+              while you stay focused on the work and the audience.
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
@@ -1048,18 +1244,18 @@ function LandingPage({ onRequestSignIn }) {
         </div>
       </section>
 
-      <section className="px-6 pb-16">
+      <section id="solutions" className="px-6 pb-16">
         <div className="mx-auto max-w-6xl space-y-10 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
           <div className="flex flex-col items-center gap-4 text-center md:flex-row md:justify-between md:text-left">
             <div>
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Resource hub</p>
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Solutions</p>
               <h2 className="font-display text-5xl uppercase">
                 <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-                <span className="ml-3 align-middle">Creating legacies</span>
+                <span className="ml-3 align-middle">Everything in one operating layer</span>
               </h2>
               <p className="text-sm text-brand-black/70">
-                Marketplace → Opportunities board, intake, approvals, payouts. Workflows → Creator/brand questionnaires + AI pre-reads.
-                Resource hub → Case studies, decks, talent & brand splits.
+                Marketplace → curated rosters, opportunities board, approvals, payouts. Workflows → structured questionnaires, AI pre-reads,
+                deliverable tracking. Intelligence → case studies, retros, and financial transparency.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
@@ -1148,6 +1344,30 @@ function LandingPage({ onRequestSignIn }) {
       </section>
 
       <section className="px-6 pb-16">
+        <div className="mx-auto max-w-6xl space-y-10 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
+          <div className="text-center">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Pricing preview</p>
+            <h2 className="font-display text-5xl uppercase">
+              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
+              <span className="ml-3 align-middle">Engagements built around outcomes</span>
+            </h2>
+            <p className="text-sm text-brand-black/70">
+              Every scope receives a custom proposal. Here is how typical partners engage with Break.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {PRICING_PREVIEW.map((plan) => (
+              <article key={plan.title} className="rounded-[32px] border border-brand-black/10 bg-brand-linen/70 p-6 text-left shadow-[0_12px_50px_rgba(0,0,0,0.08)]">
+                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{plan.title}</p>
+                <p className="mt-2 text-lg font-semibold text-brand-black">{plan.price}</p>
+                <p className="mt-3 text-sm text-brand-black/70">{plan.detail}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 pb-16">
         <div className="mx-auto max-w-6xl space-y-4 rounded-[48px] bg-brand-red p-12 text-center text-brand-white shadow-[0_25px_90px_rgba(0,0,0,0.15)]">
           <p className="font-subtitle text-xs uppercase tracking-[0.35em]">The Break Co.</p>
           <h2 className="font-display text-5xl uppercase">Ready to build what's next</h2>
@@ -1168,6 +1388,26 @@ function LandingPage({ onRequestSignIn }) {
             >
               Resource hub
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 pb-16">
+        <div className="mx-auto max-w-6xl space-y-6 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
+          <div className="text-center">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">FAQs</p>
+            <h2 className="font-display text-5xl uppercase">
+              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
+              <span className="ml-3 align-middle">Clarity before you log in</span>
+            </h2>
+          </div>
+          <div className="space-y-4">
+            {FAQS.map((item) => (
+              <article key={item.question} className="rounded-[24px] border border-brand-black/10 bg-brand-linen/60 p-6 text-left shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+                <h3 className="font-subtitle text-sm uppercase tracking-[0.35em] text-brand-red">{item.question}</h3>
+                <p className="mt-3 text-sm text-brand-black/70">{item.answer}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>

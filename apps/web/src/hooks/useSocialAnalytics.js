@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "../services/apiClient.js";
 
 export function useSocialAnalytics(userId, { autoRefresh = false } = {}) {
   const [data, setData] = useState(null);
@@ -11,8 +12,8 @@ export function useSocialAnalytics(userId, { autoRefresh = false } = {}) {
       setLoading(true);
       setError("");
       try {
-        const endpoint = refresh ? `/api/social/${userId}/refresh` : `/api/social/${userId}`;
-        const response = await fetch(endpoint);
+        const endpoint = refresh ? `/social/${userId}/refresh` : `/social/${userId}`;
+        const response = await apiFetch(endpoint);
         if (!response.ok) {
           if (response.status === 401) {
             throw new Error("Session expired. Sign in again.");

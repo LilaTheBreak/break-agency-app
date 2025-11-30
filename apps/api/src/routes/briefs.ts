@@ -1,97 +1,48 @@
-import { Prisma } from "@prisma/client";
-import { Router, Request, Response, NextFunction } from "express";
-import { createVersion, getVersions, restoreVersion } from "../services/briefs/versioning.js";
+import { Router } from "express";
 import prisma from "../lib/prisma.js";
-import { logAuditEvent } from "../lib/auditLogger.js";
-import { sendTemplatedEmail } from "../services/email/emailClient.js";
+import { requireAuth } from "../middleware/auth.js";
+import { ingestBrief } from "../services/brandBriefService.js";
 
 const router = Router();
 
-router.get("/briefs/:briefId/versions", ensureUser, async (req: Request, res: Response) => {
+router.post("/ingest", requireAuth, async (req, res, next) => {
   try {
-    const versions = await getVersions(req.params.briefId);
-    res.json({ versions });
+    const { brandName, rawText, contactEmail } = req.body ?? {};
+    const brief = await ingestBrief({
+      brandName,
+      rawText,
+      contactEmail,
+      submittedBy: req.user!.id
+    });
+    res.json({ brief });
   } catch (error) {
-    res.status(404).json({ error: error instanceof Error ? error.message : "Brief not found" });
+    next(error);
   }
 });
 
-router.post("/briefs/:briefId/version", ensureUser, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req, res, next) => {
   try {
-    const data = req.body?.data ?? {};
-    const version = await createVersion(req.params.briefId, req.user?.id ?? null, data);
-    res.status(201).json({ version });
+    const brief = await prisma.brandBrief.findUnique({
+      where: { id: req.params.id },
+      include: { matches: true }
+    });
+    res.json({ brief });
   } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : "Unable to save version" });
+    next(error);
   }
 });
 
-router.post("/briefs/restore/:versionId", ensureUser, async (req: Request, res: Response) => {
+router.get("/:id/matches", requireAuth, async (req, res, next) => {
   try {
-    const { restored, newVersion } = await restoreVersion(req.params.versionId, req.user?.id ?? null);
-    const brief = await prisma.brief.findUnique({ where: { id: restored.briefId } });
-    if (brief && req.user) {
-      await logAuditEvent(req, {
-        action: "brief.restore",
-        entityType: "brief",
-        entityId: brief.id,
-        metadata: {
-          versionRestored: restored.versionNumber,
-          restoredBy: req.user.id
-        } as Prisma.JsonObject
-      });
-      await notifyParties(brief, restored);
-    }
-    const versions = await getVersions(restored.briefId);
-    res.json({ versions, restored: newVersion });
+    const matches = await prisma.briefMatch.findMany({
+      where: { briefId: req.params.id },
+      include: { user: true },
+      orderBy: { score: "desc" }
+    });
+    res.json({ matches });
   } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : "Unable to restore version" });
+    next(error);
   }
 });
-
-async function notifyParties(
-  brief: { metadata: unknown; title: string },
-  version: { versionNumber: number; data: unknown }
-) {
-  const recipients = extractEmails(brief.metadata) || [];
-  if (!recipients.length) return;
-  await Promise.all(
-    recipients.slice(0, 5).map((email) =>
-      sendTemplatedEmail({
-        to: email,
-        template: "systemAlert",
-        data: {
-          subject: `Brief restored: ${brief.title}`,
-          headline: `Brief reverted to v${version.versionNumber}`,
-          detail: `A previous version of ${brief.title} was restored. Please review the updates.`
-        }
-      }).catch(() => null)
-    )
-  );
-}
-
-function extractEmails(metadata: unknown) {
-  if (Array.isArray(metadata)) {
-    return metadata
-      .map((entry) => (typeof entry === "string" ? entry : entry?.email))
-      .filter((email) => typeof email === "string");
-  }
-  if (metadata && typeof metadata === "object") {
-    const value = (metadata as Record<string, unknown>).recipients;
-    if (Array.isArray(value)) {
-      return value
-        .map((entry) => (typeof entry === "string" ? entry : entry?.email))
-        .filter((email) => typeof email === "string");
-    }
-  }
-  return [];
-}
-
-function ensureUser(req: Request, res: Response, next: NextFunction) {
-  if (!req.user?.id) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-  next();
-}
 
 export default router;

@@ -15,7 +15,7 @@ const DETAILS = [
     rows: [
       { label: "Creator Residency NYC", amount: "£48k", status: "Needs bank confirmation" },
       { label: "UGC retainer batch", amount: "£23k", status: "Clears Friday" },
-      { label: "Concierge pipeline", amount: "£9k", status: "Waiting on brand sign-off" }
+      { label: "Premium pipeline", amount: "£9k", status: "Waiting on brand sign-off" }
     ]
   },
   {

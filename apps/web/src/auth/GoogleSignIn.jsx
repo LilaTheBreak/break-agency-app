@@ -1,77 +1,50 @@
-import React, { useState } from "react";
-import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
-import { ALLOWED_ADMINS, GOOGLE_CLIENT_ID } from "./config";
-import { Roles, signInSession } from "./session";
+import React from "react";
+import { useAuth } from "../context/AuthContext.jsx";
 
-const HAS_GOOGLE_CLIENT = Boolean(GOOGLE_CLIENT_ID?.trim());
+export default function GoogleSignIn({ open, onClose }) {
+  const { loginWithGoogle, error } = useAuth();
 
-export default function GoogleSignIn({ open, onClose, onSignedIn, allowedDomain }) {
   if (!open) return null;
 
-  const [error, setError] = useState("");
-  const domainSuffix = allowedDomain ? `@${allowedDomain.replace(/^@/, "")}` : null;
+  const handleLogin = () => {
+    loginWithGoogle().catch(() => {});
+  };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
-      <div className="bg-white text-black rounded-2xl p-6 w-[480px] max-w-[92vw]">
-        <h3 className="text-xl font-semibold">Sign in</h3>
-
-        {HAS_GOOGLE_CLIENT ? (
-          <div className="mt-5 flex flex-col items-center gap-2">
-            <GoogleLogin
-              onSuccess={(cred) => {
-                try {
-                  const payload = jwtDecode(cred.credential || "");
-                  const email = payload?.email || "";
-                  const profile = {
-                    email,
-                    name: payload?.name,
-                    picture: payload?.picture,
-                  };
-
-                  if (domainSuffix && !email.toLowerCase().endsWith(domainSuffix)) {
-                    setError(`Only ${domainSuffix} accounts can sign in here.`);
-                    return;
-                  }
-
-                  const isAdmin = ALLOWED_ADMINS.includes(email);
-                  const roles = isAdmin ? [Roles.ADMIN, Roles.TALENT_MANAGER] : [Roles.CREATOR];
-                  const session = signInSession({
-                    email,
-                    name: profile.name,
-                    avatar: profile.picture,
-                    roles,
-                    provider: "google"
-                  });
-
-                  onSignedIn?.({ ...session });
-                  onClose?.();
-                } catch (e) {
-                  alert("Could not verify Google token.");
-                  console.error(e);
-                }
-              }}
-              onError={() => alert("Google login failed. Try again.")}
-              useOneTap={false}
-              theme="filled_black"
-              shape="pill"
-              text="signin_with"
-            />
-            {error && <p className="text-sm text-red-500">{error}</p>}
-          </div>
-        ) : (
-          <p className="mt-5 text-sm text-neutral-600">
-            Google Sign-In is disabled for this environment. Please contact The Break Co. to provision access.
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-brand-black/70 px-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sign-in-heading"
+    >
+      <div className="w-full max-w-lg rounded-[34px] border border-brand-black/10 bg-brand-white/95 p-6 text-brand-black shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
+        <div className="space-y-2">
+          <p className="text-[0.65rem] uppercase tracking-[0.35em] text-brand-red">Secure access</p>
+          <h3 id="sign-in-heading" className="text-2xl font-semibold">
+            Sign in to The Break Console
+          </h3>
+          <p className="text-sm text-brand-black/70">
+            You&apos;ll be redirected to Google to verify your identity. After authenticating, you&apos;ll return
+            here with secure console access.
           </p>
-        )}
-
-        <button
-          className="mt-3 text-sm text-neutral-500 hover:text-neutral-700"
-          onClick={onClose}
-        >
-          Cancel
-        </button>
+        </div>
+        {error ? <p className="mt-4 text-sm text-brand-red">{error}</p> : null}
+        <div className="mt-6 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={handleLogin}
+            className="inline-flex items-center justify-center rounded-full bg-brand-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-brand-white transition hover:bg-brand-red/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-red"
+          >
+            Continue with Google
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm text-brand-black/60 transition hover:text-brand-black/90"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );

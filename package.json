@@ -1,24 +1,29 @@
 {
-  "name": "break-agency-app",
+  "name": "break-agency",
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@8.15.8",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "pnpm -r --filter @breakagency/web --filter @breakagency/api --parallel dev",
     "dev:web": "pnpm --filter @breakagency/web dev",
     "dev:api": "pnpm --filter @breakagency/api dev",
-    "build": "node ./scripts/run-build.mjs",
-    "build:workspace": "pnpm -r build",
+    "build": "pnpm -r build",
     "build:web": "pnpm --filter @breakagency/web build",
+    "build:api": "pnpm --filter @breakagency/api build",
     "lint": "pnpm -r lint",
-    "db:migrate": "pnpm --filter @home/api db:migrate",
-    "db:push": "pnpm --filter @home/api db:push",
-    "db:seed": "pnpm --filter @home/api db:seed",
-    "prisma:generate": "pnpm --filter @home/api prisma:generate",
-    "clean": "pnpm -r exec -- rimraf dist"
+    "db:migrate": "pnpm -F @breakagency/api exec prisma migrate dev",
+    "db:reset": "pnpm -F @breakagency/api exec prisma migrate reset",
+    "db:generate": "pnpm -F @breakagency/api exec prisma generate",
+    "clean": "pnpm -r exec -- rimraf dist",
+    "seed:auth": "pnpm --filter @breakagency/api seed:auth"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=22.21.1",
+    "pnpm": ">=8.0.0"
   },
   "devDependencies": {
     "prisma": "^5.15.1",

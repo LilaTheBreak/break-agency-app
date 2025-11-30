@@ -1,19 +1,8 @@
 import { apiFetch } from "./apiClient.js";
 
-function authHeaders(session) {
-  if (!session?.email) return {};
-  const headers = { "x-user-id": session.email };
-  if (session.roles?.length) headers["x-user-roles"] = session.roles.join(",");
-  return headers;
-}
-
 export async function fetchUserCampaigns({ session, userId }) {
-  const target = userId || session?.email || "me";
-  const response = await apiFetch(`/campaigns/user/${encodeURIComponent(target)}`, {
-    headers: {
-      ...authHeaders(session)
-    }
-  });
+  const target = userId || session?.id || "me";
+  const response = await apiFetch(`/campaigns/user/${encodeURIComponent(target)}`);
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(text || "Unable to load campaigns");
@@ -21,10 +10,8 @@ export async function fetchUserCampaigns({ session, userId }) {
   return response.json();
 }
 
-export async function fetchCampaign({ session, campaignId }) {
-  const response = await apiFetch(`/campaigns/${encodeURIComponent(campaignId)}`, {
-    headers: authHeaders(session)
-  });
+export async function fetchCampaign({ campaignId }) {
+  const response = await apiFetch(`/campaigns/${encodeURIComponent(campaignId)}`);
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(text || "Unable to load campaign");

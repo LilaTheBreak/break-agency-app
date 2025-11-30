@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiFetch } from "../services/apiClient.js";
 
 export function AiAssistantCard({ session, role, title = "AI Assistant", description }) {
   const [input, setInput] = useState("");
@@ -13,16 +14,10 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/ai/${encodeURIComponent(role)}`, {
+      const res = await apiFetch(`/ai/${encodeURIComponent(role)}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(session?.email
-            ? {
-                "x-user-id": session.email,
-                ...(session.roles?.length ? { "x-user-roles": session.roles.join(",") } : {})
-              }
-            : {})
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ userInput: input })
       });
@@ -40,23 +35,23 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
   };
 
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-black text-brand-white p-5">
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white text-brand-black p-5 shadow-[0_20px_60px_rgba(0,0,0,0.1)]">
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{title}</p>
-      {description ? <p className="text-sm text-brand-white/70">{description}</p> : null}
+      {description ? <p className="text-sm text-brand-black/60">{description}</p> : null}
       <textarea
         value={input}
         onChange={(event) => setInput(event.target.value)}
         placeholder={canUse ? "Ask AI how to optimize this week…" : "Sign in to ask the assistant"}
         disabled={!canUse || loading}
         rows={3}
-        className="mt-3 w-full rounded-2xl border border-brand-white/30 bg-transparent px-3 py-2 text-sm text-brand-white focus:border-brand-white focus:outline-none"
+        className="mt-3 w-full rounded-2xl border border-brand-black/20 bg-brand-linen/70 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
       />
       <div className="mt-2 flex gap-2">
         <button
           type="button"
           onClick={askAssistant}
           disabled={!canUse || loading}
-          className="rounded-full bg-brand-red px-4 py-1 text-xs uppercase tracking-[0.3em] disabled:opacity-40"
+          className="rounded-full bg-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-white disabled:opacity-40"
         >
           {loading ? "Thinking…" : "Ask AI"}
         </button>
@@ -67,14 +62,14 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
             setResponse("");
             setError("");
           }}
-          className="rounded-full border border-brand-white/30 px-4 py-1 text-xs uppercase tracking-[0.3em]"
+          className="rounded-full border border-brand-black/30 px-4 py-1 text-xs uppercase tracking-[0.3em]"
         >
           Reset
         </button>
       </div>
       {error ? <p className="mt-3 text-xs text-brand-red">{error}</p> : null}
       {response ? (
-        <div className="mt-3 rounded-2xl border border-brand-white/20 bg-brand-white/5 p-3 text-sm text-brand-white/80">
+        <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-3 text-sm text-brand-black/80">
           {response.split("\n").map((line, index) => (
             <p key={`${line}-${index}`} className="mb-1">
               {line}
