@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import prisma from "../lib/prisma";
 import { clearAuthCookie, setAuthCookie, createAuthToken } from "../lib/jwt";
 import { buildSessionUser } from "../lib/session";
-import { scoreCreator } from "../services/creatorScoringService";
+import { scoreCreator } from "../prisma/creatorScoringService";
 // import { emailService } from "../services/emailService.js"; // Assume an email service exists
 
 const router = Router();

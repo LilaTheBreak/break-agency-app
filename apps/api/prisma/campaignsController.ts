@@ -1,80 +1,77 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler'; // A utility to handle async errors
-// import { aiClient } from '../../lib/aiClient'; // Assuming a shared AI client
+import { asyncHandler } from '../../middleware/asyncHandler';
+import { parseCampaignBrief } from '../../services/ai/campaigns/aiParser';
+import { findCreatorMatches } from '../../services/ai/campaigns/creatorMatching';
+// import { emailQueue } from '../../worker/queues';
+// import { slackClient } from '../../integrations/slack/slackClient';
 
 const prisma = new PrismaClient();
 
-// @desc    Create a new campaign
-// @route   POST /api/brand/campaigns
-// @access  Private (Brand)
+// @desc    Create a new brand campaign
+// @route   POST /api/brand-campaigns
 export const createCampaign = asyncHandler(async (req: Request, res: Response) => {
-  const { title, objective, budgetMin, budgetMax } = req.body;
-  // const userId = req.user.id; // from auth middleware
+  const brandUser = req.user!;
+  const campaignInput = req.body;
 
-  // --- AI INTEGRATION ---
-  // const summary = await aiClient.summarize(objective);
-  // const keywords = await aiClient.extractKeywords(objective);
+  // 1. Run AI Parser to enrich the brief
+  const aiInsights = await parseCampaignBrief(campaignInput);
 
-  const campaign = await prisma.brandCampaign.create({
+  // 2. Create the campaign record with AI insights
+  const newCampaign = await prisma.brandCampaign.create({
     data: {
-      title,
-      objective,
-      budgetMin,
-      budgetMax,
-      brandId: 'clerk_user_id_placeholder', // Replace with actual user ID from auth
-      // summary,
-      // keywords,
+      ...campaignInput,
+      brandId: brandUser.id,
+      brandName: brandUser.name,
+      submittedBy: brandUser.email,
+      ...aiInsights,
     },
   });
 
-  res.status(201).json(campaign);
+  // 3. Run Creator Matching asynchronously (or in a queue)
+  const matches = await findCreatorMatches(newCampaign);
+  const updatedCampaign = await prisma.brandCampaign.update({
+    where: { id: newCampaign.id },
+    data: { aiCreatorMatches: matches as any },
+  });
+
+  // 4. Send notifications
+  // await emailQueue.add('new-campaign-submitted', { campaignId: newCampaign.id });
+  // await slackClient.sendSlackAlert(`New campaign submitted: "${newCampaign.title}"`);
+
+  res.status(201).json(updatedCampaign);
 });
 
-// @desc    Get all campaigns for a brand
-// @route   GET /api/brand/campaigns
-// @access  Private (Brand)
+// @desc    Get all campaigns for the current brand
+// @route   GET /api/brand-campaigns
 export const getBrandCampaigns = asyncHandler(async (req: Request, res: Response) => {
-  // const userId = req.user.id;
   const campaigns = await prisma.brandCampaign.findMany({
-    where: { brandId: 'clerk_user_id_placeholder' }, // Replace with actual user ID
+    where: { brandId: req.user!.id },
     orderBy: { createdAt: 'desc' },
   });
-  res.json(campaigns);
+  res.status(200).json(campaigns);
 });
 
 // @desc    Get a single campaign by ID
-// @route   GET /api/brand/campaigns/:id
-// @access  Private (Brand)
+// @route   GET /api/brand-campaigns/:id
 export const getCampaignById = asyncHandler(async (req: Request, res: Response) => {
-  const campaign = await prisma.brandCampaign.findUnique({
-    where: { id: req.params.id },
+  const campaign = await prisma.brandCampaign.findFirst({
+    where: { id: req.params.id, brandId: req.user!.id }, // Ensure ownership
   });
-
-  if (campaign) {
-    res.json(campaign);
-  } else {
-    res.status(404).send('Campaign not found');
+  if (!campaign) {
+    res.status(404);
+    throw new Error('Campaign not found');
   }
+  res.status(200).json(campaign);
 });
 
 // @desc    Update a campaign
-// @route   PUT /api/brand/campaigns/:id
-// @access  Private (Brand)
+// @route   PUT /api/brand-campaigns/:id
 export const updateCampaign = asyncHandler(async (req: Request, res: Response) => {
-  // Add logic to check ownership and role
-  const updatedCampaign = await prisma.brandCampaign.update({
+  // Add ownership check before updating
+  const campaign = await prisma.brandCampaign.update({
     where: { id: req.params.id },
     data: req.body,
   });
-  res.json(updatedCampaign);
-});
-
-// @desc    Delete a campaign
-// @route   DELETE /api/brand/campaigns/:id
-// @access  Private (Brand)
-export const deleteCampaign = asyncHandler(async (req: Request, res: Response) => {
-  // Add logic to check ownership and role
-  await prisma.brandCampaign.delete({ where: { id: req.params.id } });
-  res.status(204).send();
+  res.status(200).json(campaign);
 });

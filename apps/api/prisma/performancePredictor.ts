@@ -1,27 +1,16 @@
-import { aiClient } from '../ai/aiClient.js';
-
-const performancePrompt = (context: any) => `
-You are a social media performance analyst. Based on the creator's past analytics and the campaign brief, predict the performance for a key deliverable.
-
-**Creator Analytics:**
-${JSON.stringify(context.talentAnalytics, null, 2)}
-
-**Campaign Brief:**
-${JSON.stringify(context.campaignBrief, null, 2)}
-
-**JSON Output Schema:**
-{ "predictedReach": "number", "predictedEngagementRate": "number", "riskFlags": ["string"] }
-`;
+// import { aiClient } from '../aiClient';
 
 /**
- * Predicts campaign performance for a given talent and brief.
+ * Simulates an AI call to predict the performance of a piece of content.
+ * @param contentContext An object containing the caption, hook, etc.
+ * @returns An object with predicted performance metrics.
  */
-export async function predictPerformance(context: { talentAnalytics: any; campaignBrief: any }) {
-  try {
-    const prompt = performancePrompt(context);
-    return await aiClient.json(prompt);
-  } catch (error) {
-    console.error('[AI PERFORMANCE PREDICTOR ERROR]', error);
-    return { predictedReach: 50000, predictedEngagementRate: 0.03, riskFlags: ['AI offline (stub)'] };
-  }
-}
+export const predictPerformance = async (contentContext: any) => {
+  // Mock AI response
+  return {
+    predictedViews: { min: 50000, max: 150000 },
+    predictedEngagementRate: { min: 2.5, max: 4.5 },
+    viralityScore: 0.82,
+    summary: 'This content has a high potential for virality due to its strong hook and alignment with current trends.',
+  };
+};

@@ -1,32 +1,21 @@
 import { Router } from 'express';
-import prisma from '../lib/prisma.js';
-import { forecastBuildQueue } from '../worker/queues/forecastQueues.js';
+import { protect } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/requireRole';
+import {
+  triggerForecastGeneration,
+  getForecastForBrief,
+  getForecastsForBrand,
+} from '../controllers/campaignForecastController';
 
 const router = Router();
 
-/**
- * POST /api/forecast/campaign
- * Triggers the forecast generation pipeline for a deal draft.
- */
-router.post('/campaign', async (req, res) => {
-  const { dealDraftId } = req.body;
-  await forecastBuildQueue.add('generate-forecast', { dealDraftId });
-  res.status(202).json({ message: 'Campaign forecast generation has been queued.' });
-});
+const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'FOUNDER', 'BRAND_PREMIUM'];
 
-/**
- * GET /api/forecast/deal/:dealDraftId
- * Fetches the forecast for a specific deal draft.
- */
-router.get('/deal/:dealDraftId', async (req, res, next) => {
-  try {
-    const forecast = await prisma.campaignForecast.findUnique({
-      where: { dealDraftId: req.params.dealDraftId },
-    });
-    res.json(forecast);
-  } catch (error) {
-    next(error);
-  }
-});
+// Protect all routes and ensure user has a premium role
+router.use(protect, requireRole(allowedRoles));
+
+router.post('/:briefId', triggerForecastGeneration);
+router.get('/brief/:briefId', getForecastForBrief);
+router.get('/brand/:brandId', getForecastsForBrand);
 
 export default router;

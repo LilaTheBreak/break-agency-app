@@ -133,4 +133,22 @@ export function registerCronJobs() {
       console.error("WhatsApp sync failed", err);
     }
   });
+
+  // Schedule weekly report generation for all active talent.
+  // Runs every Monday at 9:00 AM.
+  cron.schedule("0 9 * * 1", async () => {
+    logInfo("Starting weekly report generation job...");
+    try {
+      const usersToReport = await prisma.user.findMany({
+        where: { role: { in: ['EXCLUSIVE_TALENT', 'TALENT', 'FOUNDER', 'UGC_CREATOR'] } },
+        select: { id: true },
+      });
+
+      for (const user of usersToReport) {
+        await aiAgentQueue.add("WEEKLY_REPORT", { userId: user.id });
+      }
+    } catch (err) {
+      console.error("Failed to enqueue weekly reports:", err);
+    }
+  }, { timezone: TIMEZONE });
 }

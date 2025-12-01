@@ -1,107 +1,77 @@
-import prisma from '../../lib/prisma.js';
-import { aiClient } from './aiClient.js';
+import { PrismaClient } from '@prisma/client';
 
-const assetGeneratorPrompt = (context: {
-  assetType: string;
-  preferences: any;
+const prisma = new PrismaClient();
+
+interface AssetGenerationInput {
+  deliverableId: string;
+  platform: string;
+  tone: string;
+  brandGuidelines: any;
   creatorPersona: any;
-  briefSummary: string;
-  dealContext: any;
-}) => `
-You are an AI Creative Asset Generator for a talent agency. Your task is to generate a specific creative asset based on a rich context bundle.
-
-**Asset to Generate:** ${context.assetType}
-**Creative Preferences:** ${JSON.stringify(context.preferences, null, 2)}
-**Creator Persona:** ${JSON.stringify(context.creatorPersona, null, 2)}
-**Campaign Brief Summary:** ${context.briefSummary}
-**Deal Context:** ${JSON.stringify(context.dealContext, null, 2)}
-
-**Instructions:**
-Generate the requested creative asset in a structured JSON format.
-- If 'script', provide a scene-by-scene script.
-- If 'hooks', provide 5 distinct opening hooks.
-- If 'talking_points', provide a bulleted list of key messages.
-- If 'ctas', provide 3 clear calls-to-action.
-- If 'thumbnail_ideas', describe 3 visual concepts for a thumbnail.
-
-**JSON Output Schema:**
-{
-  "assetType": "${context.assetType}",
-  "output": "string | [string] | [{...}]"
-}
-`;
-
-/**
- * Checks if a user has permission to generate a specific asset type.
- * @param user - The user object, including roles.
- * @param assetType - The type of asset being requested.
- */
-export function canGenerateAssets(user: any, assetType: string): boolean {
-  const userRoles = user.roles?.map((r: any) => r.role.name) || [];
-
-  const allowedRoles = ['super_admin', 'admin', 'exclusive_talent', 'talent', 'founder', 'brand_premium'];
-  if (userRoles.some((role: string) => allowedRoles.includes(role))) {
-    return true;
-  }
-
-  const limitedRoles = ['ugc'];
-  if (userRoles.some((role: string) => limitedRoles.includes(role))) {
-    return ['script', 'caption'].includes(assetType);
-  }
-
-  return false;
 }
 
 /**
- * The main orchestrator for the AI creative asset generation pipeline.
- * @param user - The user requesting the asset.
- * @param deliverableId - The ID of the deliverable to generate an asset for.
- * @param type - The type of asset to generate.
- * @param preferences - User-defined preferences for the generation.
+ * Simulates a call to an AI client to generate creative assets.
+ * In a real application, this would be a call to a service like OpenAI or Anthropic.
  */
-export async function generateCreativeAsset({ user, deliverableId, type, preferences }: { user: any; deliverableId: string; type: string; preferences: any }) {
-  // 1. Role Gating
-  if (!canGenerateAssets(user, type)) {
-    throw new Error('User does not have permission to generate this asset type.');
-  }
+const aiClient = {
+  generate: async (prompt: string, context: any) => {
+    // Mock AI response based on context
+    return {
+      hooks: [
+        `You've been using ${context.platform} wrong. Here's why...`,
+        `The one secret to ${context.tone} content is this.`,
+        `Stop scrolling if you want to see something amazing.`,
+      ],
+      captions: {
+        short: `The wait is over. ✨ Check out the new collection! #ad #${context.platform}`,
+        long: `I've been testing this out for a week and I'm obsessed. The quality is unmatched and it fits perfectly into my ${context.tone} lifestyle. You have to try it for yourself. Link in bio! #ad #${context.platform} #musthave`,
+      },
+      scripts: {
+        outline: [
+          { time: '0-3s', scene: 'Quick, engaging hook showing a common problem.' },
+          { time: '4-10s', scene: 'Introduce the product as the solution.' },
+          { time: '11-15s', scene: 'Show a key benefit or transformation.' },
+          { time: '16-20s', scene: 'Strong call-to-action.' },
+        ],
+        full: '...',
+      },
+      imagePrompts: [
+        `A flatlay of the product on a minimalist background, with natural lighting, in the style of ${context.creatorPersona.style}.`,
+        `A lifestyle shot of a person using the product, looking happy and confident, matching the brand's color palette.`,
+      ],
+      metadata: { model: 'mock-ai-v1', promptTokens: 1024, completionTokens: 512 },
+    };
+  },
+};
 
-  // 2. Load Context
-  const deliverable = await prisma.deliverableItem.findUnique({
-    where: { id: deliverableId },
-    include: {
-      deal: { include: { dealDraft: true, user: { include: { personaProfile: true } } } },
-    },
-  });
+/**
+ * Generates a full suite of creative assets for a deliverable.
+ * @param input The context for asset generation.
+ * @returns A structured object containing all generated assets.
+ */
+export const generateAssets = async (input: AssetGenerationInput) => {
+  const prompt = `Generate creative assets for a ${input.platform} deliverable with a ${input.tone} tone.`;
+  const assets = await aiClient.generate(prompt, input);
+  return assets;
+};
 
-  if (!deliverable || !deliverable.deal.user) {
-    throw new Error('Deliverable context is incomplete for asset generation.');
-  }
+/**
+ * Refines existing assets based on user feedback.
+ * @param input The existing assets and refinement instructions.
+ * @returns A refined set of assets.
+ */
+export const refineAssets = async (input: any) => {
+  // Mock refinement logic
+  return generateAssets(input);
+};
 
-  const contextBundle = {
-    assetType: type,
-    preferences,
-    creatorPersona: deliverable.deal.user.personaProfile || {},
-    briefSummary: (deliverable.deal.dealDraft?.notes as string) || 'No brief summary available.',
-    dealContext: {
-      brand: deliverable.deal.brandName,
-      deliverable: deliverable.type,
-    },
-  };
-
-  // 3. Call the AI Engine
-  const result = await aiClient.json(assetGeneratorPrompt(contextBundle)) as any;
-
-  // 4. Store the AssetGeneration row
-  const assetGeneration = await prisma.assetGeneration.create({
-    data: {
-      deliverableId,
-      userId: user.id,
-      type,
-      inputContext: contextBundle,
-      aiOutput: result,
-    },
-  });
-
-  console.log(`[ASSET GENERATOR] Successfully generated asset of type '${type}' for deliverable ${deliverableId}.`);
-  return assetGeneration;
-}
+/**
+ * Generates variations of a specific asset (e.g., more hooks).
+ * @param input The asset to create variations of.
+ * @returns A set of asset variations.
+ */
+export const generateVariations = async (input: any) => {
+  // Mock variation logic
+  return generateAssets(input);
+};

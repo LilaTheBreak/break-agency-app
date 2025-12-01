@@ -1,37 +1,24 @@
 import { Router } from 'express';
-import prisma from '../lib/prisma.js';
-import { creatorMatchQueue } from '../worker/queues/creatorMatchQueue.js';
+import { protect } from '../../middleware/authMiddleware';
+import { requireRole } from '../../middleware/requireRole';
+import { requireBrandRole } from '../../middleware/requireBrandRole';
+import {
+  runMatchingEngine,
+  getBriefMatches,
+  getMatchesForCreator,
+} from '../../controllers/ai/creatorMatchingController';
 
 const router = Router();
 
-/**
- * GET /api/campaign/:aiPlanId/matches
- * Fetches the ranked list of creator matches for a campaign plan.
- */
-router.get('/campaign/:aiPlanId/matches', async (req, res, next) => {
-  const { aiPlanId } = req.params;
-  try {
-    const matches = await prisma.creatorMatchResult.findMany({
-      where: { aiPlanId },
-      orderBy: { rank: 'asc' },
-      include: { talent: { include: { user: true } } },
-    });
-    res.json(matches);
-  } catch (error) {
-    next(error);
-  }
-});
+// Internal/Admin route to trigger the engine
+router.post('/generate', protect, requireRole(['ADMIN', 'SUPER_ADMIN']), runMatchingEngine);
 
-/**
- * POST /api/campaign/:aiPlanId/matches/regenerate
- * Manually triggers the regeneration of the talent shortlist.
- */
-router.post('/campaign/:aiPlanId/matches/regenerate', async (req, res) => {
-  const { aiPlanId } = req.params;
-  await creatorMatchQueue.add('regenerate-shortlist', { aiPlanId });
-  res.status(202).json({ message: 'Talent shortlist regeneration has been queued.' });
-});
+// Brand-facing route to get results
+router.get('/brand/briefs/:id/matches', protect, requireBrandRole, getBriefMatches);
 
-// GET /api/campaign/match/:id would be similar, fetching a single CreatorMatchResult
+// Admin route to see a creator's match history
+router.get('/:creatorId', protect, requireRole(['ADMIN', 'SUPER_ADMIN']), getMatchesForCreator);
+
+// The admin route for /admin/briefs/:id/matches can reuse getBriefMatches without the subscription filter.
 
 export default router;

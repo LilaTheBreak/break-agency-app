@@ -1,34 +1,30 @@
 import { Router } from 'express';
-import prisma from '../lib/prisma.js';
-import { deliverableExtractQueue } from '../worker/queues/deliverableQueues.js';
+import { protect } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/requireRole';
+import { isPremiumBrand } from '../middleware/isPremiumBrand';
+import {
+  submitForReview,
+  getReview,
+  approveDeliverable,
+  requestChanges,
+} from '../controllers/deliverableReviewController';
 
 const router = Router();
 
-/**
- * POST /api/deliverables/:id/ai-review
- * Triggers the full AI QA pipeline for a deliverable.
- */
-router.post('/:id/ai-review', async (req, res) => {
-  const { id } = req.params;
-  // Enqueue the first job in the chain
-  await deliverableExtractQueue.add('start-qa', { deliverableId: id });
-  res.status(202).json({ message: 'Deliverable QA process has been started.' });
-});
+// Creator uploads a deliverable for review
+router.post('/:id/review', protect, requireRole(['EXCLUSIVE_TALENT', 'TALENT', 'UGC_CREATOR']), submitForReview);
 
-/**
- * GET /api/deliverables/:id/ai-report
- * Fetches the latest AI QA report for a deliverable.
- */
-router.get('/:id/ai-report', async (req, res, next) => {
-  try {
-    const report = await prisma.deliverableQualityReport.findUnique({
-      where: { deliverableId: req.params.id },
-      include: { issues: true },
-    });
-    res.json(report);
-  } catch (error) {
-    next(error);
-  }
-});
+// Anyone involved can view the review
+router.get('/:id/review', protect, getReview);
+
+// Admin and Brand Premium can approve or request changes
+const actionRouter = Router();
+actionRouter.use(protect); // Base protection
+
+// This logic can be combined with a custom middleware checking ownership or role
+actionRouter.post('/:id/approve', approveDeliverable);
+actionRouter.post('/:id/request-changes', requestChanges);
+
+router.use('/', actionRouter);
 
 export default router;

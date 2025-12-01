@@ -1,26 +1,26 @@
 import { Router } from 'express';
-import { createCheckoutSession, createBillingPortalSession } from '../../services/billing/subscriptionService.js';
+import { protect } from '../middleware/authMiddleware';
+import { requireBrandRole } from '../middleware/requireBrandRole';
+import { isPremiumBrand } from '../middleware/isPremiumBrand';
+import {
+  getDashboardData,
+  createCampaign,
+  listCampaigns,
+  getCampaignDetails,
+  approveDeliverable,
+} from '../controllers/brand/portalController';
 
 const router = Router();
 
-router.post('/checkout', async (req, res, next) => {
-  try {
-    const { userId } = req.body; // In real app, from req.user
-    const session = await createCheckoutSession(userId, process.env.STRIPE_BRAND_PREMIUM_PRICE_ID!, 'http://localhost:3000/dashboard', 'http://localhost:3000/upgrade');
-    res.json({ url: session.url });
-  } catch (error) {
-    next(error);
-  }
-});
+// All routes in this file are for brands only
+router.use(protect, requireBrandRole);
 
-router.get('/portal', async (req, res, next) => {
-  try {
-    const { customerId } = req.query; // In real app, from req.user
-    const session = await createBillingPortalSession(customerId as string, 'http://localhost:3000/billing');
-    res.redirect(session.url);
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/dashboard', getDashboardData);
+router.get('/campaigns/list', listCampaigns);
+router.get('/campaigns/:id', getCampaignDetails);
+router.post('/deliverables/:id/approve', approveDeliverable);
+
+// Premium-only routes
+router.post('/campaigns/create', isPremiumBrand, createCampaign);
 
 export default router;

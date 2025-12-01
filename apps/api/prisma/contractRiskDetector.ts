@@ -1,28 +1,18 @@
-import { aiClient } from '../aiClient.js';
-
-const riskPrompt = (clauseText: string) => `
-You are a legal risk detection AI. Analyze the following contract clause for potential risks to our creator.
-
-**Clause:**
-"${clauseText}"
-
-**Instructions:**
-Identify risks like indemnity traps, perpetual rights, unusual payment schedules, or unfavorable jurisdictions.
-If a risk is found, describe it and assign a severity level.
-
-**JSON Output Schema:**
-{
-  "risk": {
-    "description": "string",
-    "severity": "'high' | 'medium' | 'low'"
-  } | null
-}
-`;
+// import { aiClient } from '../aiClient';
 
 /**
- * Analyzes a single clause for potential risks.
+ * Simulates an AI call to detect risks, dangerous clauses, and missing clauses.
+ * @param cleanedText The cleaned text of the contract.
+ * @returns An object containing lists of detected risks and missing clauses.
  */
-export async function detectClauseRisk(clauseText: string) {
-  const prompt = riskPrompt(clauseText);
-  return aiClient.json(prompt).catch(() => ({ risk: { description: 'AI analysis failed.', severity: 'high' } }));
-}
+export const detectContractRisks = async (cleanedText: string) => {
+  // Mock AI response
+  return {
+    risks: [
+      { clause: 'Section 5.1: Indemnity', description: 'The indemnity clause is overly broad and holds the creator liable for third-party actions.', severity: 'high' },
+      { clause: 'Section 3.2: Usage Rights', description: 'The contract grants perpetual, worldwide rights for all media, which is non-standard.', severity: 'high' },
+    ],
+    dangerousClauses: ['Section 5.1: Indemnity'],
+    missingClauses: ['A clear "Termination for Cause" clause is missing.', 'No clause defining the process for content approval and revisions.'],
+  };
+};

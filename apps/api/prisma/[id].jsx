@@ -7,6 +7,8 @@ export default function AdminUserEditPage() {
   const [loading, setLoading] = useState(true);
   const [rosterCategory, setRosterCategory] = useState('');
   const [includeInRoster, setIncludeInRoster] = useState(false);
+  const [creatorScore, setCreatorScore] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -17,6 +19,8 @@ export default function AdminUserEditPage() {
         setUser(data);
         setRosterCategory(data.roster_category || 'NONE');
         setIncludeInRoster(data.include_in_roster || false);
+        setCreatorScore(data.creator_score || '');
+        setAdminNotes(data.admin_notes || '');
       } catch (error) {
         console.error('Failed to fetch user', error);
       } finally {
@@ -29,12 +33,14 @@ export default function AdminUserEditPage() {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      await fetch(`/api/admin/users/${id}`, {
-        method: 'PUT',
+      await fetch(`/api/admin/roster/update/${id}`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           roster_category: rosterCategory,
           include_in_roster: includeInRoster,
+          creator_score: parseInt(creatorScore, 10) || null,
+          admin_notes: adminNotes,
         }),
       });
       alert('User updated successfully!');
@@ -83,6 +89,16 @@ export default function AdminUserEditPage() {
             <option value="VIP">VIP</option>
             <option value="UGC">UGC</option>
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="creatorScore" className="block mb-2 text-sm font-medium">Creator Score</label>
+          <input type="number" id="creatorScore" value={creatorScore} onChange={(e) => setCreatorScore(e.target.value)} className="w-full p-2 border rounded-md dark:bg-gray-700" />
+        </div>
+
+        <div>
+          <label htmlFor="adminNotes" className="block mb-2 text-sm font-medium">Admin Notes</label>
+          <textarea id="adminNotes" value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} className="w-full p-2 border rounded-md dark:bg-gray-700" rows="4"></textarea>
         </div>
 
         <button type="submit" className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md">

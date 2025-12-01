@@ -25,11 +25,10 @@ model User {
   roster_category     String?
   upgrade_suggested    Boolean   @default(false)
   include_in_roster    Boolean   @default(false)
-  subscription_plan      String?   // plan id or name
-  subscription_renewal   DateTime?
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
-  subscription_status  String    @default("free")
+  ugcPortfolioUrl      String?
+  ugcRates             Json?
+  ugcApproved          Boolean   @default(false)
+  subscriptionStatus   String?   @default("free") // "free" | "premium" | "ugc_pro"
   ugc_portfolio_url   String?
   ugc_categories       String[]  @default([])
   managedTalentIds String[] @default([])
@@ -89,14 +88,38 @@ model User {
   creatorPackages          DealPackage[]             @relation("CreatorPackages")
   aiAgentTasks             AIAgentTask[]
   aiAgentLogs              AIAgentExecutionLog[]
-  competitors              CompetitorProfile[]
-  stripeSubscriptions      StripeSubscription[]
+  competitors              CompetitorProfile[]       @relation(fields: [userId], references: [id])
+  subscriptions            Subscription[]
   outreachMessageTemplates OutreachMessageTemplate[]
   outreachSuggestions      OutreachSuggestion[]
   inboxSummaries           InboxSummary[]
+  contentAnalyses          ContentAnalysis[]
+  algorithmAlerts          AlgorithmAlert[]
+  createdCampaignTemplates CampaignTemplate[]
+  brandCampaigns           BrandCampaign[]
+  talentRequests           TalentRequest[]          @relation("BrandTalentRequests")
+  createdApprovalRequests  ApprovalRequest[]        @relation("Requester")
+  createdCreativeVersions  CreativeVersion[]
+  reviewedApprovalRequests ApprovalRequest[]        @relation("Reviewer")
+  createdCreativeReviews   CreativeReview[]         @relation("Requester")
+  reviewedCreativeReviews  CreativeReview[]         @relation("Reviewer")
+  campaignCreatorRequests  CampaignCreatorRequest[]
 }
 
-model FriendOfHouse {}
+model FriendsOfHouse {
+  id         String   @id @default(cuid())
+  name       String
+  bio        String?
+  category   String?
+  photoUrl   String?
+  instagram  String?
+  tiktok     String?
+  youtube    String?
+  website    String?
+  customTags String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
 
 enum SocialPlatform {
   TIKTOK
@@ -138,6 +161,7 @@ enum AIAgentTaskType {
   WEEKLY_REPORT
   ANALYSIS
   INBOX_REPLY
+  ALGO_SCAN
 }
 
 enum AIAgentTaskStatus {
@@ -587,11 +611,13 @@ model SignatureRequest {
   signer2Signed     Boolean  @default(false)
   signer1SignedAt   DateTime?
   signer2SignedAt   DateTime?
+  signedAt           DateTime?
   signaturePositions Json?
-  auditTrail         Json? // [{ event: "viewed", actor: "...", at: "..." }]
+  auditLog           Json?
   metadata           Json?
   signedPdfUrl String?
   errorMessage String?
+  ipAddress          String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -791,36 +817,26 @@ model CreatorBrandFit {
   @@index([creatorId, brandName])
 }
 
-model DealPackage {
-  id           String   @id @default(cuid())
-  userId       String
-  brandName    String
-  creatorId    String?
-  campaignGoal String?
-  deliverables Json
-  pricing      Json
-  concepts     Json
-  timeline     Json
-  terms        Json
-  upsells      Json?
-  status       String   @default("draft")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user    User  @relation(fields: [userId], references: [id])
-  creator User? @relation("CreatorPackages", fields: [creatorId], references: [id])
-}
-
 model CreatorBundle {
   id         String   @id @default(cuid())
-  brandName  String
   userId     String
-  packages   Json
-  prediction Json
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  briefId    String?
+  brief      BrandBrief? @relation(fields: [briefId], references: [id])
+  type       String // "performance", "brand_fit", "premium", etc.
+  creators   Json // list of creator objects with match data
+  deliverables Json?
+  timeline   Json?
+  budget     Json?
+  forecast   Json?
+  risks      Json?
+  aiSummary  String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  @@index([userId])
+  @@index([briefId])
+  @@index([type])
 }
 
 model BrandBrief {
@@ -894,7 +910,11 @@ model CampaignTimelineItem {
   title         String
   description   String?
   dueDate       DateTime?
-  deliverableId String?
+  creatorId     String?
+  status        String    @default("pending") // pending, in_progress, done, overdue
+  type          String    @default("task") // outreach, contract, briefing, draft1, draft2, posting, reporting
+  sequence      Int?
+  metadata      Json?
 
   plan CampaignAutoPlan @relation(fields: [planId], references: [id])
 }
@@ -921,7 +941,9 @@ model DeliverableReview {
   aiIssues      Json?
   aiSuggestions Json?
   aiScore       Int?
-  status        String   @default("pending")
+  riskFlags     Json?
+  alignment     Json?
+  status        String   @default("pending") // pending, approved, needs_changes
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -995,6 +1017,11 @@ model CreatorWeeklyReport {
   weekEnd   DateTime
   insights  Json?
   aiSummary String?
+  healthScore        Int?
+  grade              String?
+  riskLevel          String? // e.g., 'low', 'medium', 'high'
+  changeFromLastWeek Int?
+  actionPlan         Json?
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -1108,10 +1135,15 @@ model ContractReview {
   file          File?    @relation(fields: [fileId], references: [id])
   brandName     String?
   status        String   @default("pending")
-  rawText       String?
+  extractText   String?
+  cleanedText   String?
   aiSummary     Json?
   aiRisks       Json?
+  risks         Json?
+  dangerousClauses Json?
+  missingClauses   Json?
   aiRedlines    Json?
+  redlines      Json?
   aiPlainEnglish Json?
   aiMissingTerms Json?
   aiRedlineSuggestions Json?
@@ -1122,6 +1154,7 @@ model ContractReview {
   aiUsageRedlines Json?
   aiUsageNegotiationCopy Json?
   usageEndDate DateTime?
+  negotiationDrafts Json?
   aiDealMapping Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -1173,6 +1206,9 @@ model NegotiationSession {
 
   steps NegotiationMessage[]
   decisions NegotiationDecision[]
+
+  strategyPaths NegotiationStrategyPath[]
+  toneProfiles  NegotiationToneProfile[]
 }
 
 model NegotiationMessage {
@@ -1327,6 +1363,9 @@ model DeliverableItem {
   aiQaRisks       Json?
   performanceSnapshots PostPerformance[]
   aiPerformanceSummary Json?
+  storyboard          Storyboard?
+  thumbnailGeneration ThumbnailGeneration?
+  generatedCopy        GeneratedCopy[]
   aiHashtags      Json?
   postingStatus   String? // "queued", "posting", "posted", "failed"
   postedUrl       String? // DEPRECATED in favor of ScheduledPost.metadata
@@ -1395,6 +1434,19 @@ model ScheduledPost {
   @@index([talentId])
   @@index([status, scheduledAt])
 }
+
+model AutoPostLog {
+  id              String   @id @default(cuid())
+  scheduledPostId String
+  scheduledPost   ScheduledPost @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)
+  status          String // "success", "failure"
+  message         String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+
+  @@index([scheduledPostId])
+}
+
 
 model InboundEmail {
   id                  String      @id @default(cuid())
@@ -1562,6 +1614,7 @@ model Talent {
   creatorInvites    CampaignInvite[]      @relation("InvitesForCreator")
   sentInvites       CampaignInvite[]      @relation("InvitesFromBrand")
   creatorDeliverables CampaignDeliverable[] @relation("DeliverablesForCreator")
+  requests          TalentRequest[]       @relation("TalentRequests")
   ugcPortfolio      UGCPortfolio?
   ugcListings       UGCListing[]
   ugcRequests       UGCRequest[] @relation("RequestsForCreator")
@@ -1747,6 +1800,107 @@ model NegotiationLog {
   @@index([dealId])
 }
 
+model UGCApplication {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolioUrl String?
+  categories   String[]
+  bio          String?
+  sampleLinks  Json?
+  rates        Json?
+  status       String   @default("pending") // pending, approved, rejected
+  adminNotes   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId])
+  @@index([status])
+}
+
+model NegotiationStrategyPath {
+  id               String   @id @default(cuid())
+  sessionId        String
+  session          NegotiationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  pathType         String // e.g., 'aggressive', 'balanced', 'premium'
+  script           String?
+  justification    Json?
+  predictedOutcome Json?
+  confidence       Float?
+  createdAt        DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+model NegotiationToneProfile {
+  id          String   @id @default(cuid())
+  brandEmail  String
+  sessionId   String?
+  session     NegotiationSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  tone        String? // e.g., 'direct', 'friendly', 'formal'
+  traits      Json? // { "price_sensitive": 0.8, "prefers_quick_deals": 0.6 }
+  riskProfile Json?
+  strategy    Json? // Suggested negotiation approach
+  createdAt   DateTime @default(now())
+
+  @@unique([brandEmail])
+  @@index([sessionId])
+}
+
+model ContentAnalysis {
+  id              String         @id @default(cuid())
+  userId          String
+  platform        SocialPlatform
+  caption         String?
+  hook            String?
+  thumbnailUrl    String?
+  aiSummary       Json?
+  aiScores        Json?
+  aiFixes         Json?
+  postPredictions Json?
+  createdAt       DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([platform])
+}
+
+model AlgorithmAlert {
+  id          String   @id @default(cuid())
+  userId      String
+  platform    SocialPlatform
+  type        String // trend, risk, drop, shadowban, etc.
+  title       String
+  description String?
+  impact      String? // low, medium, high
+  actionPlan  Json?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([platform])
+  @@index([type])
+}
+
+model CampaignTemplate {
+  id           String   @id @default(cuid())
+  title        String
+  category     String?
+  audience     String?
+  structure    Json?
+  deliverables Json?
+  aiPrompts    Json?
+  createdById  String?
+  createdBy    User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([category])
+}
+
 model CaptionRewrite {
   id                String   @id @default(cuid())
   deliverableId     String
@@ -1838,6 +1992,236 @@ model ContentItem {
   @@index([scheduledFor])
 }
 
+model ApprovalRequest {
+  id           String   @id @default(cuid())
+  entityType   String // e.g., "DELIVERABLE", "CONTRACT"
+  entityId     String
+  version      Int      @default(1)
+  status       String   @default("pending") // pending, approved, needs_edits
+  requesterId  String
+  requester    User     @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewerId   String?
+  reviewer     User?    @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  aiAssessment Json? // { score, riskFlags, requiredFixes, suggestions }
+  comments     ApprovalComment[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([requesterId])
+  @@index([reviewerId])
+  @@index([status])
+}
+
+model ApprovalComment {
+  id                String          @id @default(cuid())
+  approvalRequestId String
+  approvalRequest   ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message           String
+  createdAt         DateTime        @default(now())
+
+  @@index([approvalRequestId])
+  @@index([userId])
+}
+
+model CreativeVersion {
+  id          String   @id @default(cuid())
+  assetId     String
+  assetType   String // e.g., "AssetGeneration"
+  version     Int
+  content     Json
+  metadata    Json?
+  changesAI   Json? // AI-generated summary of changes from previous version
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([assetId, version])
+  @@index([assetId])
+  @@index([assetType])
+  @@index([createdById])
+}
+
+model CreativeReview {
+  id          String   @id @default(cuid())
+  assetId     String
+  assetType   String // e.g., "AssetGeneration"
+  version     Int
+  status      String   @default("pending") // pending, in_review, approved, changes_requested
+  requesterId String
+  requester   User     @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  reviewerId  String?
+  reviewer    User?    @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  aiSummary   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  comments CreativeComment[]
+
+  @@index([assetId, assetType])
+  @@index([requesterId])
+  @@index([status])
+}
+
+model CreativeComment {
+  id             String   @id @default(cuid())
+  reviewId       String
+  review         CreativeReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  message        String
+  resolved       Boolean  @default(false)
+  resolvedById   String?
+  resolvedBy     User?    @relation(fields: [resolvedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  replies CreativeCommentReply[]
+
+  @@index([reviewId])
+}
+
+model CreativeCommentReply {
+  id        String          @id @default(cuid())
+  commentId String
+  comment   CreativeComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  message   String
+  createdAt DateTime        @default(now())
+
+  @@index([commentId])
+}
+
+model ThumbnailGeneration {
+  id            String   @id @default(cuid())
+  deliverableId String   @unique
+  deliverable   DeliverableItem @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  concepts      Json? // [{ title, description, style }]
+  layouts       Json? // [{ conceptTitle, layoutDescription, elements: [] }]
+  imagePrompts  Json? // string[]
+  renderedUrls  Json? // string[]
+
+  modelVersion  String?
+  status        String   @default("completed")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([deliverableId])
+  @@index([userId])
+}
+model AIPrediction {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assetId             String
+  assetType           String // e.g., "DeliverableItem", "CreativeVersion"
+  deliverableId       String?
+  deliverable         DeliverableItem? @relation(fields: [deliverableId], references: [id], onDelete: SetNull)
+  version             Int?
+  predictedViews      Int?
+  predictedLikes      Int?
+  predictedComments   Int?
+  predictedShares     Int?
+  predictedSaves      Int?
+  predictedEngagement Float?
+  predictedCTR        Float?
+  viralityScore       Float?
+  riskScore           Float?
+  suggestions         Json?
+  benchmarks          Json?
+  modelVersion        String?
+  createdAt           DateTime @default(now())
+
+  @@index([userId])
+  @@index([assetId, assetType])
+  @@index([deliverableId])
+}
+
+model CreativeAIOutput {
+  id          String   @id @default(cuid())
+  deliverableId String   @unique
+  deliverable   DeliverableItem @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  concepts    Json? // [{ title, description }]
+  hooks       Json? // string[]
+  script      Json? // { outline, fullScript }
+  shotlist    Json? // [{ shotNumber, description, type }]
+  captions    Json? // { short, long, variants[] }
+  thumbnails  Json? // { ideas[], prompts[] }
+  moodboard   Json? // { imageUrls[], palette: {} }
+  strategy    Json? // { notes, brandAlignment, personaFit }
+  prediction  Json? // { predictedViews, predictedEngagement }
+
+  modelVersion String?
+  status      String   @default("completed")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([deliverableId])
+  @@index([userId])
+}
+
+model Storyboard {
+  id            String   @id @default(cuid())
+  deliverableId String   @unique
+  deliverable   DeliverableItem @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sceneBreakdown Json? // [{ scene: 1, description: "..." }]
+  shotMap       Json?
+  modelVersion  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  frames StoryboardFrame[]
+
+  @@index([deliverableId])
+}
+
+model StoryboardFrame {
+  id          String     @id @default(cuid())
+  storyboardId String
+  storyboard  Storyboard @relation(fields: [storyboardId], references: [id], onDelete: Cascade)
+  frameNumber Int
+  description String
+  imagePrompt String?
+  imageUrl    String?
+  createdAt   DateTime   @default(now())
+
+  @@index([storyboardId])
+}
+
+model GeneratedCopy {
+  id            String      @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform      SocialPlatform
+  longCaption   String?
+  shortCaption  String?
+  scriptOutline Json?
+  fullScript    String?
+  hooks         Json?
+  ctaOptions    Json?
+  hashtags      Json?
+  toneVersion   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([deliverableId])
+  @@index([userId])
+  @@index([platform])
+}
+
 model ContentVersion {
   id                 String      @id @default(cuid())
   contentItemId      String
@@ -1884,42 +2268,36 @@ model ContentApproval {
   @@index([actor, status])
 }
 
-model BrandCampaign {
-  id           String   @id @default(cuid())
-  brandId      String
-  brand        User     @relation("BrandOwnedCampaigns", fields: [brandId], references: [id], onDelete: Cascade)
-  title        String
-  objective    String?
-  budgetMin    Int?
-  budgetMax    Int?
-  deliverables Json?
-  timeline     Json?
-  status       String   @default("draft") // draft, active, completed, archived
-  aiSummary    Json?
-  aiKeywords   Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model CampaignCreatorRequest {
+  id         String   @id @default(cuid())
+  campaignId String
+  brandId    String
+  creatorId  String?
+  creatorEmail String?
+  message    String?
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  invites      CampaignInvite[]
-  campaignDeliverables CampaignDeliverable[]
-
-  @@index([brandId])
+  brand    User          @relation(fields: [brandId], references: [id])
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+  creator  User?         @relation(fields: [creatorId], references: [id])
 }
 
 model CampaignInvite {
-  id           String   @id @default(cuid())
-  campaignId   String
-  campaign     BrandCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  creatorId    String
-  creator      User     @relation("InvitesForCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  brandId      String
-  brand        User     @relation("InvitesFromBrand", fields: [brandId], references: [id], onDelete: Cascade)
-  status       String   @default("pending") // pending, accepted, declined
-  message      String?
+  id         String @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creatorId  String
+  creator    User          @relation("InvitesForCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  brandId    String
+  brand      User          @relation("InvitesFromBrand", fields: [brandId], references: [id], onDelete: Cascade)
+  status     String        @default("pending") // pending, accepted, declined
+  message    String?
   deliverables Json?
   paymentOffer Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   @@index([campaignId])
   @@index([creatorId])
@@ -1928,7 +2306,7 @@ model CampaignInvite {
 model CampaignDeliverable {
   id         String   @id @default(cuid())
   campaignId String
-  campaign   BrandCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   creatorId  String
   creator    User     @relation("DeliverablesForCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   type       String
@@ -1989,24 +2367,6 @@ model UGCRequest {
   @@index([brandId])
   @@index([creatorId])
 }
-model StripeSubscription {
-  id                   String    @id @default(cuid())
-  userId               String
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeSubscriptionId String    @unique
-  stripeCustomerId     String
-  priceId              String
-  status               String
-  renewalDate          DateTime?
-  canceledAt           DateTime?
-  metadata             Json?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  @@index([userId])
-  @@index([stripeSubscriptionId])
-  @@index([stripeCustomerId])
-}
 
 model FriendsOfHouse {
   id         String   @id @default(cuid())
@@ -2025,7 +2385,7 @@ model PitchGeneration {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  brandName       String
+  brandName    String?
   briefId         String?
   brief           BrandBrief? @relation(fields: [briefId], references: [id], onDelete: SetNull)
   predictionId    String?
@@ -2732,6 +3092,31 @@ model CreatorOpportunityRecommendation {
   @@index([status])
 }
 
+model TalentRequest {
+  id         String   @id @default(cuid())
+  brandId    String
+  brand      User     @relation("BrandTalentRequests", fields: [brandId], references: [id], onDelete: Cascade)
+  talentId   String
+  talent     Talent   @relation("TalentRequests", fields: [talentId], references: [id], onDelete: Cascade)
+  campaignId String?
+  campaign   BrandCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  deliverables Json?
+  budgetMin    Int?
+  budgetMax    Int?
+  timeline     String?
+  notes        String?
+
+  status String @default("pending") // pending, manager_approved, creator_approved, declined
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+  @@index([talentId])
+  @@index([campaignId])
+}
+
 model NegotiationStrategy {
   id          String   @id @default(cuid())
   dealId      String   @unique
@@ -3204,4 +3589,115 @@ model PricingSnapshot {
 
   @@index([userId])
   @@index([dealId])
+}
+
+model BrandCampaign {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  goals            String?
+  categories       String[]
+  deliverables     Json?
+  budgetMin        Int?
+  budgetMax        Int?
+  timeline         String?
+  targetAudience   String?
+  inspirationLinks Json?
+  competitorList   Json?
+  notes            String?
+  fileId           String?
+  file             File?     @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  status           String    @default("draft")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  creativeDirection CreativeDirection?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model CreatorMatchScore {
+  id                  String      @id @default(cuid())
+  userId              String
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  briefId             String?
+  brief               BrandBrief? @relation(fields: [briefId], references: [id])
+  dealDraftId         String?
+  dealDraft           DealDraft?  @relation(fields: [dealDraftId], references: [id])
+  talentId            String
+  talent              Talent      @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  fitScore            Float
+  predictedFee        Int?
+  predictedViews      Int?
+  predictedEngagement Int?
+  predictedCTR        Float?
+  predictedROI        Float?
+  reasoning           Json?
+  risks               Json?
+  createdAt           DateTime    @default(now())
+
+  @@index([briefId])
+  @@index([userId])
+  @@index([talentId])
+  @@index([fitScore])
+}
+
+model CreativeDirection {
+  id         String   @id @default(cuid())
+  campaignId String   @unique
+  campaign   BrandCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  concept    Json? // { title: string, summary: string }
+  tone       Json? // { keywords: string[], description: string }
+  palette    Json? // { primary: string, secondary: string, accent: string }
+  moodboard  Json? // string[] of image URLs
+  hooks      Json? // string[]
+  scripts    Json? // { platform: string, script: string }[]
+  examples   Json? // string[] of URLs
+
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([campaignId])
+}
+
+model PostingSlot {
+  id            String      @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform      SocialPlatform
+  status        String      @default("suggested") // suggested, scheduled, approved, posted, late
+  scheduledFor  DateTime
+  postedAt      DateTime?
+  aiReasoning   Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([deliverableId])
+  @@index([userId])
+  @@index([platform])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+  status               String    @default("active") // active, past_due, canceled
+  currentPeriodEnd     DateTime?
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([stripeSubscriptionId])
 }
