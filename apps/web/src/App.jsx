@@ -1054,10 +1054,6 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
         <Link to="/" className="flex items-center gap-2" aria-label="The Break Co. home">
           <LogoWordmark variant="light" className="h-8 w-auto" />
         </Link>
-        <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
-          {navLeft.map(renderNavItem)}
-          {navRight.map(renderNavItem)}
-        </nav>
         <div className="relative flex items-center gap-3">
           <span className="hidden font-subtitle text-[0.7rem] uppercase tracking-[0.35em] text-brand-white/70 md:inline-flex">
             {isPublicResource ? "Public Surface" : "Platform"}
