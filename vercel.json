@@ -1,6 +1,7 @@
 {
   "installCommand": "pnpm install --prefer-offline",
   "buildCommand": "pnpm --filter @breakagency/web build",
+  "outputDirectory": "apps/web/dist",
   "git": {
     "ignoreCommand": "pnpm i --prefer-offline"
   }
