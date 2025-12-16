@@ -1,8 +1,16 @@
 {
+  "version": 2,
   "installCommand": "pnpm install --prefer-offline",
   "buildCommand": "pnpm --filter @breakagency/web build",
   "outputDirectory": "apps/web/dist",
+  "framework": "vite",
   "git": {
     "ignoreCommand": "pnpm i --prefer-offline"
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
