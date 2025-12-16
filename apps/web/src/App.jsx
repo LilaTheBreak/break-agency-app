@@ -592,14 +592,14 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               <button
                 type="button"
                 onClick={() => handleGateChoice("/brand")}
-                className="w-[320px] rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
+                className="w-[320px] rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red hover:translate-y-[-1px]"
               >
                 I Am A Brand
               </button>
               <button
                 type="button"
                 onClick={() => handleGateChoice("/creator")}
-                className="w-[320px] rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
+                className="w-[320px] rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red hover:translate-y-[-1px]"
               >
                 I Am A Creator
               </button>

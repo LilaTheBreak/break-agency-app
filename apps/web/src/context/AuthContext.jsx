@@ -57,13 +57,18 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = useCallback(async () => {
     setError(null);
+    console.log("Fetching Google OAuth URL...");
     const response = await apiFetch("/auth/google/url");
+    console.log("Response status:", response.status);
     const payload = await response.json().catch(() => ({}));
+    console.log("Payload:", payload);
     if (!response.ok || !payload.url) {
       const message = payload?.error || "Unable to start Google login";
+      console.error("OAuth URL error:", message);
       setError(message);
       throw new Error(message);
     }
+    console.log("Redirecting to:", payload.url);
     window.location.assign(payload.url);
   }, []);
 

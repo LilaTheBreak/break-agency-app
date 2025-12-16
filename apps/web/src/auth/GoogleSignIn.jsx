@@ -13,8 +13,14 @@ export default function GoogleSignIn({ open, onClose }) {
 
   if (!open) return null;
 
-  const handleLogin = () => {
-    loginWithGoogle().catch(() => {});
+  const handleLogin = async () => {
+    try {
+      console.log("Starting Google login...");
+      await loginWithGoogle();
+    } catch (err) {
+      console.error("Google login error:", err);
+      setFormError(err instanceof Error ? err.message : "Unable to start Google login");
+    }
   };
 
   const getRoleBasedRedirect = (userRole) => {
@@ -90,7 +96,8 @@ export default function GoogleSignIn({ open, onClose }) {
             here with secure console access.
           </p>
         </div>
-        {error ? <p className="mt-4 text-sm text-brand-red">{error}</p> : null}
+        {error && <p className="mt-4 text-sm text-brand-red">{error}</p>}
+        {formError && <p className="mt-4 text-sm text-brand-red">{formError}</p>}
         <div className="mt-6 flex flex-col gap-3">
           <button
             type="button"

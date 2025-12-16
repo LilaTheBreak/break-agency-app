@@ -1,0 +1,914 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+Error: Prisma schema validation - (validate wasm)
+Error code: P1012
+[1;91merror[0m: [1mError validating field `dealDrafts` in model `User`: The relation field `dealDrafts` on model `User` is missing an opposite relation field on the model `DealDraft`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:59[0m
+[1;94m   | [0m
+[1;94m58 | [0m  dealThreads              DealThread[]
+[1;94m59 | [0m  [1;91mdealDrafts               DealDraft[][0m
+[1;94m60 | [0m  inboundMessages          InboundMessage[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `contractReviews` in model `User`: The relation field `contractReviews` on model `User` is missing an opposite relation field on the model `ContractReview`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:63[0m
+[1;94m   | [0m
+[1;94m62 | [0m  deliverableReviews       DeliverableReview[]
+[1;94m63 | [0m  [1;91mcontractReviews          ContractReview[][0m
+[1;94m64 | [0m  creatorBundles           CreatorBundle[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `interactionHistory` in model `User`: The relation field `interactionHistory` on model `User` is missing an opposite relation field on the model `InteractionHistory`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:76[0m
+[1;94m   | [0m
+[1;94m75 | [0m  agentMemories            AIAgentMemory[] @relation("AIAgentMemoryUserRelation")
+[1;94m76 | [0m  [1;91minteractionHistory       InteractionHistory[][0m
+[1;94m77 | [0m  personaProfile           CreatorPersonaProfile?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `personaProfile` in model `User`: The relation field `personaProfile` on model `User` is missing an opposite relation field on the model `CreatorPersonaProfile`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:77[0m
+[1;94m   | [0m
+[1;94m76 | [0m  interactionHistory       InteractionHistory[]
+[1;94m77 | [0m  [1;91mpersonaProfile           CreatorPersonaProfile?[0m
+[1;94m78 | [0m  outreachPlans            OutreachPlan[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `outreachPlans` in model `User`: The relation field `outreachPlans` on model `User` is missing an opposite relation field on the model `OutreachPlan`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:78[0m
+[1;94m   | [0m
+[1;94m77 | [0m  personaProfile           CreatorPersonaProfile?
+[1;94m78 | [0m  [1;91moutreachPlans            OutreachPlan[][0m
+[1;94m79 | [0m  leads                    Lead[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `leads` in model `User`: The relation field `leads` on model `User` is missing an opposite relation field on the model `Lead`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:79[0m
+[1;94m   | [0m
+[1;94m78 | [0m  outreachPlans            OutreachPlan[]
+[1;94m79 | [0m  [1;91mleads                    Lead[][0m
+[1;94m80 | [0m  outreachSequences        OutreachSequence[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `outreachSequences` in model `User`: The relation field `outreachSequences` on model `User` is missing an opposite relation field on the model `OutreachSequence`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:80[0m
+[1;94m   | [0m
+[1;94m79 | [0m  leads                    Lead[]
+[1;94m80 | [0m  [1;91moutreachSequences        OutreachSequence[][0m
+[1;94m81 | [0m  negotiationSessions      NegotiationSession[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `negotiationSessions` in model `User`: The relation field `negotiationSessions` on model `User` is missing an opposite relation field on the model `NegotiationSession`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:81[0m
+[1;94m   | [0m
+[1;94m80 | [0m  outreachSequences        OutreachSequence[]
+[1;94m81 | [0m  [1;91mnegotiationSessions      NegotiationSession[][0m
+[1;94m82 | [0m  negotiationThreads       NegotiationThread[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `negotiationThreads` in model `User`: The relation field `negotiationThreads` on model `User` is missing an opposite relation field on the model `NegotiationThread`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:82[0m
+[1;94m   | [0m
+[1;94m81 | [0m  negotiationSessions      NegotiationSession[]
+[1;94m82 | [0m  [1;91mnegotiationThreads       NegotiationThread[][0m
+[1;94m83 | [0m  agentPolicy              AgentPolicy?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `creatorBrandFits` in model `User`: The relation field `creatorBrandFits` on model `User` is missing an opposite relation field on the model `CreatorBrandFit`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:85[0m
+[1;94m   | [0m
+[1;94m84 | [0m  agentExecutions          AgentExecution[]
+[1;94m85 | [0m  [1;91mcreatorBrandFits         CreatorBrandFit[][0m
+[1;94m86 | [0m  talents                  Talent[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Talent__fkey` has to be unique in the following namespace: on model `Talent` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:10[0m
+[1;94m   | [0m
+[1;94m 9 | [0m
+[1;94m10 | [0m[1;91mmodel User {[0m
+[1;94m11 | [0m  id          String   @id @default(cuid())
+[1;94m12 | [0m  email       String   @unique
+[1;94m13 | [0m  password    String?
+[1;94m14 | [0m  name        String?
+[1;94m15 | [0m  avatarUrl   String?
+[1;94m16 | [0m  location    String?
+[1;94m17 | [0m  timezone    String?
+[1;94m18 | [0m  pronouns    String?
+[1;94m19 | [0m  accountType String?
+[1;94m20 | [0m  status      String?
+[1;94m21 | [0m  bio         String?
+[1;94m22 | [0m  socialLinks Json?
+[1;94m23 | [0m  createdAt   DateTime @default(now())
+[1;94m24 | [0m  updatedAt   DateTime @updatedAt
+[1;94m25 | [0m  roster_category     String?
+[1;94m26 | [0m  upgrade_suggested    Boolean   @default(false)
+[1;94m27 | [0m  include_in_roster    Boolean   @default(false)
+[1;94m28 | [0m  ugcPortfolioUrl      String?
+[1;94m29 | [0m  ugcRates             Json?
+[1;94m30 | [0m  ugcApproved          Boolean   @default(false)
+[1;94m31 | [0m  subscriptionStatus   String?   @default("free") // "free" | "premium" | "ugc_pro"
+[1;94m32 | [0m  ugc_portfolio_url   String?
+[1;94m33 | [0m  ugc_categories       String[]  @default([])
+[1;94m34 | [0m  managedTalentIds String[] @default([])
+[1;94m35 | [0m  creator_score        Int?
+[1;94m36 | [0m  creator_score_reason Json?
+[1;94m37 | [0m  role_recommended     String?
+[1;94m38 | [0m  admin_notes          String?
+[1;94m39 | [0m  friends_of_house_id  String?
+[1;94m40 | [0m  onboarding_status    String    @default("pending_review")
+[1;94m41 | [0m  onboardingComplete   Boolean   @default(false)
+[1;94m42 | [0m
+[1;94m43 | [0m  socialAccounts  SocialAccount[] @relation("SocialAccountUserRelation")
+[1;94m44 | [0m  socialAnalytics SocialAnalytics[] @relation("SocialAnalyticsUserRelation")
+[1;94m45 | [0m  socialPosts     SocialPost[] @relation("SocialPostUserRelation")
+[1;94m46 | [0m  emailLogs       EmailLog[]
+[1;94m47 | [0m  socialTokens    SocialToken[] @relation("SocialTokenUserRelation")
+[1;94m48 | [0m
+[1;94m49 | [0m  auditLogs                AuditLog[]
+[1;94m50 | [0m  adminActivities          AdminActivity[]           @relation("AdminActivityActor")
+[1;94m51 | [0m  payments                 Payment[]
+[1;94m52 | [0m  invoices                 Invoice[]
+[1;94m53 | [0m  payouts                  Payout[]
+[1;94m54 | [0m  creatorBalance           CreatorBalance?
+[1;94m55 | [0m  contracts                Contract[] @relation("ContractUserRelation")
+[1;94m56 | [0m  roles                    UserRole[] @relation("UserRoleUserRelation")
+[1;94m57 | [0m  onboarding               UserOnboarding? @relation("UserOnboardingUserRelation")
+[1;94m58 | [0m  dealThreads              DealThread[]
+[1;94m59 | [0m  dealDrafts               DealDraft[]
+[1;94m60 | [0m  inboundMessages          InboundMessage[]
+[1;94m61 | [0m  deliverables             Deliverable[]
+[1;94m62 | [0m  deliverableReviews       DeliverableReview[]
+[1;94m63 | [0m  contractReviews          ContractReview[]
+[1;94m64 | [0m  creatorBundles           CreatorBundle[]
+[1;94m65 | [0m  briefMatches             BriefMatch[] @relation("BriefMatchUserRelation")
+[1;94m66 | [0m  brandRelationships       BrandRelationship[] @relation("BrandRelationshipUserRelation")
+[1;94m67 | [0m  brandSignals             BrandSignal[]
+[1;94m68 | [0m  brandCampaignPredictions BrandCampaignPrediction[] @relation("BrandCampaignPredictionUserRelation")
+[1;94m69 | [0m  opportunityClusters      OpportunityCluster[] @relation("OpportunityClusterUserRelation")
+[1;94m70 | [0m  brandAffinitySnapshots   BrandAffinitySnapshot[] @relation("BrandAffinitySnapshotUserRelation")
+[1;94m71 | [0m  brandEvents              BrandEvent[] @relation("BrandEventUserRelation")
+[1;94m72 | [0m  creatorInsights          CreatorInsights[]
+[1;94m73 | [0m  creatorReports           CreatorWeeklyReport[]     @relation("CreatorWeeklyReports")
+[1;94m74 | [0m  creatorPredictions       CreatorPrediction[]
+[1;94m75 | [0m  agentMemories            AIAgentMemory[] @relation("AIAgentMemoryUserRelation")
+[1;94m76 | [0m  interactionHistory       InteractionHistory[]
+[1;94m77 | [0m  personaProfile           CreatorPersonaProfile?
+[1;94m78 | [0m  outreachPlans            OutreachPlan[]
+[1;94m79 | [0m  leads                    Lead[]
+[1;94m80 | [0m  outreachSequences        OutreachSequence[]
+[1;94m81 | [0m  negotiationSessions      NegotiationSession[]
+[1;94m82 | [0m  negotiationThreads       NegotiationThread[]
+[1;94m83 | [0m  agentPolicy              AgentPolicy?
+[1;94m84 | [0m  agentExecutions          AgentExecution[]
+[1;94m85 | [0m  creatorBrandFits         CreatorBrandFit[]
+[1;94m86 | [0m  talents                  Talent[]
+[1;94m87 | [0m  emailOutboxes            EmailOutbox[] @relation("EmailOutboxUserRelation")
+[1;94m88 | [0m  creatorTasks             CreatorTask[] @relation("CreatorTaskUserRelation")
+[1;94m89 | [0m  pricingSnapshots         PricingSnapshot[] @relation("PricingSnapshotUserRelation")
+[1;94m90 | [0m  deadlineMonitors         DeadlineMonitor[] @relation("DeadlineMonitorUserRelation")
+[1;94m91 | [0m  creatorMatchScores       CreatorMatchScore[] @relation("CreatorMatchScoreUserRelation")
+[1;94m92 | [0m  postingSlots             PostingSlot[] @relation("PostingSlotUserRelation")
+[1;94m93 | [0m  
+[1;94m94 | [0m  aiAgentTasks             AIAgentTask[]
+[1;94m95 | [0m  aiAgentLogs              AIAgentExecutionLog[]
+[1;94m96 | [0m  competitors              CompetitorProfile[]
+[1;94m97 | [0m  subscriptions            Subscription[]
+[1;94m98 | [0m  outreachMessageTemplates OutreachMessageTemplate[]
+[1;94m99 | [0m  outreachSuggestions      OutreachSuggestion[]
+[1;94m100 | [0m  inboxSummaries           InboxSummary[]
+[1;94m101 | [0m  contentAnalyses          ContentAnalysis[]
+[1;94m102 | [0m  algorithmAlerts          AlgorithmAlert[]
+[1;94m103 | [0m  createdCampaignTemplates CampaignTemplate[]
+[1;94m104 | [0m  brandCampaigns           BrandCampaign[]
+[1;94m105 | [0m  talentRequests           TalentRequest[]          @relation("BrandTalentRequests")
+[1;94m106 | [0m  createdApprovalRequests  ApprovalRequest[]        @relation("Requester")
+[1;94m107 | [0m  createdCreativeVersions  CreativeVersion[]
+[1;94m108 | [0m  reviewedApprovalRequests ApprovalRequest[]        @relation("Reviewer")
+[1;94m109 | [0m  createdCreativeReviews   CreativeReview[]         @relation("Requester")
+[1;94m110 | [0m  reviewedCreativeReviews  CreativeReview[]         @relation("Reviewer")
+[1;94m111 | [0m  campaignCreatorRequests  CampaignCreatorRequest[] @relation("CampaignCreatorRequestBrand")
+[1;94m112 | [0m  campaignCreatorRequestsForCreator CampaignCreatorRequest[] @relation("CampaignCreatorRequestCreator")
+[1;94m113 | [0m  creativeCommentsAuthored  CreativeComment[] @relation("CreativeCommentAuthor")
+[1;94m114 | [0m  creativeCommentsResolved  CreativeComment[] @relation("CreativeCommentResolver")
+[1;94m115 | [0m  
+[1;94m116 | [0m
+[1;94m117 | [0m}
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `talents` in model `User`: The relation field `talents` on model `User` is missing an opposite relation field on the model `Talent`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:86[0m
+[1;94m   | [0m
+[1;94m85 | [0m  creatorBrandFits         CreatorBrandFit[]
+[1;94m86 | [0m  [1;91mtalents                  Talent[][0m
+[1;94m87 | [0m  emailOutboxes            EmailOutbox[] @relation("EmailOutboxUserRelation")
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `creatorTasks` in model `User`: The relation field `creatorTasks` on model `User` is missing an opposite relation field on the model `CreatorTask`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:88[0m
+[1;94m   | [0m
+[1;94m87 | [0m  emailOutboxes            EmailOutbox[] @relation("EmailOutboxUserRelation")
+[1;94m88 | [0m  [1;91mcreatorTasks             CreatorTask[] @relation("CreatorTaskUserRelation")[0m
+[1;94m89 | [0m  pricingSnapshots         PricingSnapshot[] @relation("PricingSnapshotUserRelation")
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `pricingSnapshots` in model `User`: The relation field `pricingSnapshots` on model `User` is missing an opposite relation field on the model `PricingSnapshot`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:89[0m
+[1;94m   | [0m
+[1;94m88 | [0m  creatorTasks             CreatorTask[] @relation("CreatorTaskUserRelation")
+[1;94m89 | [0m  [1;91mpricingSnapshots         PricingSnapshot[] @relation("PricingSnapshotUserRelation")[0m
+[1;94m90 | [0m  deadlineMonitors         DeadlineMonitor[] @relation("DeadlineMonitorUserRelation")
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `postingSlots` in model `User`: The relation field `postingSlots` on model `User` is missing an opposite relation field on the model `PostingSlot`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:92[0m
+[1;94m   | [0m
+[1;94m91 | [0m  creatorMatchScores       CreatorMatchScore[] @relation("CreatorMatchScoreUserRelation")
+[1;94m92 | [0m  [1;91mpostingSlots             PostingSlot[] @relation("PostingSlotUserRelation")[0m
+[1;94m93 | [0m  
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `competitors` in model `User`: The relation field `competitors` on model `User` is missing an opposite relation field on the model `CompetitorProfile`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:96[0m
+[1;94m   | [0m
+[1;94m95 | [0m  aiAgentLogs              AIAgentExecutionLog[]
+[1;94m96 | [0m  [1;91mcompetitors              CompetitorProfile[][0m
+[1;94m97 | [0m  subscriptions            Subscription[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `contentAnalyses` in model `User`: The relation field `contentAnalyses` on model `User` is missing an opposite relation field on the model `ContentAnalysis`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:101[0m
+[1;94m   | [0m
+[1;94m100 | [0m  inboxSummaries           InboxSummary[]
+[1;94m101 | [0m  [1;91mcontentAnalyses          ContentAnalysis[][0m
+[1;94m102 | [0m  algorithmAlerts          AlgorithmAlert[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `algorithmAlerts` in model `User`: The relation field `algorithmAlerts` on model `User` is missing an opposite relation field on the model `AlgorithmAlert`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:102[0m
+[1;94m   | [0m
+[1;94m101 | [0m  contentAnalyses          ContentAnalysis[]
+[1;94m102 | [0m  [1;91malgorithmAlerts          AlgorithmAlert[][0m
+[1;94m103 | [0m  createdCampaignTemplates CampaignTemplate[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `talent` in model `SocialAccount`: The relation field `talent` on model `SocialAccount` is missing an opposite relation field on the model `Talent`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:195[0m
+[1;94m   | [0m
+[1;94m194 | [0m  talentId       String?
+[1;94m195 | [0m  [1;91mtalent         Talent?           @relation(fields: [talentId], references: [id], onDelete: Cascade)[0m
+[1;94m196 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `reconciliations1` in model `Invoice`: The relation field `reconciliations1` on model `Invoice` is missing an opposite relation field on the model `Reconciliation`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:363[0m
+[1;94m   | [0m
+[1;94m362 | [0m  @@index([provider])
+[1;94m363 | [0m  [1;91mreconciliations1 Reconciliation[] @relation("ReconciliationInvoiceRelation")[0m
+[1;94m364 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `reconciliations1` in model `Payout`: The relation field `reconciliations1` on model `Payout` is missing an opposite relation field on the model `Reconciliation`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:400[0m
+[1;94m   | [0m
+[1;94m399 | [0m  @@index([provider])
+[1;94m400 | [0m  [1;91mreconciliations1 Reconciliation[] @relation("ReconciliationPayoutRelation")[0m
+[1;94m401 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `complianceChecks` in model `Deliverable`: The relation field `complianceChecks` on model `Deliverable` is missing an opposite relation field on the model `ComplianceCheck`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:546[0m
+[1;94m   | [0m
+[1;94m545 | [0m  timelineSteps DeliverableTimeline[]
+[1;94m546 | [0m  [1;91mcomplianceChecks ComplianceCheck[][0m
+[1;94m547 | [0m  performanceForecast ContentPerformanceForecast?
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Deliverable__fkey` has to be unique in the following namespace: on model `Deliverable` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:548[0m
+[1;94m   | [0m
+[1;94m547 | [0m  performanceForecast ContentPerformanceForecast?
+[1;94m548 | [0m  [1;91mviralitySimulation   ViralSimulation?[0m
+[1;94m549 | [0m  qualityReport        DeliverableQualityReport?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `viralitySimulation` in model `Deliverable`: The relation field `viralitySimulation` on model `Deliverable` is missing an opposite relation field on the model `ViralSimulation`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:548[0m
+[1;94m   | [0m
+[1;94m547 | [0m  performanceForecast ContentPerformanceForecast?
+[1;94m548 | [0m  [1;91mviralitySimulation   ViralSimulation?[0m
+[1;94m549 | [0m  qualityReport        DeliverableQualityReport?
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Deliverable__fkey` has to be unique in the following namespace: on model `Deliverable` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:549[0m
+[1;94m   | [0m
+[1;94m548 | [0m  viralitySimulation   ViralSimulation?
+[1;94m549 | [0m  [1;91mqualityReport        DeliverableQualityReport?[0m
+[1;94m550 | [0m  contentQuality       ContentQuality?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `qualityReport` in model `Deliverable`: The relation field `qualityReport` on model `Deliverable` is missing an opposite relation field on the model `DeliverableQualityReport`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:549[0m
+[1;94m   | [0m
+[1;94m548 | [0m  viralitySimulation   ViralSimulation?
+[1;94m549 | [0m  [1;91mqualityReport        DeliverableQualityReport?[0m
+[1;94m550 | [0m  contentQuality       ContentQuality?
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Deliverable__fkey` has to be unique in the following namespace: on model `Deliverable` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:550[0m
+[1;94m   | [0m
+[1;94m549 | [0m  qualityReport        DeliverableQualityReport?
+[1;94m550 | [0m  [1;91mcontentQuality       ContentQuality?[0m
+[1;94m551 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `contentQuality` in model `Deliverable`: The relation field `contentQuality` on model `Deliverable` is missing an opposite relation field on the model `ContentQuality`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:550[0m
+[1;94m   | [0m
+[1;94m549 | [0m  qualityReport        DeliverableQualityReport?
+[1;94m550 | [0m  [1;91mcontentQuality       ContentQuality?[0m
+[1;94m551 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `contentPerformanceForecasts` in model `Deliverable`: The relation field `contentPerformanceForecasts` on model `Deliverable` is missing an opposite relation field on the model `ContentPerformanceForecast`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:563[0m
+[1;94m   | [0m
+[1;94m562 | [0m
+[1;94m563 | [0m  [1;91mcontentPerformanceForecasts ContentPerformanceForecast[] @relation("ContentPerformanceForecastDeliverableRelation")[0m
+[1;94m564 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `postingSlots` in model `Deliverable`: The relation field `postingSlots` on model `Deliverable` is missing an opposite relation field on the model `PostingSlot`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:565[0m
+[1;94m   | [0m
+[1;94m564 | [0m
+[1;94m565 | [0m  [1;91mpostingSlots PostingSlot[] @relation("PostingSlotDeliverableRelation")[0m
+[1;94m566 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `versions` in model `Brief`: The relation field `versions` on model `Brief` is missing an opposite relation field on the model `BriefVersion`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:578[0m
+[1;94m   | [0m
+[1;94m577 | [0m  updatedAt            DateTime       @updatedAt
+[1;94m578 | [0m  [1;91mversions             BriefVersion[][0m
+[1;94m579 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `signedContract` in model `Contract`: The relation field `signedContract` on model `Contract` is missing an opposite relation field on the model `SignedContract`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:611[0m
+[1;94m   | [0m
+[1;94m610 | [0m  user              User               @relation("ContractUserRelation", fields: [userId], references: [id])
+[1;94m611 | [0m  [1;91msignedContract    SignedContract?[0m
+[1;94m612 | [0m  signatureRequests SignatureRequest[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `signatureRequests` in model `Contract`: The relation field `signatureRequests` on model `Contract` is missing an opposite relation field on the model `SignatureRequest`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:612[0m
+[1;94m   | [0m
+[1;94m611 | [0m  signedContract    SignedContract?
+[1;94m612 | [0m  [1;91msignatureRequests SignatureRequest[][0m
+[1;94m613 | [0m  signatureRequests1 SignatureRequest[] @relation("SignatureRequestContractRelation")
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `Lead`: The relation field `user` on model `Lead` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:671[0m
+[1;94m   | [0m
+[1;94m670 | [0m
+[1;94m671 | [0m  [1;91muser              User               @relation("LeadUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m672 | [0m  outreachSequences OutreachSequence[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `OutreachSequence`: The relation field `user` on model `OutreachSequence` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:684[0m
+[1;94m   | [0m
+[1;94m683 | [0m
+[1;94m684 | [0m  [1;91muser    User             @relation("OutreachSequenceUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m685 | [0m  steps   OutreachStep[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `steps` in model `OutreachSequence`: The relation field `steps` on model `OutreachSequence` is missing an opposite relation field on the model `OutreachStep`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:685[0m
+[1;94m   | [0m
+[1;94m684 | [0m  user    User             @relation("OutreachSequenceUserRelation", fields: [userId], references: [id], onDelete: Cascade)
+[1;94m685 | [0m  [1;91msteps   OutreachStep[][0m
+[1;94m686 | [0m  actions OutreachAction[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `snapshots` in model `BrandRelationship`: The relation field `snapshots` on model `BrandRelationship` is missing an opposite relation field on the model `BrandAffinitySnapshot`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:740[0m
+[1;94m   | [0m
+[1;94m739 | [0m  user      User                    @relation("BrandRelationshipUserRelation", fields: [userId], references: [id], onDelete: Cascade)
+[1;94m740 | [0m  [1;91msnapshots BrandAffinitySnapshot[][0m
+[1;94m741 | [0m  events    BrandEvent[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `events` in model `BrandRelationship`: The relation field `events` on model `BrandRelationship` is missing an opposite relation field on the model `BrandEvent`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:741[0m
+[1;94m   | [0m
+[1;94m740 | [0m  snapshots BrandAffinitySnapshot[]
+[1;94m741 | [0m  [1;91mevents    BrandEvent[][0m
+[1;94m742 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `CreatorBrandFit`: The relation field `user` on model `CreatorBrandFit` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:840[0m
+[1;94m   | [0m
+[1;94m839 | [0m
+[1;94m840 | [0m  [1;91muser User @relation("CreatorBrandFitUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m841 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `brief` in model `CreatorBundle`: The relation field `brief` on model `CreatorBundle` is missing an opposite relation field on the model `BrandBrief`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:850[0m
+[1;94m   | [0m
+[1;94m849 | [0m  briefId    String?
+[1;94m850 | [0m  [1;91mbrief      BrandBrief? @relation(fields: [briefId], references: [id])[0m
+[1;94m851 | [0m  type       String // "performance", "brand_fit", "premium", etc.
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `recommendations` in model `BrandBrief`: The relation field `recommendations` on model `BrandBrief` is missing an opposite relation field on the model `BriefRecommendation`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:882[0m
+[1;94m   | [0m
+[1;94m881 | [0m  matches         BriefMatch[]
+[1;94m882 | [0m  [1;91mrecommendations BriefRecommendation[][0m
+[1;94m883 | [0m  autoPlans       CampaignAutoPlan[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `campaignAutoPlans` in model `BrandBrief`: The relation field `campaignAutoPlans` on model `BrandBrief` is missing an opposite relation field on the model `CampaignAutoPlan`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:887[0m
+[1;94m   | [0m
+[1;94m886 | [0m
+[1;94m887 | [0m  [1;91mcampaignAutoPlans CampaignAutoPlan[] @relation("CampaignAutoPlanBrandBriefRelation")[0m
+[1;94m888 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `campaignForecasts` in model `BrandBrief`: The relation field `campaignForecasts` on model `BrandBrief` is missing an opposite relation field on the model `CampaignForecast`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:889[0m
+[1;94m   | [0m
+[1;94m888 | [0m
+[1;94m889 | [0m  [1;91mcampaignForecasts CampaignForecast[] @relation("CampaignForecastBrandBriefRelation")[0m
+[1;94m890 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `reviews` in model `CampaignDeliverableAuto`: The relation field `reviews` on model `CampaignDeliverableAuto` is missing an opposite relation field on the model `DeliverableReview`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:964[0m
+[1;94m   | [0m
+[1;94m963 | [0m  plan    CampaignAutoPlan    @relation(fields: [planId], references: [id])
+[1;94m964 | [0m  [1;91mreviews DeliverableReview[][0m
+[1;94m965 | [0m  deliverableReviews DeliverableReview[] @relation("DeliverableReviewCampaignDeliverableAutoRelation")
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `brandLinks` in model `Campaign`: The relation field `brandLinks` on model `Campaign` is missing an opposite relation field on the model `CampaignBrandPivot`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1022[0m
+[1;94m   | [0m
+[1;94m1021 | [0m  updatedAt       DateTime             @updatedAt
+[1;94m1022 | [0m  [1;91mbrandLinks      CampaignBrandPivot[][0m
+[1;94m1023 | [0m  deliverables    Deliverable[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Deliverable__fkey` has to be unique in the following namespace: on model `Deliverable` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1007[0m
+[1;94m   | [0m
+[1;94m1006 | [0m
+[1;94m1007 | [0m[1;91mmodel Campaign {[0m
+[1;94m1008 | [0m  id              String               @id @default(cuid())
+[1;94m1009 | [0m  title           String
+[1;94m1010 | [0m  ownerId         String?
+[1;94m1011 | [0m  stage           CampaignStage        @default(PLANNING)
+[1;94m1012 | [0m  brands          Json?
+[1;94m1013 | [0m  creatorTeams    Json?
+[1;94m1014 | [0m  aiSummary       String?
+[1;94m1015 | [0m  aiReport        Json?
+[1;94m1016 | [0m  aiGenerated     Boolean              @default(false)
+[1;94m1017 | [0m  timeline        Json?
+[1;94m1018 | [0m  deliverablePlan Json?
+[1;94m1019 | [0m  metadata        Json?
+[1;94m1020 | [0m  createdAt       DateTime             @default(now())
+[1;94m1021 | [0m  updatedAt       DateTime             @updatedAt
+[1;94m1022 | [0m  brandLinks      CampaignBrandPivot[]
+[1;94m1023 | [0m  deliverables    Deliverable[]
+[1;94m1024 | [0m  tasks           Task[]
+[1;94m1025 | [0m  approvals       Approval[]
+[1;94m1026 | [0m  deliverables1 Deliverable[] @relation("DeliverableCampaignRelation")
+[1;94m1027 | [0m
+[1;94m1028 | [0m  campaignBrandPivots CampaignBrandPivot[] @relation("CampaignBrandPivotCampaignRelation")
+[1;94m1029 | [0m
+[1;94m1030 | [0m  campaignCreatorRequests CampaignCreatorRequest[] @relation("CampaignCreatorRequestCampaignRelation")
+[1;94m1031 | [0m
+[1;94m1032 | [0m}
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `deliverables1` in model `Campaign`: The relation field `deliverables1` on model `Campaign` is missing an opposite relation field on the model `Deliverable`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1026[0m
+[1;94m   | [0m
+[1;94m1025 | [0m  approvals       Approval[]
+[1;94m1026 | [0m  [1;91mdeliverables1 Deliverable[] @relation("DeliverableCampaignRelation")[0m
+[1;94m1027 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `InteractionHistory`: The relation field `user` on model `InteractionHistory` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1115[0m
+[1;94m   | [0m
+[1;94m1114 | [0m  userId    String
+[1;94m1115 | [0m  [1;91muser      User     @relation("CreatorTaskUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1116 | [0m  entity    String
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `CreatorPersonaProfile`: The relation field `user` on model `CreatorPersonaProfile` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1129[0m
+[1;94m   | [0m
+[1;94m1128 | [0m  userId       String   @unique
+[1;94m1129 | [0m  [1;91muser         User     @relation("CreatorPersonaProfileUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1130 | [0m  toneKeywords String?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `OutreachPlan`: The relation field `user` on model `OutreachPlan` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1139[0m
+[1;94m   | [0m
+[1;94m1138 | [0m  id         String   @id @default(cuid())
+[1;94m1139 | [0m  [1;91muser       User     @relation("OutreachPlanUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1140 | [0m  userId     String
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `ContractReview`: The relation field `user` on model `ContractReview` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1171[0m
+[1;94m   | [0m
+[1;94m1170 | [0m  id            String   @id @default(cuid())
+[1;94m1171 | [0m  [1;91muser          User     @relation("ContractReviewUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1172 | [0m  userId        String
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `terms` in model `ContractReview`: The relation field `terms` on model `ContractReview` is missing an opposite relation field on the model `ContractTerm`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1201[0m
+[1;94m   | [0m
+[1;94m1200 | [0m
+[1;94m1201 | [0m  [1;91mterms        ContractTerm[][0m
+[1;94m1202 | [0m  versions     ContractReviewVersion[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `versions` in model `ContractReview`: The relation field `versions` on model `ContractReview` is missing an opposite relation field on the model `ContractReviewVersion`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1202[0m
+[1;94m   | [0m
+[1;94m1201 | [0m  terms        ContractTerm[]
+[1;94m1202 | [0m  [1;91mversions     ContractReviewVersion[][0m
+[1;94m1203 | [0m  history      RedlineHistory[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `history` in model `ContractReview`: The relation field `history` on model `ContractReview` is missing an opposite relation field on the model `RedlineHistory`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1203[0m
+[1;94m   | [0m
+[1;94m1202 | [0m  versions     ContractReviewVersion[]
+[1;94m1203 | [0m  [1;91mhistory      RedlineHistory[][0m
+[1;94m1204 | [0m  deliverables Deliverable[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Deliverable__fkey` has to be unique in the following namespace: on model `Deliverable` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1169[0m
+[1;94m   | [0m
+[1;94m1168 | [0m
+[1;94m1169 | [0m[1;91mmodel ContractReview {[0m
+[1;94m1170 | [0m  id            String   @id @default(cuid())
+[1;94m1171 | [0m  user          User     @relation("ContractReviewUserRelation", fields: [userId], references: [id], onDelete: Cascade)
+[1;94m1172 | [0m  userId        String
+[1;94m1173 | [0m  fileId        String?
+[1;94m1174 | [0m  file          File?    @relation(fields: [fileId], references: [id])
+[1;94m1175 | [0m  brandName     String?
+[1;94m1176 | [0m  status        String   @default("pending")
+[1;94m1177 | [0m  extractText   String?
+[1;94m1178 | [0m  cleanedText   String?
+[1;94m1179 | [0m  aiSummary     Json?
+[1;94m1180 | [0m  aiRisks       Json?
+[1;94m1181 | [0m  risks         Json?
+[1;94m1182 | [0m  dangerousClauses Json?
+[1;94m1183 | [0m  missingClauses   Json?
+[1;94m1184 | [0m  aiRedlines    Json?
+[1;94m1185 | [0m  redlines      Json?
+[1;94m1186 | [0m  aiPlainEnglish Json?
+[1;94m1187 | [0m  aiMissingTerms Json?
+[1;94m1188 | [0m  aiRedlineSuggestions Json?
+[1;94m1189 | [0m  aiNegotiationCopy Json?
+[1;94m1190 | [0m  aiRiskLevel   Int?
+[1;94m1191 | [0m  aiUsageDetected Json?
+[1;94m1192 | [0m  aiUsageValueEstimate Json?
+[1;94m1193 | [0m  aiUsageRedlines Json?
+[1;94m1194 | [0m  aiUsageNegotiationCopy Json?
+[1;94m1195 | [0m  usageEndDate DateTime?
+[1;94m1196 | [0m  negotiationDrafts Json?
+[1;94m1197 | [0m  aiDealMapping Json?
+[1;94m1198 | [0m  createdAt     DateTime @default(now())
+[1;94m1199 | [0m  updatedAt     DateTime @updatedAt
+[1;94m1200 | [0m
+[1;94m1201 | [0m  terms        ContractTerm[]
+[1;94m1202 | [0m  versions     ContractReviewVersion[]
+[1;94m1203 | [0m  history      RedlineHistory[]
+[1;94m1204 | [0m  deliverables Deliverable[]
+[1;94m1205 | [0m  clauses      ContractClause[]
+[1;94m1206 | [0m  deliverables1 Deliverable[] @relation("DeliverableContractReviewRelation")
+[1;94m1207 | [0m
+[1;94m1208 | [0m  contractTerms ContractTerm[] @relation("ContractTermContractReviewRelation")
+[1;94m1209 | [0m
+[1;94m1210 | [0m  contractReviewVersions ContractReviewVersion[] @relation("ContractReviewVersionContractReviewRelation")
+[1;94m1211 | [0m
+[1;94m1212 | [0m  redlineHistories RedlineHistory[] @relation("RedlineHistoryContractReviewRelation")
+[1;94m1213 | [0m
+[1;94m1214 | [0m}
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `deliverables1` in model `ContractReview`: The relation field `deliverables1` on model `ContractReview` is missing an opposite relation field on the model `Deliverable`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1206[0m
+[1;94m   | [0m
+[1;94m1205 | [0m  clauses      ContractClause[]
+[1;94m1206 | [0m  [1;91mdeliverables1 Deliverable[] @relation("DeliverableContractReviewRelation")[0m
+[1;94m1207 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `NegotiationSession`: The relation field `user` on model `NegotiationSession` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1229[0m
+[1;94m   | [0m
+[1;94m1228 | [0m  id            String   @id @default(cuid())
+[1;94m1229 | [0m  [1;91muser          User     @relation("NegotiationSessionUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1230 | [0m  userId        String
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `steps` in model `NegotiationSession`: The relation field `steps` on model `NegotiationSession` is missing an opposite relation field on the model `NegotiationMessage`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1254[0m
+[1;94m   | [0m
+[1;94m1253 | [0m
+[1;94m1254 | [0m  [1;91msteps NegotiationMessage[][0m
+[1;94m1255 | [0m  decisions NegotiationDecision[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `emails` in model `DealThread`: The relation field `emails` on model `DealThread` is missing an opposite relation field on the model `DealThreadEmail`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1312[0m
+[1;94m   | [0m
+[1;94m1311 | [0m
+[1;94m1312 | [0m  [1;91memails       DealThreadEmail[][0m
+[1;94m1313 | [0m  events       DealEvent[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `events` in model `DealThread`: The relation field `events` on model `DealThread` is missing an opposite relation field on the model `DealEvent`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1313[0m
+[1;94m   | [0m
+[1;94m1312 | [0m  emails       DealThreadEmail[]
+[1;94m1313 | [0m  [1;91mevents       DealEvent[][0m
+[1;94m1314 | [0m  deliverables DeliverableItem[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `DeliverableItem__fkey` has to be unique in the following namespace: on model `DeliverableItem` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1295[0m
+[1;94m   | [0m
+[1;94m1294 | [0m
+[1;94m1295 | [0m[1;91mmodel DealThread {[0m
+[1;94m1296 | [0m  id                  String    @id @default(cuid())
+[1;94m1297 | [0m  user                User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+[1;94m1298 | [0m  userId              String?
+[1;94m1299 | [0m  brandName           String?
+[1;94m1300 | [0m  brandEmail          String?
+[1;94m1301 | [0m  subjectRoot         String?
+[1;94m1302 | [0m  stage               DealStage @default(NEW_LEAD)
+[1;94m1303 | [0m  status              String    @default("open")
+[1;94m1304 | [0m  talentIds           String[]  @default([])
+[1;94m1305 | [0m  agentIds            String[]  @default([])
+[1;94m1306 | [0m  brand               Brand?    @relation(fields: [brandId], references: [id])
+[1;94m1307 | [0m  brandId             String?
+[1;94m1308 | [0m  createdAt           DateTime  @default(now())
+[1;94m1309 | [0m  updatedAt           DateTime  @updatedAt
+[1;94m1310 | [0m  negotiationInsights Json?
+[1;94m1311 | [0m
+[1;94m1312 | [0m  emails       DealThreadEmail[]
+[1;94m1313 | [0m  events       DealEvent[]
+[1;94m1314 | [0m  deliverables DeliverableItem[]
+[1;94m1315 | [0m  prediction   DealPrediction?
+[1;94m1316 | [0m  strategy     NegotiationStrategy?
+[1;94m1317 | [0m  simulations  NegotiationSimulation[]
+[1;94m1318 | [0m  lastAiAction Json?
+[1;94m1319 | [0m  followUpSchedules FollowUpSchedule[]
+[1;94m1320 | [0m  forecast     DealForecast?
+[1;94m1321 | [0m  benchmarks   NegotiationRateBenchmark[]
+[1;94m1322 | [0m  counterOffers NegotiationCounterOffer[]
+[1;94m1323 | [0m  redFlags     NegotiationRedFlag[]
+[1;94m1324 | [0m  finalRate    Int?
+[1;94m1325 | [0m  finalOutcome String?
+[1;94m1326 | [0m  state        Json?
+[1;94m1327 | [0m
+[1;94m1328 | [0m  @@index([userId])
+[1;94m1329 | [0m  @@index([status])
+[1;94m1330 | [0m  @@index([createdAt])
+[1;94m1331 | [0m  @@index([brandId])
+[1;94m1332 | [0m  @@index([talentIds])
+[1;94m1333 | [0m  @@index([stage])
+[1;94m1334 | [0m  @@index([agentIds])
+[1;94m1335 | [0m  dealThreadEmails DealThreadEmail[] @relation("DealThreadEmailDealThreadRelation")
+[1;94m1336 | [0m
+[1;94m1337 | [0m  dealEvents DealEvent[] @relation("DealEventDealThreadRelation")
+[1;94m1338 | [0m
+[1;94m1339 | [0m  deliverableItems DeliverableItem[] @relation("DeliverableItemDealThreadRelation")
+[1;94m1340 | [0m
+[1;94m1341 | [0m  dealPredictions DealPrediction[] @relation("DealPredictionDealThreadRelation")
+[1;94m1342 | [0m
+[1;94m1343 | [0m  negotiationStrategies NegotiationStrategy[] @relation("NegotiationStrategyDealThreadRelation")
+[1;94m1344 | [0m
+[1;94m1345 | [0m  dealForecasts DealForecast[] @relation("DealForecastDealThreadRelation")
+[1;94m1346 | [0m
+[1;94m1347 | [0m}
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `deliverables` in model `DealThread`: The relation field `deliverables` on model `DealThread` is missing an opposite relation field on the model `DeliverableItem`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1314[0m
+[1;94m   | [0m
+[1;94m1313 | [0m  events       DealEvent[]
+[1;94m1314 | [0m  [1;91mdeliverables DeliverableItem[][0m
+[1;94m1315 | [0m  prediction   DealPrediction?
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `DealThread__fkey` has to be unique in the following namespace: on model `DealThread` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1315[0m
+[1;94m   | [0m
+[1;94m1314 | [0m  deliverables DeliverableItem[]
+[1;94m1315 | [0m  [1;91mprediction   DealPrediction?[0m
+[1;94m1316 | [0m  strategy     NegotiationStrategy?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `prediction` in model `DealThread`: The relation field `prediction` on model `DealThread` is missing an opposite relation field on the model `DealPrediction`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1315[0m
+[1;94m   | [0m
+[1;94m1314 | [0m  deliverables DeliverableItem[]
+[1;94m1315 | [0m  [1;91mprediction   DealPrediction?[0m
+[1;94m1316 | [0m  strategy     NegotiationStrategy?
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `DealThread__fkey` has to be unique in the following namespace: on model `DealThread` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1316[0m
+[1;94m   | [0m
+[1;94m1315 | [0m  prediction   DealPrediction?
+[1;94m1316 | [0m  [1;91mstrategy     NegotiationStrategy?[0m
+[1;94m1317 | [0m  simulations  NegotiationSimulation[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `strategy` in model `DealThread`: The relation field `strategy` on model `DealThread` is missing an opposite relation field on the model `NegotiationStrategy`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1316[0m
+[1;94m   | [0m
+[1;94m1315 | [0m  prediction   DealPrediction?
+[1;94m1316 | [0m  [1;91mstrategy     NegotiationStrategy?[0m
+[1;94m1317 | [0m  simulations  NegotiationSimulation[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `benchmarks` in model `DealThread`: The relation field `benchmarks` on model `DealThread` is missing an opposite relation field on the model `NegotiationRateBenchmark`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1321[0m
+[1;94m   | [0m
+[1;94m1320 | [0m  forecast     DealForecast?
+[1;94m1321 | [0m  [1;91mbenchmarks   NegotiationRateBenchmark[][0m
+[1;94m1322 | [0m  counterOffers NegotiationCounterOffer[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `counterOffers` in model `DealThread`: The relation field `counterOffers` on model `DealThread` is missing an opposite relation field on the model `NegotiationCounterOffer`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1322[0m
+[1;94m   | [0m
+[1;94m1321 | [0m  benchmarks   NegotiationRateBenchmark[]
+[1;94m1322 | [0m  [1;91mcounterOffers NegotiationCounterOffer[][0m
+[1;94m1323 | [0m  redFlags     NegotiationRedFlag[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `redFlags` in model `DealThread`: The relation field `redFlags` on model `DealThread` is missing an opposite relation field on the model `NegotiationRedFlag`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1323[0m
+[1;94m   | [0m
+[1;94m1322 | [0m  counterOffers NegotiationCounterOffer[]
+[1;94m1323 | [0m  [1;91mredFlags     NegotiationRedFlag[][0m
+[1;94m1324 | [0m  finalRate    Int?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `dealForecasts` in model `DealThread`: The relation field `dealForecasts` on model `DealThread` is missing an opposite relation field on the model `DealForecast`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1345[0m
+[1;94m   | [0m
+[1;94m1344 | [0m
+[1;94m1345 | [0m  [1;91mdealForecasts DealForecast[] @relation("DealForecastDealThreadRelation")[0m
+[1;94m1346 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `DeliverableItem__fkey` has to be unique in the following namespace: on model `DeliverableItem` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1427[0m
+[1;94m   | [0m
+[1;94m1426 | [0m  aiPerformanceSummary Json?
+[1;94m1427 | [0m  [1;91mstoryboard          Storyboard?[0m
+[1;94m1428 | [0m  thumbnailGeneration ThumbnailGeneration?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `storyboard` in model `DeliverableItem`: The relation field `storyboard` on model `DeliverableItem` is missing an opposite relation field on the model `Storyboard`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1427[0m
+[1;94m   | [0m
+[1;94m1426 | [0m  aiPerformanceSummary Json?
+[1;94m1427 | [0m  [1;91mstoryboard          Storyboard?[0m
+[1;94m1428 | [0m  thumbnailGeneration ThumbnailGeneration?
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `DeliverableItem__fkey` has to be unique in the following namespace: on model `DeliverableItem` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1428[0m
+[1;94m   | [0m
+[1;94m1427 | [0m  storyboard          Storyboard?
+[1;94m1428 | [0m  [1;91mthumbnailGeneration ThumbnailGeneration?[0m
+[1;94m1429 | [0m  generatedCopy        GeneratedCopy[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `thumbnailGeneration` in model `DeliverableItem`: The relation field `thumbnailGeneration` on model `DeliverableItem` is missing an opposite relation field on the model `ThumbnailGeneration`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1428[0m
+[1;94m   | [0m
+[1;94m1427 | [0m  storyboard          Storyboard?
+[1;94m1428 | [0m  [1;91mthumbnailGeneration ThumbnailGeneration?[0m
+[1;94m1429 | [0m  generatedCopy        GeneratedCopy[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `generatedCopy` in model `DeliverableItem`: The relation field `generatedCopy` on model `DeliverableItem` is missing an opposite relation field on the model `GeneratedCopy`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1429[0m
+[1;94m   | [0m
+[1;94m1428 | [0m  thumbnailGeneration ThumbnailGeneration?
+[1;94m1429 | [0m  [1;91mgeneratedCopy        GeneratedCopy[][0m
+[1;94m1430 | [0m  aiHashtags      Json?
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `DeliverableItem__fkey` has to be unique in the following namespace: on model `DeliverableItem` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1439[0m
+[1;94m   | [0m
+[1;94m1438 | [0m  @@index([type])
+[1;94m1439 | [0m  [1;91mscheduledPost ScheduledPost?[0m
+[1;94m1440 | [0m  captionRewrites       CaptionRewrite[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `scheduledPost` in model `DeliverableItem`: The relation field `scheduledPost` on model `DeliverableItem` is missing an opposite relation field on the model `ScheduledPost`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1439[0m
+[1;94m   | [0m
+[1;94m1438 | [0m  @@index([type])
+[1;94m1439 | [0m  [1;91mscheduledPost ScheduledPost?[0m
+[1;94m1440 | [0m  captionRewrites       CaptionRewrite[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `DeliverableItem__fkey` has to be unique in the following namespace: on model `DeliverableItem` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1443[0m
+[1;94m   | [0m
+[1;94m1442 | [0m  assetGenerations      AssetGeneration[]
+[1;94m1443 | [0m  [1;91mperformancePrediction PerformancePrediction?[0m
+[1;94m1444 | [0m  scheduledPosts ScheduledPost[] @relation("ScheduledPostDeliverableItemRelation")
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `performancePrediction` in model `DeliverableItem`: The relation field `performancePrediction` on model `DeliverableItem` is missing an opposite relation field on the model `PerformancePrediction`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1443[0m
+[1;94m   | [0m
+[1;94m1442 | [0m  assetGenerations      AssetGeneration[]
+[1;94m1443 | [0m  [1;91mperformancePrediction PerformancePrediction?[0m
+[1;94m1444 | [0m  scheduledPosts ScheduledPost[] @relation("ScheduledPostDeliverableItemRelation")
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `deliverable` in model `DeliverableQAHistory`: The relation field `deliverable` on model `DeliverableQAHistory` is missing an opposite relation field on the model `DeliverableItem`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1459[0m
+[1;94m   | [0m
+[1;94m1458 | [0m  deliverableId String
+[1;94m1459 | [0m  [1;91mdeliverable   DeliverableItem @relation(fields: [deliverableId], references: [id], onDelete: Cascade)[0m
+[1;94m1460 | [0m  type          String // e.g., "INITIAL_QA", "RECHECK"
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `scheduledPost` in model `AutoPostLog`: The relation field `scheduledPost` on model `AutoPostLog` is missing an opposite relation field on the model `ScheduledPost`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1512[0m
+[1;94m   | [0m
+[1;94m1511 | [0m  scheduledPostId String
+[1;94m1512 | [0m  [1;91mscheduledPost   ScheduledPost @relation(fields: [scheduledPostId], references: [id], onDelete: Cascade)[0m
+[1;94m1513 | [0m  status          String // "success", "failure"
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `InboundEmail`: The relation field `user` on model `InboundEmail` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1524[0m
+[1;94m   | [0m
+[1;94m1523 | [0m  id                  String      @id @default(cuid())
+[1;94m1524 | [0m  [1;91muser                User        @relation("InboundEmailUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1525 | [0m  userId              String
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `replySuggestion` in model `InboundEmail`: The relation field `replySuggestion` on model `InboundEmail` is missing an opposite relation field on the model `NegotiationReplySuggestion`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1556[0m
+[1;94m   | [0m
+[1;94m1555 | [0m  aiPriority          Int?
+[1;94m1556 | [0m  [1;91mreplySuggestion     NegotiationReplySuggestion?[0m
+[1;94m1557 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `inboxAutoReplies` in model `InboundEmail`: The relation field `inboxAutoReplies` on model `InboundEmail` is missing an opposite relation field on the model `InboxAutoReply`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1562[0m
+[1;94m   | [0m
+[1;94m1561 | [0m
+[1;94m1562 | [0m  [1;91minboxAutoReplies InboxAutoReply[] @relation("InboxAutoReplyInboundEmailRelation")[0m
+[1;94m1563 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `DealDraft`: The relation field `user` on model `DealDraft` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1601[0m
+[1;94m   | [0m
+[1;94m1600 | [0m
+[1;94m1601 | [0m  [1;91muser   User   @relation("DealDraftUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1602 | [0m  userId String
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `negotiationInsights` in model `DealDraft`: The relation field `negotiationInsights` on model `DealDraft` is missing an opposite relation field on the model `NegotiationInsight`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1628[0m
+[1;94m   | [0m
+[1;94m1627 | [0m  status              String               @default("pending")
+[1;94m1628 | [0m  [1;91mnegotiationInsights NegotiationInsight[][0m
+[1;94m1629 | [0m  aiDeliverablePlan   Json?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `campaignPlan` in model `DealDraft`: The relation field `campaignPlan` on model `DealDraft` is missing an opposite relation field on the model `CampaignAIPlan`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1640[0m
+[1;94m   | [0m
+[1;94m1639 | [0m  recommendedFollowUp Json?
+[1;94m1640 | [0m  [1;91mcampaignPlan        CampaignAIPlan?[0m
+[1;94m1641 | [0m  forecast            DealForecast?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `campaignForecasts` in model `DealDraft`: The relation field `campaignForecasts` on model `DealDraft` is missing an opposite relation field on the model `CampaignForecast`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1651[0m
+[1;94m   | [0m
+[1;94m1650 | [0m
+[1;94m1651 | [0m  [1;91mcampaignForecasts CampaignForecast[] @relation("CampaignForecastDealDraftRelation")[0m
+[1;94m1652 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `dealForecasts` in model `DealDraft`: The relation field `dealForecasts` on model `DealDraft` is missing an opposite relation field on the model `DealForecast`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1653[0m
+[1;94m   | [0m
+[1;94m1652 | [0m
+[1;94m1653 | [0m  [1;91mdealForecasts DealForecast[] @relation("DealForecastDealDraftRelation")[0m
+[1;94m1654 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `user` in model `Talent`: The relation field `user` on model `Talent` is missing an opposite relation field on the model `User`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1682[0m
+[1;94m   | [0m
+[1;94m1681 | [0m  id        String   @id @default(cuid())
+[1;94m1682 | [0m  [1;91muser      User     @relation("TalentUserRelation", fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m1683 | [0m  userId    String   @unique
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Talent__fkey` has to be unique in the following namespace: on model `Talent` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1687[0m
+[1;94m   | [0m
+[1;94m1686 | [0m
+[1;94m1687 | [0m  [1;91maiSettings        TalentAISettings?[0m
+[1;94m1688 | [0m  mobileSettings    Json?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `aiSettings` in model `Talent`: The relation field `aiSettings` on model `Talent` is missing an opposite relation field on the model `TalentAISettings`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1687[0m
+[1;94m   | [0m
+[1;94m1686 | [0m
+[1;94m1687 | [0m  [1;91maiSettings        TalentAISettings?[0m
+[1;94m1688 | [0m  mobileSettings    Json?
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `pricingModels` in model `Talent`: The relation field `pricingModels` on model `Talent` is missing an opposite relation field on the model `TalentPricingModel`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1689[0m
+[1;94m   | [0m
+[1;94m1688 | [0m  mobileSettings    Json?
+[1;94m1689 | [0m  [1;91mpricingModels     TalentPricingModel[][0m
+[1;94m1690 | [0m  memories          AITalentMemory[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `memories` in model `Talent`: The relation field `memories` on model `Talent` is missing an opposite relation field on the model `AITalentMemory`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1690[0m
+[1;94m   | [0m
+[1;94m1689 | [0m  pricingModels     TalentPricingModel[]
+[1;94m1690 | [0m  [1;91mmemories          AITalentMemory[][0m
+[1;94m1691 | [0m  agentTasks        AIAgentTask[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `agentTasks` in model `Talent`: The relation field `agentTasks` on model `Talent` is missing an opposite relation field on the model `AIAgentTask`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1691[0m
+[1;94m   | [0m
+[1;94m1690 | [0m  memories          AITalentMemory[]
+[1;94m1691 | [0m  [1;91magentTasks        AIAgentTask[][0m
+[1;94m1692 | [0m  assetPacks        TalentAssetPack[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `assetPacks` in model `Talent`: The relation field `assetPacks` on model `Talent` is missing an opposite relation field on the model `TalentAssetPack`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1692[0m
+[1;94m   | [0m
+[1;94m1691 | [0m  agentTasks        AIAgentTask[]
+[1;94m1692 | [0m  [1;91massetPacks        TalentAssetPack[][0m
+[1;94m1693 | [0m  deadlineMonitors  DeadlineMonitor[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `Talent__fkey` has to be unique in the following namespace: on model `Talent` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1696[0m
+[1;94m   | [0m
+[1;94m1695 | [0m  emailOutboxes     EmailOutbox[] @relation("EmailOutboxTalentRelation")
+[1;94m1696 | [0m  [1;91mcreatorScore      CreatorScore?[0m
+[1;94m1697 | [0m  scheduledPosts    ScheduledPost[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError validating field `creatorScore` in model `Talent`: The relation field `creatorScore` on model `Talent` is missing an opposite relation field on the model `CreatorScore`. Either run `prisma format` or add it manually.[0m
+  [1;94m-->[0m  [4mprisma/schema.prisma:1696[0m
+[1;94m   | [0m
+[1;94m1695 | [0m  emailOutboxes     EmailOutbox[] @relation("EmailOutboxundefined
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: prisma validate --schema=prisma/schema.prisma

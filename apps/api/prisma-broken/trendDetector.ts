@@ -1,4 +1,5 @@
-import { PrismaClient, SocialPlatform } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { SocialPlatform } from '../src/types/socialPlatform.js';
 
 const prisma = new PrismaClient();
 

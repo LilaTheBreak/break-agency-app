@@ -1,0 +1,16 @@
+-- Sync all User model columns with database
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "roster_category" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "upgrade_suggested" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "include_in_roster" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "ugcRates" JSONB;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "ugcApproved" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionStatus" TEXT DEFAULT 'free';
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "ugc_portfolio_url" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "ugc_categories" TEXT[] DEFAULT '{}';
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "managedTalentIds" TEXT[] DEFAULT '{}';
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "creator_score" INTEGER;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "creator_score_reason" JSONB;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "role_recommended" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "admin_notes" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "friends_of_house_id" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "onboarding_status" TEXT DEFAULT 'pending_review';

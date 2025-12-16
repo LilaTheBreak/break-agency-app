@@ -1,5 +1,6 @@
 import { Job } from 'bullmq';
-import { PrismaClient, SocialPlatform } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { SocialPlatform } from '../src/types/socialPlatform.js';
 import { scanPlatform } from '../../services/ai/algorithm/platformScanner';
 import { detectTrends } from '../../services/ai/algorithm/trendDetector';
 import { detectShadowban } from '../../services/ai/algorithm/shadowbanDetector';

@@ -33,14 +33,15 @@ const aiClient = {
 export async function scoreCreator(user: User, profileInput: any) {
   const result = await aiClient.analyzeCreatorProfile(profileInput);
 
-  return prisma.user.update({
-    where: { id: user.id },
+  // Create a new score record linked to the user
+  return prisma.creatorScore.create({
     data: {
-      creator_score: result.score,
-      creator_score_reason: result.reasoning,
-      role_recommended: result.recommended_role,
-      upgrade_suggested: result.upgrade_suggestion,
-      ugc_categories: result.ugc_categories ?? [],
+      userId: user.id,
+      score: result.score,
+      reasoning: result.reasoning,
+      recommendedRole: result.recommended_role,
+      upgradeSuggested: result.upgrade_suggestion,
+      ugcCategories: result.ugc_categories ?? [],
     },
   });
 }

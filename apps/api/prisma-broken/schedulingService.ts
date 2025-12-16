@@ -1,4 +1,5 @@
-import { PrismaClient, Deliverable, SocialPlatform } from '@prisma/client';
+import { PrismaClient, Deliverable } from '@prisma/client';
+import { SocialPlatform } from '../src/types/socialPlatform.js';
 import { addDays, setHours, setMinutes } from 'date-fns';
 
 const prisma = new PrismaClient();

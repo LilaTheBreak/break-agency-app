@@ -26,3 +26,4 @@ apps/web/.env
 # TypeScript
 *.tsbuildinfo
 .vercel
+.env*.local

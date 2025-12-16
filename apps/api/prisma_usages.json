@@ -1,0 +1,1099 @@
+{
+  "role": {
+    "count": 6,
+    "files": [
+      "apps/api/src/routes/adminUsers.ts",
+      "apps/api/src/routes/auth.ts",
+      "apps/api/src/routes/users.ts",
+      "apps/api/src/seedRoles.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "user": {
+    "count": 38,
+    "files": [
+      "apps/api/src/cron/index.ts",
+      "apps/api/src/jobs/weeklyReports.ts",
+      "apps/api/src/middleware/auth.ts",
+      "apps/api/src/middleware/authMiddleware.ts",
+      "apps/api/src/routes/adminUsers.ts",
+      "apps/api/src/routes/auth.ts",
+      "apps/api/src/routes/creatorReviewController.ts",
+      "apps/api/src/routes/index.ts",
+      "apps/api/src/routes/onboarding.ts",
+      "apps/api/src/routes/payments.ts",
+      "apps/api/src/routes/users.ts",
+      "apps/api/src/services/ai/negotiationEngine.ts",
+      "apps/api/src/services/ai/strategyService.ts",
+      "apps/api/src/services/aiAgent/aiAgentActions.ts",
+      "apps/api/src/services/brandBriefService.ts",
+      "apps/api/src/services/channels/whatsappSync.ts",
+      "apps/api/src/services/creatorBundleService.ts",
+      "apps/api/src/services/dealTalentService.ts",
+      "apps/api/src/services/messageService.ts",
+      "apps/api/src/services/strategy/creatorFitService.ts"
+    ],
+    "includes": [
+      "orderBy",
+      "pricingModels",
+      "roles",
+      "socialAnalytics",
+      "talents"
+    ],
+    "selects": [
+      "createdAt",
+      "creator_score",
+      "creator_score_reason",
+      "email",
+      "id",
+      "include_in_roster",
+      "name",
+      "role",
+      "role_recommended",
+      "roster_category",
+      "subscription_status"
+    ]
+  },
+  "agentPolicy": {
+    "count": 2,
+    "files": [
+      "apps/api/src/agent/agentPolicy.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "agentTask": {
+    "count": 8,
+    "files": [
+      "apps/api/src/agent/agentExecutor.ts",
+      "apps/api/src/routes/agent.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "negotiationThread": {
+    "count": 4,
+    "files": [
+      "apps/api/src/agent/agentExecutor.ts",
+      "apps/api/src/agent/negotiation/findThread.ts",
+      "apps/api/src/routes/negotiation.ts"
+    ],
+    "includes": [
+      "messages"
+    ],
+    "selects": []
+  },
+  "negotiationLog": {
+    "count": 1,
+    "files": [
+      "apps/api/src/agent/actions/logNegotiation.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "negotiationMessage": {
+    "count": 4,
+    "files": [
+      "apps/api/src/agent/negotiation/getActiveThreadState.ts",
+      "apps/api/src/agent/negotiation/recordMessage.ts",
+      "apps/api/src/services/aiAgent/negotiationRunner.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "auditLog": {
+    "count": 6,
+    "files": [
+      "apps/api/src/lib/auditLogger.ts",
+      "apps/api/src/routes/audit.ts",
+      "apps/api/src/services/messageService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "googleAccount": {
+    "count": 1,
+    "files": [
+      "apps/api/src/lib/google.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "talent": {
+    "count": 8,
+    "files": [
+      "apps/api/src/cron/outreachRotation.ts",
+      "apps/api/src/lib/google.ts",
+      "apps/api/src/routes/calendar.ts",
+      "apps/api/src/services/ai/creatorFitEngine.ts",
+      "apps/api/src/services/campaignAutoPlanService.ts",
+      "apps/api/src/services/suitabilityService.ts"
+    ],
+    "includes": [
+      "aiSettings",
+      "outboundTemplates",
+      "profile"
+    ],
+    "selects": []
+  },
+  "talentEvent": {
+    "count": 5,
+    "files": [
+      "apps/api/src/lib/google.ts",
+      "apps/api/src/routes/calendar.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "adminActivity": {
+    "count": 4,
+    "files": [
+      "apps/api/src/lib/adminActivityLogger.ts",
+      "apps/api/src/routes/activity.ts",
+      "apps/api/src/routes/adminActivity.ts"
+    ],
+    "includes": [
+      "avatarUrl",
+      "user"
+    ],
+    "selects": [
+      "avatarUrl",
+      "name"
+    ]
+  },
+  "creatorWeeklyReport": {
+    "count": 4,
+    "files": [
+      "apps/api/src/cron/reportsController.ts",
+      "apps/api/src/jobs/weeklyReports.ts",
+      "apps/api/src/routes/insights.ts"
+    ],
+    "includes": [],
+    "selects": [
+      "grade",
+      "healthScore",
+      "id",
+      "weekEnd"
+    ]
+  },
+  "assetGeneration": {
+    "count": 2,
+    "files": [
+      "apps/api/src/worker/assetGeneratorProcessor.ts",
+      "apps/api/src/worker/creativeHubService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "inboundEmail": {
+    "count": 43,
+    "files": [
+      "apps/api/src/controllers/aiController.ts",
+      "apps/api/src/controllers/dealExtractorController.ts",
+      "apps/api/src/controllers/gmailAnalysisController.ts",
+      "apps/api/src/controllers/gmailThreadService.ts",
+      "apps/api/src/routes/gmailMessages.ts",
+      "apps/api/src/routes/inboxAISuggestions.ts",
+      "apps/api/src/routes/inboxAiReply.ts",
+      "apps/api/src/routes/inboxAssign.ts",
+      "apps/api/src/routes/inboxAwaitingReply.ts",
+      "apps/api/src/routes/inboxCategories.ts",
+      "apps/api/src/routes/inboxCounters.ts",
+      "apps/api/src/routes/inboxReadState.ts",
+      "apps/api/src/routes/inboxTriage.ts",
+      "apps/api/src/services/aiTriageService.ts",
+      "apps/api/src/services/dealExtractionService.ts",
+      "apps/api/src/services/dealNegotiationService.ts",
+      "apps/api/src/services/gmail/gmailAnalysisService.ts",
+      "apps/api/src/services/gmail/gmailService.ts",
+      "apps/api/src/services/gmail/syncGmail.ts",
+      "apps/api/src/services/gmail/syncInbox.ts",
+      "apps/api/src/services/inboxPriorityService.ts",
+      "apps/api/src/services/messageService.ts",
+      "apps/api/src/services/threads/threadService.ts",
+      "apps/api/src/services/threads/threadSummaryService.ts",
+      "apps/api/src/services/unifiedInboxService.ts",
+      "apps/api/src/worker/inbox.ts",
+      "apps/api/src/worker/inboxProcessor.ts"
+    ],
+    "includes": [
+      "trackingEvents",
+      "user"
+    ],
+    "selects": [
+      "aiBrand",
+      "aiCategory",
+      "aiConfidence",
+      "aiJson",
+      "aiRecommendedAction",
+      "aiSummary",
+      "aiUrgency",
+      "body",
+      "dealDraftId",
+      "id",
+      "priorityScore",
+      "receivedAt",
+      "subject"
+    ]
+  },
+  "signatureRequest": {
+    "count": 9,
+    "files": [
+      "apps/api/src/routes/contract.ts",
+      "apps/api/src/routes/signatureWebhooks.ts",
+      "apps/api/src/services/signature/orchestrator.ts",
+      "apps/api/src/worker/signatureController.ts"
+    ],
+    "includes": [
+      "contract"
+    ],
+    "selects": []
+  },
+  "deliverableItem": {
+    "count": 10,
+    "files": [
+      "apps/api/src/routes/deliverables.ts",
+      "apps/api/src/services/deliverableService.ts",
+      "apps/api/src/worker/assetGeneratorProcessor.ts"
+    ],
+    "includes": [
+      "deal"
+    ],
+    "selects": []
+  },
+  "dealDraft": {
+    "count": 8,
+    "files": [
+      "apps/api/src/cron/dealCleanupJob.ts",
+      "apps/api/src/routes/dealExtraction.ts",
+      "apps/api/src/services/ai/negotiationEngine.ts",
+      "apps/api/src/services/aiAgent/aiAgentActions.ts",
+      "apps/api/src/services/inboundEmail.service.ts",
+      "apps/api/src/services/negotiationInsightsService.ts",
+      "apps/api/src/worker/createDealDraft.ts"
+    ],
+    "includes": [
+      "email",
+      "user"
+    ],
+    "selects": []
+  },
+  "aIAgentTask": {
+    "count": 7,
+    "files": [
+      "apps/api/src/cron/aiAgentRecovery.ts",
+      "apps/api/src/services/ai/aiAgentService.ts",
+      "apps/api/src/worker/enqueueAIAgentTask.ts"
+    ],
+    "includes": [
+      "talent"
+    ],
+    "selects": []
+  },
+  "contractReview": {
+    "count": 8,
+    "files": [
+      "apps/api/src/routes/contract.ts",
+      "apps/api/src/services/aiAgent/contractRunner.ts",
+      "apps/api/src/services/deliverableService.ts",
+      "apps/api/src/worker/reviewController.ts"
+    ],
+    "includes": [
+      "file",
+      "terms"
+    ],
+    "selects": []
+  },
+  "outreachAction": {
+    "count": 8,
+    "files": [
+      "apps/api/src/cron/outreachFollowUps.ts",
+      "apps/api/src/services/outreach/outreachService.ts",
+      "apps/api/src/worker/processors/outreachEngineProcessor.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "outreachStep": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/outreach/outreachService.ts",
+      "apps/api/src/worker/processors/outreachEngineProcessor.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "outreachSequence": {
+    "count": 5,
+    "files": [
+      "apps/api/src/cron/outreachFollowUps.ts",
+      "apps/api/src/routes/outreach.ts",
+      "apps/api/src/services/outreach/outreachService.ts",
+      "apps/api/src/worker/processors/outreachEngineProcessor.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "lead": {
+    "count": 5,
+    "files": [
+      "apps/api/src/routes/outreach.ts",
+      "apps/api/src/worker/processors/outreachEngineProcessor.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "deliverable": {
+    "count": 18,
+    "files": [
+      "apps/api/src/cron/index.ts",
+      "apps/api/src/services/dealInsightsService.ts",
+      "apps/api/src/services/deliverableReminderService.ts",
+      "apps/api/src/services/deliverableService.ts",
+      "apps/api/src/services/deliverablesService.ts",
+      "apps/api/src/worker/processors/deliverableProcessor.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "inboxMessage": {
+    "count": 30,
+    "files": [
+      "apps/api/src/controllers/gmailThreadService.ts",
+      "apps/api/src/controllers/inboxThreadController.ts",
+      "apps/api/src/controllers/threadService.ts",
+      "apps/api/src/routes/gmailMessages.ts",
+      "apps/api/src/routes/inbox.ts",
+      "apps/api/src/routes/inboxAssign.ts",
+      "apps/api/src/routes/inboxCategories.ts",
+      "apps/api/src/routes/inboxCounters.ts",
+      "apps/api/src/routes/inboxPriority.ts",
+      "apps/api/src/routes/inboxReadState.ts",
+      "apps/api/src/services/gmail/gmailAnalysisService.ts",
+      "apps/api/src/services/gmail/gmailService.ts",
+      "apps/api/src/services/gmail/inboxService.ts",
+      "apps/api/src/services/inboxPriorityService.ts",
+      "apps/api/src/services/threads/threadService.ts",
+      "apps/api/src/services/unifiedInboxService.ts"
+    ],
+    "includes": [
+      "// Include all emails",
+      "brandName",
+      "classified",
+      "emails",
+      "linkedDeals",
+      "sorted chronologically\n      emails",
+      "stage",
+      "threadMeta"
+    ],
+    "selects": [
+      "brandName",
+      "id",
+      "receivedAt",
+      "stage",
+      "threadId"
+    ]
+  },
+  "dmThread": {
+    "count": 1,
+    "files": [
+      "apps/api/src/controllers/threadService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "inboxThreadMeta": {
+    "count": 7,
+    "files": [
+      "apps/api/src/controllers/threadSummaryService.ts",
+      "apps/api/src/services/gmail/gmailService.ts",
+      "apps/api/src/services/threads/threadService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "deal": {
+    "count": 29,
+    "files": [
+      "apps/api/src/controllers/dealService.ts",
+      "apps/api/src/routes/signatureWebhooks.ts",
+      "apps/api/src/services/bundleGeneratorService.ts",
+      "apps/api/src/services/campaignAutoPlanService.ts",
+      "apps/api/src/services/campaignBuilderService.ts",
+      "apps/api/src/services/conflictChecker.ts",
+      "apps/api/src/services/dealInsightsService.ts",
+      "apps/api/src/services/dealNegotiationService.ts",
+      "apps/api/src/services/deals/dealService.ts",
+      "apps/api/src/services/deals/dealTimelineService.ts",
+      "apps/api/src/services/deals/dealWorkflowService.ts"
+    ],
+    "includes": [
+      "brand",
+      "dealPackages",
+      "deliverables",
+      "payments",
+      "talent",
+      "timeline",
+      "user"
+    ],
+    "selects": [
+      "brand",
+      "category",
+      "endDate",
+      "exclusivityDays",
+      "fee",
+      "id",
+      "stage",
+      "startDate",
+      "updatedAt",
+      "value"
+    ]
+  },
+  "gmailToken": {
+    "count": 6,
+    "files": [
+      "apps/api/src/controllers/gmailInboxController.ts",
+      "apps/api/src/routes/gmailAuth.ts",
+      "apps/api/src/services/gmail/oauthService.ts",
+      "apps/api/src/services/gmail/tokens.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "creatorFitScore": {
+    "count": 3,
+    "files": [
+      "apps/api/src/controllers/creatorFitController.ts",
+      "apps/api/src/services/ai/creatorFitEngine.ts"
+    ],
+    "includes": [
+      "brand",
+      "talent"
+    ],
+    "selects": []
+  },
+  "userRole": {
+    "count": 5,
+    "files": [
+      "apps/api/src/routes/adminUsers.ts",
+      "apps/api/src/routes/auth.ts",
+      "apps/api/src/routes/users.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "contract": {
+    "count": 16,
+    "files": [
+      "apps/api/src/routes/contract.ts",
+      "apps/api/src/routes/signatureWebhooks.ts",
+      "apps/api/src/services/contractGenerationService.ts",
+      "apps/api/src/services/contractService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "negotiationInsight": {
+    "count": 5,
+    "files": [
+      "apps/api/src/routes/negotiation.ts",
+      "apps/api/src/services/ai/negotiationEngine.ts",
+      "apps/api/src/services/ai/negotiationInsights.ts",
+      "apps/api/src/services/negotiationInsightsService.ts"
+    ],
+    "includes": [
+      "dealDraft"
+    ],
+    "selects": []
+  },
+  "brandRelationship": {
+    "count": 10,
+    "files": [
+      "apps/api/src/cron/brandRescoreDaily.ts",
+      "apps/api/src/cron/index.ts",
+      "apps/api/src/routes/brandCRM.ts",
+      "apps/api/src/services/crm/brandRelationshipService.ts",
+      "apps/api/src/services/strategy/strategyEngine.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brandEvent": {
+    "count": 3,
+    "files": [
+      "apps/api/src/routes/brandCRM.ts",
+      "apps/api/src/services/crm/brandRelationshipService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "creatorInsights": {
+    "count": 2,
+    "files": [
+      "apps/api/src/routes/insights.ts",
+      "apps/api/src/services/insightService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "wellnessCheck": {
+    "count": 2,
+    "files": [
+      "apps/api/src/routes/wellness.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "wellnessInsights": {
+    "count": 1,
+    "files": [
+      "apps/api/src/routes/wellness.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "payment": {
+    "count": 7,
+    "files": [
+      "apps/api/src/cron/checkOverdueInvoices.ts",
+      "apps/api/src/routes/creatorDashboard.ts",
+      "apps/api/src/routes/dashboardRevenue.ts",
+      "apps/api/src/services/stripeService.ts"
+    ],
+    "includes": [],
+    "selects": [
+      "amount",
+      "createdAt",
+      "currency",
+      "id"
+    ]
+  },
+  "creatorScore": {
+    "count": 1,
+    "files": [
+      "apps/api/src/routes/creator.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "webhookLog": {
+    "count": 3,
+    "files": [
+      "apps/api/src/routes/webhooks.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brandCampaign": {
+    "count": 11,
+    "files": [
+      "apps/api/src/routes/campaigns.ts",
+      "apps/api/src/routes/creatorDashboard.ts",
+      "apps/api/src/routes/dashboardCampaignPacing.ts",
+      "apps/api/src/services/ai/creatorFitEngine.ts",
+      "apps/api/src/services/campaignAutoPlanService.ts",
+      "apps/api/src/services/suitabilityService.ts"
+    ],
+    "includes": [
+      "brandLinks"
+    ],
+    "selects": [
+      "// Removed invalid dueDate\n            // Add any REAL fields from your schema later",
+      "createdAt",
+      "deliverables",
+      "id",
+      "status",
+      "title",
+      "updatedAt"
+    ]
+  },
+  "task": {
+    "count": 2,
+    "files": [
+      "apps/api/src/routes/creatorDashboard.ts",
+      "apps/api/src/services/ai/aiAssistant.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "trackingPixelEvent": {
+    "count": 1,
+    "files": [
+      "apps/api/src/routes/inboxTracking.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "inboxClassification": {
+    "count": 1,
+    "files": [
+      "apps/api/src/routes/inbox.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "dealEvent": {
+    "count": 3,
+    "files": [
+      "apps/api/src/routes/dealTimeline.ts",
+      "apps/api/src/services/contractReader.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "uGCListing": {
+    "count": 4,
+    "files": [
+      "apps/api/src/routes/listingsController.ts",
+      "apps/api/src/routes/ugcAdminController.ts"
+    ],
+    "includes": [
+      "avatarUrl",
+      "creator",
+      "name"
+    ],
+    "selects": [
+      "avatarUrl",
+      "id",
+      "name"
+    ]
+  },
+  "uGCRequest": {
+    "count": 6,
+    "files": [
+      "apps/api/src/routes/requestsController.ts",
+      "apps/api/src/routes/ugcAdminController.ts"
+    ],
+    "includes": [
+      "brand",
+      "creator"
+    ],
+    "selects": []
+  },
+  "campaignBrandPivot": {
+    "count": 1,
+    "files": [
+      "apps/api/src/routes/campaigns.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "outreachPlan": {
+    "count": 5,
+    "files": [
+      "apps/api/src/routes/outreach.ts",
+      "apps/api/src/services/aiAgent/outreachPrioritiser.ts",
+      "apps/api/src/services/aiAgent/outreachRunner.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "payout": {
+    "count": 7,
+    "files": [
+      "apps/api/src/routes/payments.ts",
+      "apps/api/src/routes/payouts.ts",
+      "apps/api/src/services/ai/aiAssistant.ts",
+      "apps/api/src/services/stripeService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "creatorBalance": {
+    "count": 3,
+    "files": [
+      "apps/api/src/routes/payouts.ts",
+      "apps/api/src/services/stripeService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "userOnboarding": {
+    "count": 3,
+    "files": [
+      "apps/api/src/routes/onboarding.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "contentApproval": {
+    "count": 2,
+    "files": [
+      "apps/api/src/routes/approvals.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "ugcApproval": {
+    "count": 2,
+    "files": [
+      "apps/api/src/routes/approvals.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "invoice": {
+    "count": 6,
+    "files": [
+      "apps/api/src/routes/payments.ts",
+      "apps/api/src/services/ai/aiAssistant.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "reconciliation": {
+    "count": 4,
+    "files": [
+      "apps/api/src/routes/payments.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "paymentLog": {
+    "count": 1,
+    "files": [
+      "apps/api/src/routes/payments.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "cronLog": {
+    "count": 5,
+    "files": [
+      "apps/api/src/cron/types.ts",
+      "apps/api/src/routes/system.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "file": {
+    "count": 6,
+    "files": [
+      "apps/api/src/routes/files.ts",
+      "apps/api/src/services/fileService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "deliverableReview": {
+    "count": 2,
+    "files": [
+      "apps/api/src/routes/deliverables.ts",
+      "apps/api/src/services/deliverableReviewService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brandBrief": {
+    "count": 4,
+    "files": [
+      "apps/api/src/routes/briefs.ts",
+      "apps/api/src/services/brandBriefService.ts",
+      "apps/api/src/services/campaignAutoPlanService.ts"
+    ],
+    "includes": [
+      "campaign",
+      "matches"
+    ],
+    "selects": []
+  },
+  "briefMatch": {
+    "count": 2,
+    "files": [
+      "apps/api/src/routes/briefs.ts",
+      "apps/api/src/services/brandBriefService.ts"
+    ],
+    "includes": [
+      "user"
+    ],
+    "selects": []
+  },
+  "contractTemplate": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/contractBuilder.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "inboundMessage": {
+    "count": 3,
+    "files": [
+      "apps/api/src/services/channels/whatsappSync.ts",
+      "apps/api/src/services/inboundMessage.service.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "socialAnalytics": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/aiSocialInsightsService.ts",
+      "apps/api/src/services/insightService.ts"
+    ],
+    "includes": [
+      "account"
+    ],
+    "selects": [
+      "platform"
+    ]
+  },
+  "socialPost": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/aiSocialInsightsService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "dealNegotiation": {
+    "count": 6,
+    "files": [
+      "apps/api/src/services/dealNegotiationService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "emailOutbox": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/messageService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "systemEvent": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/messageService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brand": {
+    "count": 6,
+    "files": [
+      "apps/api/src/services/ai/creatorFitEngine.ts",
+      "apps/api/src/services/brandService.ts",
+      "apps/api/src/services/campaignAutoPlanService.ts",
+      "apps/api/src/services/suitabilityService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "suitabilityResult": {
+    "count": 3,
+    "files": [
+      "apps/api/src/services/suitabilityService.ts"
+    ],
+    "includes": [
+      "brand",
+      "campaign",
+      "creator"
+    ],
+    "selects": []
+  },
+  "creatorBundle": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/creatorBundleService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "aiTokenLog": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/ai/tokenTracker.ts",
+      "apps/api/src/services/tokenTracker.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "emailLog": {
+    "count": 10,
+    "files": [
+      "apps/api/src/cron/flushStaleApprovals.ts",
+      "apps/api/src/cron/sendDailyBriefDigest.ts",
+      "apps/api/src/services/email/emailClient.ts",
+      "apps/api/src/services/emailService.ts"
+    ],
+    "includes": [],
+    "selects": [
+      "subject",
+      "to"
+    ]
+  },
+  "campaignDeliverableAuto": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/deliverableReviewService.ts"
+    ],
+    "includes": [
+      "plan"
+    ],
+    "selects": []
+  },
+  "brandAffinitySnapshot": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/crm/brandRelationshipService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "dealTimeline": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/deals/dealWorkflowService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "aIAgentExecutionLog": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/ai/aiAgentService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brief": {
+    "count": 6,
+    "files": [
+      "apps/api/src/services/ai/aiAssistant.ts",
+      "apps/api/src/services/briefs/versioning.ts"
+    ],
+    "includes": [],
+    "selects": [
+      "id"
+    ]
+  },
+  "outreachLead": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/ai/outreachLeadController.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brandIntel": {
+    "count": 5,
+    "files": [
+      "apps/api/src/services/aiAgent/brandIntelService.ts",
+      "apps/api/src/services/aiAgent/outreachComposer.ts",
+      "apps/api/src/services/aiAgent/outreachPrioritiser.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "outreachLog": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/aiAgent/outreachRunner.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "ingestedEmail": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/aiAgent/aiAgentActions.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "aiHistory": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/aiAgent/aiAgentActions.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "negotiationSession": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/aiAgent/negotiationRunner.ts",
+      "apps/api/src/services/aiAgent/negotiationScheduler.ts"
+    ],
+    "includes": [
+      "steps"
+    ],
+    "selects": []
+  },
+  "creatorPersonaProfile": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/aiAgent/aiContextService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "aIAgentMemory": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/aiAgent/aiContextService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "interactionHistory": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/aiAgent/aiContextService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "contractTerm": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/aiAgent/contractRunner.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "briefVersion": {
+    "count": 3,
+    "files": [
+      "apps/api/src/services/briefs/versioning.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brandCampaignPrediction": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/strategy/opportunityClusters.ts",
+      "apps/api/src/services/strategy/strategyEngine.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "opportunityCluster": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/strategy/opportunityClusters.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "brandSignal": {
+    "count": 2,
+    "files": [
+      "apps/api/src/services/strategy/signalService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  },
+  "creatorBrandFit": {
+    "count": 1,
+    "files": [
+      "apps/api/src/services/strategy/creatorFitService.ts"
+    ],
+    "includes": [],
+    "selects": []
+  }
+}
