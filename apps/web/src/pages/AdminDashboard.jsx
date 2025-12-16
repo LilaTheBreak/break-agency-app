@@ -6,6 +6,7 @@ import { AdminAuditTable } from "../components/AdminAuditTable.jsx";
 import { AdminActivityFeed } from "../components/AdminActivityFeed.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import PendingUsersApproval from "../components/admin/PendingUsersApproval.jsx";
+import { ResourceManager } from "../components/admin/ResourceManager.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js"; // This hook will be wired up later
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
@@ -24,6 +25,7 @@ export function AdminDashboard({ session }) {
       showStatusSummary
     >
       <PendingUsersApproval />
+      <ResourceManager />
       <AdminActivityFeed />
       <AdminCampaignsPanel session={activeSession} />
       <AdminAuditTable />

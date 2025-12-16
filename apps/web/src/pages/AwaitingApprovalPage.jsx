@@ -69,7 +69,7 @@ export function AwaitingApprovalPage() {
         </div>
 
         <p className="text-xs text-brand-black/40">
-          Questions? Contact us at support@thebreak.co
+          Questions? Contact us at support@thebreakco.com
         </p>
       </div>
     </div>

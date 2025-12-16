@@ -62,6 +62,11 @@ import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
 import { OpportunitiesAdmin } from "./pages/admin/OpportunitiesAdmin.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { CreatorPage } from "./pages/CreatorPage.jsx";
+import { LegalPrivacyPage } from "./pages/LegalPrivacy.jsx";
+import { ContactPage } from "./pages/Contact.jsx";
+import { HelpCenterPage } from "./pages/HelpCenter.jsx";
+import { PressPage } from "./pages/Press.jsx";
+import { BookFounderPage } from "./pages/BookFounder.jsx";
 import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
 import SignupPage from "./pages/Signup.jsx";
 import { MessagingContext } from "./context/messaging.js";
@@ -523,18 +528,18 @@ function App() {
             splashFade ? "opacity-0" : "opacity-100"
           }`}
         >
-          <div className="flex flex-col items-center gap-6">
-            <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
-              <img
-                src="/B Logo Mark.png"
-                alt="Break"
-                className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-              />
+            <div className="flex flex-col items-center gap-6">
+              <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
+                <img
+                  src="/B Logo Mark.png"
+                  alt="Break"
+                  className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                />
+              </div>
+              <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full w-full bg-white/80" style={{ animation: "loaderBar 1.4s ease-in-out infinite" }} />
+              </div>
             </div>
-            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full w-full animate-pulse bg-white/80" />
-            </div>
-          </div>
         </div>
       )}
       <BrowserRouter>
@@ -553,7 +558,11 @@ function App() {
 function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, authLoading }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showGate, setShowGate] = useState(true);
+  const [showGate, setShowGate] = useState(location.pathname === "/");
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+  }, [location.pathname, location.search, location.hash]);
 
   useEffect(() => {
     if (!authLoading && session?.roles?.includes(Roles.ADMIN) && location.pathname === "/") {
@@ -562,30 +571,45 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
   }, [session, authLoading, location.pathname, navigate]);
 
   const handleGateChoice = (path) => {
-    setShowGate(false);
     navigate(path);
   };
+
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      setShowGate(false);
+    }
+  }, [location.pathname]);
 
   const showGateScreen = showGate && location.pathname === "/";
 
   return (
     <>
       {showGateScreen && (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center gap-3">
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-white px-6">
+          <div className="flex flex-col items-center gap-5 text-center">
+            <LogoWordmark variant="mark" className="h-10 w-auto" />
+            <div className="flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleGateChoice("/brand")}
+                className="w-[320px] rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
+              >
+                I Am A Brand
+              </button>
+              <button
+                type="button"
+                onClick={() => handleGateChoice("/creator")}
+                className="w-[320px] rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
+              >
+                I Am A Creator
+              </button>
+            </div>
             <button
               type="button"
-              onClick={() => handleGateChoice("/brand")}
-              className="w-64 rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
+              onClick={() => handleGateChoice("/signup")}
+              className="text-[0.75rem] font-medium uppercase tracking-[0.3em] text-slate-600 underline-offset-4 hover:text-brand-red"
             >
-              I Am A Brand
-            </button>
-            <button
-              type="button"
-              onClick={() => handleGateChoice("/creator")}
-              className="w-64 rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
-            >
-              I Am A Creator
+              Existing member? Log in
             </button>
           </div>
         </div>
@@ -598,6 +622,11 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
       <Routes>
         <Route path="/" element={<LandingPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route path="/resource-hub" element={<ResourceHubPage />} />
+        <Route path="/legal" element={<LegalPrivacyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/help" element={<HelpCenterPage />} />
+        <Route path="/press" element={<PressPage />} />
+        <Route path="/book-founder" element={<BookFounderPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/creator" element={<CreatorPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route
@@ -1027,7 +1056,6 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
         </Link>
         <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
           {navLeft.map(renderNavItem)}
-          <LogoWordmark variant="mark" className="h-9 w-9 opacity-90" aria-hidden="true" />
           {navRight.map(renderNavItem)}
         </nav>
         <div className="relative flex items-center gap-3">
@@ -1130,8 +1158,6 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
 
 
 function LandingPage({ onRequestSignIn }) {
-  const heroVideoSrc = "/7260-199191197_small.mp4";
-
   const clientLogos = [
     { src: "/logos/amex.png", alt: "AMEX" },
     { src: "/logos/audemars-piguet.png", alt: "Audemars Piguet" },
@@ -1215,32 +1241,23 @@ function LandingPage({ onRequestSignIn }) {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
           }
+
+          @keyframes loaderBar {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(-10%); }
+            100% { transform: translateX(100%); }
+          }
         `}
       </style>
       <div className="bg-[#f6efe7] text-slate-900">
         <section className="relative overflow-hidden border-b border-[#e6d8ca] bg-gradient-to-b from-[#f6efe7] via-[#f3e6dc] to-[#edded4]">
-          <div className="absolute inset-0">
-            <video
-              className="h-full w-full object-cover opacity-75"
-              src={heroVideoSrc}
-              autoPlay
-              muted
-              loop
-              playsInline
-              aria-hidden="true"
-              style={{ filter: "grayscale(100%) brightness(1.25) contrast(0.8)" }}
-            />
-            <div className="pointer-events-none absolute inset-0 bg-white/55 mix-blend-screen" />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f6efe7]/90 via-[#f3e6dc]/80 to-[#edded4]/90 mix-blend-multiply" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(255,114,94,0.12),transparent_35%)]" />
-          </div>
           <div className="pointer-events-none absolute inset-y-10 right-[-4%] hidden w-1/3 rounded-[32px] bg-gradient-to-b from-white/10 via-white/5 to-transparent blur-[60px] lg:block z-10" />
           <div className="pointer-events-none absolute left-[-5%] top-8 block h-64 w-64 rounded-[40px] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_rgba(255,255,255,0))] opacity-60 z-10" />
           <div className="relative z-20 mx-auto flex max-w-6xl flex-col gap-10 px-6 py-20 lg:flex-row lg:items-start">
             <div className="flex-1 space-y-6">
               <div className="space-y-4">
                 <p className="text-sm uppercase tracking-[0.45em] text-brand-red">
-                  Operating across NYC · Doha · London · Dubai
+                  Operating across UK, US & UAE
                 </p>
                 <h1
                   className="font-display w-full text-[clamp(5.75rem,9vw,9.5rem)] font-semibold leading-[1.01] tracking-[0.15em] text-slate-900"
@@ -1446,7 +1463,7 @@ function LandingPage({ onRequestSignIn }) {
             Create an account
           </Link>
           <p className="text-[0.8rem] uppercase tracking-[0.35em] text-white/60">
-            We'll guide you to the right setup - brand or creator.
+            Operating across UK, US &amp; UAE.
           </p>
         </div>
       </section>

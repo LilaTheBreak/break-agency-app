@@ -14,7 +14,7 @@ const NAV_LINKS = [
   {
     heading: "Company",
     links: [
-      { to: "/about", label: "About Break" },
+      { to: "/", label: "About The Break" },
       { to: "/careers", label: "Careers" },
       { to: "/press", label: "Press" }
     ]
@@ -72,7 +72,7 @@ export function Footer() {
             © {new Date().getFullYear()} The Break Co.
           </p>
           <div className="space-y-1 text-[0.75rem]">
-            <p>Operating across NYC · Doha · London · Dubai</p>
+            <p>Operating across UK, US & UAE</p>
             <p>Break is a creator management and influencer marketing platform connecting brands with the right creators.</p>
           </div>
         </div>

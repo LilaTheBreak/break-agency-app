@@ -171,7 +171,7 @@ export function CreatorPage({ onRequestSignIn }) {
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Start here</p>
             <h2 className="mt-3 text-2xl font-semibold">Your Break profile unlocks opportunities.</h2>
-            <p className="mt-3 text-sm text-slate-600">
+            <p className="mt-3 text-sm text-slate-600 leading-relaxed">
               Your profile helps brands understand your audience, rates, and availability — so you&apos;re only considered for work that actually fits.
             </p>
           </div>
@@ -198,7 +198,7 @@ export function CreatorPage({ onRequestSignIn }) {
         <div className="mx-auto max-w-6xl px-6 py-12 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Live brand opportunities</p>
-            <p className="mt-3 text-sm text-slate-600 max-w-lg">
+            <p className="mt-3 text-sm text-slate-600 max-w-lg leading-relaxed">
               Preview active briefs. Applying requires a Break account and approval.
             </p>
           </div>
@@ -331,54 +331,6 @@ export function CreatorPage({ onRequestSignIn }) {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <section className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
-          <h3 className="text-2xl font-semibold text-slate-900">Not an open marketplace.</h3>
-          <p className="text-sm text-slate-600 max-w-2xl">
-            The Break is a curated platform. We review every profile, work directly with brands, and prioritise clarity, fair usage, and payment security for creators.
-          </p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex flex-col gap-6 px-6 py-10 text-sm text-slate-600 md:flex-row md:items-start md:justify-between max-w-6xl">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <LogoWordmark variant="light" className="h-8 w-auto" />
-              <span className="text-xs uppercase tracking-[0.35em]">Premium console for creators, brands, and culture teams.</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-8">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Platform</p>
-              <div className="flex flex-col gap-1">
-                <a href="/creator" className="hover:text-slate-900">Creators</a>
-                <a href="/brand" className="hover:text-slate-900">Brands</a>
-                <a href="/resource-hub" className="hover:text-slate-900">Resource Hub</a>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Company</p>
-              <div className="flex flex-col gap-1">
-                <a href="/about" className="hover:text-slate-900">About Break</a>
-                <a href="/careers" className="hover:text-slate-900">Careers</a>
-                <a href="/press" className="hover:text-slate-900">Press</a>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Support</p>
-              <div className="flex flex-col gap-1">
-                <a href="/help" className="hover:text-slate-900">Help Centre</a>
-                <a href="/contact" className="hover:text-slate-900">Contact</a>
-                <a href="/legal" className="hover:text-slate-900">Legal &amp; Privacy</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
       </div>
     </>
   );

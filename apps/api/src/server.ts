@@ -45,6 +45,7 @@ import aiRouter from "./routes/ai.js";
 // Authenticity / Risk / Suitability
 import authenticityRouter from "./routes/authenticity.js";
 import opportunitiesRouter from "./routes/opportunities.js";
+import resourcesRouter from "./routes/resources.js";
 import riskRouter from "./routes/risk.js";
 import suitabilityRouter from "./routes/suitability.js";
 
@@ -170,6 +171,11 @@ app.use("/api/calendar", calendarIntelligenceRouter);
 // OPPORTUNITIES
 // ------------------------------------------------------
 app.use("/api/opportunities", opportunitiesRouter);
+
+// ------------------------------------------------------
+// RESOURCES
+// ------------------------------------------------------
+app.use("/api/resources", resourcesRouter);
 
 // ------------------------------------------------------
 // USER APPROVALS

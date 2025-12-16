@@ -66,7 +66,7 @@ export function BrandPage({ onRequestSignIn }) {
         <div className="mx-auto max-w-6xl px-6 py-12 space-y-4">
           <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Brand pathway</p>
           <h1 className="text-3xl font-semibold text-slate-900">Creator campaigns, partnerships, and activations — without the chaos.</h1>
-          <p className="text-slate-700">
+          <p className="text-slate-700 leading-relaxed">
             Create campaigns, match with vetted creators, manage contracts, and track results — all in one calm, accountable console.
           </p>
           <p className="text-sm text-slate-600">
@@ -118,9 +118,9 @@ export function BrandPage({ onRequestSignIn }) {
           </p>
         </div>
       </section>
-      <section className="mx-auto max-w-6xl px-6 py-12 space-y-4">
+      <section className="mx-auto max-w-6xl px-6 py-12 space-y-6">
         <h2 className="text-2xl font-semibold text-slate-900">Your brand dashboard unlocks after setup</h2>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 leading-relaxed max-w-4xl">
           Once your brand profile and needs questionnaire are complete, you’ll unlock your dashboard to manage campaigns, creators, reporting, and billing in one place.
         </p>
           <div className="grid gap-4 md:grid-cols-3">
@@ -135,56 +135,58 @@ export function BrandPage({ onRequestSignIn }) {
               </Link>
             ))}
           </div>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 leading-relaxed max-w-4xl">
           Built for every type of creator partnership: Paid creator campaigns · Affiliate programmes · Product seeding · Event & experiential activations · Ambassador & long-term partnerships. Whether you’re testing creators or scaling a programme, Break adapts to your workflow.
         </p>
       </section>
       <section className="border-t border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-4">
+        <div className="mx-auto max-w-6xl px-6 py-14 space-y-6 text-center">
           <h3 className="text-xl font-semibold text-slate-900">A short setup that saves weeks later.</h3>
-          <p className="text-slate-700">
+          <p className="text-slate-700 leading-relaxed max-w-3xl mx-auto">
             Our onboarding questionnaire qualifies scope, budget, and timelines — so creator matching and campaign setup happens quickly and accurately.
           </p>
-          <Link
-            to="/signup"
-            className="inline-flex rounded-full bg-slate-900 px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90"
-          >
-            Create brand profile
-          </Link>
-        </div>
-        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Founder-led strategy</p>
-              <p className="text-lg font-semibold text-slate-900">Work directly with the founder behind Break.</p>
-              <p className="text-sm text-slate-600">
-                For brands that want more than software, Break offers a founder-led strategy option — combining platform access with hands-on campaign planning, creator curation, and execution oversight.
-              </p>
-              <p className="mt-2 text-xs text-slate-500">
-                Strategic campaign design · Creator shortlisting and negotiations · Launch planning and activation support · Senior-level oversight throughout delivery. This is a premium, hands-on service for brands seeking high-impact results.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleDemoFit}
-              disabled={fitLoading}
-              className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50"
+          <div className="flex justify-center">
+            <Link
+              to="/signup"
+              className="inline-flex rounded-full bg-slate-900 px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90"
             >
-              {fitLoading ? "Calculating..." : "Request founder-led strategy"}
-            </button>
+              Create brand profile
+            </Link>
           </div>
-          {fitError ? <p className="mt-2 text-sm text-brand-red">{fitError}</p> : null}
-          {fitResult ? (
-            <div className="mt-4">
-              <SuitabilityScore {...fitResult} />
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-left shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Founder-led strategy</p>
+                <p className="text-lg font-semibold text-slate-900">Work directly with the founder behind Break.</p>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  For brands that want more than software, Break offers a founder-led strategy option — combining platform access with hands-on campaign planning, creator curation, and execution oversight.
+                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Strategic campaign design · Creator shortlisting and negotiations · Launch planning and activation support · Senior-level oversight throughout delivery. This is a premium, hands-on service for brands seeking high-impact results.
+                </p>
+              </div>
+              <div className="flex items-start">
+            <Link
+              to="/book-founder"
+              className="inline-flex rounded-full bg-slate-900 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90"
+            >
+              Request founder-led strategy
+            </Link>
+              </div>
             </div>
-          ) : null}
+            {fitError ? <p className="mt-2 text-sm text-brand-red">{fitError}</p> : null}
+            {fitResult ? (
+              <div className="mt-4">
+                <SuitabilityScore {...fitResult} />
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
       <section className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
+        <div className="mx-auto max-w-6xl px-6 py-14 space-y-4 text-center">
           <h3 className="text-2xl font-semibold text-slate-900">Not a marketplace. Not an agency guessing.</h3>
-          <p className="text-sm text-slate-700">
+          <p className="text-sm text-slate-700 max-w-3xl mx-auto leading-relaxed">
             Break is a curated platform combining vetted creators, structured workflows, and real human oversight — giving brands clarity, control, and confidence at every stage.
           </p>
         </div>

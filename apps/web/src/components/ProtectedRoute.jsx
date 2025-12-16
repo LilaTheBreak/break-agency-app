@@ -61,7 +61,7 @@ function Gate({ title, description, actionLabel, onAction }) {
             {actionLabel}
           </button>
         ) : null}
-        <p className="text-xs text-brand-black/50">Need help? Contact ops@thebreak.co</p>
+        <p className="text-xs text-brand-black/50">Need help? Contact ops@thebreakco.com</p>
       </div>
     </div>
   );
