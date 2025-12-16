@@ -1,129 +1,51 @@
-import { Prisma } from "@prisma/client";
-import { Router, Request, Response, NextFunction } from "express";
-import prisma from "../lib/prisma.js";
-import { requireRole } from "../middleware/requireRole.js";
-import { createContract, sendForSignature, getSignatureStatus } from "../services/contracts/contractService.js";
+import { Router } from "express";
+import { requireAuth } from "../middleware/auth";
+import * as contractController from "../controllers/contractController";
 
 const router = Router();
 
-router.get("/contracts", ensureUser, async (req: Request, res: Response) => {
-  const user = req.user!;
-  const contracts = await prisma.contract.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 100
-  });
-  const isPrivileged = hasRole(user, ["admin", "agent"]);
-  const filtered = isPrivileged ? contracts : contracts.filter((contract) => isParty(contract.parties, user.id));
-  res.json({ contracts: filtered });
-});
+// Middleware for authentication
+router.use(requireAuth);
 
-router.post("/contracts/create", requireRole(["admin", "agent"]), async (req: Request, res: Response) => {
-  const { title, parties, variables, templateId } = req.body ?? {};
-  if (!title || typeof title !== "string") {
-    return res.status(400).json({ error: "Title is required" });
-  }
-  if (!Array.isArray(parties) || !parties.length) {
-    return res.status(400).json({ error: "At least one party is required" });
-  }
-  const normalizedParties = parties.map((party) => ({
-    email: String(party.email || "").toLowerCase(),
-    name: party.name || party.email,
-    role: party.role || "signer"
-  }));
-  try {
-    const external = await createContract({
-      title,
-      parties: normalizedParties,
-      variables: variables || {},
-      templateId
-    });
-    const contract = await prisma.contract.create({
-      data: {
-        title,
-        parties: normalizedParties as Prisma.JsonValue,
-        status: external.status || "draft",
-        fileUrl: external.fileUrl || "",
-        externalId: external.externalId || null
-      }
-    });
-    res.status(201).json({ contract });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create contract" });
-  }
-});
+// --- CRUD Endpoints ---
 
-router.post("/contracts/send", requireRole(["admin", "agent"]), async (req: Request, res: Response) => {
-  const { contractId, recipients } = req.body ?? {};
-  if (!contractId) {
-    return res.status(400).json({ error: "contractId is required" });
-  }
-  const contract = await prisma.contract.findUnique({ where: { id: contractId } });
-  if (!contract) {
-    return res.status(404).json({ error: "Contract not found" });
-  }
-  if (!contract.externalId) {
-    return res.status(400).json({ error: "Contract missing external reference" });
-  }
-  const normalizedParties = Array.isArray(recipients) && recipients.length ? recipients : contract.parties;
-  try {
-    await sendForSignature(contract.externalId, normalizedParties);
-    const updated = await prisma.contract.update({
-      where: { id: contract.id },
-      data: { status: "sent" }
-    });
-    res.json({ contract: updated });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to send contract" });
-  }
-});
+// POST /api/contracts - Create a new contract
+router.post("/", contractController.createContract);
 
-router.get("/contracts/:id/status", ensureUser, async (req: Request, res: Response) => {
-  const user = req.user!;
-  const contract = await prisma.contract.findUnique({ where: { id: req.params.id } });
-  if (!contract) {
-    return res.status(404).json({ error: "Contract not found" });
-  }
-  const isPrivileged = hasRole(user, ["admin", "agent"]);
-  if (!isPrivileged && !isParty(contract.parties, user.id)) {
-    return res.status(403).json({ error: "Insufficient permissions" });
-  }
-  if (!contract.externalId) {
-    return res.json({ contract });
-  }
-  try {
-    const status = await getSignatureStatus(contract.externalId);
-    const updated = await prisma.contract.update({
-      where: { id: contract.id },
-      data: {
-        status: status.status || contract.status,
-        fileUrl: status.fileUrl || contract.fileUrl
-      }
-    });
-    res.json({ contract: updated });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch status" });
-  }
-});
+// GET /api/contracts/:id - Get a single contract
+router.get("/:id", contractController.getContract);
 
-function ensureUser(req: Request, res: Response, next: NextFunction) {
-  if (!req.user?.id) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-  next();
-}
+// PUT /api/contracts/:id - Update an existing contract
+router.put("/:id", contractController.updateContract);
 
-function hasRole(user: { roles?: string[] }, allowed: string[]) {
-  return Boolean(user.roles?.some((role) => allowed.includes(role)));
-}
+// DELETE /api/contracts/:id - Delete a contract
+router.delete("/:id", contractController.deleteContract);
 
-function isParty(parties: any, email: string | undefined) {
-  if (!email) return false;
-  if (!Array.isArray(parties)) return false;
-  return parties.some((party) => {
-    if (!party) return false;
-    const candidate = typeof party === "string" ? party : party.email;
-    return typeof candidate === "string" && candidate.toLowerCase() === email.toLowerCase();
-  });
-}
+// --- Workflow Endpoints ---
+
+// POST /api/contracts/:id/upload - Upload a contract PDF
+router.post("/:id/upload", contractController.uploadContract);
+
+// POST /api/contracts/:id/send - Send a contract
+router.post("/:id/send", contractController.sendContract);
+
+// POST /api/contracts/:id/sign/talent - Talent signs the contract
+router.post("/:id/sign/talent", contractController.signContract);
+
+// POST /api/contracts/:id/sign/brand - Brand signs the contract
+router.post("/:id/sign/brand", contractController.signContract);
+
+// POST /api/contracts/:id/finalise - Finalise the contract
+router.post("/:id/finalise", contractController.finaliseContract);
+
+// --- AI Analysis Endpoint ---
+
+// POST /api/contracts/:id/analyse - Analyse a contract
+router.post("/:id/analyse", contractController.analyseContract);
+
+// --- Deal Integration Endpoint ---
+
+// GET /api/deals/:dealId/contracts - List all contracts for a deal
+router.get("/deals/:dealId/contracts", contractController.listByDeal);
 
 export default router;

@@ -1,5 +1,7 @@
+// apps/api/src/services/unifiedInboxService.ts
+
 import prisma from "../lib/prisma.js";
-import { scoreEmail } from "./opportunityScoring.js";
+import { computePrioritySignals } from "./priorityEngine.js";
 
 type Priority = "high" | "medium" | "low";
 
@@ -17,114 +19,134 @@ type UnifiedInboxItem = {
   scoring: {
     score: number;
     labels: string[];
+    reasons: string[];
     isOpportunity: boolean;
   };
   priority: Priority;
-  aiCategory?: string | null;
-  aiBrand?: string | null;
-  aiUrgency?: string | null;
-  aiRecommendedAction?: string | null;
-  aiConfidence?: number | null;
-  aiJson?: any;
   aiSummary?: string | null;
-  linkedEmailId?: string | null;
-  linkedDealId?: string | null;
-  externalId?: string | null;
+  classifications?: any[];
+  linkedDeals?: any[];
 };
 
-const PRIORITY_ORDER: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
+const PRIORITY_ORDER: Record<Priority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2
+};
 
-function toPriority(score: number): Priority {
-  if (score >= 60) return "high";
-  if (score >= 30) return "medium";
-  return "low";
-}
-
+/************************************
+ * EMAIL MAPPER
+ ************************************/
 function mapEmail(email: any): UnifiedInboxItem {
   const parsed = {
     id: email.id,
-    from: email.from || null,
-    to: email.to || null,
-    subject: email.subject || null,
-    date: email.receivedAt ? new Date(email.receivedAt).toISOString() : null,
-    body: email.body || email.snippet || ""
+    from: email.fromEmail ?? null,
+    to: email.toEmail ?? null,
+    subject: email.subject ?? null,
+    date: email.receivedAt ? email.receivedAt.toISOString() : null,
+    body: email.body ?? ""
   };
-  const scoring = scoreEmail(parsed);
-  const priority = toPriority(scoring.score);
+
+  const prioritySignals = computePrioritySignals({
+    parsed,
+    aiCategory: email.classifications?.[0]?.type, // Assuming first classification is primary
+    linkedDealId: (email.metadata as any)?.dealDraftId,
+    receivedAt: email.receivedAt?.toISOString(),
+  });
+
   return {
     id: email.id,
     platform: "email",
     parsed,
-    scoring,
-    priority,
-    aiCategory: email.aiCategory,
-    aiBrand: email.aiBrand,
-    aiUrgency: email.aiUrgency,
-    aiRecommendedAction: email.aiRecommendedAction,
-    aiConfidence: email.aiConfidence,
-    aiJson: email.aiJson,
-    aiSummary: email.aiSummary,
-    linkedEmailId: null,
-    linkedDealId: email.dealDraftId || null,
-    externalId: null
+    scoring: {
+      score: prioritySignals.score,
+      labels: email.categories ?? [],
+      reasons: prioritySignals.reasons,
+      isOpportunity: prioritySignals.score >= 30,
+    },
+    priority: prioritySignals.priority,
+    aiSummary: email.aiSummary ?? null,
+    classifications: email.classifications ?? [],
+    linkedDeals: email.linkedDeals ?? []
   };
 }
 
-function mapMessage(message: any): UnifiedInboxItem {
+/************************************
+ * MESSAGE (DM) MAPPER
+ ************************************/
+function mapMessage(msg: any): UnifiedInboxItem {
   const parsed = {
-    id: message.id,
-    from: message.senderHandle || message.senderName || message.platform || null,
+    id: msg.id,
+    from: msg.sender ?? msg.senderEmail ?? null,
     to: null,
-    subject:
-      message.senderName || message.senderHandle
-        ? `DM from ${message.senderName || message.senderHandle}`
-        : `${message.platform} message`,
-    date: message.receivedAt ? new Date(message.receivedAt).toISOString() : null,
-    body: message.message || ""
+    subject: `Message from ${msg.sender ?? "Unknown Sender"}`,
+    date: msg.receivedAt ? msg.receivedAt.toISOString() : null,
+    body: msg.body ?? ""
   };
-  const scoring = scoreEmail(parsed);
-  const priority = toPriority(scoring.score);
-  return {
-    id: message.id,
-    platform: message.platform || "dm",
+
+  const prioritySignals = computePrioritySignals({
     parsed,
-    scoring,
-    priority,
-    aiCategory: message.aiCategory,
-    aiBrand: message.aiBrand,
-    aiUrgency: message.aiUrgency,
-    aiRecommendedAction: message.aiRecommendedAction,
-    aiConfidence: message.aiConfidence,
-    aiJson: message.aiJson,
-    aiSummary: message.aiSummary,
-    linkedEmailId: message.linkedEmailId,
-    linkedDealId: message.linkedDealId,
-    externalId: message.externalId
+    aiCategory: msg.classified?.[0]?.type,
+    linkedDealId: msg.linkedDeals?.[0]?.dealId,
+    receivedAt: msg.receivedAt?.toISOString(),
+  });
+
+  return {
+    id: msg.id,
+    platform: msg.source ?? "dm",
+    parsed,
+    scoring: {
+      score: prioritySignals.score,
+      labels: msg.classified?.map(c => c.type) ?? [],
+      reasons: prioritySignals.reasons,
+      isOpportunity: prioritySignals.score >= 30,
+    },
+    priority: prioritySignals.priority,
+    aiSummary: msg.aiSummary ?? null,
+    classifications: msg.classified ?? [],
+    linkedDeals: msg.linkedDeals ?? []
   };
 }
 
+/************************************
+ * MAIN FETCHER
+ ************************************/
 export async function fetchUnifiedInbox(userId: string) {
-  const [emails, messages] = await Promise.all([
-    prisma.inboundEmail.findMany({
-      where: { userId },
-      orderBy: { receivedAt: "desc" },
-      take: 50
-    }),
-    prisma.inboundMessage.findMany({
-      where: { userId },
-      orderBy: { receivedAt: "desc" },
-      take: 50
-    })
-  ]);
+  // 1. Fetch EMAILS from InboundEmail
+  const emails = await prisma.inboundEmail.findMany({
+    where: { userId },
+    // No includes needed as per new logic, simplifying the query
+    orderBy: { receivedAt: "desc" },
+    take: 50
+  });
+
+  // 2. Fetch DM messages from InboxMessage
+  const messages = await prisma.inboxMessage.findMany({
+    where: {
+      userId: userId, // Correctly filter DMs for the user
+    },
+    include: {
+      classified: true,
+      linkedDeals: true
+    },
+    orderBy: { receivedAt: "desc" },
+    take: 50
+  });
 
   const emailItems = emails.map(mapEmail);
   const messageItems = messages.map(mapMessage);
+
+  // MERGE + SORT
   const inbox = [...emailItems, ...messageItems].sort((a, b) => {
-    const rankDiff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-    if (rankDiff !== 0) return rankDiff;
-    const dateA = a.parsed.date ? new Date(a.parsed.date).getTime() : 0;
-    const dateB = b.parsed.date ? new Date(b.parsed.date).getTime() : 0;
-    return dateB - dateA;
+    const pA = PRIORITY_ORDER[a.priority];
+    const pB = PRIORITY_ORDER[b.priority];
+    if (pA !== pB) return pA - pB; // Sort by high/medium/low
+
+    if (a.scoring.score !== b.scoring.score) return b.scoring.score - a.scoring.score; // Then by score descending
+    
+    const tA = a.parsed.date ? new Date(a.parsed.date).getTime() : 0;
+    const tB = b.parsed.date ? new Date(b.parsed.date).getTime() : 0;
+    return tB - tA;
   });
 
   const totals = {
@@ -133,5 +155,5 @@ export async function fetchUnifiedInbox(userId: string) {
     low: inbox.filter((i) => i.priority === "low").length
   };
 
-  return { inbox, totals };
+  return { ok: true, inbox, totals };
 }

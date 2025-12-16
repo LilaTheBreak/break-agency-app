@@ -1,28 +1,20 @@
 import { apiFetch } from "./apiClient.js";
 
 export async function fetchThreads() {
-  const response = await apiFetch("/messages/threads");
+  const response = await apiFetch("/api/threads");
   if (!response.ok) {
     throw new Error("Unable to load messages");
   }
   return response.json();
 }
 
-export async function fetchThread(userId) {
-  const response = await apiFetch(`/messages/thread/${encodeURIComponent(userId)}`);
-  if (!response.ok) {
-    throw new Error("Unable to load thread");
-  }
-  return response.json();
-}
-
-export async function sendMessage({ recipientId, content }) {
-  const response = await apiFetch("/messages/send", {
+export async function sendMessage(threadId, body) {
+  const response = await apiFetch("/api/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ recipientId, content })
+    body: JSON.stringify({ threadId, body })
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -32,7 +24,7 @@ export async function sendMessage({ recipientId, content }) {
 }
 
 export async function markMessageRead(messageId) {
-  const response = await apiFetch(`/messages/${encodeURIComponent(messageId)}/read`, {
+  const response = await apiFetch(`/api/messages/${encodeURIComponent(messageId)}/read`, {
     method: "PATCH"
   });
   if (!response.ok) {

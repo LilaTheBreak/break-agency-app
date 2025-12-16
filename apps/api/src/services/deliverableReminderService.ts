@@ -1,0 +1,29 @@
+import cron from "node-cron";
+import prisma from "../../lib/prisma";
+
+// This is a placeholder for a real reminder service.
+// In a production app, you would use a proper job queue.
+
+/**
+ * Schedules a cron job to check for upcoming deliverable deadlines and send reminders.
+ */
+export function startDeliverableReminders() {
+  // Run every day at 9:00 AM
+  cron.schedule("0 9 * * *", async () => {
+    console.log("Checking for deliverable reminders...");
+
+    const upcoming = await prisma.deliverable.findMany({
+      where: {
+        dueDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+        status: "pending"
+      }
+    });
+
+    upcoming.forEach((deliverable) => {
+      console.log(`[Reminder] Deliverable "${deliverable.title}" due on ${deliverable.dueDate}`);
+      // In a real implementation, you would send a Slack/email reminder here.
+    });
+  });
+
+  console.log("Deliverable reminder service started.");
+}

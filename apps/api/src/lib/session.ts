@@ -1,26 +1,22 @@
-import { User, UserRole } from "@prisma/client";
+import { User } from "@prisma/client";
 
 export type SessionUser = {
   id: string;
   email: string;
-  name?: string;
-  avatarUrl?: string;
-  roles: string[];
-  role?: string;
+  name?: string | null;
+  avatarUrl?: string | null;
+  role: string; // Single canonical role
+  onboardingStatus?: string;
 };
 
-export function buildSessionUser(
-  user: User & {
-    roles: (UserRole & { role: { name: string } })[];
-  }
-): SessionUser {
-  const roles = user.roles.map((r) => r.role.name.toUpperCase());
+export function buildSessionUser(user: User): SessionUser {
   return {
     id: user.id,
     email: user.email,
-    name: user.name ?? undefined,
-    avatarUrl: user.avatarUrl ?? undefined,
-    roles,
-    role: roles[0]
+    name: user.name,
+    avatarUrl: user.avatarUrl,
+    role: user.role, // Single role from User.role enum
+    onboardingStatus: user.onboarding_status
   };
 }
+

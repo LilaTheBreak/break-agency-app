@@ -1,23 +1,80 @@
 import type { Request, Response, NextFunction } from "express";
-import { getUserMessage } from "../integrations/gmail/googleClient.js";
-import { parseEmailMetadata } from "../services/emailParser.js";
-import { scoreEmail } from "../services/opportunityScoring.js";
+import * as analysisService from "../services/gmail/gmailAnalysisService";
+import prisma from "../lib/prisma";
 
-export async function analyzeMessage(req: Request, res: Response, next: NextFunction) {
+export async function analyzeSingleEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
-    if (!req.user?.id) {
-      return res.status(401).json({ error: true, message: "Authentication required" });
+    const { emailId } = req.params;
+    const analysisResult = await analysisService.analyzeEmailById(
+      emailId,
+      req.user!.id
+    );
+    if (!analysisResult) {
+      res.status(404).json({ error: "Email not found or does not belong to user." });
+      return;
     }
-    const messageId = req.params.id;
-    const message = await getUserMessage(req.user.id, messageId);
-    const parsed = parseEmailMetadata({
-      id: message.id,
-      headers: message.headers,
-      snippet: message.snippet,
-      body: message.body
+    res.json(analysisResult);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAnalysisForEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { emailId } = req.params;
+    const email = await prisma.inboundEmail.findFirst({
+      where: { id: emailId, inboxMessage: { userId: req.user!.id } },
+      select: {
+        aiCategory: true,
+        aiBrand: true,
+        aiUrgency: true,
+        aiSummary: true,
+        aiRecommendedAction: true,
+        aiConfidence: true,
+        aiJson: true
+      }
     });
-    const scoring = scoreEmail(parsed);
-    res.json({ parsed, scoring });
+
+    if (!email) {
+      res.status(404).json({ error: "Email not found or does not belong to user." });
+      return;
+    }
+    res.json(email);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function analyzeEmailThread(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { threadId } = req.params;
+    const result = await analysisService.analyzeThreadById(threadId, req.user!.id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function analyzeBulkEmails(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const stats = await analysisService.analyzeBulkForUser(req.user!.id);
+    res.json({ message: "Bulk analysis initiated.", ...stats });
   } catch (error) {
     next(error);
   }

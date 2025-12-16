@@ -1,6 +1,5 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
-import { SocialPlatform } from "@prisma/client";
 import { getGmailAuthUrl, exchangeCodeForTokens } from "../integrations/gmail/googleAuth.js";
 
 const router = Router();
@@ -17,19 +16,33 @@ router.get("/gmail/auth/callback", async (req, res) => {
     return res.status(400).json({ error: true, message: "Missing code or user" });
   }
   const tokens = await exchangeCodeForTokens(code);
-  await prisma.socialToken.upsert({
-    where: { userId_platform: { userId: req.user.id, platform: SocialPlatform.GMAIL } },
+  console.log("[GMAIL OAUTH CALLBACK] Tokens returned:", tokens);
+  if (!tokens.refreshToken) {
+    console.warn("WARNING: No refresh_token returned — Gmail connection will not work");
+    return res.status(400).json({
+      error: "missing_refresh_token",
+      message: "Google did not return a refresh token. Ask the user to reconnect Gmail with forced consent.",
+      requiresReauth: true
+    });
+  }
+  await prisma.gmailToken.upsert({
+    where: { userId: req.user.id },
     update: {
-      accessToken: tokens.accessToken,
+      accessToken: tokens.accessToken ?? "",
       refreshToken: tokens.refreshToken,
-      expiresAt: tokens.expiresAt ?? null
+      expiryDate: tokens.expiresAt ?? null,
+      scope: tokens.scope ?? null,
+      tokenType: tokens.tokenType ?? null,
+      idToken: tokens.idToken ?? null,
     },
     create: {
       userId: req.user.id,
-      platform: SocialPlatform.GMAIL,
-      accessToken: tokens.accessToken,
+      accessToken: tokens.accessToken ?? "",
       refreshToken: tokens.refreshToken,
-      expiresAt: tokens.expiresAt ?? null
+      expiryDate: tokens.expiresAt ?? null,
+      scope: tokens.scope ?? null,
+      tokenType: tokens.tokenType ?? null,
+      idToken: tokens.idToken ?? null,
     }
   });
   const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/inbox?gmail_connected=1`;

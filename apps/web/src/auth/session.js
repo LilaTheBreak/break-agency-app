@@ -2,6 +2,7 @@ const SESSION_KEY = "break_agency_session_v1";
 export const SESSION_CHANGED_EVENT = "break-agency-session-changed";
 
 export const Roles = {
+  SUPERADMIN: "SUPERADMIN",
   ADMIN: "ADMIN",
   AGENT: "AGENT",
   BRAND: "BRAND",
@@ -14,6 +15,7 @@ export const Roles = {
 };
 
 const rolePriority = [
+  Roles.SUPERADMIN,
   Roles.ADMIN,
   Roles.FOUNDER,
   Roles.AGENT,

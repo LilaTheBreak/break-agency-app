@@ -1,11 +1,5 @@
 import { google } from "googleapis";
-import prisma from "../../lib/prisma.js";
-import { safeEnv } from "../../utils/safeEnv.js";
-import { SocialPlatform } from "@prisma/client";
-
-const clientId = safeEnv("GOOGLE_OAUTH_CLIENT_ID", "test-client");
-const clientSecret = safeEnv("GOOGLE_OAUTH_CLIENT_SECRET", "test-secret");
-const redirectUri = safeEnv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:5000/oauth/callback");
+import { getOAuthClientForUser } from "../../services/gmail/tokens.js";
 
 function decodeBase64Url(input?: string) {
   if (!input) return "";
@@ -14,24 +8,9 @@ function decodeBase64Url(input?: string) {
   return buff.toString("utf8");
 }
 
-async function loadToken(userId: string) {
-  const token = await prisma.socialToken.findUnique({
-    where: { userId_platform: { userId, platform: SocialPlatform.GMAIL } }
-  });
-  if (!token?.refreshToken) {
-    throw new Error("Gmail not connected");
-  }
-  return token;
-}
-
 export async function getGmailClient(userId: string) {
-  const token = await loadToken(userId);
-  const oauth2 = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
-  oauth2.setCredentials({
-    access_token: token.accessToken || undefined,
-    refresh_token: token.refreshToken || undefined
-  });
-  return google.gmail({ version: "v1", auth: oauth2 });
+  const client = await getOAuthClientForUser(userId);
+  return google.gmail({ version: "v1", auth: client });
 }
 
 export async function listUserMessages(userId: string) {

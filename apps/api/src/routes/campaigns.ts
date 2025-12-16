@@ -1,18 +1,27 @@
 import { Prisma } from "@prisma/client";
 import { Router, Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma.js";
+import { SessionUser } from "../lib/session.js"; // Import SessionUser type
+import { z } from "zod";
 
 const router = Router();
 
-router.post("/campaigns/create", ensureManager, async (req: Request, res: Response) => {
+/**
+ * POST /campaigns
+ * Creates a new BrandCampaign.
+ */
+router.post("/campaigns", ensureManager, async (req: Request, res: Response) => {
   const { title, ownerId, stage = "PLANNING", brands = [], creatorTeams = [], metadata = {} } = req.body ?? {};
   if (!title) {
     return res.status(400).json({ error: "Title is required" });
   }
-  const userId = req.user!.id;
+  if (!req.user?.id) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  const userId = req.user.id;
   const normalizedStage = normalizeStage(stage);
   try {
-    const campaign = await prisma.campaign.create({
+    const campaign = await prisma.brandCampaign.create({
       data: {
         title,
         ownerId: ownerId || userId,
@@ -30,6 +39,10 @@ router.post("/campaigns/create", ensureManager, async (req: Request, res: Respon
   }
 });
 
+/**
+ * POST /campaigns/:id/addBrand
+ * Adds a brand to an existing campaign.
+ */
 router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: Response) => {
   const campaignId = req.params.id;
   const { brand } = req.body ?? {};
@@ -37,11 +50,11 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: 
     return res.status(400).json({ error: "Brand payload required" });
   }
   try {
-    const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+    const campaign = await prisma.brandCampaign.findUnique({ where: { id: campaignId } });
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
     const brands = Array.isArray(campaign.brands) ? campaign.brands : [];
     brands.push(brand);
-    await prisma.campaign.update({
+    await prisma.brandCampaign.update({
       where: { id: campaignId },
       data: { brands }
     });
@@ -53,6 +66,10 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: 
   }
 });
 
+/**
+ * GET /campaigns/:id
+ * Fetches a single campaign by its ID.
+ */
 router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => {
   try {
     const campaign = await fetchCampaign(req.params.id, req.user!.id);
@@ -66,6 +83,10 @@ router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => 
   }
 });
 
+/**
+ * GET /campaigns/user/:userId
+ * Fetches campaigns associated with a specific user (or all for admins).
+ */
 router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Response) => {
   const requester = req.user!;
   let targetId = req.params.userId;
@@ -80,7 +101,7 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
           OR: [{ ownerId: targetId }, { brandLinks: { some: { brandId: targetId } } }]
         };
   try {
-    const campaigns = await prisma.campaign.findMany({
+    const campaigns = await prisma.brandCampaign.findMany({
       where: whereClause,
       include: { brandLinks: true },
       orderBy: { createdAt: "desc" },
@@ -93,8 +114,47 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
   }
 });
 
+const CampaignUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  stage: z.enum(["PLANNING", "ACTIVE", "REVIEW", "COMPLETE"]).optional(),
+  brands: z.array(z.any()).optional(), // Loosely typed for now, can be refined
+  creatorTeams: z.array(z.any()).optional(), // Loosely typed for now, can be refined
+  metadata: z.record(z.any()).optional(), // Loosely typed for now
+});
+
+/**
+ * PUT /campaigns/:id
+ * Updates an existing BrandCampaign.
+ */
+router.put("/campaigns/:id", ensureManager, async (req: Request, res: Response) => {
+  const campaignId = req.params.id;
+  const parsed = CampaignUpdateSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload.", details: parsed.error.flatten() });
+  }
+
+  try {
+    const updatedCampaign = await prisma.brandCampaign.update({
+      where: { id: campaignId },
+      data: {
+        title: parsed.data.title,
+        stage: parsed.data.stage ? normalizeStage(parsed.data.stage) : undefined,
+        brands: parsed.data.brands ? sanitize(parsed.data.brands) : undefined,
+        creatorTeams: parsed.data.creatorTeams ? sanitize(parsed.data.creatorTeams) : undefined,
+        metadata: parsed.data.metadata ? sanitize(parsed.data.metadata) : undefined,
+      },
+    });
+    // Re-sync brand pivots if brands were updated
+    if (parsed.data.brands) await syncBrandPivots(campaignId, parsed.data.brands);
+    res.json({ campaign: formatCampaign(updatedCampaign) });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Unable to update campaign" });
+  }
+});
+
 async function fetchCampaign(id: string, requesterId: string) {
-  const campaign = await prisma.campaign.findUnique({
+  const campaign = await prisma.brandCampaign.findUnique({
     where: { id },
     include: { brandLinks: true }
   });
@@ -196,15 +256,18 @@ function ensureManager(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-function isManager(user: { roles?: string[] }) {
-  return Boolean(user.roles?.some((role) => ["admin", "agent", "brand"].includes(role)));
+function isManager(user: SessionUser) {
+  const userRoleNames = user.roles?.map(r => r.role.name) || [];
+  return userRoleNames.some((roleName) => ["ADMIN", "SUPER_ADMIN", "AGENT", "BRAND"].includes(roleName));
 }
 
-function isAdmin(user: { roles?: string[] }) {
-  return Boolean(user.roles?.includes("admin"));
+function isAdmin(user: SessionUser) {
+  const userRoleNames = user.roles?.map(r => r.role.name) || [];
+  return userRoleNames.includes("ADMIN") || userRoleNames.includes("SUPER_ADMIN");
 }
 
-function canAccessCampaign(campaign: any, userId: string, roles: string[]) {
+function canAccessCampaign(campaign: any, userId: string, userRoles: SessionUser['roles']) {
+  const roles = userRoles?.map(r => r.role.name) || [];
   if (roles?.includes("admin")) return true;
   if (campaign.ownerId && campaign.ownerId === userId) return true;
   if (campaign.brandSummaries?.some((brand: any) => brand.id === userId)) return true;

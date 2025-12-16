@@ -10,7 +10,6 @@ import { ContractsPanel } from "../components/ContractsPanel.jsx";
 import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
-import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
 import { Roles } from "../auth/session.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
@@ -34,18 +33,6 @@ export function CreatorDashboard({ session }) {
 }
 
 function CreatorRevenueSection() {
-  const stats = [
-    { label: "Overall revenue target", value: 120000, progress: 54, prefix: "£" },
-    { label: "Audience growth", value: 8.2, context: "Last 30 days", suffix: "%", decimals: 1 },
-    { label: "Deals this month", value: 6, context: "Signed" }
-  ];
-  const growthTrend = [
-    { label: "Jan", value: 3 },
-    { label: "Feb", value: 5 },
-    { label: "Mar", value: 7 },
-    { label: "Apr", value: 5 },
-    { label: "May", value: 9 }
-  ];
   return (
     <section id="creator-overview" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -53,48 +40,10 @@ function CreatorRevenueSection() {
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Revenue & growth</p>
           <h3 className="font-display text-3xl uppercase">Momentum trackers</h3>
         </div>
-        <Badge tone="neutral">Updated hourly</Badge>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{stats[0].label}</p>
-          <p className="mt-1 text-3xl font-semibold text-brand-black">
-            <CountUpNumber value={stats[0].value} prefix="£" />
-          </p>
-          <ProgressBar value={stats[0].progress} />
-          <p className="mt-1 text-xs text-brand-black/50">{stats[0].progress}% achieved</p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Audience growth</p>
-          <p className="mt-1 text-3xl font-semibold text-brand-black">
-            <CountUpNumber value={stats[1].value} suffix="%" decimals={1} />
-          </p>
-          <p className="text-xs text-brand-black/50">{stats[1].context}</p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Deals this month</p>
-          <p className="mt-1 text-3xl font-semibold text-brand-black">
-            <CountUpNumber value={stats[2].value} />
-          </p>
-          <p className="text-xs text-brand-black/50">{stats[2].context}</p>
-        </div>
-      </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-brand-red">Deals trend</p>
-        <div className="mt-4 grid grid-cols-5 gap-3 text-center text-sm text-brand-black/70">
-          {growthTrend.map((point) => (
-            <div key={point.label}>
-              <div className="mx-auto h-20 w-6 rounded-full bg-brand-black/10">
-                <div
-                  className="w-full rounded-full bg-brand-red"
-                  style={{ height: `${point.value * 10}%` }}
-                />
-              </div>
-              <p className="mt-2 text-xs uppercase tracking-[0.2em]">{point.label}</p>
-              <p className="text-xs">{point.value} deals</p>
-            </div>
-          ))}
-        </div>
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <p className="text-sm text-brand-black/60">Metrics not yet available</p>
+        <p className="mt-2 text-xs text-brand-black/40">Revenue tracking, audience growth, and deal metrics will appear once your campaigns are live</p>
       </div>
     </section>
   );
@@ -279,35 +228,6 @@ const SUBMISSION_PAYLOADS = [
 ];
 
 function CreatorOpportunitiesSection() {
-  const [opportunities, setOpportunities] = useState(CREATOR_OPPORTUNITY_PIPELINE);
-  const [activeStatus, setActiveStatus] = useState(OPPORTUNITY_STAGE_FLOW[0]);
-  const [selectedOpportunityId, setSelectedOpportunityId] = useState(CREATOR_OPPORTUNITY_PIPELINE[0].id);
-
-  const gaps = [
-    "No affiliate links connected. Add Amazon + RewardStyle IDs.",
-    "You rarely post long-form. Consider monthly deep dives.",
-    "Finance vertical performing better than travel last quarter."
-  ];
-  const quickWins = [
-    "Enable auto-invoice on Opportunities board submissions.",
-    "Add 3 hero testimonials to boost rate card approval.",
-    "Repurpose latest Residency vlog into 15s reels."
-  ];
-
-  const filtered = opportunities.filter((opp) => opp.status === activeStatus);
-  const selectedOpportunity = opportunities.find((opp) => opp.id === selectedOpportunityId);
-
-  const handleAction = (id) => {
-    setOpportunities((prev) =>
-      prev.map((opp) => {
-        if (opp.id !== id) return opp;
-        const action = STAGE_ACTIONS[opp.status];
-        if (!action?.nextStage) return opp;
-        return { ...opp, status: action.nextStage, lastUpdate: `Moved to ${action.nextStage} just now.` };
-      })
-    );
-  };
-
   return (
     <section id="creator-opportunities" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -315,61 +235,10 @@ function CreatorOpportunitiesSection() {
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities system</p>
           <h3 className="font-display text-3xl uppercase">Apply, submit, track</h3>
         </div>
-        <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
-          View full board
-        </button>
       </div>
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          {OPPORTUNITY_STAGE_FLOW.map((stage) => (
-            <button
-              key={stage}
-              onClick={() => setActiveStatus(stage)}
-              className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.25em] ${
-                activeStatus === stage ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black/30"
-              }`}
-            >
-              {stage}
-            </button>
-          ))}
-        </div>
-        <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-          <div className="space-y-4">
-            {filtered.length ? (
-              filtered.map((opportunity) => (
-                <OpportunitySummaryCard
-                  key={opportunity.id}
-                  opportunity={opportunity}
-                  onAction={() => handleAction(opportunity.id)}
-                  onTrack={() => setSelectedOpportunityId(opportunity.id)}
-                />
-              ))
-            ) : (
-              <p className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm text-brand-black/70">
-                Nothing in this stage yet.
-              </p>
-            )}
-          </div>
-          <div className="space-y-4">
-            <OpportunityDetailPanel opportunity={selectedOpportunity} />
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Gaps analysis</p>
-              <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
-                {gaps.map((gap) => (
-                  <li key={gap}>• {gap}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Quick wins</p>
-              <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
-                {quickWins.map((win) => (
-                  <li key={win}>• {win}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <p className="text-sm text-brand-black/60">No opportunities yet</p>
+        <p className="mt-2 text-xs text-brand-black/40">Brand opportunities will appear here once campaigns are live</p>
       </div>
     </section>
   );
@@ -517,54 +386,6 @@ function CreatorOnboardingSection() {
 }
 
 function CreatorSubmissionsSection({ session }) {
-  const [submissions, setSubmissions] = useState(SUBMISSION_PAYLOADS);
-  const [activeTab, setActiveTab] = useState(SUBMISSION_TABS[0]);
-  const [selectedSubmissionId, setSelectedSubmissionId] = useState(SUBMISSION_PAYLOADS[0]?.id);
-  const stageFiltered =
-    activeTab === "Usage log"
-      ? submissions
-      : submissions.filter((submission) => submission.stage === activeTab);
-  const selectedSubmission = submissions.find((submission) => submission.id === selectedSubmissionId);
-
-  const handleAdvanceStage = (id) => {
-    setSubmissions((prev) =>
-      prev.map((submission) => {
-        if (submission.id !== id) return submission;
-        const currentIndex = SUBMISSION_TABS.indexOf(submission.stage);
-        const nextStage = SUBMISSION_TABS[currentIndex + 1] || submission.stage;
-        if (submission.stage === nextStage || nextStage === "Usage log") return submission;
-        return {
-          ...submission,
-          stage: nextStage,
-          lastAction: `Moved to ${nextStage} on ${new Date().toLocaleDateString()}`
-        };
-      })
-    );
-  };
-
-  const handleUploadDraft = () => {
-    const timestamp = Date.now();
-    const newSubmission = {
-      id: `submission-${timestamp}`,
-      title: "New submission draft",
-      platform: "Select platform",
-      type: "UGC",
-      stage: "Drafts",
-      files: [],
-      revisions: [],
-      finalLinks: [],
-      captions: "",
-      usageRights: "Pending admin approval",
-      schedule: "Not scheduled",
-      lastAction: "Draft created just now"
-    };
-    setSubmissions((prev) => [newSubmission, ...prev]);
-    setSelectedSubmissionId(newSubmission.id);
-    setActiveTab("Drafts");
-  };
-
-  const filteredList = activeTab === "Usage log" ? stageFiltered : stageFiltered;
-
   return (
     <section id="creator-submissions" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -572,56 +393,11 @@ function CreatorSubmissionsSection({ session }) {
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Submissions</p>
           <h3 className="font-display text-3xl uppercase">Uploads, revisions, approvals</h3>
         </div>
-        <button
-          type="button"
-          onClick={handleUploadDraft}
-          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
-        >
-          Upload new
-        </button>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {SUBMISSION_TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.25em] ${
-              activeTab === tab ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black/30"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <p className="text-sm text-brand-black/60">No submissions yet</p>
+        <p className="mt-2 text-xs text-brand-black/40">Content submission tracking will appear once you have active campaigns</p>
       </div>
-      <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-        <div className="space-y-4">
-          {activeTab === "Usage log" ? (
-            <SubmissionUsageLog submissions={submissions} />
-          ) : filteredList.length ? (
-            filteredList.map((submission) => (
-              <SubmissionCard
-                key={submission.id}
-                submission={submission}
-                onSelect={() => setSelectedSubmissionId(submission.id)}
-                onAdvance={() => handleAdvanceStage(submission.id)}
-              />
-            ))
-          ) : (
-            <p className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-sm text-brand-black/70">
-              No submissions in this stage yet.
-            </p>
-          )}
-        </div>
-        <div>
-          <SubmissionDetailPanel submission={selectedSubmission} session={session} />
-        </div>
-      </div>
-      <FileUploadPanel
-        session={session}
-        folder="creator-deliverables"
-        title="Deliverable uploads"
-        description="Share reels, edits, decks, or proofs for Break to review."
-      />
     </section>
   );
 }
@@ -640,7 +416,6 @@ function CreatorContractsSection({ session }) {
 
 function CreatorCampaignsPanel({ session }) {
   const { campaigns, loading, error } = useCampaigns({ session });
-  const data = (campaigns.length ? campaigns : FALLBACK_CAMPAIGNS).slice(0, 2);
   return (
     <section id="creator-campaigns" className="mt-6 space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -652,9 +427,14 @@ function CreatorCampaignsPanel({ session }) {
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       {loading && !campaigns.length ? (
         <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+      ) : campaigns.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No campaigns yet</p>
+          <p className="mt-2 text-xs text-brand-black/40">Campaign assignments will appear here</p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {data.map((campaign) => (
+          {campaigns.slice(0, 2).map((campaign) => (
             <MultiBrandCampaignCard key={campaign.id} campaign={campaign} showNotes={false} />
           ))}
         </div>

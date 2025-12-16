@@ -1,5 +1,5 @@
 const RAW_API_BASE = import.meta.env?.VITE_API_URL;
-const API_BASE = RAW_API_BASE && RAW_API_BASE.length ? RAW_API_BASE : "http://localhost:5001/api";
+const API_BASE = RAW_API_BASE && RAW_API_BASE.length ? RAW_API_BASE : "/api";
 
 const NORMALIZED_BASE = API_BASE.replace(/\/$/, "");
 
@@ -12,16 +12,15 @@ export function apiUrl(path = "") {
 export async function apiFetch(path, options = {}) {
   const target = /^https?:/i.test(path) ? path : apiUrl(path);
 
-  return fetch(target, {
-    method: options.method || "GET",
+  const response = await fetch(target, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(options.headers || {})
+      ...options.headers
     },
-    credentials: "include",
-    cache: "no-store",
-    body: options.body,
+    credentials: "include"
   });
+  return response;
 }
 
 export { NORMALIZED_BASE as API_BASE };

@@ -1,8 +1,9 @@
 import { google } from "googleapis";
+import { googleConfig } from "../../config/env.js";
 
-const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || "";
-const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET || "";
-const redirectUri = process.env.GOOGLE_OAUTH_REDIRECT_URI || "";
+const clientId = googleConfig.clientId;
+const clientSecret = googleConfig.clientSecret;
+const redirectUri = googleConfig.redirectUri;
 
 const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
@@ -11,6 +12,7 @@ export function getGmailAuthUrl(state: string) {
     access_type: "offline",
     prompt: "consent",
     scope: [
+      "https://www.googleapis.com/auth/gmail.send",
       "https://www.googleapis.com/auth/gmail.readonly",
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile",

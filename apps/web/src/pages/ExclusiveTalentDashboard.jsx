@@ -7,7 +7,6 @@ import { ContractsPanel } from "../components/ContractsPanel.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
-import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
 import { CalendarBoard } from "./AdminCalendarPage.jsx";
 
 const NAV_LINKS = (basePath) => [
@@ -599,12 +598,11 @@ function ExclusiveProfile() {
 
 function ExclusiveCampaigns({ session }) {
   const { campaigns, loading, error } = useCampaigns({ session });
-  const data = campaigns.length ? campaigns : FALLBACK_CAMPAIGNS;
-  const [selectedId, setSelectedId] = useState(data[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState(campaigns[0]?.id ?? null);
   useEffect(() => {
-    setSelectedId((current) => current || data[0]?.id || null);
-  }, [data]);
-  const selectedCampaign = data.find((campaign) => campaign.id === selectedId) || data[0];
+    setSelectedId((current) => current || campaigns[0]?.id || null);
+  }, [campaigns]);
+  const selectedCampaign = campaigns.find((campaign) => campaign.id === selectedId) || campaigns[0];
   return (
     <section id="exclusive-campaigns" className="mt-4 space-y-3 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between">
@@ -617,10 +615,15 @@ function ExclusiveCampaigns({ session }) {
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       {loading && !campaigns.length ? (
         <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+      ) : campaigns.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No campaigns yet</p>
+          <p className="mt-2 text-xs text-brand-black/40">Campaign assignments will appear here</p>
+        </div>
       ) : (
         <>
           <div className="space-y-3">
-            {data.map((campaign) => (
+            {campaigns.map((campaign) => (
               <article
                 key={campaign.id}
                 className={`rounded-2xl border border-brand-black/10 px-4 py-3 text-sm text-brand-black/80 ${

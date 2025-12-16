@@ -33,17 +33,11 @@ export function Footer() {
   return (
     <footer className="border-t border-brand-black/10 bg-brand-linen/60 text-brand-black">
       <div className="mx-auto flex max-w-6xl flex-col gap-14 px-6 py-14">
-        <div className="flex flex-col gap-6 text-brand-black/80 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-3">
-            <LogoWordmark variant="dark" className="h-8 w-auto" />
-            <p className="font-subtitle text-xs uppercase tracking-[0.3em] text-brand-black/50">
-              Premium console for creators, brands, and culture teams.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 rounded-3xl border border-brand-black/10 bg-brand-white px-5 py-4 text-sm text-brand-black md:flex-row md:items-center md:gap-4">
-            <p className="font-subtitle text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">Stay in the loop</p>
-            <p>ops@thebreak.co · +44 (0)20 1234 5678</p>
-          </div>
+        <div className="flex flex-col items-center gap-3 text-center text-brand-black/80">
+          <LogoWordmark variant="dark" className="h-8 w-auto" />
+          <p className="font-subtitle text-xs uppercase tracking-[0.3em] text-brand-black/50">
+            Premium console for creators, brands, and culture teams.
+          </p>
         </div>
 
         <div className="grid gap-8 text-sm text-brand-black/70 md:grid-cols-4">
@@ -77,7 +71,10 @@ export function Footer() {
           <p className="font-subtitle uppercase tracking-[0.3em]">
             © {new Date().getFullYear()} The Break Co.
           </p>
-          <p>Operating across NYC · Doha · London · Dubai</p>
+          <div className="space-y-1 text-[0.75rem]">
+            <p>Operating across NYC · Doha · London · Dubai</p>
+            <p>Break is a creator management and influencer marketing platform connecting brands with the right creators.</p>
+          </div>
         </div>
       </div>
     </footer>

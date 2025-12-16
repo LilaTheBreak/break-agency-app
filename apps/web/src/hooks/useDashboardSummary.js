@@ -1,45 +1,31 @@
-import { useEffect, useState } from "react";
-import { apiFetch } from "../services/apiClient.js";
+import { useState, useEffect } from "react";
+import { getDashboardStats } from "../services/dashboardClient.js";
 
 export function useDashboardSummary(role) {
   const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(Boolean(role));
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!role) {
-      setSummary(null);
+    // Only fetch for roles that should see the summary
+    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
       setLoading(false);
-      setError("");
       return;
     }
-    let active = true;
-    setLoading(true);
-    setError("");
-    const load = async () => {
+
+    async function fetchData() {
+      setLoading(true);
       try {
-        const response = await apiFetch(`/dashboard/${encodeURIComponent(role)}`);
-        if (!response.ok) {
-          throw new Error("Unable to load dashboard metrics");
-        }
-        const payload = await response.json();
-        if (active) {
-          setSummary(payload);
-        }
+        const stats = await getDashboardStats();
+        setSummary(stats);
       } catch (err) {
-        if (active) {
-          setError(err instanceof Error ? err.message : "Unable to load dashboard metrics");
-        }
+        setError(err.message);
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
-    };
-    load();
-    return () => {
-      active = false;
-    };
+    }
+
+    fetchData();
   }, [role]);
 
   return { summary, loading, error };

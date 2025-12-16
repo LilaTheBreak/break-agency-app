@@ -1,13 +1,30 @@
-import React, { useMemo } from "react";
-import { useAdminActivityFeed } from "../hooks/useAdminActivityFeed.js";
+import React, { useState, useEffect, useMemo } from "react";
+import { getRecentActivity } from "../services/dashboardClient.js";
 
 export function AdminActivityFeed() {
-  const { activities, loading, error } = useAdminActivityFeed({ interval: 8000 });
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function loadActivity() {
+      setLoading(true);
+      try {
+        const data = await getRecentActivity(7);
+        setActivities(data);
+      } catch (err) {
+        setError(err.message || "Failed to load activity");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadActivity();
+  }, []);
 
   const grouped = useMemo(() => {
     const groups = new Map();
     activities.forEach((activity) => {
-      const date = new Date(activity.createdAt).toLocaleDateString();
+      const date = new Date(activity.createdAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       if (!groups.has(date)) groups.set(date, []);
       groups.get(date).push(activity);
     });
@@ -29,33 +46,35 @@ export function AdminActivityFeed() {
         <p className="mt-4 text-sm text-brand-red">{error}</p>
       ) : (
         <div className="mt-4 space-y-5">
-          {grouped.map(([date, entries]) => (
-            <div key={date}>
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{date}</p>
-              <div className="mt-2 space-y-2">
-                {entries.map((entry) => (
-                  <article
-                    key={entry.id}
-                    className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-3 text-sm text-brand-black/80"
-                  >
-                    <p className="font-semibold uppercase tracking-[0.2em] text-brand-black">{entry.event}</p>
-                    <p className="text-xs text-brand-black/60">
-                      {new Date(entry.createdAt).toLocaleTimeString()} · Actor: {entry.actorId || "system"} · IP:{" "}
-                      {entry.ip || "–"}
-                    </p>
-                    {entry.metadata ? (
-                      <pre className="mt-1 text-[0.6rem] text-brand-black/60">
-                        {JSON.stringify(entry.metadata, null, 0)}
-                      </pre>
-                    ) : null}
-                  </article>
-                ))}
+          {loading && !activities.length ? (
+             <p className="text-sm text-brand-black/60">Loading activity...</p>
+          ) : grouped.length > 0 ? (
+            grouped.map(([date, entries]) => (
+              <div key={date}>
+                <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{date}</p>
+                <div className="mt-2 space-y-2">
+                  {entries.map((entry) => (
+                    <article
+                      key={entry.id}
+                      className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-3 text-sm text-brand-black/80"
+                    >
+                      <p className="font-semibold uppercase tracking-[0.2em] text-brand-black">{entry.action}</p>
+                      <p className="text-xs text-brand-black/60">
+                        {new Date(entry.createdAt).toLocaleTimeString()} · Actor: {entry.user?.name || "system"}
+                      </p>
+                      {entry.details && Object.keys(entry.details).length > 0 ? (
+                        <pre className="mt-1 text-[0.6rem] text-brand-black/60">
+                          {JSON.stringify(entry.details)}
+                        </pre>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-          {!grouped.length && !loading ? (
+            ))
+          ) : (
             <p className="text-sm text-brand-black/60">No admin activity yet.</p>
-          ) : null}
+          )}
         </div>
       )}
     </section>

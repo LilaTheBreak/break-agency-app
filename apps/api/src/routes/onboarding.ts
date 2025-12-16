@@ -32,23 +32,32 @@ router.get("/onboarding/me", async (req, res) => {
 router.post("/onboarding/submit", async (req, res) => {
   try {
     const payload = req.body ?? {};
+    const userId = req.user!.id;
 
-    const onboarding = await prisma.userOnboarding.upsert({
-      where: { userId: req.user!.id },
-      update: {
-        status: "REVIEW",
-        questionnaire: payload,
-        completedSteps: payload.completedSteps ?? [],
-        submittedAt: new Date(),
-      },
-      create: {
-        userId: req.user!.id,
-        status: "REVIEW",
-        questionnaire: payload,
-        completedSteps: payload.completedSteps ?? [],
-        submittedAt: new Date(),
-      },
-    });
+    const [onboarding] = await prisma.$transaction([
+      // 1. Create or update the detailed onboarding record
+      prisma.userOnboarding.upsert({
+        where: { userId },
+        update: {
+          status: "REVIEW",
+          questionnaire: payload,
+          completedSteps: payload.completedSteps ?? [],
+          submittedAt: new Date(),
+        },
+        create: {
+          userId,
+          status: "REVIEW",
+          questionnaire: payload,
+          completedSteps: payload.completedSteps ?? [],
+          submittedAt: new Date(),
+        },
+      }),
+      // 2. Mark the user as having completed onboarding
+      prisma.user.update({
+        where: { id: userId },
+        data: { onboardingComplete: true },
+      }),
+    ]);
 
     res.status(201).json({ onboarding });
   } catch (err) {

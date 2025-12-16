@@ -5,9 +5,8 @@ import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 import { AdminAuditTable } from "../components/AdminAuditTable.jsx";
 import { AdminActivityFeed } from "../components/AdminActivityFeed.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
-import { useCampaigns } from "../hooks/useCampaigns.js";
-import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
-import { Roles } from "../auth/session.js";
+import PendingUsersApproval from "../components/admin/PendingUsersApproval.jsx";
+import { useCampaigns } from "../hooks/useCampaigns.js"; // This hook will be wired up later
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
 
@@ -21,8 +20,10 @@ export function AdminDashboard({ session }) {
     <ControlRoomView
       config={CONTROL_ROOM_PRESETS.admin}
       session={activeSession}
+      role={activeSession?.roles?.find((role) => role === "SUPER_ADMIN" || role === "ADMIN")}
       showStatusSummary
     >
+      <PendingUsersApproval />
       <AdminActivityFeed />
       <AdminCampaignsPanel session={activeSession} />
       <AdminAuditTable />
@@ -33,9 +34,8 @@ export function AdminDashboard({ session }) {
 function AdminCampaignsPanel({ session }) {
   const { campaigns, loading, error } = useCampaigns({
     session,
-    userId: session?.roles?.includes(Roles.ADMIN) ? "all" : session?.id
+    userId: session?.roles?.some((role) => role === "ADMIN" || role === "SUPER_ADMIN") ? "all" : session?.id
   });
-  const data = campaigns.length ? campaigns : FALLBACK_CAMPAIGNS;
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -47,9 +47,14 @@ function AdminCampaignsPanel({ session }) {
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       {loading && !campaigns.length ? (
         <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+      ) : campaigns.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No campaigns yet</p>
+          <p className="mt-2 text-xs text-brand-black/40">Campaign data will appear once created</p>
+        </div>
       ) : (
         <div className="mt-4 space-y-4">
-          {data.slice(0, 3).map((campaign) => (
+          {campaigns.slice(0, 3).map((campaign) => (
             <MultiBrandCampaignCard key={campaign.id} campaign={campaign} showNotes={false} />
           ))}
         </div>

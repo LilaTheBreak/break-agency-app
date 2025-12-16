@@ -2,7 +2,7 @@ import { apiFetch } from "./apiClient.js";
 
 export async function fetchUserCampaigns({ session, userId }) {
   const target = userId || session?.id || "me";
-  const response = await apiFetch(`/campaigns/user/${encodeURIComponent(target)}`);
+  const response = await apiFetch(`/api/campaigns/user/${encodeURIComponent(target)}`);
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(text || "Unable to load campaigns");
@@ -11,7 +11,7 @@ export async function fetchUserCampaigns({ session, userId }) {
 }
 
 export async function fetchCampaign({ campaignId }) {
-  const response = await apiFetch(`/campaigns/${encodeURIComponent(campaignId)}`);
+  const response = await apiFetch(`/api/campaigns/${encodeURIComponent(campaignId)}`);
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(text || "Unable to load campaign");

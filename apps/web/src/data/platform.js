@@ -116,15 +116,27 @@ export const brandCampaigns = [
 
 export const questionnaires = [
   {
-    title: "Brand Needs Finder",
-    summary: "Creates a scoped brief, budget rails, and onboarding link.",
-    cta: "Start questionnaire",
-    route: "/brand?questionnaire=needs"
+    title: "Social media strategy",
+    summary: "Refine your voice, cadence, and placement so Break can coordinate every channel and partner moment.",
+    cta: "Explore founder programs",
+    route: "/signup"
   },
   {
-    title: "Creator Readiness Check",
-    summary: "Audits socials, usage rights readiness, and consent.",
-    cta: "Take readiness check",
-    route: "/creator?questionnaire=readiness"
+    title: "Content frameworks & ghost-script support",
+    summary: "Build reusable briefs, captions, and scripts with AI-guided templates and concierge editing.",
+    cta: "Explore founder programs",
+    route: "/signup"
+  },
+  {
+    title: "Positioning & narrative building",
+    summary: "Define the stories, themes, and talking points that attract PR, press, and podcasts.",
+    cta: "Explore founder programs",
+    route: "/signup"
+  },
+  {
+    title: "Monthly content planning & editing",
+    summary: "Monthly content planning, editing guidance, and profile support keep your presence consistent and on message.",
+    cta: "Explore founder programs",
+    route: "/signup"
   }
 ];

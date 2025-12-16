@@ -18,7 +18,6 @@ import { Badge } from "./components/Badge.jsx";
 import { UgcBoard } from "./components/UgcBoard.jsx";
 import { DashboardShell } from "./components/DashboardShell.jsx";
 import { LogoWordmark } from "./components/LogoWordmark.jsx";
-import { resourceItems as RESOURCE_ITEMS, questionnaires as QUESTIONNAIRES } from "./data/platform.js";
 import BrandDashboardLayout, {
   BrandOverviewPage,
   BrandProfilePage,
@@ -60,10 +59,15 @@ import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
 import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
 import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
+import { OpportunitiesAdmin } from "./pages/admin/OpportunitiesAdmin.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
-import { MessagingContext, useMessaging } from "./context/messaging.js";
+import { CreatorPage } from "./pages/CreatorPage.jsx";
+import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
+import SignupPage from "./pages/Signup.jsx";
+import { MessagingContext } from "./context/messaging.js";
 import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
 import { useAuth } from "./context/AuthContext.jsx";
+import { BrandPage } from "./pages/BrandPage.jsx";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -340,27 +344,11 @@ const INITIAL_ALERTS = [
   { id: "alert-task", title: "Task due", detail: "Exclusive Creator owes draft edits at 18:00 GMT.", type: "task", timestamp: NOW - 1000 * 60 * 20 }
 ];
 
-function useCountUp(target, duration = 1400) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let frame;
-    const start = performance.now();
-    const animate = (now) => {
-      const progress = Math.min((now - start) / duration, 1);
-      setValue(Math.floor(progress * target));
-      if (progress < 1) {
-        frame = requestAnimationFrame(animate);
-      }
-    };
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [target, duration]);
-  return value;
-}
-
 function App() {
   const { user: session, loading: authLoading, logout } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [splashVisible, setSplashVisible] = useState(true);
+  const [splashFade, setSplashFade] = useState(false);
   const [threads, setThreads] = useState(INITIAL_THREADS);
   const [alerts, setAlerts] = useState(INITIAL_ALERTS);
   const [connectionStatus, setConnectionStatus] = useState("connected");
@@ -518,8 +506,37 @@ function App() {
     [threadSource, addMessage, sendMessage, markThreadRead, alerts, messagingConnectionStatus, currentActor]
   );
 
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setSplashFade(true), 900);
+    const hideTimer = setTimeout(() => setSplashVisible(false), 1500);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+    };
+  }, []);
+
   return (
     <MessagingContext.Provider value={messagingValue}>
+      {splashVisible && (
+        <div
+          className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
+            splashFade ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-6">
+            <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
+              <img
+                src="/B Logo Mark.png"
+                alt="Break"
+                className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+              />
+            </div>
+            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
+              <div className="h-full w-full animate-pulse bg-white/80" />
+            </div>
+          </div>
+        </div>
+      )}
       <BrowserRouter>
         <AppRoutes
           session={session}
@@ -536,6 +553,7 @@ function App() {
 function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, authLoading }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showGate, setShowGate] = useState(true);
 
   useEffect(() => {
     if (!authLoading && session?.roles?.includes(Roles.ADMIN) && location.pathname === "/") {
@@ -543,8 +561,35 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
     }
   }, [session, authLoading, location.pathname, navigate]);
 
+  const handleGateChoice = (path) => {
+    setShowGate(false);
+    navigate(path);
+  };
+
+  const showGateScreen = showGate && location.pathname === "/";
+
   return (
     <>
+      {showGateScreen && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-white">
+          <div className="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => handleGateChoice("/brand")}
+              className="w-64 rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
+            >
+              I Am A Brand
+            </button>
+            <button
+              type="button"
+              onClick={() => handleGateChoice("/creator")}
+              className="w-64 rounded-full bg-black px-6 py-3 text-sm font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-brand-red"
+            >
+              I Am A Creator
+            </button>
+          </div>
+        </div>
+      )}
       <SiteChrome
         session={session}
         onRequestSignIn={() => setAuthModalOpen(true)}
@@ -553,10 +598,8 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
       <Routes>
         <Route path="/" element={<LandingPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route path="/resource-hub" element={<ResourceHubPage />} />
-        <Route
-          path="/creator"
-          element={<CreatorEntryPage onRequestSignIn={() => setAuthModalOpen(true)} />}
-        />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/creator" element={<CreatorPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route
           path="/onboarding"
           element={
@@ -565,10 +608,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/brand"
-          element={<BrandEntryPage onRequestSignIn={() => setAuthModalOpen(true)} />}
-        />
+        <Route path="/brand" element={<BrandPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route
           path="/dashboard"
           element={
@@ -653,7 +693,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminDashboard session={session} />
@@ -665,7 +705,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminTasksPage />
@@ -677,7 +717,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminCalendarPage />
@@ -689,7 +729,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminActivityPage />
@@ -701,7 +741,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminQueuesPage />
@@ -713,7 +753,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminApprovalsPage session={session} />
@@ -725,7 +765,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminUsersPage />
@@ -737,7 +777,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminUserFeedPage />
@@ -751,6 +791,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               session={session}
               allowed={[
                 Roles.ADMIN,
+                Roles.SUPERADMIN,
                 Roles.AGENT,
                 Roles.BRAND,
                 Roles.CREATOR,
@@ -769,7 +810,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN, Roles.AGENT]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminContractsPage session={session} />
@@ -781,7 +822,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN, Roles.FOUNDER]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.FOUNDER]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminFinancePage session={session} />
@@ -793,10 +834,22 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/opportunities"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <OpportunitiesAdmin />
             </ProtectedRoute>
           }
         />
@@ -805,7 +858,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <BrandDashboardLayout basePath="/admin/view/brand" session={session} />
@@ -819,7 +872,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="opportunities"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
                 <BrandOpportunitiesPage />
               </RoleGate>
             }
@@ -827,7 +880,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="contracts"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
                 <BrandContractsPage />
               </RoleGate>
             }
@@ -841,7 +894,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <ExclusiveTalentDashboardLayout basePath="/admin/view/exclusive" session={session} />
@@ -857,7 +910,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="opportunities"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
                 <ExclusiveOpportunitiesPage />
               </RoleGate>
             }
@@ -866,7 +919,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="contracts"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
                 <ExclusiveContractsPage />
               </RoleGate>
             }
@@ -886,7 +939,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
             element={
               <ProtectedRoute
                 session={session}
-                allowed={[Roles.ADMIN]}
+                allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
                 onRequestSignIn={() => setAuthModalOpen(true)}
               >
                 {element}
@@ -909,17 +962,14 @@ function DashboardRedirect({ session }) {
   if (!session) {
     return <Navigate to="/" replace />;
   }
-  if (session.roles?.includes(Roles.ADMIN) || session.roles?.includes(Roles.TALENT_MANAGER)) {
+  const userRole = session.role;
+  if (userRole === 'ADMIN' || userRole === 'SUPERADMIN' || userRole === 'AGENT') {
     return <Navigate to="/admin/dashboard" replace />;
   }
-  if (session.roles?.includes(Roles.BRAND)) {
+  if (userRole === 'BRAND' || userRole === 'FOUNDER') {
     return <Navigate to="/brand/dashboard" replace />;
   }
-  if (
-    session.roles?.some((role) =>
-      [Roles.EXCLUSIVE_TALENT, Roles.CREATOR, Roles.UGC].includes(role)
-    )
-  ) {
+  if (userRole === 'EXCLUSIVE_TALENT' || userRole === 'CREATOR' || userRole === 'UGC') {
     return <Navigate to="/creator/dashboard" replace />;
   }
   return <Navigate to="/" replace />;
@@ -929,7 +979,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   const location = useLocation();
   const isPublicResource = location.pathname.startsWith("/resource-hub");
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const isAdmin = session?.roles?.includes(Roles.ADMIN);
+  const isAdmin = session?.role === 'ADMIN' || session?.role === 'SUPERADMIN';
   const navigate = useNavigate();
   const navSplitIndex = Math.ceil(NAV_LINKS.length / 2);
   const navLeft = NAV_LINKS.slice(0, navSplitIndex);
@@ -1078,727 +1128,397 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   );
 }
 
+
 function LandingPage({ onRequestSignIn }) {
-  const { addMessage } = useMessaging();
-  const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
-  const [contactStatus, setContactStatus] = useState("");
-  const heroStats = [
+  const heroVideoSrc = "/7260-199191197_small.mp4";
+
+  const clientLogos = [
+    { src: "/logos/amex.png", alt: "AMEX" },
+    { src: "/logos/audemars-piguet.png", alt: "Audemars Piguet" },
+    { src: "/logos/burberry.png", alt: "Burberry" },
+    { src: "/logos/gisou.png", alt: "Gisou" },
+    { src: "/logos/lancome.png", alt: "Lancome" },
+    { src: "/logos/prada.png", alt: "Prada" },
+    { src: "/logos/samsung.png", alt: "Samsung" },
+    { src: "/logos/sky.png", alt: "Sky" },
+    { src: "/logos/sol-de-janeiro.png", alt: "Sol De Janeiro" },
+    { src: "/logos/yves-saint-laurent.png", alt: "Yves Saint Laurent" }
+  ];
+
+  const trustStats = [
     {
-      title: "Creators vetted",
+      label: "Creators vetted",
       detail: "Across 18 markets & diasporas",
       target: 450,
       suffix: "+"
     },
     {
-      title: "Campaigns shipped",
+      label: "Influencer campaigns delivered",
       detail: "Executed in the last 12 months",
       target: 120,
       suffix: "+"
     },
     {
-      title: "Avg. brief turn",
-      detail: "Intake to shortlist",
-      target: 72,
-      suffix: "h"
+      label: "Global execution",
+      detail: "NYC · London · Dubai · Doha",
+      value: "Global"
     }
   ];
 
-  const handleContactSubmit = (event) => {
-    event.preventDefault();
-    if (!contactForm.email || !contactForm.message) {
-      setContactStatus("Please share an email and message.");
-      return;
+  const platformFeatures = [
+    {
+      title: "Creator Discovery & Matching",
+      copy: "Match brands with creators based on audience, performance, and fit."
+    },
+    {
+      title: "Creator Opportunities Hub",
+      copy: "Creators discover and manage brand opportunities in one place."
+    },
+    {
+      title: "Campaign & Brief Management",
+      copy: "Centralised briefs, deliverables, timelines, and approvals."
+    },
+    {
+      title: "Content Review & Approvals",
+      copy: "Approve content, request revisions, and manage delivery without email threads."
+    },
+    {
+      title: "Contracts, Usage & Rights Tracking",
+      copy: "Keep licensing and usage terms clearly documented."
+    },
+    {
+      title: "Payments & Monetisation Tracking",
+      copy: "Track payouts, payment status, and creator earnings."
+    },
+    {
+      title: "Performance & Reporting Dashboards",
+      copy: "Monitor engagement and campaign results."
     }
-    addMessage({
-      subject: `Contact from ${contactForm.name || contactForm.email}`,
-      persona: "External",
-      participants: [contactForm.email],
-      preview: contactForm.message
-    });
-    setContactStatus("Message sent. We'll reply shortly.");
-    setContactForm({ name: "", email: "", message: "" });
-  };
+  ];
 
   return (
-    <div className="bg-brand-linen text-brand-black">
-      <section className="px-6 py-16">
-        <div className="mx-auto max-w-6xl space-y-8 rounded-[48px] bg-brand-white p-10 text-center shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="space-y-4">
-            <p className="font-subtitle text-sm uppercase tracking-[0.4em] text-brand-red">// Break Console</p>
-            <h1 className="font-display text-5xl uppercase leading-tight">
-              <span className="inline-flex h-1 w-12 rounded-full bg-brand-red align-[0.3em]" />
-              <span className="ml-3 align-middle">A modern control room for talent, brands, and culture.</span>
-            </h1>
-            <p className="text-base text-brand-black/70">
-              Break is the premium operating system for creators, managers, and brand leaders. One console manages briefs,
-              AI prep, approvals, and payouts so every launch feels deliberate and fast.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              to="/creator"
-              className="rounded-full border-2 border-brand-black px-8 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
-            >
-              Creators / Talent
-            </Link>
-            <Link
-              to="/brand"
-              className="rounded-full border-2 border-brand-black bg-brand-white px-8 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
-            >
-              Brands & Leaders
-            </Link>
-          </div>
-          <div className="grid gap-6 text-sm text-brand-black/70 md:grid-cols-3 text-center">
-            {heroStats.map((stat) => (
-              <HeroStat key={stat.title} {...stat} />
-            ))}
-          </div>
-        </div>
-      </section>
+    <>
+      <style>
+        {`
+          @keyframes heroTitleSlide {
+            0% {
+              transform: translateY(30px);
+              opacity: 0;
+            }
+            100% {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
 
-      <section id="mission" className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-8 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="space-y-3 text-center">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Why this exists</p>
-            <h2 className="font-display text-5xl uppercase">
-              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">Modern infrastructure for creative economies</span>
-            </h2>
-            <p className="text-brand-black/70">
-              We designed Break so premium creators and growth-minded brands can operate inside one calm, accountable workflow.
-            </p>
+          @keyframes logoMarquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}
+      </style>
+      <div className="bg-[#f6efe7] text-slate-900">
+        <section className="relative overflow-hidden border-b border-[#e6d8ca] bg-gradient-to-b from-[#f6efe7] via-[#f3e6dc] to-[#edded4]">
+          <div className="absolute inset-0">
+            <video
+              className="h-full w-full object-cover opacity-75"
+              src={heroVideoSrc}
+              autoPlay
+              muted
+              loop
+              playsInline
+              aria-hidden="true"
+              style={{ filter: "grayscale(100%) brightness(1.25) contrast(0.8)" }}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-white/55 mix-blend-screen" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f6efe7]/90 via-[#f3e6dc]/80 to-[#edded4]/90 mix-blend-multiply" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent_45%),radial-gradient(circle_at_80%_0%,rgba(255,114,94,0.12),transparent_35%)]" />
           </div>
-          <div className="grid gap-6 text-left md:grid-cols-3">
-            {MISSION_POINTS.map((point) => (
-              <article key={point.title} className="rounded-[32px] border border-brand-black/10 bg-brand-linen/60 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{point.title}</p>
-                <p className="mt-3 text-sm text-brand-black/70">{point.body}</p>
-              </article>
-            ))}
-          </div>
-          <p className="text-center text-xs font-subtitle uppercase tracking-[0.3em] text-brand-black/60">
-            Trusted across hospitality · fintech · retail · culture
-          </p>
-        </div>
-      </section>
-
-      <section id="how-it-works" className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-8 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="space-y-3 text-center">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">How it works</p>
-            <h2 className="font-display text-5xl uppercase">
-              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">Clarity from intake to reporting</span>
-            </h2>
-            <p className="text-brand-black/70">
-              Each program follows the same premium workflow so every stakeholder knows what happens next.
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {HOW_IT_WORKS_STEPS.map((step) => (
-              <article key={step.title} className="rounded-[32px] border border-brand-black/10 bg-brand-linen/60 p-6 text-left shadow-[0_12px_50px_rgba(0,0,0,0.08)]">
-                <h3 className="font-display text-2xl uppercase">{step.title}</h3>
-                <p className="mt-3 text-sm text-brand-black/70">{step.detail}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-10 rounded-[48px] bg-brand-white p-10 text-center shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="space-y-2">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">For creators & talent</p>
-            <h2 className="font-display text-5xl uppercase">
-              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">Two lanes, one premium console</span>
-            </h2>
-            <p className="text-brand-black/70">
-              Select the service that matches your runway. Break handles onboarding, AI prep, negotiation, and finance
-              while you stay focused on the work and the audience.
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {CREATOR_PANELS.map((panel) => (
-              <article
-                key={panel.title}
-                className="rounded-[32px] border border-brand-black/10 bg-brand-white p-6 text-left shadow-[0_12px_50px_rgba(0,0,0,0.08)]"
-              >
-                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{panel.badge}</p>
-                <h3 className="mt-3 font-display text-3xl uppercase">{panel.title}</h3>
-                <ul className="mt-4 space-y-2 text-sm text-brand-black/70">
-                  {panel.bullets.map((item) => (
-                    <li key={item}>• {item}</li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  onClick={onRequestSignIn}
-                  className="mt-6 w-full rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+          <div className="pointer-events-none absolute inset-y-10 right-[-4%] hidden w-1/3 rounded-[32px] bg-gradient-to-b from-white/10 via-white/5 to-transparent blur-[60px] lg:block z-10" />
+          <div className="pointer-events-none absolute left-[-5%] top-8 block h-64 w-64 rounded-[40px] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.3),_rgba(255,255,255,0))] opacity-60 z-10" />
+          <div className="relative z-20 mx-auto flex max-w-6xl flex-col gap-10 px-6 py-20 lg:flex-row lg:items-start">
+            <div className="flex-1 space-y-6">
+              <div className="space-y-4">
+                <p className="text-sm uppercase tracking-[0.45em] text-brand-red">
+                  Operating across NYC · Doha · London · Dubai
+                </p>
+                <h1
+                  className="font-display w-full text-[clamp(5.75rem,9vw,9.5rem)] font-semibold leading-[1.01] tracking-[0.15em] text-slate-900"
+                  style={{ animation: "heroTitleSlide 1.2s ease-out forwards" }}
                 >
-                  {panel.cta}
-                </button>
-              </article>
+                  THE PLATFORM FOR BRANDS AND CREATORS
+                </h1>
+                <p className="max-w-2xl text-sm text-slate-600">
+                  Discover creator opportunities, match brands with the right creators, and run influencer campaigns on a single platform.
+                </p>
+                <p className="max-w-2xl text-sm text-slate-600">
+                  Break combines a powerful creator marketing platform with hands-on execution - so campaigns don't just run, they deliver.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 pt-3 sm:flex-row sm:flex-wrap">
+                <Link
+                  to="/signup"
+                  className="w-full rounded-full border border-slate-300 bg-white px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 transition hover:border-brand-red hover:text-brand-red sm:w-auto"
+                >
+                  Create an account
+                </Link>
+                <Link
+                  to="/creator"
+                  className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 underline-offset-4 hover:text-brand-red"
+                >
+                  Apply as a creator
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      <section className="border-b border-[#e6d8ca] bg-[#fffaf6] text-slate-900">
+        <div className="mx-auto max-w-6xl px-6 py-12">
+          <p className="text-xs uppercase tracking-[0.4em] text-brand-red">
+            Trusted by brands, creators, and global teams running influencer campaigns across fashion, hospitality, fintech, and culture.
+          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {trustStats.map((stat) => (
+              <TrustStatCard key={stat.label} stat={stat} />
             ))}
+          </div>
+          <div className="relative mt-10 overflow-hidden rounded-3xl border border-[#e6d8ca] bg-white/70 px-4 py-5">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white to-transparent" />
+            <div
+              className="flex min-w-[200%] items-center gap-10"
+              style={{ animation: "logoMarquee 28s linear infinite" }}
+            >
+              {[...clientLogos, ...clientLogos].map((client, idx) => (
+                <div key={`${client.alt}-${idx}`} className="flex items-center justify-center opacity-80 transition hover:opacity-100">
+                  <img
+                    src={client.src}
+                    alt={client.alt}
+                    className="h-10 w-auto object-contain"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="solutions" className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-10 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="flex flex-col items-center gap-4 text-center md:flex-row md:justify-between md:text-left">
-            <div>
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Solutions</p>
-              <h2 className="font-display text-5xl uppercase">
-                <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-                <span className="ml-3 align-middle">Everything in one operating layer</span>
-              </h2>
-              <p className="text-sm text-brand-black/70">
-                Marketplace → curated rosters, opportunities board, approvals, payouts. Workflows → structured questionnaires, AI pre-reads,
-                deliverable tracking. Intelligence → case studies, retros, and financial transparency.
+      <section className="border-b border-[#e6d8ca] bg-white text-slate-900">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-[32px] border border-slate-200 bg-[#fffefb] p-8 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Brands & Agencies</p>
+              <h2 className="mt-4 text-3xl font-semibold text-slate-900">Find, match, and run creator campaigns - with execution built in.</h2>
+              <p className="mt-3 text-sm text-slate-600">
+                Break helps brands discover creators, manage campaigns, and rely on expert operational support when needed.
               </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-3">
-              <button
-                type="button"
-                onClick={onRequestSignIn}
-                className="rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
-              >
-                Launch console
-              </button>
+              <ul className="mt-6 space-y-3 text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 h-1 w-1 rounded-full bg-slate-400" />
+                  <span>Matching and discovery powered by a creator platform that knows your audience.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 h-1 w-1 rounded-full bg-slate-400" />
+                  <span>Control and visibility across briefs, approvals, and budgets.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 h-1 w-1 rounded-full bg-slate-400" />
+                  <span>Delivery and optimisation backed by Break's operations team.</span>
+                </li>
+              </ul>
               <Link
-                to="/resource-hub"
-                className="rounded-full border border-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black"
+                to="/brand"
+                className="mt-6 inline-flex rounded-full border border-slate-900 px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 transition hover:border-brand-red hover:text-brand-red"
               >
-                Resource hub
+                Create a brand account
+              </Link>
+            </div>
+            <div className="rounded-[32px] border border-slate-200 bg-[#fdfbf8] p-8 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Creators</p>
+              <h2 className="mt-4 text-3xl font-semibold text-slate-900">Discover brand opportunities - backed by real operations.</h2>
+              <p className="mt-3 text-sm text-slate-600">
+                Break gives creators access to paid opportunities and long-term partnerships, with clear deals and structured delivery.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-slate-600">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 h-1 w-1 rounded-full bg-slate-400" />
+                  <span>Opportunity discovery curated through a creator management software lens.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 h-1 w-1 rounded-full bg-slate-400" />
+                  <span>Deal clarity with rates, timelines, and usage in one view.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1 h-1 w-1 rounded-full bg-slate-400" />
+                  <span>Smooth delivery and payouts with execution support on standby.</span>
+                </li>
+              </ul>
+              <Link
+                to="/creator"
+                className="mt-6 inline-flex rounded-full border border-slate-900 px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 transition hover:border-brand-red hover:text-brand-red"
+              >
+                Apply as a creator
               </Link>
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {RESOURCE_PANELS.map((panel) => (
-              <article key={panel.title} className="rounded-[24px] bg-brand-linen/70 p-6 text-left shadow-inner">
-                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">///</p>
-                <h3 className="mt-2 font-display text-2xl uppercase">{panel.title}</h3>
-                <p className="mt-2 text-sm text-brand-black/70">{panel.description}</p>
-              </article>
-            ))}
-          </div>
         </div>
       </section>
 
-      <section className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-6">
-          <div className="text-center">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Questionnaires</p>
-            <h2 className="font-display text-5xl uppercase">
-              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">Intake first, matchmaking next</span>
-            </h2>
-            <p className="text-brand-black/70">
-              Whether you're a creator or a brand, you begin inside the same structured intake. It keeps expectations clear and our team able to move at speed.
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {QUESTIONNAIRES.map((form) => (
-              <article
-                key={form.title}
-                className="rounded-[32px] border border-brand-black/10 bg-brand-white p-6 text-left shadow-[0_12px_50px_rgba(0,0,0,0.08)]"
+      <section className="border-b border-[#e6d8ca] bg-[#fffaf6] text-slate-900">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Why Break</p>
+          <h2 className="mt-3 text-3xl font-semibold text-slate-900">Software-first. Execution-backed.</h2>
+          <p className="mt-3 max-w-2xl text-sm text-slate-600">
+            Break is built for teams who want the efficiency of an influencer marketing platform and the reliability of a creator marketing agency.
+          </p>
+          <ul className="mt-8 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+            {[
+              "Platform-driven discovery and workflows",
+              "Agency-led campaign operations",
+              "Clear ownership across briefs, approvals, and delivery",
+              "Fewer handoffs, fewer mistakes, better outcomes"
+            ].map((item) => (
+              <li
+                key={item}
+                className="rounded-3xl border border-slate-200 bg-white/90 px-4 py-3"
               >
-                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Questionnaire</p>
-                <h3 className="mt-2 font-display text-xl uppercase tracking-[0.25em]">{form.title}</h3>
-                <p className="mt-2 text-sm text-brand-black/70">{form.summary}</p>
-                <Link
-                  to={form.route}
-                  className="mt-4 inline-flex text-xs font-semibold uppercase tracking-[0.35em] text-brand-red"
-                >
-                  {form.cta} →
-                </Link>
-              </article>
+                {item}
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      <section className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-8 rounded-[48px] bg-brand-white p-10 text-center shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="space-y-2">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Case studies</p>
-            <h2 className="font-display text-5xl uppercase">
-              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">Proof across industries</span>
-            </h2>
-            <p className="text-sm text-brand-black/70">
-              Browse a snapshot of the brands and sectors we support, from hospitality and fintech to lifestyle and retail.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {CASE_STUDIES.map((study) => (
-              <article key={study.title} className="rounded-[24px] border border-brand-black/10 bg-brand-linen/70 p-5 text-left">
-                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{study.label}</p>
-                <h3 className="mt-2 text-lg font-semibold text-brand-black">{study.title}</h3>
-                <p className="mt-2 text-sm text-brand-black/70">{study.meta}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-10 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="text-center">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Pricing preview</p>
-            <h2 className="font-display text-5xl uppercase">
-              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">Engagements built around outcomes</span>
-            </h2>
-            <p className="text-sm text-brand-black/70">
-              Every scope receives a custom proposal. Here is how typical partners engage with Break.
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {PRICING_PREVIEW.map((plan) => (
-              <article key={plan.title} className="rounded-[32px] border border-brand-black/10 bg-brand-linen/70 p-6 text-left shadow-[0_12px_50px_rgba(0,0,0,0.08)]">
-                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{plan.title}</p>
-                <p className="mt-2 text-lg font-semibold text-brand-black">{plan.price}</p>
-                <p className="mt-3 text-sm text-brand-black/70">{plan.detail}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-4 rounded-[48px] bg-brand-red p-12 text-center text-brand-white shadow-[0_25px_90px_rgba(0,0,0,0.15)]">
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em]">The Break Co.</p>
-          <h2 className="font-display text-5xl uppercase">Ready to build what's next</h2>
-          <p className="text-brand-white/80">
-            Secure access to the dashboard to view briefs, submit to the Opportunities board, or open a brand request. White-glove onboarding in under three days.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={onRequestSignIn}
-              className="rounded-full bg-brand-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black"
-            >
-              Launch console
-            </button>
-            <Link
-              to="/resource-hub"
-              className="rounded-full border border-brand-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
-            >
-              Resource hub
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl space-y-6 rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="text-center">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">FAQs</p>
-            <h2 className="font-display text-5xl uppercase">
-              <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-              <span className="ml-3 align-middle">Clarity before you log in</span>
-            </h2>
-          </div>
-          <div className="space-y-4">
-            {FAQS.map((item) => (
-              <article key={item.question} className="rounded-[24px] border border-brand-black/10 bg-brand-linen/60 p-6 text-left shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
-                <h3 className="font-subtitle text-sm uppercase tracking-[0.35em] text-brand-red">{item.question}</h3>
-                <p className="mt-3 text-sm text-brand-black/70">{item.answer}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="contact" className="px-6 pb-16">
-        <div className="mx-auto max-w-6xl rounded-[48px] bg-brand-white p-10 shadow-[0_25px_90px_rgba(0,0,0,0.08)]">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div>
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Explore</p>
-              <ul className="mt-4 space-y-2 text-sm text-brand-black/70">
-                <li>Resource Hub</li>
-                <li>Creator Console</li>
-                <li>Brand Portal</li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Company</p>
-              <ul className="mt-4 space-y-2 text-sm text-brand-black/70">
-                <li>Case Studies</li>
-                <li>Careers</li>
-                <li>Press</li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Legal</p>
-              <ul className="mt-4 space-y-2 text-sm text-brand-black/70">
-                <li>Privacy Policy</li>
-                <li>Terms</li>
-                <li>Cookies</li>
-              </ul>
-            </div>
-            <div className="space-y-4 text-left">
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Contact</p>
-              <p className="text-sm text-brand-black/70">
-                Have a briefing, a deck, or a wild idea? Drop us a line and we'll get back within two business days.
-              </p>
-              <form className="space-y-3" onSubmit={handleContactSubmit}>
-                <input
-                  type="text"
-                  placeholder="Name"
-                  className="w-full rounded-full border border-brand-black/10 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-                  value={contactForm.name}
-                  onChange={(e) => {
-                    setContactStatus("");
-                    setContactForm((prev) => ({ ...prev, name: e.target.value }));
-                  }}
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="w-full rounded-full border border-brand-black/10 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-                  value={contactForm.email}
-                  onChange={(e) => {
-                    setContactStatus("");
-                    setContactForm((prev) => ({ ...prev, email: e.target.value }));
-                  }}
-                />
-                <textarea
-                  placeholder="Tell us what you need"
-                  rows={3}
-                  className="w-full rounded-3xl border border-brand-black/10 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-                  value={contactForm.message}
-                  onChange={(e) => {
-                    setContactStatus("");
-                    setContactForm((prev) => ({ ...prev, message: e.target.value }));
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="w-full rounded-full bg-brand-black px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
-                >
-                  Send message
-                </button>
-                {contactStatus ? (
-                  <p className="text-xs uppercase tracking-[0.3em] text-brand-red">{contactStatus}</p>
-                ) : null}
-              </form>
-            </div>
-          </div>
-          <p className="mt-8 text-center text-xs uppercase tracking-[0.35em] text-brand-black/60">
-            © {new Date().getFullYear()} The Break Co. — Creating legacies since 2024.
-          </p>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ResourceHubPage() {
-  const categories = useMemo(() => {
-    const map = new Map();
-    for (const item of RESOURCE_ITEMS) {
-      if (!map.has(item.category)) map.set(item.category, []);
-      map.get(item.category).push(item);
-    }
-    return Array.from(map.entries());
-  }, []);
-
-  return (
-    <div className="bg-brand-ivory text-brand-black">
-      <section className="border-b border-brand-black/10 bg-brand-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-4">
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Resource hub</p>
-          <h1 className="font-display text-5xl uppercase">Public intel, no login required.</h1>
-          <p className="text-brand-black/70">
-            Articles, templates, digital products, and webinars curated for both sides of the
-            marketplace. Spellcheck and QA baked into every onboarding doc.
-          </p>
-        </div>
-      </section>
-      <section className="mx-auto max-w-6xl px-6 py-12 space-y-10">
-        {categories.map(([category, items]) => (
-          <div key={category} className="space-y-4">
-            <div className="flex items-center justify-between border-b border-brand-black/10 pb-2">
-              <h2 className="font-display text-4xl uppercase">{category}</h2>
-              <span className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Public</span>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {items.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-3xl border border-brand-black/10 bg-brand-white p-5 shadow-brand"
-                >
-                  <div className="flex items-center justify-between text-xs text-brand-black/60">
-                    <span>{item.type}</span>
-                    <span>{item.audience}</span>
-                  </div>
-                  <h3 className="mt-3 text-lg font-semibold text-brand-black">{item.title}</h3>
-                  <p className="mt-2 text-sm text-brand-black/70">{item.description}</p>
-                  <button className="mt-4 text-xs font-semibold uppercase tracking-[0.35em] text-brand-red">
-                    {item.cta} →
-                  </button>
-                </article>
-              ))}
-            </div>
-          </div>
-        ))}
-      </section>
-    </div>
-  );
-}
-
-function CreatorEntryPage({ onRequestSignIn }) {
-  return (
-    <div className="bg-brand-ivory text-brand-black">
-      <section className="border-b border-brand-black/10 bg-brand-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-4 text-center">
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator pathway</p>
-          <h1 className="font-display text-5xl uppercase">
-            <span className="inline-flex h-1 w-10 rounded-full bg-brand-red align-[0.35em]" />
-            <span className="ml-3 align-middle">Explore opportunities, create your profile, join campaigns.</span>
-          </h1>
-          <p className="text-brand-black/70">
-            Visitors can browse the opportunities board. Applying requires a Break profile and
-            consent-backed onboarding. Approved creators unlock dashboards, AI co-pilots, and revenue
-            tools.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={onRequestSignIn}
-              className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-red/90"
-            >
-              Create profile
-            </button>
-            <a
-              href="#opportunities-board"
-              className="rounded-full border border-brand-black/20 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
-            >
-              Browse opportunities
-            </a>
-          </div>
-        </div>
-      </section>
-      <section id="opportunities-board" className="mx-auto max-w-6xl px-6 py-12 space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-4xl uppercase">Opportunities board</h2>
-          <Badge>Visible to all · Apply requires login</Badge>
-        </div>
-        <UgcBoard canApply={false} />
-      </section>
-      <section className="border-t border-brand-black/10 bg-brand-linen">
-        <div className="mx-auto grid max-w-6xl gap-6 px-6 py-12 md:grid-cols-2">
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-brand">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Onboarding</p>
-            <h3 className="mt-3 text-lg font-semibold text-brand-black">Profile creation</h3>
-            <ul className="mt-4 space-y-2 text-sm text-brand-black/70">
-              <li>• Personal info, social handles, performance screenshots.</li>
-              <li>• Rates, exclusivity preferences, usage rights consent.</li>
-              <li>• Optional vetting (portfolio review + reference check).</li>
-              <li>• Spellchecked outputs automatically.</li>
-            </ul>
-          </div>
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-brand">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Dashboard unlocks</p>
-            <ul className="mt-4 space-y-2 text-sm text-brand-black/70">
-              <li>• Performance & metrics (platform APIs).</li>
-              <li>• AI agent for deals, reminders, rate guidance.</li>
-              <li>• Content calendar, tasks, and files.</li>
-              <li>• Opportunities board with autofill + priority briefs.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-      <section className="border-t border-brand-black/10 bg-brand-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
-          <h3 className="font-display text-3xl uppercase">Questionnaire preview</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
-              Revenue target
-              <input
-                type="number"
-                placeholder="£120000"
-                className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
-              />
-            </label>
-            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
-              Affiliate linking
-              <select className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none">
-                <option>Yes</option>
-                <option>No</option>
-                <option>Open to it</option>
-              </select>
-            </label>
-          </div>
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Platforms</p>
-            <div className="mt-2 flex flex-wrap gap-2 text-sm text-brand-black/80">
-              {["Instagram", "TikTok", "YouTube", "Newsletter", "Pinterest"].map((platform) => (
-                <span key={platform} className="rounded-full border border-brand-black/20 px-3 py-1 text-xs uppercase tracking-[0.3em]">
-                  {platform}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Gaps analysis</p>
-              <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
-                <li>• Missing affiliate integrations.</li>
-                <li>• Add finance case studies to media kit.</li>
-                <li>• Post cadence dips on weekends.</li>
-              </ul>
-            </div>
-            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Quick wins</p>
-              <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
-                <li>• Enable auto-invoice for opportunities board submissions.</li>
-                <li>• Refresh travel pitch template with luxury-inclusivity proof points.</li>
-                <li>• Publish one long-form video per month.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function BrandEntryPage({ onRequestSignIn }) {
-  return (
-    <div className="bg-brand-ivory text-brand-black">
-      <section className="border-b border-brand-black/10 bg-brand-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-4 text-center">
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Brand pathway</p>
-          <h1 className="font-display text-5xl uppercase">
-            Campaign creation, creator match, contracts, reporting.
-          </h1>
-          <p className="text-brand-black/70">
-            Brands can browse public case studies, complete the needs questionnaire, and then unlock
-            the dashboard to manage campaigns. Opportunities board stays creator-side only.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={onRequestSignIn}
-              className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-red/90"
-            >
-              Create brand profile
-            </button>
-            <Link
-              to="/resource-hub"
-              className="rounded-full border border-brand-black/20 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
-            >
-              Review case studies
-            </Link>
-          </div>
-        </div>
-      </section>
-      <section className="mx-auto max-w-6xl px-6 py-12 space-y-4">
-        <h2 className="font-display text-4xl uppercase">Brand dashboard navigation</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {["Dashboard", "Campaigns", "Creator Match", "Reports", "Messages", "Account"].map(
-            (item) => (
-              <div key={item} className="rounded-3xl border border-brand-black/10 bg-brand-white p-5 shadow-brand">
-                <p className="text-sm font-semibold text-brand-black">{item}</p>
-                <p className="mt-2 text-xs text-brand-black/70">
-                  {item === "Campaigns"
-                    ? "Plan, brief, and track campaigns end-to-end."
-                    : item === "Creator Match"
-                    ? "AI-assisted recommendations with shortlist exports."
-                    : item === "Reports"
-                    ? "Reach, engagement, conversions, spend."
-                    : item === "Messages"
-                    ? "Threaded comms + files with creators."
-                    : item === "Account"
-                    ? "Billing, permissions, notification policies."
-                    : "Pulse of briefs, alerts, and upcoming milestones."}
-                </p>
+      <section className="border-b border-[#e6d8ca] bg-white text-slate-900">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Platform tools & features</p>
+          <h2 className="mt-3 text-3xl font-semibold text-slate-900">Everything you need to run creator campaigns</h2>
+          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {platformFeatures.map((feature) => (
+              <div key={feature.title} className="space-y-3 rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-900">{feature.title}</h3>
+                <p className="text-sm text-slate-600">{feature.copy}</p>
               </div>
-            )
-          )}
-        </div>
-      </section>
-      <section className="border-t border-brand-black/10 bg-brand-black text-brand-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-4">
-          <h3 className="font-display text-4xl uppercase">Brand Needs Questionnaire</h3>
-          <p className="text-brand-white/70">
-            Qualifies scope, budget, and readiness; prompts profile creation to proceed. Campaign
-            creation stays brand-only, opportunities routing happens automatically to approved creators.
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-slate-500">
+            Supported by Break's operations team when required.
           </p>
-          <button
-            type="button"
-            onClick={onRequestSignIn}
-            className="rounded-full bg-brand-red px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white hover:bg-brand-red/90"
-          >
-            Launch questionnaire
-          </button>
         </div>
       </section>
-      <section className="border-t border-brand-black/10 bg-brand-white">
-        <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
-          <h3 className="font-display text-3xl uppercase">Onboarding preview</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
-              Account details
-              <input
-                placeholder="Brand legal name"
-                className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
-              />
-            </label>
-            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
-              Bank details (IBAN / ACH)
-              <input
-                placeholder="GB00 BUKB 1234 5678"
-                className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
-              />
-            </label>
+
+      <section className="border-b border-[#e6d8ca] bg-[#fffdf9] text-slate-900">
+        <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-16 md:flex-row md:items-center">
+          <div className="flex-1 space-y-4">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Case studies</p>
+            <h2 className="text-3xl font-semibold">Creator campaigns, run properly.</h2>
+            <p className="text-sm text-slate-600">
+              These campaigns show how Break combines technology and operations to run creator partnerships at scale.
+            </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
-              Retainer type
-              <select className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none">
-                <option>3-month retainer (default)</option>
-                <option>6-month retainer</option>
-                <option>12-month retainer</option>
-              </select>
-            </label>
-            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Talent application</p>
-              <p className="mt-2 text-sm text-brand-black/70">
-                Only 12 spaces per year. Brands apply, creators self-identify — we never rewrite how talent describes themselves.
-              </p>
-              <button className="mt-4 w-full rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]">
-                Submit info
-              </button>
-            </div>
+          <div className="flex flex-1 gap-4">
+            <CaseStudy
+              title="White-label hospitality brand for GCC luxury stays"
+              subtitle="41 briefs · 10 hero edits · 18 days · Break owned ops, payments, and investor-ready launch."
+              tag="Hospitality"
+            />
+            <CaseStudy
+              title="AI finance creator brand, multi-market rollout"
+              subtitle="7 creators · £320 CPA · 4-country bookings · Break matched talent, structured monetisation, and kept the rollout funded."
+              tag="Fintech"
+            />
           </div>
+        </div>
+      </section>
+
+      <section className="bg-[#1c1a17] text-white">
+        <div className="mx-auto max-w-4xl px-6 py-16 text-center space-y-6">
+          <h2 className="text-3xl font-semibold">Ready to find the right partnership?</h2>
+          <p className="text-sm text-white/70">
+            Create an account to start discovering creators, finding brand opportunities, and running campaigns — with platform clarity and execution support.
+          </p>
+          <Link
+            to="/signup"
+            className="inline-flex rounded-full border border-white/40 px-8 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-white transition hover:bg-white/10"
+          >
+            Create an account
+          </Link>
+          <p className="text-[0.8rem] uppercase tracking-[0.35em] text-white/60">
+            We'll guide you to the right setup - brand or creator.
+          </p>
         </div>
       </section>
     </div>
+  </>
   );
 }
 
 export default App;
 
-function HeroStat({ target, suffix, title, detail }) {
-  const value = useCountUp(target);
+function useAnimatedCount(target, duration = 1400) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!target) {
+      setValue(0);
+      return undefined;
+    }
+
+    let frameId;
+    let start;
+
+    const step = (timestamp) => {
+      if (!start) {
+        start = timestamp;
+      }
+
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const nextValue = Math.round(progress * target);
+      setValue(nextValue);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step);
+      }
+    };
+
+    frameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [target, duration]);
+
+  return value;
+}
+
+function TrustStatCard({ stat }) {
+  const count = stat.value ? null : useAnimatedCount(stat.target);
+  const displayValue = stat.value ?? `${count}${stat.suffix || ""}`;
+
   return (
-    <div className="space-y-2 text-center">
-      <div className="flex justify-center">
-        <span className="inline-block h-1 w-10 rounded-full bg-brand-red" />
+    <div className="rounded-3xl border border-slate-200 bg-white/90 p-6 text-slate-900 shadow-sm">
+      <p className="text-4xl font-semibold text-slate-900">{displayValue}</p>
+      <p className="mt-2 text-[0.6rem] uppercase tracking-[0.4em] text-slate-400">{stat.label}</p>
+      <p className="mt-1 text-sm text-slate-500">{stat.detail}</p>
+    </div>
+  );
+}
+
+function CaseStudy({ title, subtitle, tag }) {
+  return (
+    <div className="flex-1 rounded-3xl border border-slate-200 bg-white/90 p-6 text-slate-900 shadow-sm">
+      <div className="mb-4 flex items-center justify-between text-[0.6rem] uppercase tracking-[0.4em] text-slate-400">
+        <span className="rounded-full border border-slate-300 px-2 py-1">DATA</span>
+        <span className="h-2 w-10 rounded-full border border-slate-300 bg-slate-100" />
       </div>
-      <p className="font-display text-4xl uppercase text-brand-black">
-        {value}
-        {suffix}
-      </p>
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-black">
-        {title}
-      </p>
-      <p className="text-xs text-brand-red/80">{detail}</p>
+      <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{tag}</p>
+      <h3 className="mt-2 text-lg font-semibold">{title}</h3>
+      <p className="mt-2 text-sm text-slate-600">{subtitle}</p>
+      <div className="mt-4 flex items-center justify-between text-[0.6rem] text-slate-500">
+        <span>Operations</span>
+        <span className="h-1 w-16 rounded-full bg-brand-red/60" />
+        <span>Investor-ready</span>
+      </div>
     </div>
   );
 }

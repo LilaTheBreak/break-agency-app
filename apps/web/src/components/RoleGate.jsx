@@ -2,16 +2,15 @@ import React from "react";
 import { NoAccessCard } from "./NoAccessCard.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
-export function RoleGate({ session: providedSession, allowed = [], description, children }) {
+export function RoleGate({ allowed = [], description, children }) {
   const { user, loading } = useAuth();
-  const session = providedSession ?? user;
 
-  if (loading && !session) {
+  if (loading && !user) {
     return (
       <NoAccessCard description="Checking your access…" />
     );
   }
-  if (!session) {
+  if (!user) {
     return (
       <NoAccessCard
         title="Sign in required"
@@ -20,7 +19,8 @@ export function RoleGate({ session: providedSession, allowed = [], description, 
     );
   }
   if (!allowed?.length) return children;
-  const canAccess = session.roles?.some((role) => allowed.includes(role));
+  const userRole = user.role;
+  const canAccess = allowed.includes(userRole);
   if (!canAccess) {
     return <NoAccessCard description={description || "You do not have access to this module."} />;
   }

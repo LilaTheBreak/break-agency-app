@@ -96,19 +96,32 @@ export function DashboardShell({
         ) : (
           <div className="flex flex-wrap gap-2">
             {(navigation || []).map((item) => {
-              if (item && typeof item === "object" && item.anchor) {
-                const isActive = hash === item.anchor || (!hash && item.default);
-                return (
-                  <a
-                    key={item.anchor}
-                    href={item.anchor}
-                    className={`rounded-full border px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em] ${
-                      isActive ? "border-brand-red bg-brand-red text-brand-white" : "border-brand-black/20 hover:bg-brand-black/5"
-                    }`}
-                  >
-                    {item.label}
-                  </a>
-                );
+              if (item && typeof item === "object") {
+                if (item.to) {
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="rounded-full border px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em] border-brand-black/20 hover:bg-brand-black/5"
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                }
+                if (item.anchor) {
+                  const isActive = hash === item.anchor || (!hash && item.default);
+                  return (
+                    <a
+                      key={item.anchor}
+                      href={item.anchor}
+                      className={`rounded-full border px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em] ${
+                        isActive ? "border-brand-red bg-brand-red text-brand-white" : "border-brand-black/20 hover:bg-brand-black/5"
+                      }`}
+                    >
+                      {item.label}
+                    </a>
+                  );
+                }
               }
               return (
                 <span

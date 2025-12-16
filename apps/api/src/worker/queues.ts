@@ -28,3 +28,5 @@ export const signatureQueue = createSafeQueue("signatureQueue");
 export const assetGenerationQueue = createSafeQueue("assetGenerationQueue");
 export const creativeConceptQueue = createSafeQueue("creativeConceptQueue");
 export const storyboardQueue = createSafeQueue("storyboardQueue");
+export const hashtagQueue = createSafeQueue("hashtagQueue");
+export const postingSchedulerQueue = createSafeQueue("postingSchedulerQueue");

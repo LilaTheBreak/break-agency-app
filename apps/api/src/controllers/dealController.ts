@@ -1,0 +1,110 @@
+import type { Request, Response, NextFunction } from "express";
+import { z } from "zod";
+import { DealStage } from "@prisma/client";
+import * as dealService from "../services/deals/dealService";
+import * as dealWorkflowService from "../services/deals/dealWorkflowService";
+
+const DealCreateSchema = z.object({
+  talentId: z.string().cuid(),
+  brandName: z.string().min(1),
+  value: z.number().positive().optional(),
+  brief: z.string().optional()
+});
+
+export async function createDeal(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = DealCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+    }
+    const deal = await dealService.createDeal(req.user!.id, parsed.data);
+    res.status(201).json(deal);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listDeals(req: Request, res: Response, next: NextFunction) {
+  try {
+    const deals = await dealService.listDealsForUser(req.user!.id);
+    res.json(deals);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getDeal(req: Request, res: Response, next: NextFunction) {
+  try {
+    const deal = await dealService.getDealById(req.params.id, req.user!.id);
+    if (!deal) {
+      return res.status(404).json({ error: "Deal not found" });
+    }
+    res.json(deal);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const DealUpdateSchema = z.object({
+  stage: z.nativeEnum(DealStage).optional(),
+  value: z.number().positive().optional(),
+  notes: z.string().optional(),
+  talentId: z.string().cuid().optional(),
+  contractId: z.string().optional(),
+  expectedClose: z.string().datetime().optional()
+});
+
+export async function updateDeal(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = DealUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+    }
+    const deal = await dealService.updateDeal(req.params.id, req.user!.id, parsed.data);
+    if (!deal) {
+      return res.status(404).json({ error: "Deal not found or insufficient permissions" });
+    }
+    res.json(deal);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteDeal(req: Request, res: Response, next: NextFunction) {
+  try {
+    const success = await dealService.deleteDeal(req.params.id, req.user!.id);
+    if (!success) {
+      return res.status(404).json({ error: "Deal not found or insufficient permissions" });
+    }
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+const StageChangeSchema = z.object({
+  stage: z.nativeEnum(DealStage)
+});
+
+export async function changeDealStage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = StageChangeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid stage provided", details: parsed.error.flatten() });
+    }
+
+    const result = await dealWorkflowService.changeStage(
+      req.params.id,
+      parsed.data.stage,
+      req.user!.id
+    );
+
+    if (!result.success) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    res.json(result.deal);
+  } catch (error) {
+    next(error);
+  }
+}

@@ -1,23 +1,18 @@
 import { Router } from "express";
-import prisma from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth";
+import * as strategyController from "../controllers/strategyController";
 
 const router = Router();
 
-router.get("/predictions", requireAuth, async (req, res) => {
-  const preds = await prisma.brandCampaignPrediction.findMany({
-    where: { userId: req.user!.id },
-    orderBy: { likelihood: "desc" }
-  });
-  res.json({ predictions: preds });
-});
+// Middleware for authentication
+router.use(requireAuth);
 
-router.get("/clusters", requireAuth, async (req, res) => {
-  const clusters = await prisma.opportunityCluster.findMany({
-    where: { userId: req.user!.id },
-    orderBy: { score: "desc" }
-  });
-  res.json({ clusters });
-});
+// POST /api/strategy/campaign-plan - Generate a full campaign plan from a brief
+router.post("/campaign-plan", strategyController.generateCampaignPlan);
+
+// POST /api/strategy/creator-fit - Compute the fit score between a talent and a brand
+router.post("/creator-fit", strategyController.computeCreatorFit);
+
+// Other strategy routes (e.g., /generate, /audience-analysis) would be added here.
 
 export default router;

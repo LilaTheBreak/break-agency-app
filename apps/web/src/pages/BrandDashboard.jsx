@@ -9,7 +9,6 @@ import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
-import { FALLBACK_CAMPAIGNS } from "../data/campaignsFallback.js";
 import { Roles } from "../auth/session.js";
 
 const CREATOR_ROSTER = [
@@ -212,79 +211,10 @@ function BrandOverviewSection({ session }) {
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Analytics + reporting</p>
             <h4 className="font-display text-2xl uppercase">Signal pulse</h4>
           </div>
-          <button className="rounded-full border border-brand-black px-4 py-1 text-[0.65rem] uppercase tracking-[0.3em]">
-            Export report
-          </button>
         </div>
-        <div className="grid gap-3 md:grid-cols-4">
-          {ANALYTICS_METRICS.map((metric) => (
-            <article key={metric.label} className="rounded-2xl border border-brand-black/10 bg-white/80 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{metric.label}</p>
-              <p className="font-display text-2xl uppercase text-brand-black">{metric.value}</p>
-              <p className="text-xs text-brand-black/60">{metric.context}</p>
-              <p className="text-xs text-brand-red">{metric.delta}</p>
-            </article>
-          ))}
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {ANALYTICS_SIGNALS.map((signal) => (
-            <article key={signal.label} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{signal.label}</p>
-              <p className="font-display text-xl uppercase text-brand-black">{signal.value}</p>
-              <p className="text-xs text-brand-black/60">{signal.context}</p>
-            </article>
-          ))}
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-white/80 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Efficiency per pod</p>
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-left text-sm text-brand-black/80">
-              <thead>
-                <tr className="text-xs uppercase tracking-[0.3em] text-brand-black/50">
-                  <th className="py-2">Pod</th>
-                  <th className="py-2">Efficiency</th>
-                  <th className="py-2">Cycle time</th>
-                  <th className="py-2">Utilization</th>
-                </tr>
-              </thead>
-              <tbody>
-                {POD_EFFICIENCY.map((pod) => (
-                  <tr key={pod.pod} className="border-t border-brand-black/10">
-                    <td className="py-2 font-semibold text-brand-black">{pod.pod}</td>
-                    <td className="py-2">{pod.efficiency}</td>
-                    <td className="py-2">{pod.cycle}</td>
-                    <td className="py-2">{pod.utilization}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">AI assistant</p>
-              <h4 className="font-display text-2xl uppercase">Automation desk</h4>
-            </div>
-            <button className="rounded-full border border-brand-black px-4 py-1 text-[0.65rem] uppercase tracking-[0.3em]">
-              Open workspace
-            </button>
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {AI_AUTOMATIONS.map((block) => (
-              <article
-                key={block.label}
-                className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm text-brand-black/80"
-              >
-                <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{block.label}</p>
-                <ul className="mt-2 space-y-1">
-                  {block.items.map((item) => (
-                    <li key={item}>• {item}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">Analytics not yet available</p>
+          <p className="mt-2 text-xs text-brand-black/40">Reach, engagement, revenue and efficiency metrics will appear once campaigns are live</p>
         </div>
       </div>
     </section>
@@ -422,17 +352,16 @@ const FINANCIAL_PROFILES = {
 
 function BrandCampaignSection({ session }) {
   const { campaigns, loading, error } = useCampaigns({ session });
-  const data = campaigns.length ? campaigns : FALLBACK_CAMPAIGNS;
   const [notes, setNotes] = useState({});
   useEffect(() => {
     setNotes((prev) => {
       const next = {};
-      data.forEach((campaign) => {
+      campaigns.forEach((campaign) => {
         next[campaign.id] = prev[campaign.id] ?? campaign.metadata?.notes ?? "";
       });
       return next;
     });
-  }, [data]);
+  }, [campaigns]);
   return (
     <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -447,9 +376,14 @@ function BrandCampaignSection({ session }) {
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       {loading && !campaigns.length ? (
         <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+      ) : campaigns.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No campaigns yet</p>
+          <p className="mt-2 text-xs text-brand-black/40">Campaign data will appear once created</p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {data.map((campaign) => (
+          {campaigns.map((campaign) => (
             <MultiBrandCampaignCard
               key={campaign.id}
               campaign={campaign}

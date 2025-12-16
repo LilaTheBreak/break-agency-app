@@ -1,16 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { ContactAutocomplete } from "../components/ContactAutocomplete.jsx";
 import { FileUploadPanel } from "../components/FileUploadPanel.jsx";
-
-const createId = () => {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
+import { getPendingApprovals } from "../services/dashboardClient.js";
 
 const CONTACT_BOOK = [
   "brand@notion.com",
@@ -21,47 +15,28 @@ const CONTACT_BOOK = [
   "lila@thebreakco.com"
 ];
 
-const INITIAL_APPROVALS = [
-  {
-    id: createId(),
-    title: "Creator residency NYC",
-    type: "Contract",
-    submittedBy: "brand@notion.com",
-    status: "Needs approval",
-    owner: "Mo Al Ghazi",
-    contact: "brand@notion.com",
-    notes: "Confirm exclusivity terms with brand partner.",
-    attachments: ["Residency_contract_v2.pdf"]
-  },
-  {
-    id: createId(),
-    title: "Q3 launch campaign brief",
-    type: "Brief",
-    submittedBy: "automation-pod@breakagency.com",
-    status: "Legal review",
-    owner: "Break Automation Pod",
-    contact: "automation-pod@breakagency.com",
-    notes: "Awaiting compliance sign-off for AI usage terms.",
-    attachments: ["Q3_brief.docx"]
-  },
-  {
-    id: createId(),
-    title: "Payment batch #248",
-    type: "Finance",
-    submittedBy: "finance@breakagency.com",
-    status: "Ready for payout",
-    owner: "Finance Desk",
-    contact: "finance@breakagency.com",
-    notes: "Payout creators in GBP once brand wire confirms.",
-    attachments: ["Batch_248.csv"]
-  }
-];
-
 export function AdminApprovalsPage({ session }) {
-  const [approvals, setApprovals] = useState(INITIAL_APPROVALS);
+  const [approvals, setApprovals] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeApproval, setActiveApproval] = useState(null);
   const [formState, setFormState] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const data = await getPendingApprovals();
+        setApprovals(data);
+      } catch (err) {
+        setError(err.message || "Could not load approvals");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const openModal = (approval) => {
     const payload =
@@ -148,26 +123,29 @@ export function AdminApprovalsPage({ session }) {
           + New approval
         </button>
       </div>
-      <section className="space-y-3">
-        {approvals.map((approval) => (
-          <article
-            key={approval.id}
-            className="cursor-pointer rounded-3xl border border-brand-black/10 bg-brand-white p-5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition hover:bg-brand-linen/40"
-            onClick={() => openModal(approval)}
-          >
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
-              {approval.type}
-            </p>
-            <h3 className="mt-2 font-display text-2xl uppercase">{approval.title || "Untitled"}</h3>
-            <p className="text-sm text-brand-black/70">Submitted by {approval.submittedBy || "Unknown"}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Badge>{approval.status}</Badge>
-              {approval.owner ? <Badge tone="positive">{approval.owner}</Badge> : null}
-              {approval.contact ? <Badge tone="neutral">{approval.contact}</Badge> : null}
-            </div>
-          </article>
-        ))}
-      </section>
+      {loading && <p className="text-sm text-brand-black/60">Loading approvals...</p>}
+      {error && <p className="text-sm text-brand-red">{error}</p>}
+      {!loading && !error && (
+        <section className="space-y-3">
+          {approvals.map((approval) => (
+            <article
+              key={approval.id}
+              className="cursor-pointer rounded-3xl border border-brand-black/10 bg-brand-white p-5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition hover:bg-brand-linen/40"
+              onClick={() => openModal(approval)}
+            >
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+                {approval.type}
+              </p>
+              <h3 className="mt-2 font-display text-2xl uppercase">{approval.title || "Untitled"}</h3>
+              <p className="text-sm text-brand-black/70">Submitted by {approval.requestor?.name || "System"}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge>{approval.status}</Badge>
+                {approval.owner ? <Badge tone="positive">{approval.owner}</Badge> : null}
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
 
       {modalOpen && formState ? (
         <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">

@@ -1,18 +1,17 @@
 import { Router } from "express";
-import { calculateSuitabilityScore } from "../services/suitabilityService.js";
+import {
+  evaluateSuitability,
+  getSuitabilityHistory,
+  getSuitabilityResult,
+  explainSuitability
+} from "../controllers/suitabilityController.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.post("/score", requireAuth, async (req, res) => {
-  const { talent, brief } = req.body ?? {};
-
-  if (!talent || !brief) {
-    return res.status(400).json({ error: true, message: "talent and brief are required" });
-  }
-
-  const result = calculateSuitabilityScore(talent, brief);
-  res.json(result);
-});
+router.post("/score", requireAuth, evaluateSuitability);
+router.get("/history", requireAuth, getSuitabilityHistory);
+router.get("/result/:id", requireAuth, getSuitabilityResult);
+router.get("/explain/:id", requireAuth, explainSuitability);
 
 export default router;

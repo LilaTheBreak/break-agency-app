@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../services/apiClient.js";
+import { getCurrentUser, login as loginWithEmailClient, signup as signupWithEmailClient } from "../services/authClient.js";
 
 /**
  * Legacy context note:
@@ -24,7 +25,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiFetch("/auth/me");
+      const response = await getCurrentUser();
       if (response.status === 401) {
         setUser(null);
         return;
@@ -76,11 +77,42 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const loginWithEmail = useCallback(
+    async (email, password) => {
+      setError(null);
+      const response = await loginWithEmailClient(email, password);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const message = payload?.error || "Unable to log in";
+        throw new Error(message);
+      }
+      const payload = await response.json();
+      const loggedInUser = payload.user || null;
+      await refreshUser();
+      return loggedInUser;
+    },
+    [refreshUser]
+  );
+
+  const signupWithEmail = useCallback(
+    async (email, password, role) => {
+      setError(null);
+      const response = await signupWithEmailClient(email, password, role);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const message = payload?.error || "Unable to sign up";
+        throw new Error(message);
+      }
+      await refreshUser();
+    },
+    [refreshUser]
+  );
+
   const hasRole = useCallback(
     (...roles) => {
-      if (!user?.roles?.length) return false;
+      if (!user?.role) return false;
       if (!roles.length) return Boolean(user);
-      return roles.some((role) => user.roles.includes(role));
+      return roles.includes(user.role);
     },
     [user]
   );
@@ -92,10 +124,12 @@ export function AuthProvider({ children }) {
       error,
       refreshUser,
       loginWithGoogle,
+      loginWithEmail,
+      signupWithEmail,
       logout,
       hasRole
     }),
-    [user, loading, error, refreshUser, loginWithGoogle, logout, hasRole]
+    [user, loading, error, refreshUser, loginWithGoogle, loginWithEmail, signupWithEmail, logout, hasRole]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

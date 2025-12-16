@@ -1,50 +1,134 @@
-type TalentProfile = {
+import prisma from "../lib/prisma";
+import { computeOverlap } from "./audienceOverlapService";
+import { checkCompliance } from "./categoryComplianceService";
+import { checkConflicts } from "./conflictChecker";
+import { calculateFinalScore } from "./suitabilityScoringService";
+import { analyzeQualitativeSuitability } from "./ai/suitabilityLLM";
+import { generateSuitabilityExplanation } from "./ai/suitabilityExplainer";
+
+interface EvaluateSuitabilityArgs {
+  creatorId: string;
+  brandId: string;
+  campaignId?: string;
+}
+
+/**
+ * Orchestrates the entire suitability evaluation process.
+ * @param args - Creator, Brand, and optional Campaign IDs.
+ * @returns The saved SuitabilityResult.
+ */
+export async function evaluateSuitability(args: EvaluateSuitabilityArgs) {
+  const { creatorId, brandId, campaignId } = args;
+
+  const creator = await prisma.talent.findUnique({ where: { id: creatorId }, include: { profile: true } });
+  const brand = await prisma.brand.findUnique({ where: { id: brandId } });
+  const campaign = campaignId ? await prisma.brandCampaign.findUnique({ where: { id: campaignId } }) : null;
+
+  if (!creator || !brand) {
+    throw new Error("Creator or Brand not found.");
+  }
+
+  // 1. Audience Overlap
+  const audienceScore = await computeOverlap(creator.profile?.audience as any, brand.targetAudience as any);
+
+  // 2. Category Compliance
+  const compliance = await checkCompliance({
+    categories: creator.categories ?? [],
+  });
+
+  // 3. Conflict of Interest
+  const conflicts = await checkConflicts(creatorId, brandId, campaignId);
+
+  // 4. Qualitative AI Analysis
+  const aiQualitative = await analyzeQualitativeSuitability(
+    creator.profile,
+    brand,
+    campaign?.brief
+  );
+
+  // Consolidate flags
+  const flags = [...compliance.flags, ...conflicts.flags, ...aiQualitative.warningSigns];
+
+  // 5. Final Scoring
+  const breakdown = {
+    audience: audienceScore.score,
+    compliance: compliance.isCompliant ? 100 : 0,
+    conflicts: conflicts.score,
+    contentAlignment: aiQualitative.contentAlignmentScore,
+    brandToneMatch: aiQualitative.brandToneMatch,
+  };
+  const finalScore = calculateFinalScore({
+    overlapScore: audienceScore.score,
+    compliant: compliance.isCompliant,
+  });
+
+  // 6. Save Result
+  const suitabilityResult = await prisma.suitabilityResult.create({
+    data: {
+      creatorId,
+      brandId,
+      campaignId,
+      score: finalScore,
+      flags: flags,
+      categories: creator.categories, // Or derived from campaign
+      reasoning: breakdown as any,
+      aiSummary: aiQualitative.aiSummary,
+      aiJson: aiQualitative as any,
+    },
+  });
+
+  return suitabilityResult;
+}
+
+/**
+ * Retrieves suitability history for a creator.
+ * @param creatorId - The ID of the creator.
+ * @returns An array of SuitabilityResult objects.
+ */
+export async function getSuitabilityHistory(creatorId: string) {
+  return prisma.suitabilityResult.findMany({
+    where: { creatorId },
+    orderBy: { createdAt: "desc" },
+    include: { brand: true, campaign: true },
+  });
+}
+
+/**
+ * Retrieves a single suitability result by ID.
+ * @param id - The ID of the SuitabilityResult.
+ * @returns The SuitabilityResult object or null.
+ */
+export async function getSuitabilityResult(id: string) {
+  return prisma.suitabilityResult.findUnique({
+    where: { id },
+    include: { creator: true, brand: true, campaign: true },
+  });
+}
+
+export { generateSuitabilityExplanation };
+
+export async function calculateSuitabilityScore(input: {
+  creatorAudience: string[];
+  brandAudience: string[];
   categories: string[];
-  audienceInterests: string[];
-  avgEngagementRate: number;
-  platforms: string[];
-  brandSafetyFlags: string[];
-};
+}) {
+  console.log("[suitabilityService] calculateSuitabilityScore input:", input);
 
-type BrandBrief = {
-  industry: string;
-  targetInterests: string[];
-  goals: string[];
-  requiredPlatforms: string[];
-  excludedCategories: string[];
-};
+  const overlap = computeOverlap({
+    creatorAudience: input.creatorAudience,
+    brandAudience: input.brandAudience,
+  });
 
-export function calculateSuitabilityScore(talent: TalentProfile, brief: BrandBrief) {
-  const warnings: string[] = [];
-  let score = 0;
+  const compliance = checkCompliance({ categories: input.categories });
 
-  const sharedCategories = (talent.categories || []).filter((c) => (brief.targetInterests || []).includes(c.toLowerCase()));
-  score += sharedCategories.length * 10;
-
-  const matchingPlatforms = (talent.platforms || []).filter((p) => (brief.requiredPlatforms || []).includes(p.toLowerCase()));
-  score += matchingPlatforms.length * 15;
-
-  if (talent.avgEngagementRate > 4) score += 15;
-  else if (talent.avgEngagementRate > 2) score += 10;
-  else score += 5;
-
-  const conflicts = (talent.categories || []).filter((c) => (brief.excludedCategories || []).includes(c.toLowerCase()));
-  if (conflicts.length) {
-    warnings.push(`Talent category conflicts with exclusions: ${conflicts.join(", ")}`);
-    score -= 20;
-  }
-
-  if ((talent.brandSafetyFlags || []).length) {
-    warnings.push("Talent has brand-safety risk markers.");
-    score -= 15;
-  }
-
-  score = Math.max(0, Math.min(100, score));
+  const finalScore = calculateFinalScore({
+    overlapScore: overlap.score,
+    compliant: compliance.isCompliant,
+  });
 
   return {
-    score,
-    sharedCategories,
-    matchingPlatforms,
-    warnings
+    overlap,
+    compliance,
+    finalScore,
   };
 }

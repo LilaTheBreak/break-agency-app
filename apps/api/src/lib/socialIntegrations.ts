@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { SocialPlatform } from "@prisma/client";
+import type { SocialPlatform } from "../types/socialPlatform.js";
 
 type TokenResponse = {
   accessToken: string;

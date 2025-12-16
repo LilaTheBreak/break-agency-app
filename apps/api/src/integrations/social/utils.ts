@@ -1,19 +1,7 @@
-import prisma from "../../lib/prisma.js";
-import { SocialPlatform } from "@prisma/client";
+const NOT_IMPLEMENTED_MESSAGE = "Not implemented — social schema models were removed";
 
-export async function ensureSocialToken(userId: string, platform: SocialPlatform) {
-  const token = await prisma.socialToken.findUnique({
-    where: {
-      userId_platform: {
-        userId,
-        platform
-      }
-    }
-  });
-  if (!token) {
-    throw new Error(`No ${platform} account connected for this user.`);
-  }
-  return token;
+export async function ensureSocialToken() {
+  throw new Error(NOT_IMPLEMENTED_MESSAGE);
 }
 
 export function createIntegrationError(provider: string, error: unknown) {

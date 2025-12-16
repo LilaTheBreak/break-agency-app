@@ -13,6 +13,8 @@ export function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   const location = useLocation();
   const isPublicResource = location.pathname.startsWith("/resource-hub");
 
+  if (session) return null;
+
   return (
     <header className="sticky top-0 z-30 border-b border-brand-white/10 bg-brand-black/95 text-brand-white backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">

@@ -14,7 +14,9 @@ export async function attachUserFromSession(req: Request, _res: Response, next: 
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
       include: {
-        roles: { include: { role: true } }
+        roles: {
+          include: { role: true }
+        }
       }
     });
     if (!user) {

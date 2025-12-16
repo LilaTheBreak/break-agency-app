@@ -43,14 +43,22 @@ function getJwtSecret() {
 // Prod (custom domain):  SameSite=None, Secure=true, domain from COOKIE_DOMAIN/SESSION_COOKIE_DOMAIN
 function buildCookieConfig() {
   const isProd = process.env.NODE_ENV === "production";
+  const usesHttps = process.env.USE_HTTPS === "true";
+  const isSecure = isProd || usesHttps;
+  const sameSite = isSecure ? "none" : "lax";
+
+  const base = {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite,
+    maxAge: COOKIE_MAX_AGE,
+    path: "/"
+  };
 
   if (!isProd) {
     return {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: COOKIE_MAX_AGE,
-      path: "/"
+      ...base,
+      domain: undefined
     };
   }
 
@@ -60,11 +68,7 @@ function buildCookieConfig() {
     ".tbctbctbc.online";
 
   return {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none",
-    domain,
-    maxAge: COOKIE_MAX_AGE,
-    path: "/"
+    ...base,
+    domain
   };
 }

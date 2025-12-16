@@ -48,47 +48,6 @@ export async function ingestDM({
     platform,
   });
 
-  let linkedEmailId: string | undefined;
-  let linkedDealId: string | undefined;
-
-  if (mentionsEmail(record.message)) {
-    const brandName = ai?.brand || message.senderName || message.senderHandle;
-    if (brandName) {
-      const emailMatch = await prisma.inboundEmail.findFirst({
-        where: {
-          userId,
-          subject: {
-            contains: brandName,
-            mode: "insensitive"
-          }
-        },
-        orderBy: { receivedAt: "desc" }
-      });
-      if (emailMatch) {
-        linkedEmailId = emailMatch.id;
-        const deal = await prisma.dealThread.findFirst({
-          where: {
-            userId: emailMatch.userId,
-            OR: [
-              { brandName: { contains: brandName, mode: "insensitive" } },
-              emailMatch.from
-                ? {
-                    brandEmail: {
-                      equals: emailMatch.from,
-                      mode: "insensitive"
-                    }
-                  }
-                : undefined
-            ].filter(Boolean) as any
-          }
-        });
-        if (deal) {
-          linkedDealId = deal.id;
-        }
-      }
-    }
-  }
-
   await prisma.inboundMessage.update({
     where: { id: record.id },
     data: {
@@ -98,8 +57,6 @@ export async function ingestDM({
       aiRecommendedAction: ai?.action,
       aiConfidence: ai?.confidence,
       aiJson: ai?.raw,
-      linkedEmailId,
-      linkedDealId
     },
   });
 

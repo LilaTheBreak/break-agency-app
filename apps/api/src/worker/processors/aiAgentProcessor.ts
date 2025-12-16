@@ -1,15 +1,15 @@
-import { runAIAgentTask } from "../../services/aiAgent/aiAgentRunner.js";
+import { processAIAgentTask } from "../../services/ai/aiAgentService.js";
 
 export default async function aiAgentProcessor(job: any) {
-  const payload = job.data;
-  if (!payload?.type && !payload?.taskId) {
-    console.error("AIAgentProcessor received invalid payload", payload);
+  const { taskId } = job.data || {};
+  if (!taskId) {
+    console.error("AIAgentProcessor received invalid job payload", job.data);
     return;
   }
+
   try {
-    await runAIAgentTask(payload);
+    await processAIAgentTask(taskId);
   } catch (err) {
     console.error("AI Agent Task Failed:", err);
-    throw err;
   }
 }

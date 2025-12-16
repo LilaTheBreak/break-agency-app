@@ -135,11 +135,80 @@ export const CONTROL_ROOM_PRESETS = {
     role: "ugc",
     title: "UGC Talent Control Room",
     subtitle: "The lightweight console for UGC creators shipping briefs via the public board.",
-    tabs: ["Overview", "Briefs", "Submissions", "Education", "Messages"],
+    tabs: [
+      "Overview",
+      { label: "Briefs", to: "/ugc/briefs" },
+      { label: "Tools", to: "/ugc/tools" },
+      { label: "Finance", to: "/ugc/finance" },
+      { label: "Education", to: "/resource-hub" },
+      { label: "Messages", to: "/ugc/messages" }
+    ],
+    opportunities: [
+      {
+        brand: "Atlantis The Royal",
+        logo: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80",
+        coverPhoto: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+        title: "Luxury resort staycation reels",
+        pay: "AED 18k – 24k + travel",
+        requirements: "3x Reels • 1x TikTok • Stills",
+        apply: "Apply via the public board by Feb 10",
+        tone: "positive"
+      },
+      {
+        brand: "Gulf Air",
+        logo: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=200&q=80",
+        coverPhoto: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=80",
+        title: "Gulf Air Creator Desk",
+        pay: "£6k flat + travel",
+        requirements: "Mini vlog • Stories pack • London + Doha",
+        apply: "Shortlist opens after Feb 22",
+        tone: "neutral"
+      },
+      {
+        brand: "Notion x Break",
+        logo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
+        coverPhoto: "https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?auto=format&fit=crop&w=800&q=80",
+        title: "AI productivity stack features",
+        pay: "Revenue share • rolling deadline",
+        requirements: "Guide + newsletter placement",
+        apply: "Public briefs require login",
+        tone: "caution"
+      },
+      {
+        brand: "Heritage Street",
+        logo: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
+        coverPhoto: "https://images.unsplash.com/photo-1448743971082-08c8f0b8a0d7?auto=format&fit=crop&w=900&q=80",
+        title: "Cultural corridor documentary",
+        pay: "£4k + photo pack",
+        requirements: "Editorial stills, 1-day shoot",
+        apply: "Deadline March 8",
+        tone: "neutral"
+      },
+      {
+        brand: "Dubai Airport",
+        logo: "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=200&q=80",
+        coverPhoto: "https://images.unsplash.com/photo-1491557345352-5929e343eb89?auto=format&fit=crop&w=900&q=80",
+        title: "Airport lounge lifestyle clips",
+        pay: "AED 12k fixed",
+        requirements: "Lifestyle stills + 30s Reel",
+        apply: "Apply by March 1 – travel required",
+        tone: "positive"
+      },
+      {
+        brand: "Voyage Collective",
+        logo: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=200&q=80",
+        coverPhoto: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80",
+        title: "City weekend capsule stories",
+        pay: "USD 5k + gifting",
+        requirements: "UGC storytelling",
+        apply: "Rolling intake",
+        tone: "positive"
+      }
+    ],
     metrics: [
-      { label: "Open briefs", value: "14", sub: "Accepting applications" },
-      { label: "Shortlisted", value: "5", sub: "Awaiting deliverables" },
-      { label: "Payouts pending", value: "7", sub: "In finance review" }
+      { label: "Open briefs", value: "14", sub: "Accepting applications", to: "/ugc/briefs" },
+      { label: "Shortlisted", value: "5", sub: "Awaiting deliverables", to: "/ugc/briefs" },
+      { label: "Payouts pending", value: "7", sub: "In finance review", to: "/ugc/finance" }
     ],
     queue: {
       label: "Brief tracker",

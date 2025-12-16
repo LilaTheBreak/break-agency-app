@@ -1,41 +1,32 @@
 import { Router } from "express";
-import prisma from "../lib/prisma.js";
-import { requireAdmin } from "../middleware/requireAdmin.js";
-import { requireAuth } from "../middleware/auth.js";
-import { getDealsWithFilters } from "../services/dealThreadService.js";
+import { requireAuth } from "../middleware/auth";
+import * as dealController from "../controllers/dealController";
 
 const router = Router();
 
-router.get("/", requireAuth, async (req, res, next) => {
-  try {
-    const user = req.user!;
-    const { talentId, brandId, stage, status } = req.query;
-    const threads = await getDealsWithFilters(user, {
-      talentId: typeof talentId === "string" ? talentId : undefined,
-      brandId: typeof brandId === "string" ? brandId : undefined,
-      stage: typeof stage === "string" ? stage : undefined,
-      status: typeof status === "string" ? status : undefined
-    });
-    res.json({ threads });
-  } catch (error) {
-    next(error);
-  }
-});
+// Middleware for authentication
+router.use(requireAuth);
 
-router.patch("/:id/assign", requireAdmin, async (req, res, next) => {
-  try {
-    const { talentIds, agentIds } = req.body ?? {};
-    const updated = await prisma.dealThread.update({
-      where: { id: req.params.id },
-      data: {
-        talentIds: Array.isArray(talentIds) ? talentIds : undefined,
-        agentIds: Array.isArray(agentIds) ? agentIds : undefined
-      }
-    });
-    res.json(updated);
-  } catch (error) {
-    next(error);
-  }
-});
+// --- Core CRUD Endpoints ---
+
+// GET /api/deals - List all deals for the user
+router.get("/", dealController.listDeals);
+
+// POST /api/deals - Create a new deal
+router.post("/", dealController.createDeal);
+
+// GET /api/deals/:id - Get a single deal with all its relations
+router.get("/:id", dealController.getDeal);
+
+// PUT /api/deals/:id - Update an existing deal
+router.put("/:id", dealController.updateDeal);
+
+// DELETE /api/deals/:id - Archive or delete a deal
+router.delete("/:id", dealController.deleteDeal);
+
+// --- Workflow Endpoint ---
+
+// POST /api/deals/:id/stage - Advance a deal to a new stage
+router.post("/:id/stage", dealController.changeDealStage);
 
 export default router;

@@ -1,10 +1,11 @@
 import { Prisma, type User } from "@prisma/client";
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma.js";
+
+// Feature routers
 import socialRouter from "./social.js";
 import emailRouter from "./email.js";
 import systemRouter from "./system.js";
-import { logAuditEvent } from "../lib/auditLogger.js";
 import auditRouter from "./audit.js";
 import adminActivityRouter from "./adminActivity.js";
 import payoutsRouter from "./payouts.js";
@@ -19,25 +20,73 @@ import aiSocialInsightsRouter from "./aiSocialInsights.js";
 import aiDealExtractorRouter from "./aiDealExtractor.js";
 import documentExtractionRouter from "./documentExtraction.js";
 import campaignsRouter from "./campaigns.js";
-import { logAdminActivity } from "../lib/adminActivityLogger.js";
+
+// User management & onboarding
 import authRouter from "./auth.js";
 import onboardingRouter from "./onboarding.js";
 import adminUsersRouter from "./adminUsers.js";
+
+// ❗ You referenced these in your router but did not import them
+// import agentRouter from "./agent.js";
+// import brandCRMRouter from "./brandCRM.js";
+
+import { logAuditEvent } from "../lib/auditLogger.js";
+import { logAdminActivity } from "../lib/adminActivityLogger.js";
+
 import { requireAuth } from "../middleware/auth.js";
+// import {
+//   requireRole,
+//   requireSuperAdmin,
+//   requireAdmin,
+//   requireAgent,
+//   requireBrand,
+//   requireTalent,
+// } from "../middleware/requireRole.js";
 
 const router = Router();
 
+/* -------------------------------------------------------
+   PUBLIC ROUTES
+-------------------------------------------------------- */
 router.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
+// Public Auth (Google OAuth, login, logout)
 router.use(authRouter);
+
+/* -------------------------------------------------------
+   AUTH REQUIRED FOR EVERYTHING BELOW
+-------------------------------------------------------- */
 router.use(requireAuth);
+
+// Onboarding is the first step after auth
 router.use(onboardingRouter);
-router.use(adminUsersRouter);
+
+/* -------------------------------------------------------
+   ROLE-BASED ROUTES
+-------------------------------------------------------- */
+
+// SUPER ADMIN ONLY
+// router.use("/system", requireSuperAdmin, systemRouter);
+
+// ADMIN + SUPER ADMIN
+// router.use("/admin", requireAdmin, adminUsersRouter);
+
+// AGENT + ADMIN + SUPER ADMIN
+// router.use("/agent", requireAgent, agentRouter);
+
+// BRAND users only
+// router.use("/brand", requireBrand, brandCRMRouter);
+
+// TALENT roles
+// router.use("/talent", requireTalent, messagesRouter); // or a dedicated talent router
+
+/* -------------------------------------------------------
+   GENERAL AUTHENTICATED ROUTES (no RBAC restrictions)
+-------------------------------------------------------- */
 router.use(socialRouter);
 router.use(emailRouter);
-router.use(systemRouter);
 router.use(auditRouter);
 router.use(adminActivityRouter);
 router.use(payoutsRouter);
@@ -52,6 +101,10 @@ router.use(aiSocialInsightsRouter);
 router.use("/ai", aiDealExtractorRouter);
 router.use(documentExtractionRouter);
 router.use(campaignsRouter);
+
+/* -------------------------------------------------------
+   PROFILE ROUTES (authenticated)
+-------------------------------------------------------- */
 
 router.get("/profiles/:email", async (req: Request, res: Response) => {
   const email = (req.params.email || "").toLowerCase();
@@ -78,6 +131,7 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
   try {
     const payload = req.body as ProfileRequestBody;
     const links = normalizeLinks(payload.links);
+
     const data = {
       name: payload.name ?? null,
       location: payload.location ?? null,
@@ -86,7 +140,7 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
       accountType: payload.accountType ?? payload.status ?? null,
       status: payload.status ?? payload.accountType ?? null,
       bio: payload.bio ?? null,
-      socialLinks: links.length ? links : null
+      socialLinks: links.length ? links : null,
     };
 
     const user = await prisma.user.upsert({
@@ -94,9 +148,9 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
       create: {
         email,
         password: null,
-        ...data
+        ...data,
       },
-      update: data
+      update: data,
     });
 
     const profile = formatProfile(user);
@@ -104,12 +158,13 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
       action: "profile.update",
       entityType: "user",
       entityId: user.id,
-      metadata: profile as Prisma.JsonObject
+      metadata: profile as Prisma.JsonObject,
     });
     await logAdminActivity(req, {
       event: "admin.profile.update",
-      metadata: { userId: user.id, email } as Prisma.JsonObject
+      metadata: { userId: user.id, email } as Prisma.JsonObject,
     });
+
     res.json({ profile });
   } catch (error) {
     console.error("Error saving profile", error);
@@ -118,6 +173,10 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
 });
 
 export default router;
+
+/* -------------------------------------------------------
+   Helpers
+-------------------------------------------------------- */
 
 type ProfileRequestBody = {
   name?: string;
@@ -135,12 +194,12 @@ function normalizeLinks(links?: Array<{ label?: string; url?: string }>) {
   return links
     .map((link) => ({
       label: typeof link.label === "string" ? link.label.trim() : "",
-      url: typeof link.url === "string" ? link.url.trim() : ""
+      url: typeof link.url === "string" ? link.url.trim() : "",
     }))
     .filter((link) => link.url.length > 0)
     .map((link) => ({
       label: link.label || link.url,
-      url: link.url
+      url: link.url,
     }));
 }
 
@@ -156,7 +215,7 @@ function formatProfile(user: User) {
     status: user.status ?? "",
     bio: user.bio ?? "",
     links: Array.isArray(user.socialLinks) ? user.socialLinks : [],
-    updatedAt: user.updatedAt
+    updatedAt: user.updatedAt,
   };
 }
 
@@ -171,6 +230,6 @@ function createDefaultProfile(email: string) {
     accountType: "",
     status: "",
     bio: "",
-    links: []
+    links: [],
   };
 }

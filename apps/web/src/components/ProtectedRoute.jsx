@@ -1,13 +1,14 @@
 import React from "react";
 import { NoAccessCard } from "./NoAccessCard.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { AwaitingApprovalPage } from "../pages/AwaitingApprovalPage.jsx";
+import { Roles } from "../auth/session.js";
 
-export function ProtectedRoute({ session: providedSession, allowed = [], onRequestSignIn, children }) {
+export function ProtectedRoute({ allowed = [], children }) {
   const { user, loading, loginWithGoogle } = useAuth();
-  const session = providedSession ?? user;
-  const handleRequestSignIn = onRequestSignIn || (() => loginWithGoogle().catch(() => {}));
 
-  if (loading && !session) {
+  // Show loading state only on initial load when user is not yet known
+  if (loading && !user) {
     return (
       <Gate
         title="Loading session"
@@ -16,19 +17,27 @@ export function ProtectedRoute({ session: providedSession, allowed = [], onReque
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <Gate
         title="You're signed out"
         description="Your Break Console session has ended. Sign back in whenever you're ready to keep working."
         actionLabel="Sign in"
-        onAction={handleRequestSignIn}
+        onAction={loginWithGoogle}
       />
     );
   }
 
-  const canAccess =
-    !allowed?.length || session.roles?.some((role) => allowed.includes(role));
+  // Check if user needs onboarding approval (skip for admins)
+  const userRole = user.role;
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPERADMIN';
+  
+  if (!isAdmin && user.onboardingStatus !== 'approved') {
+    return <AwaitingApprovalPage />;
+  }
+
+  // Check if user's role is in the allowed list
+  const canAccess = !allowed?.length || allowed.includes(userRole);
   if (!canAccess) {
     return <NoAccessCard description="This module is restricted. Contact operations if you believe this is an error." />;
   }

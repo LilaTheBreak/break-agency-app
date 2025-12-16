@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
-import { apiFetch } from "../services/apiClient.js";
+import { getRecentUsers } from "../services/dashboardClient.js";
 
 const ROLE_OPTIONS = [
   { label: "Admin", value: "ADMIN" },
@@ -13,20 +13,30 @@ const ROLE_OPTIONS = [
   { label: "UGC Talent", value: "UGC_TALENT" }
 ];
 
-const USERS = [
-  { email: "lila@thebreakco.com", role: "ADMIN", lastActive: "2m ago" },
-  { email: "mo@thebreakco.com", role: "ADMIN", lastActive: "1h ago" },
-  { email: "brand@client.com", role: "BRAND", lastActive: "Today" },
-  { email: "exclusive@talent.com", role: "EXCLUSIVE_TALENT", lastActive: "Yesterday" },
-  { email: "ugc@creator.com", role: "UGC_TALENT", lastActive: "3d ago" }
-];
-
 export function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [pendingRole, setPendingRole] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [modalMode, setModalMode] = useState("edit");
-  const [users, setUsers] = useState(USERS);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        // Fetch more users for a user management page
+        const data = await getRecentUsers(25);
+        setUsers(data);
+      } catch (err) {
+        setError(err.message || "Could not load users");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
 
   const closeModal = () => {
     setEditingUser(null);
@@ -38,7 +48,7 @@ export function AdminUsersPage() {
     event.preventDefault();
     if (modalMode === "add") {
       if (!pendingEmail || !pendingRole) return;
-      try {
+      try { // This part requires a POST endpoint which doesn't exist yet.
         const response = await apiFetch("/admin/users", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -48,7 +58,7 @@ export function AdminUsersPage() {
         const { user } = await response.json();
         setUsers((prev) => [
           ...prev,
-          { email: user.email, role: user.role, lastActive: "Just now" }
+          user
         ]);
       } catch (error) {
         alert(error.message || "Unable to create user");
@@ -67,7 +77,7 @@ export function AdminUsersPage() {
   const handleDelete = async (email) => {
     const confirmed = window.confirm(`Delete ${email}? This cannot be undone.`);
     if (!confirmed) return;
-    try {
+    try { // This part requires a DELETE endpoint which doesn't exist yet.
       const response = await apiFetch(`/admin/users/${encodeURIComponent(email)}`, {
         method: "DELETE"
       });
@@ -89,55 +99,58 @@ export function AdminUsersPage() {
       <section className="rounded-3xl border border-brand-black/10 bg-brand-white">
         <table className="w-full text-left text-sm text-brand-black/80">
           <thead>
-            <tr className="border-b border-brand-black/10 text-xs uppercase tracking-[0.3em] text-brand-red">
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Last active</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+            <tr>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red">Email</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red">Roles</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red">Joined</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-right">
+                <button
+                  type="button"
+                  onClick={handleAdd}
+                  className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]"
+                >
+                  Add user
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-          <div className="flex justify-end px-4 py-3">
-            <button
-              type="button"
-              onClick={handleAdd}
-              className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]"
-            >
-              Add user
-            </button>
-          </div>
-          {users.map((user) => (
-              <tr key={user.email} className="border-b border-brand-black/5">
-                <td className="px-4 py-3">{user.email}</td>
-                <td className="px-4 py-3 capitalize">{ROLE_OPTIONS.find((r) => r.value === user.role)?.label || user.role}</td>
-                <td className="px-4 py-3">{user.lastActive}</td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-2">
-                    <Link
-                      to={`/admin/users/${encodeURIComponent(user.email)}`}
-                      className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]"
-                    >
-                      View
-                    </Link>
-                    <button
-                      className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]"
-                      onClick={() => {
-                        setEditingUser(user);
-                        setPendingRole(user.role);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red"
-                      onClick={() => handleDelete(user.email)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {loading && <tr><td colSpan="4" className="p-4 text-center text-brand-black/60">Loading users...</td></tr>}
+            {error && <tr><td colSpan="4" className="p-4 text-center text-brand-red">{error}</td></tr>}
+            {!loading && !error && users.map((user) => (
+                <tr key={user.id} className="border-b border-brand-black/5">
+                  <td className="px-4 py-3">{user.email}</td>
+                  <td className="px-4 py-3 capitalize">
+                    {user.roles.map(r => r.role.name).join(', ')}
+                  </td>
+                  <td className="px-4 py-3">{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        to={`/admin/users/${encodeURIComponent(user.email)}`}
+                        className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]"
+                      >
+                        View
+                      </Link>
+                      <button
+                        className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]"
+                        onClick={() => {
+                          setEditingUser(user);
+                          setPendingRole(user.roles?.[0]?.role.name || "");
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red"
+                        onClick={() => handleDelete(user.email)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </section>

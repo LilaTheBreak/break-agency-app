@@ -24,7 +24,34 @@ function pickEditableFields(profile = DEFAULT_PROFILE) {
   };
 }
 
-export function ProfilePage({ session }) {
+const VARIANT_META = {
+  default: {
+    title: "My Profile",
+    subtitle: "Update how you appear across the Break platform."
+  },
+  admin: {
+    title: "Admin profile",
+    subtitle: "Control access, onboarding markers, and talent settings." 
+  },
+  founder: {
+    title: "Founder profile",
+    subtitle: "Showcase your brand, story, and GTM signals for partners."
+  },
+  ugc: {
+    title: "UGC creator profile",
+    subtitle: "Highlight your channels, rates, and creative safeguards."
+  },
+  brand: {
+    title: "Brand profile",
+    subtitle: "Set your preferences for creator match, campaigns, and teams."
+  },
+  exclusive: {
+    title: "Exclusive talent profile",
+    subtitle: "Display your representation tier, service mix, and availability." 
+  }
+};
+
+export function ProfilePage({ session, variant = "default" }) {
   const email = session?.email || "";
   const [profile, setProfile] = useState(() => ({ ...DEFAULT_PROFILE, email }));
   const [formState, setFormState] = useState(() => pickEditableFields(DEFAULT_PROFILE));
@@ -141,11 +168,91 @@ export function ProfilePage({ session }) {
     }
   };
 
+  const meta = VARIANT_META[variant] || VARIANT_META.default;
+  const heroImage =
+    profile.avatarUrl ||
+    profile.profilePhoto ||
+    profile.avatar ||
+    session?.avatarUrl ||
+    "/images/default-avatar.png";
+  const partnerLead = profile.partnerLead || "Lila Prasad";
+  const contactEmail = profile.contactEmail || email;
+  const statusLabel = profile.status || "Active";
+  const heroCategory = profile.accountType || profile.role || "Talent";
+
   return (
     <DashboardShell
-      title={loading ? "Loading profile" : "My Profile"}
-      subtitle="Update how you appear across the Break platform."
+      title={loading ? "Loading profile" : meta.title}
+      subtitle={meta.subtitle}
     >
+      {variant === "exclusive" && (
+        <section className="relative mb-8 overflow-hidden rounded-[40px] border border-brand-black/10 bg-gradient-to-r from-brand-black via-brand-black/80 to-brand-black text-white shadow-[0_25px_90px_rgba(0,0,0,0.45)]">
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "linear-gradient(110deg, rgba(0,0,0,0.8), rgba(0,0,0,0.5))" }} />
+          <div className="relative z-10 grid gap-6 px-8 py-10 md:grid-cols-[auto,1fr]">
+            <div className="flex items-center">
+              <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-white bg-brand-white/10 shadow-lg">
+                <img src={heroImage} alt={profile.name || "Creator avatar"} className="h-full w-full object-cover" />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-white/70">{heroCategory}</p>
+                <span className="rounded-full border border-white/60 px-3 py-1 text-xs uppercase tracking-[0.35em]">
+                  {statusLabel}
+                </span>
+              </div>
+              <h2 className="text-3xl font-semibold uppercase tracking-[0.2em]">{profile.name}</h2>
+              <p className="text-sm text-white/80">
+                {profile.location ? profile.location : "Multiple markets"} · Partner lead: {partnerLead}
+              </p>
+              <div className="text-sm text-white/80">
+                <p>Email: {contactEmail}</p>
+                <p>Category: {heroCategory}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+      {variant === "exclusive" && (
+        <section className="rounded-[32px] border border-brand-black/10 bg-brand-white p-6 shadow-[0_25px_80px_rgba(0,0,0,0.08)]">
+          <div className="grid gap-6 md:grid-cols-[1.2fr,1fr]">
+            <div>
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">About / biography</p>
+              <p className="mt-3 text-sm text-brand-black/80">
+                {profile.bio ||
+                  "Experienced creator with a signature mix of luxury, travel, and short-form storytelling."}
+              </p>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-brand-black/10 bg-[#f6f0ea] p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">Creator style</p>
+                  <p className="text-sm font-semibold text-brand-black">{profile.style || "Lifestyle + travel"}</p>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60 mt-2">Key differentiators</p>
+                  <p className="text-sm text-brand-black/70">
+                    {profile.differentiators || "AI-ready briefs, premium hospitality, hybrid IRL experiences."}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-[#f6f0ea] p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">AI summary</p>
+                  <p className="text-sm text-brand-black/70">
+                    {profile.aiSummary ||
+                      "AI scoring places this creator in the top 5% for consistency and brand fit—strengths in storytelling and compliance."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Category & contact</p>
+              <p className="text-sm text-brand-black/70">
+                {heroCategory} · Status: {statusLabel}
+              </p>
+              <p className="text-sm text-brand-black/70">Locations: {profile.location || "Multiple"}</p>
+              <p className="text-sm text-brand-black/70">Partner lead: {partnerLead}</p>
+              <p className="text-sm text-brand-black/70">Email: {contactEmail}</p>
+              <p className="text-sm text-brand-black/70">Contact: {profile.contactNumber || "N/A"}</p>
+            </div>
+          </div>
+        </section>
+      )}
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <form onSubmit={handleSubmit} className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 space-y-4">
           <div>

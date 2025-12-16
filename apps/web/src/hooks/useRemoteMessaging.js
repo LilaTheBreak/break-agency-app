@@ -2,16 +2,27 @@ import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchThreads, sendMessage as sendMessageApi, markMessageRead } from "../services/messagingClient.js";
 
-export function useRemoteMessaging(session) {
+const MESSAGING_PATHS = ["/admin/messaging", "/ugc/messages", "/messages"];
+
+function isMessagingRoute(pathname = "") {
+  return MESSAGING_PATHS.some((route) => pathname.startsWith(route));
+}
+
+export function useRemoteMessaging(session, enabled = true) {
   const queryClient = useQueryClient();
   const userId = session?.id || null;
-  const enabled = Boolean(userId);
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const shouldFetch = enabled && Boolean(userId) && isMessagingRoute(pathname);
 
   const threadsQuery = useQuery({
     queryKey: ["messages", "threads", userId],
     queryFn: () => fetchThreads(),
-    enabled,
-    staleTime: 1000 * 30
+    enabled: shouldFetch,
+    staleTime: 1000 * 60 * 5, // cache for 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    retry: 1
   });
 
   const sendMutation = useMutation({
@@ -32,15 +43,15 @@ export function useRemoteMessaging(session) {
 
   const sendMessage = useCallback(
     async (threadId, payload) => {
-      if (!enabled || !threadId || !payload?.body?.trim()) return;
+      if (!shouldFetch || !threadId || !payload?.body?.trim()) return;
       await sendMutation.mutateAsync({ recipientId: threadId, content: payload.body.trim() });
     },
-    [enabled, sendMutation]
+    [shouldFetch, sendMutation]
   );
 
   const markThreadRead = useCallback(
     async (threadId) => {
-      if (!enabled) return;
+      if (!shouldFetch) return;
       const thread = threads.find((entry) => entry.id === threadId);
       if (!thread) return;
       const unread = thread.messages?.filter(
@@ -49,11 +60,11 @@ export function useRemoteMessaging(session) {
       if (!unread?.length) return;
       await Promise.all(unread.map((message) => markMutation.mutateAsync(message.id)));
     },
-    [enabled, threads, markMutation, userId]
+    [shouldFetch, threads, markMutation, userId]
   );
 
   return {
-    enabled,
+    enabled: shouldFetch,
     threads,
     connectionStatus: threadsQuery.isFetching ? "syncing" : "connected",
     sendMessage,

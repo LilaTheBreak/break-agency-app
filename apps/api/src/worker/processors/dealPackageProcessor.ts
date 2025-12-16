@@ -1,5 +1,4 @@
-import { generateDealPackage } from "../../services/dealPackageService.js";
-
-export default async function dealPackageProcessor(job: any) {
-  return generateDealPackage(job.data);
+export default async function dealPackageProcessor() {
+  console.warn("dealPackageProcessor skipped: deal packages removed from schema");
+  return null;
 }

@@ -1,15 +1,44 @@
 import { google } from "googleapis";
 import prisma from "../../lib/prisma.js";
-import { safeEnv } from "../../utils/safeEnv.js";
 import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
-import { refreshAccessToken } from "./oauthService.js";
-import { SocialPlatform } from "@prisma/client";
-import { updateDealThreadStage } from "../dealThreadService.js";
-import { updateDealThreadAssociations } from "../dealThreadService.js";
-import { detectBrand } from "../brandService.js";
-import { triageQueue, dealExtractionQueue } from "../../worker/queues.js";
-import { enqueueAIAgentTask } from "../aiAgent/aiAgentQueue.js";
-import { enqueueNegotiationSession } from "../aiAgent/negotiationScheduler.js";
+import { getOAuthClientForUser } from "./tokens.js";
+
+function flattenParts(payload: any) {
+  const results: Array<{ mimeType: string; body: string; attachmentId?: string; filename?: string }> = [];
+  const walk = (part: any) => {
+    if (!part) return;
+    if (part.mimeType) {
+      const data = part.body?.data ? Buffer.from(part.body.data, "base64").toString("utf8") : "";
+      results.push({
+        mimeType: part.mimeType,
+        body: data,
+        attachmentId: part.body?.attachmentId,
+        filename: part.filename,
+      });
+    }
+    if (Array.isArray(part.parts)) {
+      part.parts.forEach(walk);
+    }
+  };
+  walk(payload);
+  return results;
+}
+
+function extractBody(payload: any) {
+  const parts = flattenParts(payload);
+  const html = parts.find((p) => p.mimeType === "text/html")?.body;
+  const text = parts.find((p) => p.mimeType === "text/plain")?.body;
+  const hasAttachments = parts.some((p) => p.attachmentId || p.filename);
+  return { htmlBody: html || undefined, textBody: text || undefined, hasAttachments };
+}
+
+function parseAddressList(header: string | undefined) {
+  if (!header) return [];
+  return header
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
 
 type ParsedMessage = {
   id: string;
@@ -19,64 +48,49 @@ type ParsedMessage = {
   receivedAt: Date;
   from?: string;
   to?: string;
-  bodyText?: string;
+  recipients: string[];
   bodyHtml?: string;
+  bodyText?: string;
+  hasAttachments: boolean;
+  gmailLabels: string[];
 };
 
-const clientId = safeEnv("GOOGLE_OAUTH_CLIENT_ID", "test-client");
-const clientSecret = safeEnv("GOOGLE_OAUTH_CLIENT_SECRET", "test-secret");
-const redirectUri = safeEnv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:5000/oauth/callback");
-
-function createOAuthClient() {
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
-}
-
 export async function getGmailClient(userId: string) {
-  const token = await prisma.socialToken.findUnique({
-    where: { userId_platform: { userId, platform: SocialPlatform.GMAIL } }
-  });
-  if (!token?.refreshToken) {
-    throw new Error("Gmail not connected");
-  }
-  let accessToken = token.accessToken;
-  let expiresAt = token.expiresAt ? new Date(token.expiresAt) : null;
-  if (!accessToken || (expiresAt && expiresAt.getTime() < Date.now() + 60_000)) {
-    const refreshed = await refreshAccessToken(token.refreshToken);
-    accessToken = refreshed.accessToken;
-    expiresAt = refreshed.expiresAt ?? null;
-    await prisma.socialToken.update({
-      where: { id: token.id },
-      data: {
-        accessToken,
-        expiresAt
-      }
-    });
-  }
-  const oauth2Client = createOAuthClient();
-  oauth2Client.setCredentials({
-    access_token: accessToken,
-    refresh_token: token.refreshToken,
-    expiry_date: expiresAt?.getTime()
-  });
-  return google.gmail({ version: "v1", auth: oauth2Client });
+  const client = await getOAuthClientForUser(userId);
+  return google.gmail({ version: "v1", auth: client });
 }
 
 export async function listInboxMessages(userId: string) {
   const gmail = await getGmailClient(userId);
-  const response = await gmail.users.messages.list({
-    userId: "me",
-    maxResults: 50,
-    labelIds: ["INBOX"]
-  });
-  const messages = response.data.messages || [];
-  const detailed = await Promise.all(
-    messages.map(async (msg) => {
-      if (!msg.id) return null;
-      const full = await gmail.users.messages.get({ userId: "me", id: msg.id });
-      return full.data;
-    })
-  );
-  return detailed.filter(Boolean);
+  const messages: Array<any> = [];
+  let nextPageToken: string | undefined = undefined;
+
+  do {
+    const response = await gmail.users.messages.list({
+      userId: "me",
+      maxResults: 100,
+      labelIds: ["INBOX"],
+      pageToken: nextPageToken,
+    });
+    messages.push(...(response.data.messages ?? []));
+    nextPageToken = response.data.nextPageToken || undefined;
+  } while (nextPageToken);
+
+  const detailed = [];
+  for (const msg of messages) {
+    try {
+      if (!msg.id) continue;
+      const full = await gmail.users.messages.get({ userId: "me", id: msg.id, format: "full" });
+      detailed.push(full.data);
+    } catch (error) {
+      console.warn("Failed to fetch Gmail message", { userId, error });
+    }
+  }
+  return detailed;
+}
+
+export async function syncInbox(userId: string) {
+  return listInboxMessages(userId);
 }
 
 export async function getMessageDetail(userId: string, messageId: string) {
@@ -93,117 +107,127 @@ export function parseMessage(message: any): ParsedMessage {
   const subject = getHeader("subject") || "No subject";
   const from = getHeader("from");
   const to = getHeader("to");
+  const cc = getHeader("cc");
   const receivedAt = message.internalDate ? new Date(Number(message.internalDate)) : new Date();
+  const gmailId = message.id ?? message?.message?.id;
+  const threads = message.threadId ?? message?.thread?.id;
 
-  const parts = flattenParts(message.payload);
-  const bodyText = parts.find((p) => p.mimeType === "text/plain")?.body;
-  const bodyHtml = parts.find((p) => p.mimeType === "text/html")?.body;
+  const body = extractBody(message.payload);
 
   return {
-    id: message.id,
-    threadId: message.threadId,
+    id: gmailId,
+    threadId: threads,
     subject,
     snippet,
     receivedAt,
     from,
     to,
-    bodyText,
-    bodyHtml
+    recipients: [...parseAddressList(to), ...parseAddressList(cc)],
+    bodyText: body.textBody,
+    bodyHtml: body.htmlBody,
+    hasAttachments: body.hasAttachments,
+    gmailLabels: message.labelIds ?? [],
   };
-}
-
-function isBrandReplyToOutreach(email: any) {
-  if (!email) return false;
-  if ((email as any).inReplyTo) return true;
-  if (email.subject && /re:/i.test(email.subject)) return true;
-  return Boolean(email.threadId);
-}
-
-function flattenParts(payload: any) {
-  const results: Array<{ mimeType: string; body: string }> = [];
-  const walk = (part: any) => {
-    if (!part) return;
-    if (part.mimeType && part.body) {
-      const data = part.body.data ? Buffer.from(part.body.data, "base64").toString("utf8") : "";
-      results.push({ mimeType: part.mimeType, body: data });
-    }
-    if (part.parts && Array.isArray(part.parts)) {
-      part.parts.forEach(walk);
-    }
-  };
-  walk(payload);
-  return results;
 }
 
 export async function ingestGmailForUser(userId: string) {
   try {
     const messages = await listInboxMessages(userId);
     let processed = 0;
-  for (const message of messages) {
-    const parsed = parseMessage(message);
-      const exists = await prisma.ingestedEmail.findFirst({
-        where: {
-          userId,
-          subject: parsed.subject,
-          receivedAt: parsed.receivedAt
-        }
-      });
-      if (exists) continue;
-      const record = await prisma.ingestedEmail.create({
-        data: {
-          userId,
-          subject: parsed.subject,
-          snippet: parsed.snippet,
-          receivedAt: parsed.receivedAt,
-          raw: parsed as any
-        }
-      });
-      await updateDealThreadStage(userId, parsed);
-      await updateDealThreadAssociations(userId, parsed);
-      const inbound = await prisma.inboundEmail.create({
-        data: {
-          userId,
-          subject: parsed.subject,
-          snippet: parsed.snippet,
-          body: parsed.bodyText || null,
-          from: parsed.from || null,
-          to: parsed.to || null,
-          receivedAt: parsed.receivedAt,
-          classification: null,
-          extractedData: null
-        }
-      });
-      await triageQueue.add("triage", { emailId: inbound.id });
-      await dealExtractionQueue.add("extract", { emailId: inbound.id });
-      const brand = await detectBrand(parsed);
-      const root = (parsed.subject || "").trim().toLowerCase().replace(/^(re:|fw:|fwd:)\s*/i, "");
-      const thread = await prisma.dealThread.findFirst({ where: { subjectRoot: root, brandEmail: parsed.raw?.from?.toLowerCase() || parsed.from?.toLowerCase() } });
-      if (thread) {
-        await prisma.dealEvent.create({
-          data: {
-            dealId: thread.id,
-            type: "EMAIL",
-            message: parsed.subject,
-            metadata: parsed,
-            actorId: userId
-          }
-        });
-        if (!thread.brandId && brand?.id) {
-          await prisma.dealThread.update({ where: { id: thread.id }, data: { brandId: brand.id } });
-        }
-      }
-    await enqueueAIAgentTask({
-      type: "INBOX_REPLY",
-      userId,
-      emailId: inbound.id,
-      payload: { subject: parsed.subject, snippet: parsed.snippet }
-    }).catch(() => null);
 
-    if (isBrandReplyToOutreach(parsed)) {
-      await enqueueNegotiationSession({ userId, emailData: parsed }).catch(() => null);
+    for (const message of messages) {
+      try {
+        if (!message?.id) {
+          console.warn("Skipping Gmail message without id", { userId });
+          continue;
+        }
+        const parsed = parseMessage(message);
+        if (!parsed.id) {
+          console.warn("Parsed Gmail message missing id, skipping", { userId });
+          continue;
+        }
+        if (!parsed.threadId) {
+          console.warn("Parsed Gmail message missing threadId, skipping", { userId, messageId: parsed.id });
+          continue;
+        }
+
+        await prisma.inboxMessage.upsert({
+          where: { threadId: parsed.threadId },
+          update: {
+            lastMessageAt: parsed.receivedAt,
+            snippet: parsed.snippet,
+            subject: parsed.subject,
+          },
+          create: {
+            id: parsed.id,
+            userId,
+            threadId: parsed.threadId,
+            subject: parsed.subject,
+            snippet: parsed.snippet,
+            isRead: false,
+            lastMessageAt: parsed.receivedAt,
+            participants: [],
+          },
+        });
+
+        await prisma.inboxThreadMeta.upsert({
+          where: { threadId: parsed.threadId },
+          update: {
+            lastMessageAt: parsed.receivedAt,
+            lastMessageSnippet: parsed.snippet,
+            subject: parsed.subject,
+          },
+          create: {
+            threadId: parsed.threadId,
+            userId,
+            aiThreadSummary: null,
+            unreadCount: 0,
+            priority: 0,
+            lastMessageAt: parsed.receivedAt,
+            lastMessageSnippet: parsed.snippet,
+            subject: parsed.subject,
+          },
+        });
+
+        const summaryText = (parsed.bodyText || parsed.bodyHtml || "").slice(0, 120);
+        const metadata = {
+          source: "gmail",
+          parsedFromAddress: parsed.from ?? "",
+          parsedRecipientList: parsed.recipients,
+          parsedThreadInfo: {
+            threadId: parsed.threadId,
+            subject: parsed.subject,
+          },
+          threadId: parsed.threadId,
+          messageId: parsed.id,
+          hasHtmlBody: Boolean(parsed.bodyHtml),
+          hasAttachments: parsed.hasAttachments,
+          gmailLabels: parsed.gmailLabels,
+          extractedSummary: summaryText,
+        };
+
+        const inbound = await prisma.inboundEmail.create({
+          data: {
+            userId,
+            threadId: parsed.threadId,
+            gmailId: parsed.id,
+            subject: parsed.subject,
+            snippet: parsed.snippet,
+            body: parsed.bodyText ?? parsed.bodyHtml ?? null,
+            fromEmail: parsed.from ?? "",
+            toEmail: parsed.to ?? "",
+            receivedAt: parsed.receivedAt,
+            categories: [],
+            metadata,
+          },
+        });
+
+        processed += 1;
+      } catch (error) {
+        console.error("Gmail ingest error for message", { userId, error });
+      }
     }
-    processed += 1;
-  }
+
     return { processed };
   } catch (error) {
     await sendSlackAlert("Gmail ingest failed", { userId, error: `${error}` });

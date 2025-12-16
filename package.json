@@ -10,16 +10,17 @@
   "scripts": {
     "dev": "pnpm -r --filter @breakagency/web --filter @breakagency/api --parallel dev",
     "dev:web": "pnpm --filter @breakagency/web dev",
-    "dev:api": "pnpm --filter @breakagency/api dev",
+    "dev:api": "pnpm --filter @breakagency/api exec -- tsx watch --require dotenv/config src/server.ts",
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @breakagency/web build",
     "build:api": "pnpm --filter @breakagency/api build",
     "lint": "pnpm -r lint",
-    "db:migrate": "pnpm -F @breakagency/api exec prisma migrate dev",
-    "db:reset": "pnpm -F @breakagency/api exec prisma migrate reset",
-    "db:generate": "pnpm -F @breakagency/api exec prisma generate",
+    "db:migrate": "pnpm --filter @breakagency/api run migrate",
+    "db:reset": "pnpm --filter @breakagency/api exec -- dotenv -e .env -- prisma migrate reset",
+    "db:generate": "pnpm --filter @breakagency/api exec -- prisma generate",
     "clean": "pnpm -r exec -- rimraf dist",
-    "seed:auth": "pnpm --filter @breakagency/api seed:auth"
+    "seed:auth": "pnpm --filter @breakagency/api seed:auth",
+    "db:seed": "pnpm --filter @breakagency/api exec -- prisma db seed"
   },
   "engines": {
     "node": ">=22.21.1",
@@ -27,11 +28,16 @@
   },
   "devDependencies": {
     "prisma": "^5.15.1",
-    "rimraf": "^5.0.5"
+    "rimraf": "^5.0.5",
+    "dotenv-cli": "^7.4.2"
   },
   "dependencies": {
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.3",
     "axios": "^1.13.2"
+  },
+  "prisma": {
+    "schema": "apps/api/prisma/schema.prisma",
+    "seed": "tsx apps/api/prisma/seed.ts"
   }
 }

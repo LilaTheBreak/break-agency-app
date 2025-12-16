@@ -11,5 +11,14 @@ export default defineConfig({
     alias: {
       "@tanstack/react-query": resolve(__dirname, "src/lib/react-query-shim.jsx")
     }
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:5001",
+        changeOrigin: true,
+        secure: false
+      }
+    }
   }
 });

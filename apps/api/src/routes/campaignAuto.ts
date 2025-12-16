@@ -1,38 +1,19 @@
 import { Router } from "express";
-import prisma from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
-import { generateAutoCampaignPlan } from "../services/campaignAutoPlanService.js";
+import { requireAuth } from "../middleware/auth";
+import * as campaignAutoController from "../controllers/campaignAutoController";
 
 const router = Router();
 
-router.post("/generate", requireAuth, async (req, res, next) => {
-  try {
-    const { briefId, bundleId } = req.body ?? {};
-    const plan = await generateAutoCampaignPlan({
-      briefId,
-      bundleId,
-      createdBy: req.user!.id
-    });
-    res.json({ plan });
-  } catch (error) {
-    next(error);
-  }
-});
+// Middleware for authentication
+router.use(requireAuth);
 
-router.get("/:id", requireAuth, async (req, res, next) => {
-  try {
-    const plan = await prisma.campaignAutoPlan.findUnique({
-      where: { id: req.params.id },
-      include: {
-        brief: true,
-        CampaignTimelineItem: true,
-        CampaignDeliverableAuto: true
-      }
-    });
-    res.json({ plan });
-  } catch (error) {
-    next(error);
-  }
-});
+// POST /api/campaign/auto-plan - Trigger auto-generation of a campaign plan
+router.post("/", campaignAutoController.autoPlanCampaign);
+
+// POST /api/campaign/auto-plan/preview - Get a preview of an auto-generated plan without saving
+router.post("/preview", campaignAutoController.previewAutoPlan);
+
+// POST /api/campaign/auto-plan/debug - Get raw LLM output for debugging auto-plan generation
+router.post("/debug", campaignAutoController.debugAutoPlan);
 
 export default router;

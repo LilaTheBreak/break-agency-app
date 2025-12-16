@@ -1,12 +1,11 @@
 import { google } from "googleapis";
 import prisma from "../../lib/prisma.js";
-import { safeEnv } from "../../utils/safeEnv.js";
 import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
-import { SocialPlatform } from "@prisma/client";
+import { googleConfig } from "../../config/env.js";
 
-const clientId = safeEnv("GOOGLE_OAUTH_CLIENT_ID", "test-client");
-const clientSecret = safeEnv("GOOGLE_OAUTH_CLIENT_SECRET", "test-secret");
-const redirectUri = safeEnv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:5000/oauth/callback");
+const clientId = googleConfig.clientId;
+const clientSecret = googleConfig.clientSecret;
+const redirectUri = googleConfig.redirectUri;
 
 const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
@@ -49,24 +48,39 @@ export async function refreshAccessToken(refreshToken: string) {
   }
 }
 
-export async function persistToken(userId: string, tokens: { access_token?: string; refresh_token?: string; expiry_date?: number }) {
+export async function persistToken(userId: string, tokens: {
+  access_token?: string;
+  refresh_token?: string;
+  expiry_date?: number;
+  scope?: string;
+  token_type?: string;
+  id_token?: string;
+}) {
   const accessToken = tokens.access_token || "";
   const refreshToken = tokens.refresh_token || "";
   const expiresAt = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
+  const scope = tokens.scope || null;
+  const tokenType = tokens.token_type || null;
+  const idToken = tokens.id_token || null;
 
-  await prisma.socialToken.upsert({
-    where: { userId_platform: { userId, platform: SocialPlatform.GMAIL } },
+  await prisma.gmailToken.upsert({
+    where: { userId },
     update: {
       accessToken,
       refreshToken,
-      expiresAt
+      expiryDate: expiresAt,
+      scope,
+      tokenType,
+      idToken
     },
     create: {
       userId,
-      platform: SocialPlatform.GMAIL,
       accessToken,
       refreshToken,
-      expiresAt
+      expiryDate: expiresAt,
+      scope,
+      tokenType,
+      idToken
     }
   });
 }

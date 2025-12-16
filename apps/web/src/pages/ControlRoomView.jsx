@@ -4,6 +4,14 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 
+function chunkArray(array, size) {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+
 export function ControlRoomView({ config, children, session, showStatusSummary = false }) {
   if (!config) {
     return null;
@@ -13,7 +21,8 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
     title,
     subtitle,
     queue,
-    quickLinks = []
+    quickLinks = [],
+    opportunities = []
   } = config;
   const navLinks = config.navLinks ?? [];
   const tabs = config.tabs ?? [];
@@ -28,6 +37,64 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
       navigation={navLinks.length ? undefined : tabs}
       showStatusSummary={showStatusSummary}
     >
+      {opportunities.length ? (
+        <section className="mb-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+                Opportunities
+              </p>
+              <h3 className="font-display text-2xl uppercase">What brands and ops are looking for</h3>
+            </div>
+            <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">New briefs daily</span>
+          </div>
+          {chunkArray(opportunities, 3).map((row, rowIndex) => (
+            <div key={`row-${rowIndex}`} className="grid gap-4 md:grid-cols-3">
+              {row.map((opp) => (
+                <article
+                  key={opp.title}
+                  className="flex h-full flex-col overflow-hidden rounded-[28px] border border-brand-black/10 bg-white shadow-[0_35px_120px_rgba(0,0,0,0.08)]"
+                >
+                  <div className="relative h-32 w-full">
+                    <img
+                      src={opp.coverPhoto || "https://images.unsplash.com/photo-1470229538611-16ba8c7ffbd7?auto=format&fit=crop&w=900&q=80"}
+                      alt={opp.brand}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute left-4 top-4 h-12 w-12 overflow-hidden rounded-2xl border border-white bg-white/70">
+                      <img src={opp.logo} alt={`${opp.brand} logo`} className="h-full w-full object-contain" />
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col gap-3 px-5 py-4">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">{opp.brand}</p>
+                      <h4 className="text-xl font-semibold text-brand-black">{opp.title}</h4>
+                    </div>
+                    <p className="text-sm text-brand-black/70">{opp.requirements}</p>
+                    <p className="text-sm font-semibold text-brand-black">{opp.pay}</p>
+                    <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">{opp.apply}</p>
+                    <button
+                      className={`mt-auto rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] ${
+                        opp.tone === "caution" ? "border border-brand-red text-brand-red" : "bg-brand-black text-brand-white"
+                      }`}
+                    >
+                      Apply via board
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ))}
+          <div className="flex justify-center pt-2">
+            <Link
+              to="/creator"
+              className="rounded-full border border-brand-black px-6 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-black transition hover:bg-brand-black hover:text-brand-white"
+            >
+              See more opportunities
+            </Link>
+          </div>
+        </section>
+      ) : null}
       <div className="mb-6">
         <AiAssistantCard
           session={session}
