@@ -52,6 +52,9 @@ export default function GoogleSignIn({ open, onClose }) {
       
       // Redirect based on user role
       const redirectPath = getRoleBasedRedirect(loggedInUser?.role);
+      
+      // Small delay to ensure cookie is set before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
       navigate(redirectPath);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Unable to log in");

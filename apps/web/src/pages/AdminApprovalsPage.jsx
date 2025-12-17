@@ -15,6 +15,33 @@ const CONTACT_BOOK = [
   "lila@thebreakco.com"
 ];
 
+const APPROVAL_SECTIONS = [
+  {
+    title: "Content approvals",
+    description: "Stills, cuts, and copy waiting for brand sign-off.",
+    metrics: ["6 pending assets", "2 escalations", "Avg. SLA: 14h"],
+    cta: "Open content queue"
+  },
+  {
+    title: "Invoice approvals",
+    description: "Invoices, payouts, and reconciliations needing finance review.",
+    metrics: ["4 in finance", "£82K total", "1 overdue"],
+    cta: "Review invoices"
+  },
+  {
+    title: "Contract approvals",
+    description: "Signed agreements, NDAs, and compliance docs tied to deals.",
+    metrics: ["3 awaiting countersign", "1 legal hold", "Latest: 18h ago"],
+    cta: "Go to contracts"
+  },
+  {
+    title: "Campaign & brief approvals",
+    description: "Briefs, scopes, and creative direction that need a go/no-go.",
+    metrics: ["5 briefs in draft", "Next launch: Friday", "2 needing budget"],
+    cta: "Review briefs"
+  }
+];
+
 export function AdminApprovalsPage({ session }) {
   const [approvals, setApprovals] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -114,6 +141,34 @@ export function AdminApprovalsPage({ session }) {
         title="Contract attachments"
         description="Store signed contracts, NDAs, and compliance docs tied to approvals."
       />
+      <section className="mt-4 grid gap-4 md:grid-cols-2">
+        {APPROVAL_SECTIONS.map((section) => (
+          <div
+            key={section.title}
+            className="flex h-full flex-col justify-between rounded-3xl border border-brand-black/10 bg-brand-white p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)]"
+          >
+            <div className="space-y-2">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+                {section.title}
+              </p>
+              <p className="text-sm text-brand-black/70">{section.description}</p>
+              <ul className="mt-2 space-y-1 text-sm text-brand-black/70">
+                {section.metrics.map((metric) => (
+                  <li key={metric}>• {metric}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button className="rounded-full border border-brand-black px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5">
+                {section.cta}
+              </button>
+              <button className="rounded-full border border-brand-black/20 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5">
+                Assign owner
+              </button>
+            </div>
+          </div>
+        ))}
+      </section>
       <div className="mb-4 flex justify-end">
         <button
           type="button"

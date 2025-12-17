@@ -49,56 +49,104 @@ export async function getAssistantResponse({
   const text = await callOpenAI(messages);
   return {
     role: normalizedRole,
-    response: text,
+    text,
     context: contextData
   };
 }
 
 async function buildContext(role: string, userId: string, contextId?: string) {
-  const [tasks, briefs, payouts, invoices] = await Promise.all([
-    prisma.task.findMany({
-      where: { OR: [{ role }, { role: "global" }, { role: undefined }] },
-      orderBy: { dueDate: "asc" },
-      take: 5
-    }),
-    prisma.brief.findMany({
-      where: { OR: [{ role }, { role: "global" }, { role: undefined }] },
-      orderBy: { updatedAt: "desc" },
-      take: 5
-    }),
-    prisma.payout.findMany({
+  // Use actual models from the schema: Deal, Deliverable, Payment, Invoice
+  const [deals, deliverables, payments, invoices] = await Promise.all([
+    prisma.deal.findMany({
       where: { userId },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        brandName: true,
+        stage: true,
+        value: true,
+        currency: true,
+        expectedClose: true,
+        updatedAt: true
+      }
+    }),
+    prisma.deliverable.findMany({
+      where: { 
+        Deal: { userId }
+      },
+      orderBy: { dueAt: "asc" },
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        dueAt: true,
+        approvedAt: true,
+        deliverableType: true
+      }
+    }),
+    prisma.payment.findMany({
+      where: { 
+        Deal: { userId }
+      },
       orderBy: { createdAt: "desc" },
-      take: 3
+      take: 3,
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        createdAt: true
+      }
     }),
     prisma.invoice.findMany({
-      where: { userId },
+      where: { 
+        Deal: { userId }
+      },
       orderBy: { createdAt: "desc" },
-      take: 3
+      take: 3,
+      select: {
+        id: true,
+        amount: true,
+        status: true,
+        dueDate: true
+      }
     })
   ]);
 
-  const briefHighlight = contextId
-    ? await prisma.brief.findUnique({ where: { id: contextId } }).catch(() => null)
+  const dealHighlight = contextId
+    ? await prisma.deal.findUnique({ 
+        where: { id: contextId },
+        select: {
+          id: true,
+          brandName: true,
+          stage: true,
+          value: true,
+          aiSummary: true,
+          notes: true
+        }
+      }).catch(() => null)
     : null;
 
   return {
     snapshot: {
-      tasks: tasks.map((task) => ({
-        title: task.title,
-        status: task.status,
-        dueDate: task.dueDate
+      deals: deals.map((deal) => ({
+        brand: deal.brandName,
+        stage: deal.stage,
+        value: deal.value,
+        currency: deal.currency,
+        expectedClose: deal.expectedClose
       })),
-      briefs: briefs.map((brief) => ({
-        title: brief.title,
-        status: brief.status,
-        updatedAt: brief.updatedAt
+      deliverables: deliverables.map((d) => ({
+        title: d.title,
+        dueAt: d.dueAt,
+        approved: !!d.approvedAt,
+        type: d.deliverableType
       })),
       finance: {
-        payoutsPending: payouts.filter((payout) => payout.status !== "paid"),
-        invoicesDue: invoices.filter((invoice) => invoice.status !== "paid")
+        paymentsPending: payments.filter((p) => p.status === "PENDING"),
+        invoicesDue: invoices.filter((inv) => inv.status === "PENDING" || inv.status === "OVERDUE")
       },
-      contextBrief: briefHighlight
+      contextDeal: dealHighlight
     }
   };
 }

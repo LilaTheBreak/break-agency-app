@@ -21,7 +21,7 @@ export function AdminDashboard({ session }) {
     <ControlRoomView
       config={CONTROL_ROOM_PRESETS.admin}
       session={activeSession}
-      role={activeSession?.roles?.find((role) => role === "SUPER_ADMIN" || role === "ADMIN")}
+      role={activeSession?.role}
       showStatusSummary
     >
       <PendingUsersApproval />
@@ -34,9 +34,10 @@ export function AdminDashboard({ session }) {
 }
 
 function AdminCampaignsPanel({ session }) {
+  const isAdmin = session?.role === "ADMIN" || session?.role === "SUPERADMIN";
   const { campaigns, loading, error } = useCampaigns({
     session,
-    userId: session?.roles?.some((role) => role === "ADMIN" || role === "SUPER_ADMIN") ? "all" : session?.id
+    userId: isAdmin ? "all" : session?.id
   });
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">

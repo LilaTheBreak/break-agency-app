@@ -1,6 +1,9 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { getGmailAuthUrl, exchangeCodeForTokens } from "../integrations/gmail/googleAuth.js";
+import { google } from "googleapis";
+import { googleConfig } from "../config/env.js";
+import { refreshAccessToken } from "../integrations/gmail/googleAuth.js";
 
 const router = Router();
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
@@ -47,6 +50,111 @@ router.get("/gmail/auth/callback", async (req, res) => {
   });
   const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/inbox?gmail_connected=1`;
   res.redirect(302, redirectUrl);
+});
+
+// POST /api/gmail/auth/draft-queue - Create Gmail draft with queue items as to-do list
+router.post("/draft-queue", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { queueItems, subject, recipient } = req.body;
+    
+    if (!queueItems || !Array.isArray(queueItems)) {
+      return res.status(400).json({ error: "Queue items required" });
+    }
+
+    // Get user's Gmail token
+    const gmailToken = await prisma.gmailToken.findUnique({
+      where: { userId }
+    });
+
+    if (!gmailToken) {
+      return res.status(400).json({ 
+        error: "Gmail not connected",
+        message: "Please connect your Gmail account first"
+      });
+    }
+
+    // Check if token needs refresh
+    let accessToken = gmailToken.accessToken;
+    if (gmailToken.expiryDate && new Date(gmailToken.expiryDate) < new Date()) {
+      const refreshed = await refreshAccessToken(gmailToken.refreshToken);
+      accessToken = refreshed.accessToken;
+      
+      await prisma.gmailToken.update({
+        where: { userId },
+        data: {
+          accessToken: refreshed.accessToken,
+          expiryDate: refreshed.expiresAt || null
+        }
+      });
+    }
+
+    // Create OAuth2 client with tokens
+    const oauth2Client = new google.auth.OAuth2(
+      googleConfig.clientId,
+      googleConfig.clientSecret,
+      googleConfig.redirectUri
+    );
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: gmailToken.refreshToken
+    });
+
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+    // Build to-do list content
+    let todoList = "Hello,\n\nHere's the current queue requiring attention:\n\n";
+    queueItems.forEach((item: any, index: number) => {
+      todoList += `${index + 1}. ${item.title}\n`;
+      if (item.owner) todoList += `   Owner: ${item.owner}\n`;
+      if (item.status) todoList += `   Status: ${item.status}\n`;
+      if (item.meta) todoList += `   ${item.meta}\n`;
+      todoList += "\n";
+    });
+    todoList += "\nPlease review and take appropriate action.\n\nBest regards";
+
+    // Create email in RFC 2822 format
+    const emailLines = [
+      recipient ? `To: ${recipient}` : "",
+      `Subject: ${subject || "Queue Update - Items Requiring Attention"}`
+    ].filter(Boolean);
+    
+    emailLines.push("");
+    emailLines.push(todoList);
+    
+    const email = emailLines.join("\r\n");
+    const encodedEmail = Buffer.from(email)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    // Create draft
+    const draft = await gmail.users.drafts.create({
+      userId: "me",
+      requestBody: {
+        message: {
+          raw: encodedEmail
+        }
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      draftId: draft.data.id,
+      message: "Gmail draft created successfully"
+    });
+  } catch (error) {
+    console.error("[DRAFT_QUEUE] Error:", error);
+    res.status(500).json({ 
+      error: "Failed to create Gmail draft",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });
 
 export default router;

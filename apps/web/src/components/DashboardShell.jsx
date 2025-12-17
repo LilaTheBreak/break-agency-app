@@ -1,20 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { NavLink, useLocation, Link } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useDashboardSummary } from "../hooks/useDashboardSummary.js";
 
 const DEFAULT_STATUS_SUMMARY = {
-  tasksDue: 5,
-  dueTomorrow: 3,
-  pendingApprovals: 4,
-  contentDue: 6,
-  briefsReview: 2,
-  nextSteps: [
-    "AI recommends reallocating one producer to the Luxury drop tasks to maintain SLA.",
-    "Send finance reminder for the £22K outstanding invoice tied to Campaign Q3.",
-    "Review the AI banking brief comments before tomorrow's stand-up."
-  ],
+  tasksDue: 0,
+  dueTomorrow: 0,
+  pendingApprovals: 0,
+  contentDue: 0,
+  briefsReview: 0,
+  nextSteps: [],
   payoutTotals: {
-    pending: { amount: 2200000, count: 4, currency: "usd", mixedCurrencies: false }
+    pending: { amount: 0, count: 0, currency: "usd", mixedCurrencies: false }
   },
   invoiceTotals: {},
   reconciledThisWeek: 0
@@ -30,8 +26,9 @@ export function DashboardShell({
   role,
   showStatusSummary = false
 }) {
-  const location = useLocation();
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
+  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [userToggledNav, setUserToggledNav] = useState(false);
   const { summary, loading: summaryLoading, error: summaryError } = useDashboardSummary(role);
   const mergedSummary = useMemo(
     () => ({ ...DEFAULT_STATUS_SUMMARY, ...statusSummary, ...(summary || {}) }),
@@ -62,9 +59,121 @@ export function DashboardShell({
     return () => window.removeEventListener("hashchange", handler);
   }, []);
 
+  useEffect(() => {
+    // Auto-collapse nav on scroll (only if user hasn't manually toggled)
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (!userToggledNav) {
+        if (currentScrollY > 150 && !navCollapsed) {
+          setNavCollapsed(true);
+        } else if (currentScrollY < 50 && navCollapsed) {
+          setNavCollapsed(false);
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [navCollapsed, userToggledNav]);
+
+  const handleNavToggle = () => {
+    setNavCollapsed((prev) => !prev);
+    setUserToggledNav(true);
+    // Reset user toggle flag after 5 seconds so auto-collapse can resume
+    setTimeout(() => setUserToggledNav(false), 5000);
+  };
+
+  const labelAbbrev = (label) =>
+    (label || "")
+      .split(" ")
+      .filter(Boolean)
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 3)
+      .toUpperCase();
+
+  const navBaseClasses = [
+    "flex items-center rounded-2xl border text-[0.72rem] font-semibold uppercase tracking-[0.3em] transition",
+    navCollapsed ? "justify-center px-3 py-3" : "justify-start px-4 py-2"
+  ].join(" ");
+
+  const renderNavItemContent = (label) =>
+    navCollapsed ? (
+      <span className="text-xs leading-none">{labelAbbrev(label)}</span>
+    ) : (
+      <span className="text-left">{label}</span>
+    );
+
+  const renderNavigation = () => {
+    if (navLinks.length > 0) {
+      return navLinks.map((link) => (
+        <NavLink
+          key={link.to}
+          end={link.end}
+          to={link.to}
+          className={({ isActive }) =>
+            [
+              "w-full",
+              navBaseClasses,
+              isActive
+                ? "border-brand-red bg-brand-red text-brand-white"
+                : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+            ].join(" ")
+          }
+        >
+          {renderNavItemContent(link.label)}
+        </NavLink>
+      ));
+    }
+    return (navigation || []).map((item) => {
+      if (item && typeof item === "object") {
+        if (item.to) {
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={[
+                "w-full",
+                navBaseClasses,
+                "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+              ].join(" ")}
+            >
+              {renderNavItemContent(item.label)}
+            </Link>
+          );
+        }
+        if (item.anchor) {
+          const isActive = hash === item.anchor || (!hash && item.default);
+          return (
+            <a
+              key={item.anchor}
+              href={item.anchor}
+              className={`w-full ${navBaseClasses} ${
+                isActive
+                  ? "border-brand-red bg-brand-red text-brand-white"
+                  : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+              }`}
+            >
+              {renderNavItemContent(item.label)}
+            </a>
+          );
+        }
+      }
+      return (
+        <span
+          key={item}
+          className={["w-full", navBaseClasses, "border-brand-black/20"].join(" ")}
+        >
+          {renderNavItemContent(item)}
+        </span>
+      );
+    });
+  };
+
   return (
     <div className="min-h-screen bg-brand-ivory text-brand-black">
-      <div className="mx-auto max-w-6xl px-6 py-12 space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
         <div className="space-y-3">
           <p className="font-subtitle text-xs uppercase tracking-[0.4em] text-brand-red">
             Secure console
@@ -75,75 +184,68 @@ export function DashboardShell({
           </h1>
           <p className="text-base text-brand-black/70">{subtitle}</p>
         </div>
-        {navLinks.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                end={link.end}
-                to={link.to}
-                className={({ isActive }) =>
-                  [
-                    "rounded-full border px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.3em]",
-                    isActive ? "border-brand-red bg-brand-red text-brand-white" : "border-brand-black/20 hover:bg-brand-black/5"
-                  ].join(" ")
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {(navigation || []).map((item) => {
-              if (item && typeof item === "object") {
-                if (item.to) {
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className="rounded-full border px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em] border-brand-black/20 hover:bg-brand-black/5"
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                }
-                if (item.anchor) {
-                  const isActive = hash === item.anchor || (!hash && item.default);
-                  return (
-                    <a
-                      key={item.anchor}
-                      href={item.anchor}
-                      className={`rounded-full border px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em] ${
-                        isActive ? "border-brand-red bg-brand-red text-brand-white" : "border-brand-black/20 hover:bg-brand-black/5"
-                      }`}
-                    >
-                      {item.label}
-                    </a>
-                  );
-                }
-              }
-              return (
-                <span
-                  key={item}
-                  className="rounded-full border border-brand-black/20 px-4 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.25em]"
+        <div
+          className={[
+            "mt-2 flex flex-col gap-6 lg:flex-row",
+            navCollapsed ? "lg:gap-4" : "lg:gap-6"
+          ].join(" ")}
+        >
+          {(navLinks.length > 0 || (navigation || []).length > 0) && (
+            <aside
+              className={[
+                "w-full rounded-3xl border border-brand-black/10 bg-brand-white p-4 shadow-brand transition-all",
+                "lg:sticky lg:top-8 lg:self-start lg:shadow-brand/40",
+                navCollapsed ? "lg:w-[104px]" : "lg:w-[260px]"
+              ].join(" ")}
+            >
+              <div className={navCollapsed ? "flex justify-center" : "flex items-center justify-between gap-3"}>
+                <button
+                  type="button"
+                  onClick={handleNavToggle}
+                  className={[
+                    "flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold uppercase tracking-[0.2em] transition",
+                    navCollapsed
+                      ? "bg-brand-red text-brand-white shadow-brand hover:-translate-y-0.5"
+                      : "border border-brand-black/20 bg-brand-ivory text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+                  ].join(" ")}
+                  aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+                  aria-pressed={navCollapsed}
                 >
-                  {item}
-                </span>
-              );
-            })}
+                  <img
+                    src="/B Logo Mark.png"
+                    alt="Break logo"
+                    className="h-8 w-8 object-contain"
+                  />
+                </button>
+                {!navCollapsed ? (
+                  <button
+                    type="button"
+                    onClick={handleNavToggle}
+                    className="rounded-2xl border border-brand-black/20 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5"
+                  >
+                    Collapse
+                  </button>
+                ) : null}
+              </div>
+              {!navCollapsed ? (
+                <>
+                  <p className="mt-4 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">Navigation</p>
+                  <div className="mt-3 flex flex-col gap-2">{renderNavigation()}</div>
+                </>
+              ) : null}
+            </aside>
+          )}
+          <div className="min-w-0 flex-1 rounded-3xl border border-brand-black/10 bg-brand-white/70 p-6 shadow-brand">
+            {showStatusSummary ? (
+              <DashboardStatusGrid
+                tiles={statusTiles}
+                nextSteps={mergedSummary.nextSteps}
+                loading={summaryLoading}
+                error={summaryError}
+              />
+            ) : null}
+            {children}
           </div>
-        )}
-        <div className="rounded-billboard border border-brand-black/10 bg-brand-white/70 p-6 shadow-brand">
-          {showStatusSummary ? (
-            <DashboardStatusGrid
-              tiles={statusTiles}
-              nextSteps={mergedSummary.nextSteps}
-              loading={summaryLoading}
-              error={summaryError}
-            />
-          ) : null}
-          {children}
         </div>
       </div>
     </div>

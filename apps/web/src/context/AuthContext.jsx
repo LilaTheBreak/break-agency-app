@@ -93,10 +93,13 @@ export function AuthProvider({ children }) {
       }
       const payload = await response.json();
       const loggedInUser = payload.user || null;
-      await refreshUser();
+      
+      // Set user directly from login response instead of refreshing
+      setUser(loggedInUser);
+      
       return loggedInUser;
     },
-    [refreshUser]
+    []
   );
 
   const signupWithEmail = useCallback(

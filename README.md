@@ -25,6 +25,15 @@ pnpm --filter web dev
 pnpm --filter api dev
 ```
 
+**macOS file descriptor limit**  
+If you see `ENFILE: file table overflow` while running dev servers, start them with a higher limit:
+
+```bash
+pnpm dev:local
+```
+
+This bumps `ulimit -n` before launching both web and API.
+
 ## Environment configuration
 
 Copy each example env file and fill real secrets:

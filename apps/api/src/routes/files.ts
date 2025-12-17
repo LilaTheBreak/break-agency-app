@@ -41,6 +41,47 @@ router.post("/upload-url", requireUser, async (req, res, next) => {
   }
 });
 
+router.post("/upload", requireUser, async (req, res, next) => {
+  try {
+    const currentUser = req.user!;
+    const { filename, content, folder } = req.body ?? {};
+    
+    if (!filename || !content) {
+      return res.status(400).json({ error: true, message: "filename and content are required" });
+    }
+
+    // Parse base64 content
+    const base64Data = content.replace(/^data:[^;]+;base64,/, "");
+    const buffer = Buffer.from(base64Data, "base64");
+    const size = buffer.length;
+    
+    // Generate storage key
+    const key = `uploads/${currentUser.id}-${Date.now()}-${filename}`;
+    
+    // In production, upload to S3 here
+    // For now, create a stub URL
+    const url = `https://stub-s3.local/${key}`;
+    
+    // Save file record to database
+    const file = await prisma.file.create({
+      data: {
+        userId: currentUser.id,
+        key,
+        url,
+        filename,
+        type: req.body.contentType || "application/octet-stream",
+        folder: folder || null,
+        size
+      }
+    });
+    
+    res.json({ file });
+  } catch (err) {
+    console.error("[FILE_UPLOAD] Error:", err);
+    next(err);
+  }
+});
+
 router.post("/confirm", requireUser, async (req, res, next) => {
   try {
     const currentUser = req.user!;

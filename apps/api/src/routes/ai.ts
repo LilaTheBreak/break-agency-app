@@ -1,12 +1,15 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
-import * as aiController from "../controllers/aiController";
+import { requireAuth } from "../middleware/auth.js";
+import * as aiController from "../controllers/aiController.js";
 import { inboxAiReply } from "../controllers/inboxAiReplyController.js";
-import * as dealExtractorController from "../controllers/dealExtractorController";
+import * as dealExtractorController from "../controllers/dealExtractorController.js";
 
 const router = Router();
 
-// All AI routes require authentication
+// POST /api/ai/:role - AI assistant chat for different user roles (handles auth in controller)
+router.post("/:role", aiController.askAssistant);
+
+// All other AI routes require authentication
 router.use(requireAuth);
 
 // POST /api/ai/reply - Generate email reply variations
@@ -20,6 +23,9 @@ router.post("/deal/extract", dealExtractorController.extractDealData);
 
 // POST /api/ai/deal/negotiation - Generate a negotiation strategy for a deal
 router.post("/deal/negotiation", aiController.generateNegotiationInsights);
+
+// POST /api/ai/:role - AI assistant chat for different user roles
+router.post("/:role", aiController.askAssistant);
 
 // Placeholder for other AI routes
 // router.post("/file/insights", aiController.generateFileInsights);

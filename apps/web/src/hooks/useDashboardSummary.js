@@ -8,7 +8,7 @@ export function useDashboardSummary(role) {
 
   useEffect(() => {
     // Only fetch for roles that should see the summary
-    if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+    if (role !== "ADMIN" && role !== "SUPERADMIN") {
       setLoading(false);
       return;
     }

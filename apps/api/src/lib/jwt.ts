@@ -20,7 +20,9 @@ export function verifyAuthToken(token: string): { id: string } {
 }
 
 export function setAuthCookie(res: Response, token: string) {
-  res.cookie(SESSION_COOKIE_NAME, token, buildCookieConfig());
+  const config = buildCookieConfig();
+  console.log("[COOKIE] Setting cookie with config:", JSON.stringify(config));
+  res.cookie(SESSION_COOKIE_NAME, token, config);
 }
 
 export function clearAuthCookie(res: Response) {

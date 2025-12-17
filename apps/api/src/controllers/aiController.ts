@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as insightLLM from "../services/ai/insightLLM";
-import * as dealExtractor from "../services/ai/dealExtractor";
-import * as negotiationLLM from "../services/ai/negotiationLLM";
-import prisma from "../lib/prisma";
+import * as insightLLM from "../services/ai/insightLLM.js";
+import * as dealExtractor from "../services/ai/dealExtractor.js";
+import { getAssistantResponse } from "../services/ai/aiAssistant.js";
+import prisma from "../lib/prisma.js";
 
 export async function generateBusinessSummary(req: Request, res: Response, next: NextFunction) {
   try {
@@ -57,13 +57,50 @@ export async function generateNegotiationInsights(req: Request, res: Response, n
     }
 
     const startTime = Date.now();
-    // This service needs to be refactored to use the `Deal` model.
-    // For now, we call a placeholder.
-    const data = await negotiationLLM.generateNegotiationStrategy(parsed.data.dealId);
+    // TODO: This service needs to be refactored to use the `Deal` model.
+    // For now, return a placeholder response.
+    const data = { message: "Negotiation insights feature coming soon" };
     const latency = Date.now() - startTime;
 
     res.json({ ok: true, data, meta: { latency } });
   } catch (error) {
+    next(error);
+  }
+}
+
+const AssistantSchema = z.object({
+  userInput: z.string().min(1),
+  contextId: z.string().optional(),
+  userId: z.string().optional(),
+});
+
+export async function askAssistant(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { role } = req.params;
+    const parsed = AssistantSchema.safeParse(req.body);
+    
+    if (!parsed.success) {
+      return res.status(400).json({ ok: false, error: "Invalid payload", details: parsed.error });
+    }
+
+    // Try to get userId from auth middleware first, fallback to request body
+    const userId = (req as any).user?.id || parsed.data.userId;
+    if (!userId) {
+      return res.status(401).json({ ok: false, error: "User not authenticated" });
+    }
+
+    const startTime = Date.now();
+    const result = await getAssistantResponse({
+      role: role || "admin",
+      userId,
+      contextId: parsed.data.contextId,
+      userInput: parsed.data.userInput,
+    });
+    const latency = Date.now() - startTime;
+
+    res.json({ ok: true, suggestions: result.text, meta: { latency } });
+  } catch (error) {
+    console.error("[AI Assistant Error]", error);
     next(error);
   }
 }

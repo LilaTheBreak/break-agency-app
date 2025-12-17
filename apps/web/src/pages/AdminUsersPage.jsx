@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { getRecentUsers } from "../services/dashboardClient.js";
+import { apiFetch } from "../services/apiClient.js";
 
 const ROLE_OPTIONS = [
   { label: "Admin", value: "ADMIN" },
@@ -17,6 +18,7 @@ export function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [pendingRole, setPendingRole] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingPassword, setPendingPassword] = useState("");
   const [modalMode, setModalMode] = useState("edit");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,24 +44,25 @@ export function AdminUsersPage() {
     setEditingUser(null);
     setPendingRole("");
     setPendingEmail("");
+    setPendingPassword("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (modalMode === "add") {
       if (!pendingEmail || !pendingRole) return;
-      try { // This part requires a POST endpoint which doesn't exist yet.
-        const response = await apiFetch("/admin/users", {
+      try {
+        const response = await apiFetch("/api/users", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: pendingEmail, role: pendingRole })
+          body: JSON.stringify({ 
+            email: pendingEmail, 
+            role: pendingRole,
+            password: pendingPassword || undefined
+          })
         });
         if (!response.ok) throw new Error("Failed to create user");
-        const { user } = await response.json();
-        setUsers((prev) => [
-          ...prev,
-          user
-        ]);
+        const user = await response.json();
+        setUsers((prev) => [user, ...prev]);
       } catch (error) {
         alert(error.message || "Unable to create user");
       }
@@ -70,6 +73,7 @@ export function AdminUsersPage() {
   const handleAdd = () => {
     setModalMode("add");
     setPendingEmail("");
+    setPendingPassword("");
     setPendingRole(ROLE_OPTIONS[0].value);
     setEditingUser({ email: "", role: ROLE_OPTIONS[0].value });
   };
@@ -156,20 +160,29 @@ export function AdminUsersPage() {
       </section>
 
       {editingUser ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-brand-white p-4">
           <div className="w-full max-w-lg rounded-[36px] border border-brand-black/10 bg-brand-white p-8 text-left text-brand-black shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
             <h3 className="font-display text-3xl uppercase">
               {modalMode === "add" ? "Add user" : "Edit user"}
             </h3>
             {modalMode === "add" ? (
-              <input
-                type="email"
-                value={pendingEmail}
-                onChange={(e) => setPendingEmail(e.target.value.toLowerCase())}
-                placeholder="user@example.com"
-                className="mt-2 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-                required
-              />
+              <>
+                <input
+                  type="email"
+                  value={pendingEmail}
+                  onChange={(e) => setPendingEmail(e.target.value.toLowerCase())}
+                  placeholder="user@example.com"
+                  className="mt-2 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+                  required
+                />
+                <input
+                  type="password"
+                  value={pendingPassword}
+                  onChange={(e) => setPendingPassword(e.target.value)}
+                  placeholder="Password (optional)"
+                  className="mt-2 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+                />
+              </>
             ) : (
               <p className="text-sm text-brand-black/70">{editingUser.email}</p>
             )}

@@ -27,7 +27,10 @@ export async function exchangeCodeForTokens(code: string) {
   return {
     accessToken: tokens.access_token || "",
     refreshToken: tokens.refresh_token,
-    expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined
+    expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
+    scope: tokens.scope,
+    tokenType: tokens.token_type,
+    idToken: tokens.id_token
   };
 }
 

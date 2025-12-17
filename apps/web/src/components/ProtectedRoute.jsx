@@ -37,7 +37,10 @@ export function ProtectedRoute({ allowed = [], children }) {
   }
 
   // Check if user's role is in the allowed list
-  const canAccess = !allowed?.length || allowed.includes(userRole);
+  // Handle both single role string and array of roles
+  const userRoles = Array.isArray(user.roles) ? user.roles : [userRole];
+  const canAccess = !allowed?.length || userRoles.some(role => allowed.includes(role));
+  
   if (!canAccess) {
     return <NoAccessCard description="This module is restricted. Contact operations if you believe this is an error." />;
   }

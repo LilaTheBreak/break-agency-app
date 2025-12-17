@@ -11,7 +11,8 @@ export type EmailTemplateName =
   | "newBriefNotification"
   | "payoutReminder"
   | "invoiceOverdue"
-  | "systemAlert";
+  | "systemAlert"
+  | "account-setup";
 
 export type EmailTemplateContext = Record<string, string | number | boolean | null | undefined>;
 

@@ -6,20 +6,61 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(true);
 
   const canUse = Boolean(session?.email);
+
+  // Role-specific suggested prompts
+  const suggestedPrompts = {
+    admin: [
+      "What tasks need my attention today?",
+      "Show me pending approvals",
+      "Summarize team activity this week",
+    ],
+    brand: [
+      "What campaigns are ready to launch?",
+      "Show me creator recommendations",
+      "Review my campaign budget status",
+    ],
+    agent: [
+      "Which creators need contract follow-up?",
+      "Show me upcoming deliverables",
+      "What deals need negotiation?",
+    ],
+    talent: [
+      "What are my upcoming deadlines?",
+      "Show me pending brand responses",
+      "Help me optimize my content calendar",
+    ],
+    "exclusive-talent": [
+      "What premium opportunities are available?",
+      "Show me my performance analytics",
+      "What campaigns should I prioritize?",
+    ],
+    ugc: [
+      "What briefs need my response?",
+      "Help me plan this week's deliverables",
+      "Show me available campaigns",
+    ],
+  };
+
+  const prompts = suggestedPrompts[role] || suggestedPrompts.admin;
 
   const askAssistant = async () => {
     if (!input.trim() || !canUse) return;
     setLoading(true);
     setError("");
+    setShowSuggestions(false);
     try {
       const res = await apiFetch(`/ai/${encodeURIComponent(role)}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ userInput: input })
+        body: JSON.stringify({ 
+          userInput: input,
+          userId: session?.id 
+        })
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
@@ -34,10 +75,32 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
     }
   };
 
+  const handleSuggestionClick = (prompt) => {
+    setInput(prompt);
+    setShowSuggestions(false);
+  };
+
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white text-brand-black p-5 shadow-[0_20px_60px_rgba(0,0,0,0.1)]">
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{title}</p>
       {description ? <p className="text-sm text-brand-black/60">{description}</p> : null}
+      
+      {showSuggestions && !response && canUse ? (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs font-medium text-brand-black/50 uppercase tracking-[0.3em]">Suggested prompts</p>
+          {prompts.map((prompt, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => handleSuggestionClick(prompt)}
+              className="w-full text-left rounded-xl border border-brand-black/10 bg-brand-linen/40 px-3 py-2 text-sm text-brand-black/80 hover:border-brand-black/30 hover:bg-brand-linen/60 transition"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      
       <textarea
         value={input}
         onChange={(event) => setInput(event.target.value)}
@@ -61,6 +124,7 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
             setInput("");
             setResponse("");
             setError("");
+            setShowSuggestions(true);
           }}
           className="rounded-full border border-brand-black/30 px-4 py-1 text-xs uppercase tracking-[0.3em]"
         >

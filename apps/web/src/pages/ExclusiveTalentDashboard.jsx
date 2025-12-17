@@ -1,13 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ExclusiveSocialPanel } from "./ExclusiveSocialPanel.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { Outlet, useNavigate, useOutletContext } from "react-router-dom";
-import { ContractsPanel } from "../components/ContractsPanel.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { CalendarBoard } from "./AdminCalendarPage.jsx";
+import { ExclusiveOverviewEnhanced } from "./ExclusiveOverviewEnhanced.jsx";
 
 const NAV_LINKS = (basePath) => [
   { label: "Overview", to: `${basePath}`, end: true },
@@ -18,9 +18,7 @@ const NAV_LINKS = (basePath) => [
   { label: "Projects", to: `${basePath}/projects` },
   { label: "Opportunities", to: `${basePath}/opportunities` },
   { label: "Tasks", to: `${basePath}/tasks` },
-  { label: "Financials", to: `${basePath}/financials` },
   { label: "Messages", to: `${basePath}/messages` },
-  { label: "Contracts", to: `${basePath}/contracts` },
   { label: "Settings", to: `${basePath}/settings` }
 ];
 
@@ -32,49 +30,17 @@ const PROFILE_INFO = {
   agent: "Lila Prasad"
 };
 
-const ACTIVE_CAMPAIGNS = [
-  { title: "Residency NYC", phase: "Deliverables", budget: "£42K", due: "Files by Friday" },
-  { title: "Luxury hospitality tour", phase: "Pre-pro", budget: "£28K", due: "Scout call tomorrow" }
-];
+// TODO: Fetch from API
+const ACTIVE_CAMPAIGNS = [];
 
-const PROJECTS = [
-  {
-    id: "proj-1",
-    title: "Launch signature cookbook",
-    summary: "Compile hero recipes, shoot assets, and plan preorders.",
-    status: "In production",
-    owner: "Creator studio",
-    due: "15 May"
-  },
-  {
-    id: "proj-2",
-    title: "IRL activation: Supper club",
-    summary: "Curate guest list, secure venue, and map sponsor integrations.",
-    status: "Pre-production",
-    owner: "Premium pods",
-    due: "22 Jun"
-  },
-  {
-    id: "proj-3",
-    title: "TED Talk roadmap",
-    summary: "Workshop narrative, scout speaker coaching, and film teaser.",
-    status: "Planning",
-    owner: "Break Labs",
-    due: "10 Aug"
-  }
-];
+// TODO: Fetch from API
+const PROJECTS = [];
 
-const TASKS = [
-  { id: "task-1", title: "Submit Doha travel docs", status: "Due", due: "Today", brand: "Priority" },
-  { id: "task-2", title: "Send revised hero concept", status: "Blocked", due: "Tomorrow", brand: "Doha Pop-up" },
-  { id: "task-3", title: "Approve creator finance deck", status: "In progress", due: "Fri", brand: "Fintech Labs" }
-];
+// TODO: Fetch tasks from API
+const TASKS = [];
 
-const SUGGESTED_TASKS = [
-  { id: "sug-1", title: "Share cookbook mockups", brand: "Cookbook launch", due: "Next week" },
-  { id: "sug-2", title: "Draft supper club guest list", brand: "Supper club activation", due: "48h" },
-  { id: "sug-3", title: "Outline TED talk rehearsal plan", brand: "TED Talk roadmap", due: "This weekend" }
-];
+// TODO: Fetch AI-suggested tasks from API
+const SUGGESTED_TASKS = [];
 
 const SOCIAL_PLATFORMS = [
   {
@@ -240,14 +206,15 @@ export default function ExclusiveTalentDashboardLayout({ basePath = "/admin/view
       subtitle=""
       navLinks={NAV_LINKS(basePath)}
     >
-      <Outlet context={{ session }} />
+      <Outlet context={{ session, basePath }} />
     </DashboardShell>
   );
 }
 
 export function ExclusiveOverviewPage() {
-  const { session } = useOutletContext() || {};
-  return <ExclusiveOverview session={session} />;
+  const { session, basePath } = useOutletContext() || {};
+  // Use the new enhanced overview with full usability features
+  return <ExclusiveOverviewEnhanced session={session} basePath={basePath} />;
 }
 
 export function ExclusiveProfilePage() {
@@ -455,7 +422,7 @@ export function ExclusiveCalendarPage() {
   return (
     <CalendarBoard
       headingTitle="Exclusive Talent Calendar"
-      headingSubtitle="Track content drops, travel, and executive meetings."
+      headingSubtitle="Track shoots, events, and creative deadlines — your business ops are handled for you."
     />
   );
 }
@@ -481,99 +448,455 @@ export function ExclusiveMessagesPage() {
 }
 
 export function ExclusiveContractsPage() {
-  const { session } = useOutletContext() || {};
   return (
     <section id="exclusive-contracts" className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="text-sm text-brand-black/70">Keep tabs on agreements pending signature.</p>
-      <ContractsPanel
-        session={session}
-        title="Contracts"
-        description="VIP agreements, retainers, and residencies awaiting signature."
-      />
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Agreements</p>
+      <p className="mt-2 text-sm text-brand-black/70">
+        Contracts and negotiations are handled by your agent. If you need anything clarified, message your team and we’ll take care of it.
+      </p>
+      <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-5">
+        <p className="font-semibold text-brand-black">Nothing to action here</p>
+        <p className="mt-1 text-sm text-brand-black/70">
+          You’ll be notified if a signature or confirmation is needed from you.
+        </p>
+      </div>
     </section>
   );
 }
 
 export function ExclusiveSettingsPage() {
-  return <ExclusiveSettings />;
+  const { basePath } = useOutletContext() || {};
+  return <ExclusiveSettings basePath={basePath} />;
 }
 
 function ExclusiveOverview({ session }) {
   const navigate = useNavigate();
-  const metricCards = [
+  const firstName =
+    session?.name?.split(" ")?.[0] ||
+    session?.email?.split("@")?.[0]?.split(".")?.[0] ||
+    "Creator";
+  const focusCycle = getFocusCycleLabel();
+  const [energyLevel, setEnergyLevel] = useState("Steady");
+  const [workload, setWorkload] = useState("Balanced");
+  const [goals] = useState({
+    creative: 0.55,
+    momentum: 0.4,
+    balance: 0.6
+  });
+
+  const snapshotCards = [
     { label: "Active projects", value: "3", detail: "Residency + 2 campaigns", to: "projects" },
-    { label: "Projected revenue", value: "£120K", detail: "Next 90 days", to: "financials" },
-    { label: "Tasks due", value: "5", detail: "In priority queue", to: "tasks" }
+    { label: "Opportunities in motion", value: "4", detail: "Shortlist + briefs", to: "opportunities" },
+    { label: "Creative tasks", value: "3", detail: "Content + approvals", to: "tasks" },
+    { label: "Upcoming invites", value: "2", detail: "Events + shoots", to: "calendar" },
+    { label: "Projected revenue", value: "£120K", detail: "High-level (handled by your agent)", to: null }
   ];
+
+  const whatsInMotion = [
+    {
+      id: "motion-1",
+      brand: "Luxury Hospitality",
+      project: "Doha pop-up",
+      type: "Residency",
+      status: "In progress",
+      yourNext: "Send revised hero concept (1 paragraph)"
+    },
+    {
+      id: "motion-2",
+      brand: "Fintech Labs",
+      project: "AI finance walkthrough",
+      type: "Campaign",
+      status: "Awaiting approval",
+      yourNext: "Confirm 2 hook options + CTA preference"
+    },
+    {
+      id: "motion-3",
+      brand: "Heritage Retail",
+      project: "Retail capsule",
+      type: "Event / Hosting",
+      status: "Live planning",
+      yourNext: "Share travel windows + wardrobe moodboard"
+    },
+    {
+      id: "motion-4",
+      brand: "Break",
+      project: "GCC residency series",
+      type: "Project",
+      status: "Briefing",
+      yourNext: "Pick 3 locations for scouting (quick shortlist)"
+    }
+  ];
+
+  const events = [
+    {
+      id: "evt-1",
+      title: "Doha pop-up weekend",
+      location: "Doha",
+      date: "Jan 24–26",
+      required: "Attendance + 2 short-form posts",
+      status: "Confirmed"
+    },
+    {
+      id: "evt-2",
+      title: "Heritage retail capsule launch",
+      location: "London",
+      date: "Feb 08",
+      required: "Hosting + story coverage",
+      status: "Pending invite"
+    },
+    {
+      id: "evt-3",
+      title: "Curated supper club (Break suggestion)",
+      location: "Dubai",
+      date: "Feb (flex)",
+      required: "1 night + candid content",
+      status: "Suggested"
+    }
+  ];
+
+  const calendarBlocks = [
+    { id: "cal-1", label: "Shoot day", date: "Tue", meta: "Outfit + location planning" },
+    { id: "cal-2", label: "Event", date: "Fri", meta: "Doha pop-up" },
+    { id: "cal-3", label: "Deadline", date: "Sun", meta: "Deliver 2 edits" }
+  ];
+
+  const whatsWorking = [
+    { id: "ww-1", title: "Micro-itineraries", detail: "Short, high-signal travel formats are saving well." },
+    { id: "ww-2", title: "Ops POV vlogs", detail: "Behind-the-scenes logistics content feels premium + real." },
+    { id: "ww-3", title: "Split-frame outfit planning", detail: "Planning + shoppable moments without hard selling." }
+  ];
+
+  const assistantPrompts = [
+    "What content should I post this week?",
+    "Suggest viral angles for my audience",
+    "What’s performing well in my niche right now?",
+    "How can I balance work and rest this week?"
+  ];
+
+  const toolkit = [
+    { id: "tool-1", title: "Content brief generator", description: "Generate hooks + shot lists in minutes." },
+    { id: "tool-2", title: "Script prompts", description: "Short-form prompts tuned to your voice." },
+    { id: "tool-3", title: "Product ideation", description: "Early-stage product ideas you can build with Break." }
+  ];
+
   return (
-    <section id="exclusive-overview" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <AiAssistantCard
-        session={session}
-        role="exclusive"
-        title="AI Assistant"
-        description="Ask AI how to balance work this week."
-      />
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Overview</p>
-      <p className="text-sm text-brand-black/70">
-        Snapshot of activity: pitching status, social velocity, and task queue for the current residency cycle.
-      </p>
-      <div className="grid gap-4 md:grid-cols-3">
-        {metricCards.map((metric) => (
+    <section id="exclusive-overview" className="space-y-6">
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Overview</p>
+            <h2 className="font-display text-4xl uppercase text-brand-black">Hi {firstName}.</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="neutral">{focusCycle}</Badge>
+              <span className="text-sm text-brand-black/60">
+                The business side is handled — you can stay focused on creating.
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-brand-black/70">
+              Here’s what’s happening around your content and opportunities right now.
+            </p>
+          </div>
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Today’s focus</p>
+            <p className="mt-2 text-sm text-brand-black/80">
+              Pick one piece of content to ship, then protect your recovery window.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {snapshotCards.map((metric) => (
           <button
             key={metric.label}
             type="button"
-            onClick={() => metric.to && navigate(`/admin/view/exclusive/${metric.to}`)}
-            className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-left text-brand-black transition hover:border-brand-red"
+            onClick={() => (metric.to ? navigate(`/admin/view/exclusive/${metric.to}`) : null)}
+            className={[
+              "rounded-3xl border border-brand-black/10 bg-brand-linen/80 p-5 text-left transition",
+              metric.to ? "hover:-translate-y-0.5 hover:bg-brand-white" : "cursor-default"
+            ].join(" ")}
+            disabled={!metric.to}
           >
-            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{metric.label}</p>
-            <p className="text-2xl font-semibold">{metric.value}</p>
-            <p className="text-xs text-brand-black/60">{metric.detail}</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{metric.label}</p>
+            <p className="mt-2 font-display text-3xl uppercase text-brand-black">{metric.value}</p>
+            <p className="text-sm text-brand-black/60">{metric.detail}</p>
           </button>
         ))}
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <div className="flex items-center justify-between">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Priority alerts</p>
-            <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
-              Resolve all
-            </button>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Revenue overview</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Confidence, not accounting</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Managed by your agent.</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <MiniMetric label="Earnings to date" value="£48K" sub="YTD (rounded)" />
+            <MiniMetric label="Potential revenue" value="£120K" sub="Pipeline estimate" />
+            <MiniMetric label="Trend" value="Up" sub="Momentum improving" />
           </div>
-          <div className="mt-3 space-y-2">
-            {CREATOR_ALERTS.map((alert) => (
-              <article key={alert.id} className="rounded-xl border border-brand-black/10 bg-white/80 p-3 text-sm text-brand-black/80">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold">{alert.label}</p>
-                  <button className="text-xs uppercase tracking-[0.3em] text-brand-red">{alert.action}</button>
-                </div>
-                <p className="text-xs text-brand-black/60">{alert.detail}</p>
-              </article>
-            ))}
+          <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+            <p className="text-sm text-brand-black/70">
+              If you want a deeper breakdown, ask your agent — you don’t need to manage invoices or payouts here.
+            </p>
           </div>
         </section>
-        <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator toolkit</p>
-          <p className="text-sm text-brand-black/70">Quick launches, scripts, and launch collateral.</p>
-          <div className="mt-3 space-y-2">
-            {CREATOR_RESOURCES.map((resource) => (
-              <article key={resource.id} className="rounded-xl border border-brand-black/10 bg-white/80 p-3">
-                <p className="font-semibold text-brand-black">{resource.title}</p>
-                <p className="text-xs text-brand-black/60">{resource.description}</p>
-                <div className="mt-2 flex gap-2">
-                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
+
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">What’s in motion</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Projects + opportunities</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Only what you need to do — no admin noise.</p>
+          <div className="mt-4 space-y-3">
+            {whatsInMotion.map((item) => (
+              <article key={item.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{item.type}</p>
+                    <p className="font-semibold text-brand-black">{item.brand}</p>
+                    <p className="text-sm text-brand-black/70">{item.project}</p>
+                  </div>
+                  <Badge tone="neutral">{item.status}</Badge>
+                </div>
+                <p className="mt-2 text-sm text-brand-black/80">
+                  <span className="font-semibold">You:</span> {item.yourNext}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em]"
+                    onClick={() => navigate("/admin/view/exclusive/opportunities")}
+                  >
                     Open
                   </button>
-                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
-                    Duplicate
+                  <button
+                    type="button"
+                    className="rounded-full border border-brand-black/20 px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                  >
+                    Ask agent
                   </button>
                 </div>
               </article>
             ))}
           </div>
         </section>
-      </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Events & invitations</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Worth your time</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Accept/Decline is design-only here.</p>
+          <div className="mt-4 space-y-3">
+            {events.map((event) => (
+              <article key={event.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{event.status}</p>
+                    <p className="font-semibold text-brand-black">{event.title}</p>
+                    <p className="text-sm text-brand-black/70">{event.location} · {event.date}</p>
+                  </div>
+                  <Badge tone="neutral">{event.required}</Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled
+                    className="rounded-full border border-brand-black/20 px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/50"
+                    title="Design only"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    disabled
+                    className="rounded-full border border-brand-black/20 px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/50"
+                    title="Design only"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                    onClick={() => navigate("/admin/view/exclusive/calendar")}
+                  >
+                    View calendar
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Calendar preview</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Protect your time</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Key dates only: shoots, events, deadlines.</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {calendarBlocks.map((block) => (
+              <div key={block.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{block.date}</p>
+                <p className="mt-1 font-semibold text-brand-black">{block.label}</p>
+                <p className="mt-1 text-sm text-brand-black/70">{block.meta}</p>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/view/exclusive/calendar")}
+            className="mt-4 rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]"
+          >
+            Open calendar
+          </button>
+        </section>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <AiAssistantCard
+            session={session}
+            role="exclusive"
+            title="AI Assistant"
+            description="Your creative partner — prompts, angles, and weekly planning."
+          />
+          <div className="mt-4 flex flex-wrap gap-2">
+            {assistantPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                className="rounded-full border border-brand-black/20 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:bg-brand-black/5"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-brand-black/60">
+            Ask for content ideas, hooks, scripts, and balance — not contracts or invoices.
+          </p>
+        </section>
+
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">What’s working</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">High-level insights</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Themes, not dashboards.</p>
+          <div className="mt-4 space-y-3">
+            {whatsWorking.map((item) => (
+              <article key={item.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="font-semibold text-brand-black">{item.title}</p>
+                <p className="mt-1 text-sm text-brand-black/70">{item.detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator toolkit</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Create faster</h3>
+          <p className="mt-1 text-sm text-brand-black/60">
+            Briefs, scripts, and product ideation — with white-label support available.
+          </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {toolkit.map((tool) => (
+              <article key={tool.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="font-semibold text-brand-black">{tool.title}</p>
+                <p className="mt-1 text-sm text-brand-black/70">{tool.description}</p>
+                <button
+                  type="button"
+                  className="mt-3 rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                >
+                  Open
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Goals & wellbeing</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Gentle signals</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Supportive, not tracked.</p>
+
+          <div className="mt-4 space-y-3">
+            <GoalRow label="Creative goal" value={goals.creative} />
+            <GoalRow label="Momentum" value={goals.momentum} />
+            <GoalRow label="Balance" value={goals.balance} />
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Wellbeing pulse</p>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-brand-black">Energy level</p>
+                <PulseOptions value={energyLevel} setValue={setEnergyLevel} options={["Low", "Steady", "High"]} />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-brand-black">Workload</p>
+                <PulseOptions value={workload} setValue={setWorkload} options={["Light", "Balanced", "Heavy"]} />
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-brand-black/70">
+              If things feel heavy, tell us — we’ll protect your calendar and adjust your load.
+            </p>
+          </div>
+        </section>
+      </section>
     </section>
   );
+}
+
+function MiniMetric({ label, value, sub }) {
+  return (
+    <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+      <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{label}</p>
+      <p className="mt-2 font-display text-2xl uppercase text-brand-black">{value}</p>
+      <p className="text-xs text-brand-black/60">{sub}</p>
+    </div>
+  );
+}
+
+function GoalRow({ label, value }) {
+  const percent = Math.max(0, Math.min(100, Math.round((value || 0) * 100)));
+  return (
+    <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-brand-black">{label}</p>
+        <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{percent}%</p>
+      </div>
+      <div className="mt-3 h-2 w-full rounded-full bg-brand-black/10">
+        <div className="h-2 rounded-full bg-brand-black/50" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function PulseOptions({ value, setValue, options }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          onClick={() => setValue(option)}
+          className={[
+            "rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] transition",
+            value === option
+              ? "border-brand-black bg-brand-black text-brand-white"
+              : "border-brand-black/20 bg-brand-white text-brand-black hover:bg-brand-black/5"
+          ].join(" ")}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function getFocusCycleLabel() {
+  const now = new Date();
+  const month = now.getMonth(); // 0-11
+  const quarter = Math.floor(month / 3) + 1;
+  const season = month === 11 || month <= 1 ? "Winter" : month <= 4 ? "Spring" : month <= 7 ? "Summer" : "Autumn";
+  return `${season} cycle · Q${quarter} focus`;
 }
 
 function ExclusiveProfile() {
@@ -1048,7 +1371,8 @@ function ExclusiveMessages() {
   );
 }
 
-function ExclusiveSettings() {
+function ExclusiveSettings({ basePath = "/exclusive" }) {
+  const navigate = useNavigate();
   return (
     <section id="exclusive-settings" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Settings</p>
@@ -1056,6 +1380,14 @@ function ExclusiveSettings() {
         Configure notifications and access. These controls preview how permissions will display inside the production environment.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => navigate(`${basePath}/goals`)}
+          className="text-left rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm transition hover:bg-brand-linen/70"
+        >
+          <p className="font-semibold text-brand-black">Goals & intentions</p>
+          <p className="text-xs text-brand-black/60">Update your creative direction, support preferences, and wellbeing notes.</p>
+        </button>
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm">
           <p className="font-semibold text-brand-black">Alerts</p>
           <p className="text-xs text-brand-black/60">Platform updates: Enabled</p>

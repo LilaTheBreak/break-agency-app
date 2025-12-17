@@ -12,6 +12,7 @@ import { newBriefNotificationTemplate } from "./newBriefNotification.js";
 import { payoutReminderTemplate } from "./payoutReminder.js";
 import { invoiceOverdueTemplate } from "./invoiceOverdue.js";
 import { systemAlertTemplate } from "./systemAlert.js";
+import { accountSetupTemplate } from "./accountSetup.js";
 
 const templateMap: Record<EmailTemplateName, EmailTemplate> = {
   welcome: welcomeTemplate,
@@ -26,7 +27,8 @@ const templateMap: Record<EmailTemplateName, EmailTemplate> = {
   newBriefNotification: newBriefNotificationTemplate,
   payoutReminder: payoutReminderTemplate,
   invoiceOverdue: invoiceOverdueTemplate,
-  systemAlert: systemAlertTemplate
+  systemAlert: systemAlertTemplate,
+  "account-setup": accountSetupTemplate
 };
 
 export const templates = templateMap;

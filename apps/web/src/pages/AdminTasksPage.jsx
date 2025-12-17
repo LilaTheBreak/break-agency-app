@@ -2,35 +2,8 @@ import React, { useMemo, useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 
-const TASKS = [
-  {
-    id: "task-1",
-    title: "Approve GCC live brief",
-    brand: "Gulf Air",
-    owner: "Lila",
-    status: "Pending",
-    dueDate: "2025-12-01",
-    type: "Brief"
-  },
-  {
-    id: "task-2",
-    title: "Release premium payouts",
-    brand: "Break Agency",
-    owner: "Finance",
-    status: "Awaiting release",
-    dueDate: "2025-12-03",
-    type: "Finance"
-  },
-  {
-    id: "task-3",
-    title: "Upload activation hero shots",
-    brand: "Atlantis",
-    owner: "Mo",
-    status: "In progress",
-    dueDate: "2025-11-29",
-    type: "Content"
-  }
-];
+// TODO: Replace with real tasks from API once Task model is implemented
+const TASKS = [];
 
 const STATUS_OPTIONS = ["All statuses", "Pending", "In progress", "Awaiting release", "Complete"];
 

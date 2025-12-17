@@ -7,6 +7,7 @@ export type SessionUser = {
   avatarUrl?: string | null;
   role: string; // Single canonical role
   onboardingStatus?: string;
+  onboardingComplete?: boolean;
 };
 
 export function buildSessionUser(user: User): SessionUser {
@@ -16,7 +17,7 @@ export function buildSessionUser(user: User): SessionUser {
     name: user.name,
     avatarUrl: user.avatarUrl,
     role: user.role, // Single role from User.role enum
-    onboardingStatus: user.onboarding_status
+    onboardingStatus: user.onboarding_status,
+    onboardingComplete: user.onboardingComplete ?? false
   };
 }
-

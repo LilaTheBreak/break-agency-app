@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
+import { apiFetch } from "../services/apiClient.js";
+import { getGmailAuthUrl } from "../services/gmailClient.js";
 
 function chunkArray(array, size) {
   const chunks = [];
@@ -13,6 +15,9 @@ function chunkArray(array, size) {
 }
 
 export function ControlRoomView({ config, children, session, showStatusSummary = false }) {
+  const [dynamicMetrics, setDynamicMetrics] = useState([]);
+  const [isDispatchLoading, setIsDispatchLoading] = useState(false);
+  
   if (!config) {
     return null;
   }
@@ -26,7 +31,77 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
   } = config;
   const navLinks = config.navLinks ?? [];
   const tabs = config.tabs ?? [];
-  const metrics = config.metrics ?? [];
+  const baseMetrics = config.metrics ?? [];
+  
+  useEffect(() => {
+    const loadMetrics = async () => {
+      const updated = await Promise.all(
+        baseMetrics.map(async (metric) => {
+          if (metric.apiEndpoint) {
+            try {
+              const res = await apiFetch(metric.apiEndpoint);
+              if (res.ok) {
+                const data = await res.json();
+                return { ...metric, value: String(data.count || 0) };
+              }
+            } catch (err) {
+              console.error(`Failed to load metric ${metric.label}:`, err);
+            }
+          }
+          return metric;
+        })
+      );
+      setDynamicMetrics(updated);
+    };
+    
+    if (baseMetrics.length > 0) {
+      loadMetrics();
+    }
+  }, []);
+  
+  const metrics = dynamicMetrics.length > 0 ? dynamicMetrics : baseMetrics;
+
+  const handleDispatchUpdate = async () => {
+    if (!queue?.items || queue.items.length === 0) {
+      alert("No items in queue to dispatch");
+      return;
+    }
+
+    setIsDispatchLoading(true);
+    try {
+      const response = await apiFetch("/gmail/auth/draft-queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          queueItems: queue.items,
+          subject: `${config.role.toUpperCase()} Queue Update - ${new Date().toLocaleDateString()}`,
+          recipient: "" // User will fill this in the draft
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert("Gmail draft created successfully! Check your Gmail drafts.");
+      } else {
+        const error = await response.json();
+        if (error.error === "Gmail not connected") {
+          // Prompt user to connect Gmail
+          const shouldConnect = confirm("Gmail is not connected. Would you like to connect it now?");
+          if (shouldConnect) {
+            const authData = await getGmailAuthUrl();
+            window.location.href = authData.url;
+          }
+        } else {
+          alert(`Failed to create draft: ${error.message || error.error}`);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to dispatch update:", error);
+      alert("An error occurred while creating the Gmail draft");
+    } finally {
+      setIsDispatchLoading(false);
+    }
+  };
 
   return (
     <DashboardShell
@@ -125,8 +200,12 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
               <h3 className="font-display text-2xl uppercase">{queue.title || "Pipeline"}</h3>
             </div>
             {queue.cta ? (
-              <button className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em]">
-                {queue.cta}
+              <button 
+                onClick={handleDispatchUpdate}
+                disabled={isDispatchLoading}
+                className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] transition hover:bg-brand-black hover:text-brand-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDispatchLoading ? "Creating draft..." : queue.cta}
               </button>
             ) : null}
           </div>
@@ -144,9 +223,25 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
                     <p className="text-sm text-brand-black/60">{item.meta}</p>
                   ) : null}
                 </div>
-                {item.status ? (
-                  <Badge tone={item.tone || "positive"}>{item.status}</Badge>
-                ) : null}
+                <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-3">
+                  {item.status ? (
+                    <Badge tone={item.tone || "positive"}>{item.status}</Badge>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded-full border border-brand-black/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5"
+                    >
+                      Mark complete
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full border border-brand-red/40 bg-brand-red/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-red transition hover:-translate-y-0.5 hover:bg-brand-red/20"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

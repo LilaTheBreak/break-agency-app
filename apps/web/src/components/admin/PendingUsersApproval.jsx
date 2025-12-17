@@ -18,13 +18,17 @@ export default function PendingUsersApproval() {
     try {
       setLoading(true);
       setError(null);
+      console.log("Fetching pending users from:", `${API_URL}/api/users/pending`);
       const response = await axios.get(`${API_URL}/api/users/pending`, {
         withCredentials: true
       });
+      console.log("Pending users response:", response.data);
       setPendingUsers(response.data);
     } catch (err) {
       console.error("Error fetching pending users:", err);
-      setError("Failed to load pending users");
+      console.error("Error response:", err.response?.data);
+      console.error("Error status:", err.response?.status);
+      setError(err.response?.data?.error || "Failed to load pending users");
     } finally {
       setLoading(false);
     }

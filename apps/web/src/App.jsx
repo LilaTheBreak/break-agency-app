@@ -49,11 +49,13 @@ import ExclusiveTalentDashboardLayout, {
 import { UgcTalentDashboard } from "./pages/UgcTalentDashboard.jsx";
 import { FounderDashboard } from "./pages/FounderDashboard.jsx";
 import OnboardingPage from "./pages/OnboardingPage.jsx";
+import AccountSetupPage from "./pages/AccountSetupPage.jsx";
 import { AdminQueuesPage } from "./pages/AdminQueuesPage.jsx";
 import { AdminApprovalsPage } from "./pages/AdminApprovalsPage.jsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.jsx";
 import AdminTasksPage from "./pages/AdminTasksPage.jsx";
 import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
+import { AdminOutreachPage } from "./pages/AdminOutreachPage.jsx";
 import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
 import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
@@ -66,6 +68,8 @@ import { LegalPrivacyPage } from "./pages/LegalPrivacy.jsx";
 import { ContactPage } from "./pages/Contact.jsx";
 import { HelpCenterPage } from "./pages/HelpCenter.jsx";
 import { PressPage } from "./pages/Press.jsx";
+import { CareersPage } from "./pages/CareersPage.jsx";
+import { ExclusiveGoalsOnboardingPage } from "./pages/ExclusiveGoalsOnboardingPage.jsx";
 import { BookFounderPage } from "./pages/BookFounder.jsx";
 import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
 import SignupPage from "./pages/Signup.jsx";
@@ -367,7 +371,7 @@ function App() {
   }, [session, authModalOpen]);
 
   const currentActor = session?.email || DEFAULT_ACTOR_EMAIL;
-  const actorRole = session?.roles?.[0] || Roles.ADMIN;
+  const actorRole = session?.role || Roles.ADMIN;
 
   const threadSource = isRemoteMessagingEnabled ? remoteMessaging.threads : threads;
   const messagingConnectionStatus = isRemoteMessagingEnabled ? remoteMessaging.connectionStatus : connectionStatus;
@@ -565,7 +569,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
   }, [location.pathname, location.search, location.hash]);
 
   useEffect(() => {
-    if (!authLoading && session?.roles?.includes(Roles.ADMIN) && location.pathname === "/") {
+    if (!authLoading && (session?.role === 'ADMIN' || session?.role === 'SUPERADMIN') && location.pathname === "/") {
       navigate("/admin/dashboard");
     }
   }, [session, authLoading, location.pathname, navigate]);
@@ -620,14 +624,16 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         onSignOut={handleSignOut}
       />
       <Routes>
-        <Route path="/" element={<LandingPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/resource-hub" element={<ResourceHubPage />} />
         <Route path="/legal" element={<LegalPrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
+        <Route path="/careers" element={<CareersPage />} />
         <Route path="/press" element={<PressPage />} />
         <Route path="/book-founder" element={<BookFounderPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/setup" element={<AccountSetupPage />} />
         <Route path="/creator" element={<CreatorPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route
           path="/onboarding"
@@ -662,7 +668,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={session?.roles?.length ? session.roles : [Roles.ADMIN, Roles.BRAND, Roles.CREATOR, Roles.TALENT_MANAGER]}
+              allowed={[Roles.SUPERADMIN, Roles.ADMIN, Roles.BRAND, Roles.CREATOR, Roles.EXCLUSIVE_TALENT, Roles.UGC, Roles.TALENT_MANAGER, Roles.AGENT, Roles.FOUNDER]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <ProfilePage session={session} />
@@ -774,6 +780,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminQueuesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/outreach"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminOutreachPage />
             </ProtectedRoute>
           }
         />
@@ -931,6 +949,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           }
         >
           <Route index element={<ExclusiveOverviewPage />} />
+          <Route path="goals" element={<ExclusiveGoalsOnboardingPage />} />
           <Route path="profile" element={<ExclusiveProfilePage />} />
           <Route path="socials" element={<ExclusiveSocialsPage />} />
           <Route path="campaigns" element={<ExclusiveCampaignsPage />} />
@@ -1009,34 +1028,6 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   const isPublicResource = location.pathname.startsWith("/resource-hub");
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const isAdmin = session?.role === 'ADMIN' || session?.role === 'SUPERADMIN';
-  const navigate = useNavigate();
-  const navSplitIndex = Math.ceil(NAV_LINKS.length / 2);
-  const navLeft = NAV_LINKS.slice(0, navSplitIndex);
-  const navRight = NAV_LINKS.slice(navSplitIndex);
-
-  const renderNavItem = (item) =>
-    item.to.startsWith("#") ? (
-      <a
-        key={item.to}
-        href={item.to}
-        className="text-xs font-subtitle uppercase tracking-[0.35em] text-brand-white/70 transition hover:text-brand-white"
-      >
-        {item.label}
-      </a>
-    ) : (
-      <NavLink
-        key={item.to}
-        to={item.to}
-        className={({ isActive }) =>
-          [
-            "text-xs font-subtitle uppercase tracking-[0.35em] transition",
-            isActive ? "text-brand-white" : "text-brand-white/70 hover:text-brand-white"
-          ].join(" ")
-        }
-      >
-        {item.label}
-      </NavLink>
-    );
 
   useEffect(() => {
     if (!isAdmin) {
@@ -1061,7 +1052,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
           {session ? (
             <>
               <span className="rounded-full border border-brand-white/30 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white/90">
-                {session.roles?.[0] || "member"}
+                {session.role || "member"}
               </span>
               {isAdmin && (
                 <div className="relative">
@@ -1070,7 +1061,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                     onClick={() => setAdminMenuOpen((prev) => !prev)}
                     className="rounded-full border border-brand-red px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red/10"
                   >
-                    {session.email?.split("@")[0]?.split(".")[0] || "Admin"}
+                    {session.name?.split(" ")[0] || session.email?.split("@")[0]?.split(".")[0] || "Admin"}
                   </button>
                   {adminMenuOpen && (
                     <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
@@ -1082,6 +1073,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           { to: "/admin/dashboard", label: "Overview" },
                           { to: "/admin/activity", label: "Activity" },
                           { to: "/admin/queues", label: "Queues" },
+                          { to: "/admin/outreach", label: "Outreach" },
                           { to: "/admin/approvals", label: "Approvals" },
                           { to: "/admin/users", label: "Users" },
                           { to: "/admin/messaging", label: "Messaging" },
@@ -1153,7 +1145,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
 }
 
 
-function LandingPage({ onRequestSignIn }) {
+function LandingPage() {
   const clientLogos = [
     { src: "/logos/amex.png", alt: "AMEX" },
     { src: "/logos/audemars-piguet.png", alt: "Audemars Piguet" },
@@ -1182,7 +1174,7 @@ function LandingPage({ onRequestSignIn }) {
     },
     {
       label: "Global execution",
-      detail: "NYC · London · Dubai · Doha",
+      detail: "UK, US & UAE",
       value: "Global"
     }
   ];
@@ -1300,7 +1292,7 @@ function LandingPage({ onRequestSignIn }) {
             <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white to-transparent" />
             <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white to-transparent" />
             <div
-              className="flex min-w-[200%] items-center gap-10"
+              className="flex min-w-[200%] items-center gap-16"
               style={{ animation: "logoMarquee 28s linear infinite" }}
             >
               {[...clientLogos, ...clientLogos].map((client, idx) => (
@@ -1308,7 +1300,7 @@ function LandingPage({ onRequestSignIn }) {
                   <img
                     src={client.src}
                     alt={client.alt}
-                    className="h-10 w-auto object-contain"
+                    className="h-32 w-48 object-contain scale-150"
                     loading="lazy"
                   />
                 </div>
@@ -1505,7 +1497,7 @@ function useAnimatedCount(target, duration = 1400) {
 }
 
 function TrustStatCard({ stat }) {
-  const count = stat.value ? null : useAnimatedCount(stat.target);
+  const count = useAnimatedCount(stat.value ? 0 : stat.target);
   const displayValue = stat.value ?? `${count}${stat.suffix || ""}`;
 
   return (

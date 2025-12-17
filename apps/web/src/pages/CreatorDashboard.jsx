@@ -540,8 +540,8 @@ function SubmissionDetailPanel({ submission, session }) {
         session={session}
         briefId={submission.id}
         data={submission}
-        allowCreate={Boolean(session?.roles?.some((role) => [Roles.ADMIN, Roles.AGENT].includes(role)))}
-        allowRestore={Boolean(session?.roles?.some((role) => [Roles.ADMIN, Roles.AGENT].includes(role)))}
+        allowCreate={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN' || session?.role === 'AGENT')}
+        allowRestore={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN' || session?.role === 'AGENT')}
       />
     </div>
   );

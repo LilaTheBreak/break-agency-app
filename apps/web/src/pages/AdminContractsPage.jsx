@@ -7,13 +7,13 @@ export function AdminContractsPage({ session }) {
   return (
     <DashboardShell
       title="Contracts"
-      subtitle="Generate agreements, send signature requests, and monitor execution."
+      subtitle="Create, track, and manage all contracts across The Break."
       navLinks={ADMIN_NAV_LINKS}
     >
       <ContractsPanel
         session={session}
-        title="Contract workspace"
-        description="Track every contract sent through PandaDoc and monitor signature progress."
+        title="Contracts workspace"
+        description="Create, track, and manage all contracts across The Break."
       />
     </DashboardShell>
   );

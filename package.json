@@ -20,7 +20,8 @@
     "db:generate": "pnpm --filter @breakagency/api exec -- prisma generate",
     "clean": "pnpm -r exec -- rimraf dist",
     "seed:auth": "pnpm --filter @breakagency/api seed:auth",
-    "db:seed": "pnpm --filter @breakagency/api exec -- prisma db seed"
+    "db:seed": "pnpm --filter @breakagency/api exec -- prisma db seed",
+    "dev:local": "bash -lc 'ulimit -n 4096 || true; pnpm dev'"
   },
   "engines": {
     "node": ">=22.21.1",

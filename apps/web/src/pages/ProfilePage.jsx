@@ -11,6 +11,7 @@ import { fetchProfile, saveProfile } from "../services/profileClient.js";
 import { Roles } from "../auth/session.js";
 import { getSuitabilityScore } from "../hooks/useSuitability.js";
 import SuitabilityScore from "../components/SuitabilityScore.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function pickEditableFields(profile = DEFAULT_PROFILE) {
   return {
@@ -51,7 +52,8 @@ const VARIANT_META = {
   }
 };
 
-export function ProfilePage({ session, variant = "default" }) {
+export function ProfilePage({ variant = "default" }) {
+  const { user: session } = useAuth();
   const email = session?.email || "";
   const [profile, setProfile] = useState(() => ({ ...DEFAULT_PROFILE, email }));
   const [formState, setFormState] = useState(() => pickEditableFields(DEFAULT_PROFILE));
@@ -59,7 +61,7 @@ export function ProfilePage({ session, variant = "default" }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const isAdmin = session?.roles?.includes(Roles.ADMIN);
+  const isAdmin = session?.role === 'ADMIN' || session?.role === 'SUPERADMIN';
    const [fitResult, setFitResult] = useState(null);
   const [fitError, setFitError] = useState("");
   const [fitLoading, setFitLoading] = useState(false);
@@ -295,25 +297,24 @@ export function ProfilePage({ session, variant = "default" }) {
             disabled={loading || saving}
             className="w-full rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none disabled:opacity-60"
           />
-          <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">Account type</label>
-          <select
-            value={formState.accountType}
-            onChange={handleChange("accountType")}
-            disabled={!isAdmin || loading || saving}
-            className="w-full rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none disabled:opacity-60"
-          >
-            <option value="">Select account type</option>
-            {ACCOUNT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-          {!isAdmin ? (
-            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/50">
-              Contact ops to update account type.
-            </p>
-          ) : null}
+          {isAdmin && (
+            <>
+              <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">Account type</label>
+              <select
+                value={formState.accountType}
+                onChange={handleChange("accountType")}
+                disabled={loading || saving}
+                className="w-full rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none disabled:opacity-60"
+              >
+                <option value="">Select account type</option>
+                {ACCOUNT_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
           <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">Bio</label>
           <textarea
             rows={4}

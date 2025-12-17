@@ -43,6 +43,11 @@ export const CONTROL_ROOM_PRESETS = {
         to: "/admin/users"
       },
       {
+        title: "Outreach",
+        copy: "Track outbound to brands + creators with Gmail-linked follow-ups and opportunities.",
+        to: "/admin/outreach"
+      },
+      {
         title: "Messaging",
         copy: "Internal inbox mirroring creator comms. Filter by persona or queue.",
         to: "/admin/messaging"

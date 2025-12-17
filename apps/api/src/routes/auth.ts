@@ -1,7 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import prisma from "../lib/prisma.js";
-import { clearAuthCookie, setAuthCookie, createAuthToken } from "../lib/jwt";
+import { clearAuthCookie, setAuthCookie, createAuthToken, SESSION_COOKIE_NAME } from "../lib/jwt";
 import { buildSessionUser, type SessionUser } from "../lib/session";
 import { SignupSchema, LoginSchema } from "./authEmailSchemas";
 import { googleOAuthConfig } from "../config/google.js";
@@ -52,9 +53,13 @@ router.get("/auth/google/url", (_req, res) => {
    2. GOOGLE OAUTH CALLBACK
 --------------------------------------------------------- */
 router.get("/auth/google/callback", async (req: Request, res: Response) => {
+  console.log(">>> GOOGLE OAUTH CALLBACK HIT", req.query);
   try {
     const code = typeof req.query.code === "string" ? req.query.code : null;
-    if (!code) return res.status(400).json({ error: "Missing authorization code" });
+    if (!code) {
+      console.error(">>> ERROR: Missing authorization code");
+      return res.status(400).json({ error: "Missing authorization code" });
+    }
 
     // Minimal debug: show that we received a code and masked client config
     const { clientId, clientSecret, redirectUri } = googleOAuthConfig || {};
@@ -73,7 +78,11 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     }
 
     const normalizedEmail = profile.email.toLowerCase();
-    const adminEmails = ["lila@thebreakco.com", "mo@thebreakco.com"];
+    const adminEmails = [
+      "lila@thebreakco.com", 
+      "mo@thebreakco.com"
+      // Add your email here if you want permanent admin access
+    ];
     const isSuperAdmin = adminEmails.includes(normalizedEmail);
 
     console.log("DEBUG PRISMA USER MODEL:", prisma.user);
@@ -106,12 +115,15 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
         name: profile.name || profile.given_name || normalizedEmail,
         avatarUrl: profile.picture || null,
         role: assignedRole as any, // Update role for admin emails
+        updatedAt: new Date(),
       },
       create: {
+        id: crypto.randomUUID(),
         email: normalizedEmail,
         name: profile.name || profile.given_name || normalizedEmail,
         avatarUrl: profile.picture || null,
         role: assignedRole as any,
+        updatedAt: new Date(),
       },
     });
     console.log("✔ Google OAuth user upsert completed:", normalizedEmail, "with role:", assignedRole);
@@ -200,9 +212,12 @@ router.post("/auth/login", async (req: Request, res: Response) => {
       const hashed = await bcrypt.hash(password, 10);
       user = await prisma.user.create({
         data: {
+          id: crypto.randomUUID(),
           email: normalizedEmail,
           password: hashed,
           name: "Lila",
+          role: "SUPERADMIN",
+          updatedAt: new Date(),
         },
       });
     }
@@ -211,7 +226,10 @@ router.post("/auth/login", async (req: Request, res: Response) => {
       const hashed = await bcrypt.hash(password, 10);
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { password: hashed },
+        data: { 
+          password: hashed,
+          updatedAt: new Date(),
+        },
       });
     }
 
@@ -225,9 +243,11 @@ router.post("/auth/login", async (req: Request, res: Response) => {
     }
 
     const token = createAuthToken({ id: user.id });
+    console.log("[LOGIN] Setting auth cookie for user:", user.email, "role:", user.role);
     setAuthCookie(res, token);
+    console.log("[LOGIN] Cookie should be set, cookie name:", SESSION_COOKIE_NAME);
 
-    return res.json({ user });
+    return res.json({ user: buildSessionUser(user) });
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -348,24 +368,28 @@ async function fetchGoogleProfile(accessToken: string, idToken?: string | null) 
 --------------------------------------------------------- */
 function buildPostAuthRedirect(user: SessionUser): string {
   try {
-    if (!user.onboardingComplete) {
-      return new URL("/onboarding/welcome", FRONTEND_ORIGIN).toString();
+    const url = new URL(FRONTEND_ORIGIN);
+    const role = user.role;
+    const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
+    const onboardingComplete =
+      user.onboardingComplete === true ||
+      user.onboardingStatus === "approved" ||
+      user.onboardingStatus === "APPROVED";
+
+    if (isAdmin) {
+      url.pathname = "/admin/dashboard";
+      return url.toString();
     }
 
-    // Admins should land in their control room while others continue
-    // to rely on the dashboard redirect logic.
-    const roleToPathMap: Record<string, string> = {
-      ADMIN: "/admin/control-room",
-      SUPER_ADMIN: "/admin/control-room",
-    };
-    const mappedRole = user.roles.find(role => roleToPathMap[role]);
-    const redirectPath = mappedRole ? roleToPathMap[mappedRole] : "/dashboard";
+    if (!onboardingComplete) {
+      url.pathname = "/onboarding";
+      return url.toString();
+    }
 
-    const url = new URL(FRONTEND_ORIGIN);
-    url.pathname = redirectPath.startsWith("/") ? redirectPath : `/${redirectPath}`;
+    url.pathname = "/dashboard";
     return url.toString();
   } catch {
-    return `${FRONTEND_ORIGIN}/CreatorDashboard`;
+    return `${FRONTEND_ORIGIN}/dashboard`;
   }
 }
 

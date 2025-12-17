@@ -44,7 +44,7 @@ export function SiteChrome({ session, onRequestSignIn, onSignOut }) {
           {session ? (
             <>
               <span className="rounded-full border border-brand-white/30 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white/90">
-                {session.roles?.[0] || "member"}
+                {session.role || "member"}
               </span>
               <button
                 type="button"

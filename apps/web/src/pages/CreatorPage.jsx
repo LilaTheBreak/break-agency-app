@@ -147,7 +147,7 @@ export function CreatorPage({ onRequestSignIn }) {
             <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white to-transparent" />
             <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white to-transparent" />
             <div
-              className="flex min-w-[200%] items-center gap-10"
+              className="flex min-w-[200%] items-center gap-16"
               style={{ animation: "logoMarquee 28s linear infinite" }}
             >
               {[...CLIENT_LOGOS, ...CLIENT_LOGOS].map((client, idx) => (
@@ -155,7 +155,7 @@ export function CreatorPage({ onRequestSignIn }) {
                   <img
                     src={client.src}
                     alt={client.alt}
-                    className="h-10 w-auto object-contain"
+                    className="h-32 w-48 object-contain scale-150"
                     loading="lazy"
                   />
                 </div>

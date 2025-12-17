@@ -52,6 +52,16 @@ import suitabilityRouter from "./routes/suitability.js";
 // User Approvals
 import userApprovalsRouter from "./routes/userApprovals.js";
 
+// Users Management
+import usersRouter from "./routes/users.js";
+import setupRouter from "./routes/setup.js";
+
+// Exclusive Talent
+import exclusiveRouter from "./routes/exclusive.js";
+
+// Admin Finance
+import adminFinanceRouter from "./routes/admin/finance.js";
+
 // Deals
 import dealsRouter from "./routes/deals.js";
 import dealTimelineRouter from "./routes/dealTimeline.js";
@@ -89,6 +99,7 @@ import outreachLeadsRouter from "./routes/outreachLeads.js";
 import outreachSequencesRouter from "./routes/outreachSequences.js";
 import outreachTemplatesRouter from "./routes/outreachTemplates.js";
 import outreachMetricsRouter from "./routes/outreachMetrics.js";
+import salesOpportunitiesRouter from "./routes/salesOpportunities.js";
 
 // Agent
 import agentRouter from "./routes/agent.js";
@@ -178,9 +189,25 @@ app.use("/api/opportunities", opportunitiesRouter);
 app.use("/api/resources", resourcesRouter);
 
 // ------------------------------------------------------
+// USERS MANAGEMENT
+// ------------------------------------------------------
+app.use("/api/users", usersRouter);
+app.use("/api/setup", setupRouter);
+
+// ------------------------------------------------------
+// EXCLUSIVE TALENT
+// ------------------------------------------------------
+app.use("/api/exclusive", exclusiveRouter);
+
+// ------------------------------------------------------
 // USER APPROVALS
 // ------------------------------------------------------
-app.use("/api/users", userApprovalsRouter);
+app.use("/api/user-approvals", userApprovalsRouter);
+
+// ------------------------------------------------------
+// ADMIN FINANCE CONTROL ROOM
+// ------------------------------------------------------
+app.use("/api/admin/finance", adminFinanceRouter);
 
 // ------------------------------------------------------
 // AI
@@ -237,6 +264,7 @@ app.use("/api/outreach/leads", outreachLeadsRouter);
 app.use("/api/outreach/sequences", outreachSequencesRouter);
 app.use("/api/outreach/templates", outreachTemplatesRouter);
 app.use("/api/outreach/metrics", outreachMetricsRouter);
+app.use("/api/sales-opportunities", salesOpportunitiesRouter);
 
 // ------------------------------------------------------
 // AGENT SYSTEM
@@ -292,6 +320,26 @@ app.get("/health", healthCheck);
 // ------------------------------------------------------
 app.use("/api", routes);
 
+// ------------------------------------------------------
+// GLOBAL ERROR HANDLER (must be last)
+// ------------------------------------------------------
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("❌ Global error handler caught:", err);
+  
+  // Don't send response if headers already sent
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  const statusCode = err.statusCode || err.status || 500;
+  const message = err.message || "Internal server error";
+  
+  res.status(statusCode).json({
+    error: message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack })
+  });
+});
+
 const PORT = process.env.PORT || 5001;
 
 // Start queue + cron
@@ -301,6 +349,37 @@ registerEmailQueueJob();
 // ------------------------------------------------------
 // SERVER START
 // ------------------------------------------------------
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`API running on port ${PORT}`);
+});
+
+// ------------------------------------------------------
+// GRACEFUL ERROR HANDLING
+// ------------------------------------------------------
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+  // Don't crash the server, just log it
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("❌ Uncaught Exception:", error);
+  // Log but don't crash immediately to allow cleanup
+  setTimeout(() => {
+    process.exit(1);
+  }, 1000);
+});
+
+process.on("SIGTERM", () => {
+  console.log("SIGTERM signal received: closing HTTP server");
+  server.close(() => {
+    console.log("HTTP server closed");
+  });
+});
+
+process.on("SIGINT", () => {
+  console.log("SIGINT signal received: closing HTTP server");
+  server.close(() => {
+    console.log("HTTP server closed");
+    process.exit(0);
+  });
 });
