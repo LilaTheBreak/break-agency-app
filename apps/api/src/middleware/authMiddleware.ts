@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient, UserRoleType, SubscriptionStatus, RosterCategory } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import type { SessionUser } from '../lib/session.js';
+import { buildSessionUser } from '../lib/session.js';
 // Assume you have a way to verify a session token, e.g., using Clerk, JWT, etc.
 // import { clerkClient } from '@clerk/clerk-sdk-node';
 
@@ -8,13 +10,7 @@ const prisma = new PrismaClient();
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: string;
-        role: UserRoleType | null;
-        subscription_status: SubscriptionStatus | null;
-        roster_category: RosterCategory | null;
-        include_in_roster: boolean | null;
-      };
+      user?: SessionUser | null;
     }
   }
 }
@@ -31,19 +27,12 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      id: true,
-      role: true,
-      subscription_status: true,
-      roster_category: true,
-      include_in_roster: true,
-    },
   });
 
   if (!user) {
     return res.status(401).json({ error: 'User not found.' });
   }
 
-  req.user = user;
+  req.user = buildSessionUser(user);
   next();
 };

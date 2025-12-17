@@ -9,6 +9,7 @@ import {
   sanitizeEventForCreator,
   SAFE_DEFAULTS,
 } from "../middleware/creatorAuth.js";
+import { createGoalVersion } from "../utils/goalUtils.js";
 
 const router = Router();
 
@@ -158,7 +159,7 @@ router.post("/events/:id/accept", async (req, res) => {
     const event = await prisma.creatorEvent.findFirst({ where: { id, creatorId: creator.id } });
     if (!event) return res.status(404).json({ error: "Event not found" });
     const updated = await prisma.creatorEvent.update({ where: { id }, data: { status: "accepted" } });
-    console.log(\`✅ Creator accepted event: \${event.eventName}\`);
+    console.log(`✅ Creator accepted event: ${event.eventName}`);
     res.json({ success: true, message: "We've let your agent know you've accepted", event: sanitizeEventForCreator(updated) });
   } catch (error) {
     res.status(500).json({ error: "Failed to accept event" });
@@ -173,7 +174,7 @@ router.post("/events/:id/decline", async (req, res) => {
     const event = await prisma.creatorEvent.findFirst({ where: { id, creatorId: creator.id } });
     if (!event) return res.status(404).json({ error: "Event not found" });
     const updated = await prisma.creatorEvent.update({ where: { id }, data: { status: "declined", declineReason: reason || null } });
-    console.log(\`❌ Creator declined event: \${event.eventName}\`, reason);
+    console.log(`❌ Creator declined event: ${event.eventName}`, reason);
     res.json({ success: true, message: "We've let your agent know", event: sanitizeEventForCreator(updated) });
   } catch (error) {
     res.status(500).json({ error: "Failed to decline event" });
@@ -197,7 +198,21 @@ router.get("/calendar/preview", async (req, res) => {
 router.get("/insights", async (req, res) => {
   try {
     const creator = (req as any).creator;
-    const insights = await prisma.creatorInsight.findMany({ where: { creatorId: creator.id, OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }] }, orderBy: [{ priority: "desc" }, { createdAt: "desc" }], take: 10 });
+    const limit = Math.min(parseInt((req.query.limit as string) || "10", 10) || 10, 50);
+    const sinceRaw = (req.query.since as string) || "";
+    const insightType = (req.query.insightType as string) || "";
+    const since = sinceRaw ? new Date(sinceRaw) : null;
+
+    const insights = await prisma.creatorInsight.findMany({
+      where: {
+        creatorId: creator.id,
+        ...(insightType ? { insightType } : {}),
+        ...(since && !Number.isNaN(since.getTime()) ? { createdAt: { gte: since } } : {}),
+        OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }]
+      },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      take: limit
+    });
     res.json(insights);
   } catch (error) {
     res.json(SAFE_DEFAULTS.insights);
@@ -221,16 +236,17 @@ router.patch("/insights/:id/mark-read", async (req, res) => {
 router.get("/revenue/summary", async (req, res) => {
   try {
     const creator = (req as any).creator;
+    const days = Math.min(parseInt((req.query.days as string) || "30", 10) || 30, 365);
     const payouts = await prisma.payout.findMany({ where: { creatorId: creator.id }, select: { amount: true, status: true, paidAt: true, createdAt: true } });
     const completed = payouts.filter((p) => p.status === "completed");
     const pending = payouts.filter((p) => p.status === "pending");
     const totalEarned = completed.reduce((sum, p) => sum + p.amount, 0);
     const potentialRevenue = pending.reduce((sum, p) => sum + p.amount, 0);
     const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-    const recent = completed.filter((p) => p.paidAt && new Date(p.paidAt) >= thirtyDaysAgo);
-    const previous = completed.filter((p) => p.paidAt && new Date(p.paidAt) >= sixtyDaysAgo && new Date(p.paidAt) < thirtyDaysAgo);
+    const recentStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const previousStart = new Date(now.getTime() - days * 2 * 24 * 60 * 60 * 1000);
+    const recent = completed.filter((p) => p.paidAt && new Date(p.paidAt) >= recentStart);
+    const previous = completed.filter((p) => p.paidAt && new Date(p.paidAt) >= previousStart && new Date(p.paidAt) < recentStart);
     const recentTotal = recent.reduce((sum, p) => sum + p.amount, 0);
     const previousTotal = previous.reduce((sum, p) => sum + p.amount, 0);
     let trend = "flat";
@@ -256,9 +272,26 @@ router.get("/goals", async (req, res) => {
 router.post("/goals", async (req, res) => {
   try {
     const creator = (req as any).creator;
-    const { goalType, title, targetValue, timeframe } = req.body;
+    const { goalType, goalCategory, title, targetValue, targetUnit, timeframe } = req.body;
     if (!goalType || !title) return res.status(400).json({ error: "Goal type and title required" });
-    const goal = await prisma.creatorGoal.create({ data: { creatorId: creator.id, goalType, title, targetValue: targetValue || null, timeframe: timeframe || null, active: true, progress: 0 } });
+    
+    const goal = await prisma.creatorGoal.create({ 
+      data: { 
+        creatorId: creator.id, 
+        goalCategory: goalCategory || "growth",
+        goalType, 
+        title, 
+        targetValue: targetValue || null, 
+        targetUnit: targetUnit || null,
+        timeframe: timeframe || null, 
+        active: true, 
+        progress: 0 
+      } 
+    });
+
+    // Create version snapshot
+    await createGoalVersion(goal.id, goal as any, "created", "creator");
+
     res.json(goal);
   } catch (error) {
     res.status(500).json({ error: "Failed to create goal" });
@@ -269,10 +302,26 @@ router.patch("/goals/:id", async (req, res) => {
   try {
     const creator = (req as any).creator;
     const { id } = req.params;
-    const { title, targetValue, timeframe, progress, active } = req.body;
+    const { goalCategory, title, targetValue, targetUnit, timeframe, progress, active } = req.body;
     const goal = await prisma.creatorGoal.findFirst({ where: { id, creatorId: creator.id } });
     if (!goal) return res.status(404).json({ error: "Goal not found" });
-    const updated = await prisma.creatorGoal.update({ where: { id }, data: { ...(title !== undefined && { title }), ...(targetValue !== undefined && { targetValue }), ...(timeframe !== undefined && { timeframe }), ...(progress !== undefined && { progress }), ...(active !== undefined && { active }) } });
+
+    const updated = await prisma.creatorGoal.update({ 
+      where: { id }, 
+      data: { 
+        ...(goalCategory !== undefined && { goalCategory }),
+        ...(title !== undefined && { title }), 
+        ...(targetValue !== undefined && { targetValue }), 
+        ...(targetUnit !== undefined && { targetUnit }),
+        ...(timeframe !== undefined && { timeframe }), 
+        ...(progress !== undefined && { progress }), 
+        ...(active !== undefined && { active }) 
+      } 
+    });
+
+    // Create version snapshot
+    await createGoalVersion(updated.id, updated as any, "updated", "creator");
+
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: "Failed to update goal" });
@@ -285,10 +334,44 @@ router.delete("/goals/:id", async (req, res) => {
     const { id } = req.params;
     const goal = await prisma.creatorGoal.findFirst({ where: { id, creatorId: creator.id } });
     if (!goal) return res.status(404).json({ error: "Goal not found" });
-    await prisma.creatorGoal.update({ where: { id }, data: { active: false } });
+    
+    const updated = await prisma.creatorGoal.update({ where: { id }, data: { active: false } });
+    
+    // Create version snapshot
+    await createGoalVersion(updated.id, updated as any, "archived", "creator");
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete goal" });
+  }
+});
+
+// Explicit archive endpoint (clearer UX than DELETE)
+router.post("/goals/:id/archive", async (req, res) => {
+  try {
+    const creator = (req as any).creator;
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const goal = await prisma.creatorGoal.findFirst({ where: { id, creatorId: creator.id } });
+    if (!goal) return res.status(404).json({ error: "Goal not found" });
+    
+    const updated = await prisma.creatorGoal.update({ 
+      where: { id }, 
+      data: { active: false } 
+    });
+
+    // Create version snapshot with optional reason
+    const snapshot = { ...updated, archiveReason: reason || null } as any;
+    await createGoalVersion(updated.id, snapshot, "archived", "creator");
+
+    res.json({ 
+      success: true, 
+      goal: updated,
+      message: "Goal archived successfully" 
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to archive goal" });
   }
 });
 

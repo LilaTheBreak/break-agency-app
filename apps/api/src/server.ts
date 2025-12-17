@@ -59,6 +59,9 @@ import setupRouter from "./routes/setup.js";
 // Exclusive Talent
 import exclusiveRouter from "./routes/exclusive.js";
 
+// Creator Onboarding
+import creatorRouter from "./routes/creator.js";
+
 // Admin Finance
 import adminFinanceRouter from "./routes/admin/finance.js";
 
@@ -198,6 +201,11 @@ app.use("/api/setup", setupRouter);
 // EXCLUSIVE TALENT
 // ------------------------------------------------------
 app.use("/api/exclusive", exclusiveRouter);
+
+// ------------------------------------------------------
+// CREATOR ONBOARDING
+// ------------------------------------------------------
+app.use(creatorRouter); // Routes already prefixed with /api/creator
 
 // ------------------------------------------------------
 // USER APPROVALS

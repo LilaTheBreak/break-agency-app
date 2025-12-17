@@ -402,7 +402,7 @@ model User {
   name                    String?
   avatarUrl               String?
   createdAt               DateTime                @default(now())
-  updatedAt               DateTime
+  updatedAt               DateTime                @updatedAt
   upgrade_suggested       Boolean?                @default(false)
   include_in_roster       Boolean                 @default(false)
   ugcApproved             Boolean                 @default(false)
@@ -637,20 +637,37 @@ model SalesOpportunity {
 // ============================================
 
 model CreatorGoal {
-  id          String   @id @default(uuid())
-  creatorId   String
-  goalType    String   // revenue | product | events | personal | content
-  title       String
-  targetValue Float?
-  timeframe   String?  // Q1 2024 | 6 months | etc
-  progress    Float    @default(0) // 0-1 decimal
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  Creator     Talent   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  id              String              @id @default(uuid())
+  creatorId       String
+  goalCategory    String              @default("growth") // creative | commercial | growth | personal | wellbeing
+  goalType        String              // speaking | product | revenue | content | balance | other
+  title           String
+  targetValue     Float?
+  targetUnit      String?             // revenue_range | count | timeframe | percentage
+  timeframe       String?             // Q1 2024 | 6 months | this quarter | etc
+  progress        Float               @default(0) // 0-1 decimal
+  active          Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  Creator         Talent              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  GoalVersions    CreatorGoalVersion[]
 
   @@index([creatorId, active])
   @@index([goalType])
+  @@index([goalCategory])
+}
+
+model CreatorGoalVersion {
+  id            String       @id @default(uuid())
+  creatorGoalId String
+  snapshot      Json         // Full goal state at time of change
+  changedAt     DateTime     @default(now())
+  changedBy     String       // creator | agent | admin | system
+  changeType    String       // created | updated | archived
+  CreatorGoal   CreatorGoal  @relation(fields: [creatorGoalId], references: [id], onDelete: Cascade)
+
+  @@index([creatorGoalId, changedAt])
+  @@index([changedBy])
 }
 
 model CreatorEvent {

@@ -1,4 +1,14 @@
 import type { Request, Response, NextFunction } from "express";
+import type { SessionUser } from "../lib/session.js";
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: SessionUser | null;
+      isAdmin?: boolean;
+    }
+  }
+}
 
 /**
  * Admin-only authentication middleware
@@ -42,18 +52,9 @@ export function checkAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.user) {
     const adminRoles = ["ADMIN", "AGENCY_ADMIN", "SUPER_ADMIN"];
     const userRole = req.user.role?.toUpperCase();
-    req.isAdmin = userRole && adminRoles.includes(userRole);
+    req.isAdmin = Boolean(userRole && adminRoles.includes(userRole));
   } else {
     req.isAdmin = false;
   }
   next();
-}
-
-// Extend Express Request type
-declare global {
-  namespace Express {
-    interface Request {
-      isAdmin?: boolean;
-    }
-  }
 }

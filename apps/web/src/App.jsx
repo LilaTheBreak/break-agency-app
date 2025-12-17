@@ -37,6 +37,7 @@ import ExclusiveTalentDashboardLayout, {
   ExclusiveProfilePage,
   ExclusiveSocialsPage,
   ExclusiveCampaignsPage,
+  ExclusiveAnalyticsPage,
   ExclusiveCalendarPage,
   ExclusiveProjectsPage,
   ExclusiveTasksPage,
@@ -953,6 +954,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route path="profile" element={<ExclusiveProfilePage />} />
           <Route path="socials" element={<ExclusiveSocialsPage />} />
           <Route path="campaigns" element={<ExclusiveCampaignsPage />} />
+          <Route path="analytics" element={<ExclusiveAnalyticsPage />} />
           <Route path="calendar" element={<ExclusiveCalendarPage />} />
           <Route path="projects" element={<ExclusiveProjectsPage />} />
           <Route

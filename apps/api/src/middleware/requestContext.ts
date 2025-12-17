@@ -1,13 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
+import type { SessionUser } from "../lib/session.js";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: string;
-        email?: string;
-        roles: string[];
-      };
+      user?: SessionUser | null;
       ipAddress?: string;
     }
   }
@@ -16,13 +13,13 @@ declare global {
 export function requestContextMiddleware(req: Request, _res: Response, next: NextFunction) {
   if (!req.user?.id) {
     const userIdHeader = req.header("x-user-id");
-    const rolesHeader = req.header("x-user-roles");
+    const roleHeader = req.header("x-user-role");
 
     if (userIdHeader) {
       req.user = {
         id: userIdHeader,
-        email: req.user?.email,
-        roles: rolesHeader ? rolesHeader.split(",").map((role) => role.trim()) : []
+        email: req.user?.email || "",
+        role: roleHeader || "CREATOR"
       };
     }
   }

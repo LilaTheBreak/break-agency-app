@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ExclusiveSocialPanel } from "./ExclusiveSocialPanel.jsx";
 import { Badge } from "../components/Badge.jsx";
@@ -8,12 +8,14 @@ import { useCampaigns } from "../hooks/useCampaigns.js";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { CalendarBoard } from "./AdminCalendarPage.jsx";
 import { ExclusiveOverviewEnhanced } from "./ExclusiveOverviewEnhanced.jsx";
+import { apiFetch } from "../services/apiClient.js";
 
 const NAV_LINKS = (basePath) => [
   { label: "Overview", to: `${basePath}`, end: true },
   { label: "My Profile", to: `${basePath}/profile` },
   { label: "Socials", to: `${basePath}/socials` },
   { label: "Campaigns", to: `${basePath}/campaigns` },
+  { label: "Analytics", to: `${basePath}/analytics` },
   { label: "Calendar", to: `${basePath}/calendar` },
   { label: "Projects", to: `${basePath}/projects` },
   { label: "Opportunities", to: `${basePath}/opportunities` },
@@ -418,6 +420,11 @@ export function ExclusiveCampaignsPage() {
   return <ExclusiveCampaigns session={session} />;
 }
 
+export function ExclusiveAnalyticsPage() {
+  const { session, basePath } = useOutletContext() || {};
+  return <ExclusiveAnalytics session={session} basePath={basePath} />;
+}
+
 export function ExclusiveCalendarPage() {
   return (
     <CalendarBoard
@@ -467,6 +474,669 @@ export function ExclusiveContractsPage() {
 export function ExclusiveSettingsPage() {
   const { basePath } = useOutletContext() || {};
   return <ExclusiveSettings basePath={basePath} />;
+}
+
+function isInsightDismissed(dismissed, id) {
+  const ts = dismissed?.[id];
+  if (!ts) return false;
+  const ageDays = (Date.now() - new Date(ts).getTime()) / (1000 * 60 * 60 * 24);
+  return ageDays < 14;
+}
+
+function Pill({ tone = "neutral", children }) {
+  const toneClass =
+    tone === "positive"
+      ? "border-brand-black/10 bg-brand-white text-brand-black"
+      : "border-brand-black/10 bg-brand-white text-brand-black/70";
+  return (
+    <span className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] ${toneClass}`}>
+      {children}
+    </span>
+  );
+}
+
+function SoftSelect({ value, onChange, options, label }) {
+  return (
+    <label className="flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-white px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70">
+      <span className="text-brand-black/60">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-transparent text-xs uppercase tracking-[0.3em] text-brand-black outline-none"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function InsightCard({ title, why, action }) {
+  return (
+    <article className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-5">
+      <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{title}</p>
+      <p className="mt-2 text-sm text-brand-black/70">{why}</p>
+      <p className="mt-3 text-sm font-semibold text-brand-black">{action}</p>
+    </article>
+  );
+}
+
+function MiniChart() {
+  const points = [8, 10, 9, 12, 11, 13, 12, 14];
+  const max = Math.max(...points);
+  const min = Math.min(...points);
+  const w = 340;
+  const h = 90;
+  const pad = 10;
+  const xStep = (w - pad * 2) / (points.length - 1);
+  const y = (v) => {
+    if (max === min) return h / 2;
+    const t = (v - min) / (max - min);
+    return h - pad - t * (h - pad * 2);
+  };
+  const d = points
+    .map((v, i) => `${i === 0 ? "M" : "L"} ${pad + i * xStep} ${y(v)}`)
+    .join(" ");
+
+  return (
+    <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Visual trend</p>
+          <h4 className="font-display text-xl uppercase text-brand-black">Engagement over time</h4>
+          <p className="mt-1 text-sm text-brand-black/60">One calm view — tooltips later.</p>
+        </div>
+        <Pill tone="neutral">No comparisons</Pill>
+      </div>
+      <div className="mt-4 overflow-hidden rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-3">
+        <svg viewBox={`0 0 ${w} ${h}`} className="h-24 w-full">
+          <path d={d} fill="none" stroke="currentColor" strokeWidth="2" className="text-brand-black" />
+          {points.map((v, i) => (
+            <circle key={i} cx={pad + i * xStep} cy={y(v)} r="3" className="fill-brand-red" />
+          ))}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function ContentCard({ title, why, replicate }) {
+  return (
+    <article className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+      <div className="flex gap-4">
+        <div className="h-20 w-20 shrink-0 rounded-2xl border border-brand-black/10 bg-gradient-to-br from-brand-linen to-brand-white" />
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">Top content</p>
+          <p className="mt-1 font-semibold text-brand-black">{title}</p>
+          <p className="mt-2 text-sm text-brand-black/70">{why}</p>
+          <p className="mt-2 text-sm font-semibold text-brand-black">{replicate}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ExclusiveAnalytics({ session, basePath }) {
+  const navigate = useNavigate();
+  const [range, setRange] = useState("30d");
+  const displayBasePath = basePath || "/exclusive";
+
+  const [socialsState, setSocialsState] = useState({ loading: true, items: [], error: "" });
+  const [insightsState, setInsightsState] = useState({ loading: true, items: [], error: "" });
+  const [revenueState, setRevenueState] = useState({ loading: true, data: null, error: "" });
+  const [expandedPlatforms, setExpandedPlatforms] = useState(() => new Set());
+  const [explanationKey, setExplanationKey] = useState("");
+
+  const DISMISSED_KEY = "break_exclusive_analytics_dismissed_v1";
+  const [dismissedMap, setDismissedMap] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(DISMISSED_KEY) || "{}") || {};
+    } catch {
+      return {};
+    }
+  });
+
+  const rangeDays = useMemo(() => (range === "7d" ? 7 : range === "90d" ? 90 : 30), [range]);
+  const sinceIso = useMemo(() => new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000).toISOString(), [rangeDays]);
+
+  const persistDismissed = (next) => {
+    setDismissedMap(next);
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  };
+
+  const dismissInsight = async (id) => {
+    persistDismissed({ ...(dismissedMap || {}), [id]: new Date().toISOString() });
+    try {
+      await apiFetch(`/exclusive/insights/${encodeURIComponent(id)}/mark-read`, { method: "PATCH" });
+    } catch {
+      // ignore
+    }
+  };
+
+  const togglePlatform = (platform) => {
+    setExpandedPlatforms((prev) => {
+      const next = new Set(prev);
+      if (next.has(platform)) next.delete(platform);
+      else next.add(platform);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let alive = true;
+
+    setSocialsState((prev) => ({ ...prev, loading: true, error: "" }));
+    setRevenueState((prev) => ({ ...prev, loading: true, error: "" }));
+    setInsightsState((prev) => ({ ...prev, loading: true, error: "" }));
+
+    (async () => {
+      // Progressive loading: snapshot data first (socials + revenue), deeper insights next.
+      const [socialsRes, revenueRes] = await Promise.allSettled([
+        apiFetch(`/exclusive/socials`, { signal: controller.signal }),
+        apiFetch(`/exclusive/revenue/summary?days=${encodeURIComponent(String(rangeDays))}`, { signal: controller.signal })
+      ]);
+
+      if (!alive) return;
+
+      if (socialsRes.status === "fulfilled" && socialsRes.value.ok) {
+        const json = await socialsRes.value.json().catch(() => []);
+        setSocialsState({ loading: false, items: Array.isArray(json) ? json : [], error: "" });
+      } else {
+        setSocialsState({ loading: false, items: [], error: "" });
+      }
+
+      if (revenueRes.status === "fulfilled" && revenueRes.value.ok) {
+        const json = await revenueRes.value.json().catch(() => null);
+        setRevenueState({ loading: false, data: json, error: "" });
+      } else {
+        setRevenueState({ loading: false, data: null, error: "" });
+      }
+
+      const insightsRes = await apiFetch(
+        `/exclusive/insights?since=${encodeURIComponent(sinceIso)}&limit=50`,
+        { signal: controller.signal }
+      ).catch(() => null);
+
+      if (!alive) return;
+
+      if (insightsRes?.ok) {
+        const json = await insightsRes.json().catch(() => []);
+        setInsightsState({ loading: false, items: Array.isArray(json) ? json : [], error: "" });
+      } else {
+        setInsightsState({ loading: false, items: [], error: "" });
+      }
+    })();
+
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [rangeDays, sinceIso]);
+
+  const connectedSocials = useMemo(
+    () => (socialsState.items || []).filter((a) => a?.connected),
+    [socialsState.items]
+  );
+
+  const topPlatform = useMemo(() => {
+    if (!connectedSocials.length) return "—";
+    const sorted = [...connectedSocials].sort((a, b) => {
+      const at = a?.lastSyncedAt ? new Date(a.lastSyncedAt).getTime() : 0;
+      const bt = b?.lastSyncedAt ? new Date(b.lastSyncedAt).getTime() : 0;
+      return bt - at;
+    });
+    const platform = sorted[0]?.platform;
+    if (!platform) return "—";
+    return platform.charAt(0).toUpperCase() + platform.slice(1);
+  }, [connectedSocials]);
+
+  const availableInsights = useMemo(
+    () => (insightsState.items || []).filter((i) => i?.id && !isInsightDismissed(dismissedMap, i.id)),
+    [insightsState.items, dismissedMap]
+  );
+
+  const aiInsights = useMemo(() => {
+    const candidates = availableInsights
+      .filter((i) => !i.isRead)
+      .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    return candidates.slice(0, 2);
+  }, [availableInsights]);
+
+  const safeSnapshotCards = useMemo(() => {
+    const revenueTrend = revenueState.data?.trend || "flat";
+    const revenueTrendLabel = revenueTrend === "up" ? "Up" : revenueTrend === "down" ? "Down" : "Steady";
+    const revenueTone = revenueTrend === "up" ? "positive" : "neutral";
+
+    const insightHealth =
+      availableInsights.length >= 4 ? { label: "Healthy", tone: "positive" } : { label: "Building", tone: "neutral" };
+    const socialFreshness =
+      connectedSocials.length > 0 ? { label: "Connected", tone: "neutral" } : { label: "Not connected", tone: "neutral" };
+
+    return [
+      {
+        key: "reach",
+        label: "Reach trend",
+        value: connectedSocials.length ? "Developing" : "Limited",
+        tone: "neutral",
+        explain: "We’ll show clearer reach trends once your connected socials have a bit more history."
+      },
+      {
+        key: "engagement",
+        label: "Engagement health",
+        value: insightHealth.label,
+        tone: insightHealth.tone,
+        explain: "This is a qualitative read based on recent insight signals — not a score."
+      },
+      {
+        key: "growth",
+        label: "Growth direction",
+        value: connectedSocials.length ? "Steady" : "Unknown",
+        tone: "neutral",
+        explain: "We avoid anxiety-inducing drops. When there’s enough data, we’ll describe patterns with context."
+      },
+      {
+        key: "platform",
+        label: "Top platform",
+        value: topPlatform,
+        tone: "neutral",
+        explain: "This reflects where your connected data is freshest — not a judgement."
+      },
+      {
+        key: "momentum",
+        label: "Momentum",
+        value: revenueTrendLabel,
+        tone: revenueTone,
+        explain: "A soft direction indicator using high-level trend signals. Detailed reporting is handled by your agent."
+      },
+      {
+        key: "data",
+        label: "Data status",
+        value: socialFreshness.label,
+        tone: socialFreshness.tone,
+        explain: "Connect socials to improve insight quality over time."
+      }
+    ];
+  }, [availableInsights.length, connectedSocials.length, revenueState.data?.trend, topPlatform]);
+
+  const whatsWorkingCards = useMemo(() => {
+    const relevant = availableInsights.filter((i) => i.insightType === "trend" || i.insightType === "performance");
+    return relevant.slice(0, 6).map((i) => ({
+      id: i.id,
+      title: i.title || "What’s working",
+      why: i.summary || "We’re building a clearer read as more data comes in.",
+      action: i.context || "Try a small variation on this theme and keep what feels natural."
+    }));
+  }, [availableInsights]);
+
+  const inferPlatform = (text = "") => {
+    const value = String(text || "").toLowerCase();
+    if (value.includes("instagram")) return "Instagram";
+    if (value.includes("tiktok")) return "TikTok";
+    if (value.includes("youtube")) return "YouTube";
+    if (value.includes("x ") || value.includes("twitter")) return "X";
+    return "";
+  };
+
+  const platformBuckets = useMemo(() => {
+    const buckets = {};
+    availableInsights.forEach((i) => {
+      const metaPlatform = i?.metadata?.platform ? String(i.metadata.platform) : "";
+      const p = metaPlatform || inferPlatform(`${i.title || ""} ${i.summary || ""}`);
+      if (!p) return;
+      buckets[p] = buckets[p] ? [...buckets[p], i] : [i];
+    });
+    return buckets;
+  }, [availableInsights]);
+
+  const audienceSignals = useMemo(() => {
+    return availableInsights
+      .filter((i) => i.insightType === "audience")
+      .slice(0, 5)
+      .map((i) => i.summary || i.title)
+      .filter(Boolean);
+  }, [availableInsights]);
+
+  const growthOpportunities = useMemo(() => {
+    return availableInsights
+      .filter((i) => i.insightType === "opportunity")
+      .slice(0, 5)
+      .map((i) => i.summary || i.title)
+      .filter(Boolean);
+  }, [availableInsights]);
+
+  const firstName =
+    session?.name?.split(" ")?.[0] || session?.email?.split("@")?.[0]?.split(".")?.[0] || "Creator";
+
+  return (
+    <section className="space-y-6">
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Analytics</p>
+            <h2 className="font-display text-4xl uppercase text-brand-black">Analytics</h2>
+            <p className="text-sm text-brand-black/70">Understand what’s resonating with your audience.</p>
+            <p className="text-xs text-brand-black/60">Detailed brand reporting is handled by your agent.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SoftSelect
+              label="Range"
+              value={range}
+              onChange={setRange}
+              options={[
+                { value: "7d", label: "Last 7 days" },
+                { value: "30d", label: "Last 30 days" },
+                { value: "90d", label: "Last 90 days" }
+              ]}
+            />
+            <button
+              type="button"
+              onClick={() => navigate(displayBasePath)}
+              className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+            >
+              Back to overview
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Tone</p>
+          <p className="mt-1 text-sm text-brand-black/70">
+            This page is here to help you feel clear about what to post next — not to judge performance. Hi {firstName}.
+          </p>
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-5">
+        {(socialsState.loading || revenueState.loading) && (
+          <div className="md:col-span-5 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Loading snapshot…</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, idx) => (
+                <div key={idx} className="h-24 rounded-3xl border border-brand-black/10 bg-brand-linen/60 animate-pulse" />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!socialsState.loading && !revenueState.loading && (
+          <div className="md:col-span-5 grid gap-4 md:grid-cols-6">
+            {safeSnapshotCards.slice(0, 6).map((card) => (
+              <button
+                key={card.key}
+                type="button"
+                onClick={() => setExplanationKey((prev) => (prev === card.key ? "" : card.key))}
+                className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-5 text-left transition hover:bg-brand-linen/70"
+              >
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{card.label}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <p className="font-display text-2xl uppercase text-brand-black">{card.value}</p>
+                  <Pill tone={card.tone}>{card.tone === "positive" ? "Good" : "Neutral"}</Pill>
+                </div>
+                <p className="mt-2 text-xs text-brand-black/60">
+                  {explanationKey === card.key ? card.explain : "Tap for context"}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">What’s working</p>
+            <h3 className="font-display text-3xl uppercase text-brand-black">Right now</h3>
+            <p className="mt-1 text-sm text-brand-black/60">Themes and formats — not raw stats.</p>
+          </div>
+          <Pill tone="neutral">Coaching-led</Pill>
+        </div>
+        {insightsState.loading ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="h-36 rounded-3xl border border-brand-black/10 bg-brand-linen/50 animate-pulse" />
+            ))}
+          </div>
+        ) : whatsWorkingCards.length ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {whatsWorkingCards.slice(0, 3).map((t) => (
+              <InsightCard key={t.id} title={t.title} why={t.why} action={t.action} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-6">
+            <p className="font-semibold text-brand-black">Insights build over time</p>
+            <p className="mt-2 text-sm text-brand-black/70">
+              If you’ve just connected accounts, it can take a little time for patterns to form. Nothing is “wrong” — it’s just early.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(`${displayBasePath}/socials`)}
+                className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+              >
+                Connect socials
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <div>
+          <MiniChart />
+          <p className="mt-2 text-xs text-brand-black/60">
+            Charts stay high-level. No exports, no spreadsheets, no comparisons.
+          </p>
+        </div>
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">AI insight</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">A gentle read</h3>
+          {insightsState.loading ? (
+            <div className="mt-4 h-32 rounded-2xl border border-brand-black/10 bg-brand-linen/60 animate-pulse" />
+          ) : aiInsights.length ? (
+            <div className="mt-4 space-y-3">
+              {aiInsights.map((insight) => (
+                <div key={insight.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{insight.insightType || "Insight"}</p>
+                      <p className="mt-1 font-semibold text-brand-black">{insight.title}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => dismissInsight(insight.id)}
+                      className="rounded-full border border-brand-black/20 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  <p className="mt-2 text-sm text-brand-black/70">{insight.summary}</p>
+                  {insight.context ? (
+                    <p className="mt-2 text-sm font-semibold text-brand-black">{insight.context}</p>
+                  ) : null}
+                </div>
+              ))}
+              <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Ask a follow-up</p>
+                <p className="mt-2 text-sm text-brand-black/70">You might ask: “What should I post next based on this?”</p>
+                <div className="mt-4">
+                  <AiAssistantCard
+                    session={session}
+                    role="exclusive-talent"
+                    title="AI Assistant"
+                    description="Creative support only — no comparisons, no pressure."
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+              <p className="text-sm text-brand-black/70">
+                No insights yet for this window. Connect socials and check back — we’ll surface 1–2 at a time.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Platforms</p>
+            <h3 className="font-display text-3xl uppercase text-brand-black">Highlights</h3>
+            <p className="mt-1 text-sm text-brand-black/60">One or two insights per platform — no overload.</p>
+          </div>
+        </div>
+        {insightsState.loading ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="h-32 rounded-3xl border border-brand-black/10 bg-brand-linen/50 animate-pulse" />
+            ))}
+          </div>
+        ) : Object.keys(platformBuckets).length ? (
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {Object.entries(platformBuckets)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([platform, items]) => {
+                const expanded = expandedPlatforms.has(platform);
+                const list = expanded ? items.slice(0, 3) : items.slice(0, 1);
+                return (
+                  <article key={platform} className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{platform}</p>
+                        <p className="mt-2 text-sm text-brand-black/70">
+                          {expanded ? "A few small highlights." : "One headline insight."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => togglePlatform(platform)}
+                        className="rounded-full border border-brand-black/20 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5"
+                      >
+                        {expanded ? "Collapse" : "Expand"}
+                      </button>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {list.map((i) => (
+                        <div key={i.id} className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-3">
+                          <p className="text-sm font-semibold text-brand-black">{i.title}</p>
+                          <p className="mt-1 text-sm text-brand-black/70">{i.summary}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-6">
+            <p className="text-sm text-brand-black/70">
+              No platform-specific highlights yet. As your connected accounts sync, we’ll surface 1–2 insights per platform.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Audience signals</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">What they lean into</h3>
+          <div className="mt-4 space-y-3">
+            {insightsState.loading ? (
+              <div className="h-28 rounded-2xl border border-brand-black/10 bg-brand-linen/60 animate-pulse" />
+            ) : audienceSignals.length ? (
+              audienceSignals.map((s) => (
+                <div
+                  key={s}
+                  className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-sm text-brand-black/70"
+                >
+                  {s}
+                </div>
+              ))
+            ) : (
+              <div
+                className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-sm text-brand-black/70"
+              >
+                Audience signals will appear here once there’s enough engagement history to describe patterns safely.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">What to try next</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Growth opportunities</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Forward-looking and exciting — not critical.</p>
+          <div className="mt-4 space-y-3">
+            {insightsState.loading ? (
+              <div className="h-28 rounded-2xl border border-brand-black/10 bg-brand-linen/60 animate-pulse" />
+            ) : growthOpportunities.length ? (
+              growthOpportunities.map((o) => (
+                <div
+                  key={o}
+                  className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-sm text-brand-black/70"
+                >
+                  {o}
+                </div>
+              ))
+            ) : (
+              <div
+                className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-sm text-brand-black/70"
+              >
+                Suggestions show up here as trend and opportunity signals arrive. Nothing is urgent — just ideas.
+              </div>
+            )}
+          </div>
+        </section>
+      </section>
+
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Content</p>
+            <h3 className="font-display text-3xl uppercase text-brand-black">Humanised performance</h3>
+            <p className="mt-1 text-sm text-brand-black/60">Why it worked, and what to replicate.</p>
+          </div>
+          <Pill tone="neutral">No tables</Pill>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {whatsWorkingCards.slice(0, 3).map((item) => (
+            <ContentCard key={item.id} title={item.title} why={item.why} replicate={item.action} />
+          ))}
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-6">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">If data is limited</p>
+            <p className="mt-2 text-sm text-brand-black/70">
+              Insights improve as your socials connect and your content library grows. Nothing is “wrong” — it’s just early.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(`${displayBasePath}/socials`)}
+                className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+              >
+                Connect socials
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`${displayBasePath}/goals`)}
+                className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5"
+              >
+                Update goals
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  );
 }
 
 function ExclusiveOverview({ session }) {
