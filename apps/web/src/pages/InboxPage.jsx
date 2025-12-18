@@ -2,9 +2,15 @@ import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getGmailAuthUrl, listGmailMessages, getDealDrafts } from "../services/gmailClient.js";
+import { FeatureGate, useFeature, DisabledNotice } from "../components/FeatureGate.jsx";
+import { INBOX_SCANNING_ENABLED } from "../config/features.js";
 
 function InboxDisconnected() {
+  // UNLOCK WHEN: INBOX_SCANNING_ENABLED flag + Gmail OAuth configured + /api/gmail/* endpoints functional
+  const isInboxEnabled = useFeature(INBOX_SCANNING_ENABLED);
+  
   const handleConnect = async () => {
+    if (!isInboxEnabled) return; // Gate action
     try {
       const { url } = await getGmailAuthUrl();
       window.location.href = url;
@@ -20,12 +26,15 @@ function InboxDisconnected() {
       <p className="mt-2 text-sm text-brand-black/70">
         Link your Gmail account to allow Break's AI to scan for opportunities, draft replies, and manage your deal flow automatically.
       </p>
-      <button
-        onClick={handleConnect}
-        className="mt-6 rounded-full bg-brand-red px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
-      >
-        Connect Gmail Account
-      </button>
+      {!isInboxEnabled && <DisabledNotice feature={INBOX_SCANNING_ENABLED} />}
+      <FeatureGate feature={INBOX_SCANNING_ENABLED} mode="button">
+        <button
+          onClick={handleConnect}
+          className="mt-6 rounded-full bg-brand-red px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+        >
+          Connect Gmail Account
+        </button>
+      </FeatureGate>
     </div>
   );
 }

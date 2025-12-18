@@ -29,14 +29,9 @@ router.get("/api/calendar-events", async (req: Request, res: Response) => {
       .catch(err => console.error("Background Google Calendar sync failed:", err));
 
     // Fetch all events from the local database
-    const talentProfile = await prisma.talent.findUnique({ where: { userId } });
-    if (!talentProfile) {
-      return res.json({ success: true, data: { events: [] } });
-    }
-
     const events = await prisma.talentEvent.findMany({
       where: {
-        talentId: talentProfile.id,
+        userId: userId,
       },
       orderBy: {
         startTime: "asc",
@@ -71,18 +66,17 @@ router.post("/api/calendar-events", async (req: Request, res: Response) => {
   }
 
   try {
-    const talent = await prisma.talent.findUnique({ where: { userId: req.user!.id } });
-    if (!talent) {
-      return res.status(404).json({ success: false, error: "Talent profile not found for this user." });
-    }
+    const userId = req.user!.id;
+    const talent = await prisma.talent.findUnique({ where: { userId } });
 
     const newEvent = await prisma.talentEvent.create({
       data: {
         ...parsed.data,
-        talentId: talent.id,
+        userId: userId,
+        talentId: talent?.id || null,
         source: "manual", // Indicates it was created within the app
         metadata: {
-            category: parsed.data.category || 'general'
+          category: parsed.data.category || 'general'
         }
       },
     });
@@ -101,11 +95,11 @@ router.post("/api/calendar-events", async (req: Request, res: Response) => {
 router.delete("/api/calendar-events/:id", async (req: Request, res: Response) => {
   try {
     const eventId = req.params.id;
-    const talent = await prisma.talent.findUnique({ where: { userId: req.user!.id } });
+    const userId = req.user!.id;
 
     // Ensure the user can only delete their own events
     const eventToDelete = await prisma.talentEvent.findFirst({
-      where: { id: eventId, talentId: talent?.id },
+      where: { id: eventId, userId: userId },
     });
 
     if (!eventToDelete) {
@@ -118,6 +112,45 @@ router.delete("/api/calendar-events/:id", async (req: Request, res: Response) =>
   } catch (error) {
     console.error("Failed to delete calendar event:", error);
     res.status(500).json({ success: false, error: "Could not delete event." });
+  }
+});
+
+/**
+ * POST /api/calendar-events/sync
+ * Manually triggers Google Calendar sync for the logged-in user
+ */
+router.post("/api/calendar-events/sync", async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+
+  try {
+    const gcal = await getGoogleCalendarClient(userId);
+    
+    if (!gcal) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "No Google account linked. Please log in again to grant calendar access." 
+      });
+    }
+
+    await syncGoogleCalendarEvents(userId, gcal);
+    
+    // Return updated events
+    const events = await prisma.talentEvent.findMany({
+      where: { userId: userId },
+      orderBy: { startTime: "asc" },
+    });
+
+    res.json({ 
+      success: true, 
+      message: "Calendar sync completed successfully",
+      data: { events } 
+    });
+  } catch (error) {
+    console.error("Manual calendar sync failed:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to sync calendar. Please try again later." 
+    });
   }
 });
 

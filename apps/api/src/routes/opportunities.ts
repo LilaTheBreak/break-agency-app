@@ -1,5 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -23,7 +24,17 @@ router.get('/public', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const opportunities = await prisma.opportunity.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      include: {
+        Applications: {
+          select: {
+            id: true,
+            creatorId: true,
+            status: true,
+            appliedAt: true
+          }
+        }
+      }
     });
     res.json(opportunities);
   } catch (error) {
@@ -150,6 +161,142 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting opportunity:', error);
     res.status(500).json({ error: 'Failed to delete opportunity' });
+  }
+});
+
+// GET /api/opportunities/creator - Get opportunities for creator with their application status
+router.get('/creator/all', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const opportunities = await prisma.opportunity.findMany({
+      where: { isActive: true },
+      include: {
+        Applications: {
+          where: { creatorId: userId },
+          select: {
+            id: true,
+            status: true,
+            appliedAt: true,
+          },
+        },
+        Submissions: {
+          where: { creatorId: userId },
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Transform to include application status
+    const opportunitiesWithStatus = opportunities.map((opp) => ({
+      ...opp,
+      applicationStatus: opp.Applications[0]?.status || null,
+      hasSubmission: opp.Submissions.length > 0,
+    }));
+
+    res.json({ opportunities: opportunitiesWithStatus });
+  } catch (error) {
+    console.error('[OPPORTUNITIES] Error fetching creator opportunities:', error);
+    res.status(500).json({ error: 'Failed to fetch opportunities' });
+  }
+});
+
+// POST /api/opportunities/:id/apply - Apply to an opportunity
+router.post('/:id/apply', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    const { pitch, proposedRate } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Check if opportunity exists
+    const opportunity = await prisma.opportunity.findUnique({
+      where: { id },
+    });
+
+    if (!opportunity) {
+      return res.status(404).json({ error: 'Opportunity not found' });
+    }
+
+    if (!opportunity.isActive) {
+      return res.status(400).json({ error: 'Opportunity is no longer active' });
+    }
+
+    // Check if already applied
+    const existingApplication = await prisma.opportunityApplication.findUnique({
+      where: {
+        opportunityId_creatorId: {
+          opportunityId: id,
+          creatorId: userId,
+        },
+      },
+    });
+
+    if (existingApplication) {
+      return res.status(400).json({ error: 'Already applied to this opportunity' });
+    }
+
+    const application = await prisma.opportunityApplication.create({
+      data: {
+        opportunityId: id,
+        creatorId: userId,
+        status: 'shortlisted',
+        pitch: pitch || '',
+        proposedRate: proposedRate || null,
+      },
+      include: {
+        opportunity: true,
+      },
+    });
+
+    res.status(201).json({ application });
+  } catch (error) {
+    console.error('[OPPORTUNITIES] Error applying to opportunity:', error);
+    res.status(500).json({ error: 'Failed to apply to opportunity' });
+  }
+});
+
+// GET /api/opportunities/:id/application - Get user's application for an opportunity
+router.get('/:id/application', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const application = await prisma.opportunityApplication.findUnique({
+      where: {
+        opportunityId_creatorId: {
+          opportunityId: id,
+          creatorId: userId,
+        },
+      },
+      include: {
+        opportunity: true,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+
+    res.json({ application });
+  } catch (error) {
+    console.error('[OPPORTUNITIES] Error fetching application:', error);
+    res.status(500).json({ error: 'Failed to fetch application' });
   }
 });
 

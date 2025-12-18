@@ -9,13 +9,13 @@ import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
-import { Roles } from "../auth/session.js";
+import { Roles } from "../constants/roles.js";
+import { FeatureGate } from "../components/FeatureGate.jsx";
+import { useRevenue, useMetrics } from "../hooks/useAnalytics.js";
+import { LineChart as RechartsLineChart } from "../components/charts/index.js";
 
-const CREATOR_ROSTER = [
-  { name: "Exclusive Creator", email: "exclusive@talent.com", vertical: "Lifestyle · Residency" },
-  { name: "UGC Creator", email: "ugc@creator.com", vertical: "UGC storyteller" },
-  { name: "Break Talent", email: "talent@thebreakco.com", vertical: "Fintech explainers" }
-];
+// TODO: Fetch creator roster from API
+const CREATOR_ROSTER = [];
 
 const CAMPAIGN_REPORTS = [
   { label: "Reach", value: "4.1M", delta: "+14%", context: "Paid + organic" },
@@ -42,36 +42,6 @@ const POD_EFFICIENCY = [
   { pod: "UGC pod", efficiency: "95% SLA", cycle: "4.1 days", utilization: "76%" }
 ];
 
-const AI_AUTOMATIONS = [
-  {
-    label: "Next steps",
-    items: ["Launch QA checklist for Luxury drop", "Remind finance about £22K invoice", "Draft recap for GCC brief"]
-  },
-  {
-    label: "Risk alerts",
-    items: ["Creator backlog > 3 tasks", "Contract signature overdue 48h", "Inbox SLA trending down"]
-  },
-  {
-    label: "Recommendations",
-    items: ["Shift budget to pod with fastest cycle", "Deploy specialists to AI banking nurture", "Add creator to Doha pipeline"]
-  },
-  {
-    label: "Contract summaries",
-    items: ["AI-terse summary ready for Residency v4", "Highlight exclusivity clause change", "Flag shortened payment terms"]
-  },
-  {
-    label: "Brief generation",
-    items: ["Drafted ‘Creator Residency’ iteration", "UGC set outline ready", "Script suggestions posted"]
-  },
-  {
-    label: "Suggested pricing",
-    items: ["Luxury pod median £12.4K", "UGC edits pack recommended £4K", "Premium add-on priced £1.2K"]
-  },
-  {
-    label: "Content scoring",
-    items: ["Residency Reel score 92/100", "AI Banking draft 78/100 (CTA low)", "Retail capsule teaser 88/100"]
-  }
-];
 
 const BRAND_NAV_LINKS = (basePath) => [
   { label: "Overview", to: `${basePath}`, end: true },
@@ -147,13 +117,21 @@ export function BrandSettingsPage() {
 }
 
 function BrandOverviewSection({ session }) {
+  // Use analytics hooks for real data
+  const { data: revenueData, loading: revenueLoading } = useRevenue('Month');
+  const { data: metricsData, loading: metricsLoading } = useMetrics();
+
   const overview = {
     description:
       "A Break campaign is a scoped engagement spanning ideation, creator sourcing, production, and measurement. The system tracks every touchpoint so brand, creator, and ops stay aligned.",
     progress: 62,
     phase: "Creative production",
     nextSteps: ["Approve creator travel budget", "Upload legal addendum", "Schedule edit review"],
-    results: [
+    results: metricsData ? [
+      { label: "Active Campaigns", value: metricsData.activeCampaigns?.toString() || "0", context: "Currently running" },
+      { label: "Win Rate", value: metricsData.winRate || "0%", context: "Opportunity success" },
+      { label: "Avg Deal Value", value: metricsData.avgDealValue || "£0", context: "Per campaign" }
+    ] : [
       { label: "Reach", value: "4.1M", context: "Paid + organic" },
       { label: "Engagement rate", value: "5.2%", context: "30-day blended" },
       { label: "Conversion lift", value: "+18%", context: "Versus control" }
@@ -205,112 +183,58 @@ function BrandOverviewSection({ session }) {
           </div>
         </div>
       </div>
-      <div className="space-y-4 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+      <div className="space-y-4 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Analytics + reporting</p>
-            <h4 className="font-display text-2xl uppercase">Signal pulse</h4>
+            <h4 className="font-display text-2xl uppercase">Revenue tracking</h4>
           </div>
+          {revenueData && (
+            <div className="text-right">
+              <p className="text-sm text-brand-black/60">Current</p>
+              <p className="font-display text-2xl uppercase">{revenueData.current || "£0"}</p>
+              <p className="text-xs text-brand-black/50">{revenueData.trend || "—"}</p>
+            </div>
+          )}
         </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
-          <p className="text-sm text-brand-black/60">Analytics not yet available</p>
-          <p className="mt-2 text-xs text-brand-black/40">Reach, engagement, revenue and efficiency metrics will appear once campaigns are live</p>
-        </div>
+        {revenueLoading ? (
+          <div className="h-64 rounded-2xl border border-brand-black/10 bg-brand-linen/50 animate-pulse"></div>
+        ) : revenueData?.breakdown && revenueData.breakdown.length > 0 ? (
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+            <RechartsLineChart
+              data={revenueData.breakdown}
+              xKey="date"
+              yKey="amount"
+              color="#000000"
+              height={220}
+              formatValue={(v) => `£${Math.round(v / 1000)}K`}
+              formatXAxis={(v) => {
+                const date = new Date(v);
+                return date.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+              }}
+              showGrid={true}
+              showTooltip={true}
+            />
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+            <p className="text-sm text-brand-black/60">Revenue analytics loading...</p>
+            <p className="mt-2 text-xs text-brand-black/40">Metrics will appear once campaigns generate revenue</p>
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
-const BRAND_SOCIALS = [
-  { channel: "Instagram", followers: "1.2M", cadence: "5 posts / week", highlight: "Top carousel 6.2% ER" },
-  { channel: "TikTok", followers: "640K", cadence: "3 posts / week", highlight: "Live shopping pilot" },
-  { channel: "YouTube", followers: "210K", cadence: "2 videos / month", highlight: "Residency vlog series" }
-];
+// TODO: Fetch brand social analytics from API
+const BRAND_SOCIALS = [];
 
-const OPPORTUNITY_PIPELINE = [
-  {
-    id: "luxury-travel",
-    title: "Luxury travel drop",
-    stage: "Pitch",
-    value: "£32K",
-    audience: "500K+",
-    demographics: "GCC diaspora",
-    style: "Elevated travel diaries",
-    performance: "Lifestyle CTR > 3%",
-    availability: "Nov weeks 1-3",
-    pricing: "£15K budget per creator",
-    affinity: "Hospitality partnerships"
-  },
-  {
-    id: "ai-banking",
-    title: "AI banking launch",
-    stage: "Contract out",
-    value: "£58K",
-    audience: "250K+",
-    demographics: "Millennial finance",
-    style: "Explainers + talking head",
-    performance: "Finance avg watch 45s",
-    availability: "Dec",
-    pricing: "£12K ceiling",
-    affinity: "Fintech credibility"
-  },
-  {
-    id: "heritage-pop",
-    title: "Heritage pop-up",
-    stage: "Briefing",
-    value: "£18K",
-    audience: "200K",
-    demographics: "Fashion-forward EU",
-    style: "Street/editorial hybrid",
-    performance: "Retail swipe-up 4%",
-    availability: "Jan",
-    pricing: "£8K package",
-    affinity: "Retail collabs"
-  }
-];
+// TODO: Fetch opportunities from API endpoint /api/opportunities
+const OPPORTUNITY_PIPELINE = [];
 
-const CREATOR_MATCH_POOL = [
-  {
-    name: "Exclusive Creator",
-    audience: "750K",
-    demographics: "GCC + diaspora",
-    style: "Elevated travel vlogs",
-    performance: "ER 5.1%",
-    availability: "Nov",
-    pricing: "£14K",
-    affinity: "Luxury + hospitality"
-  },
-  {
-    name: "UGC Creator",
-    audience: "260K",
-    demographics: "Millennial finance",
-    style: "Talking-head explainers",
-    performance: "ER 4.7%",
-    availability: "Dec",
-    pricing: "£10K",
-    affinity: "Fintech + SaaS"
-  },
-  {
-    name: "Break Talent",
-    audience: "180K",
-    demographics: "EU fashion lovers",
-    style: "Street/editorial hybrid",
-    performance: "Retail CTR 4%",
-    availability: "Jan",
-    pricing: "£6K",
-    affinity: "Retail collabs"
-  },
-  {
-    name: "Premium Squad",
-    audience: "500K",
-    demographics: "US premium lifestyle",
-    style: "Cinematic travel diaries",
-    performance: "Views 1.2M avg",
-    availability: "Nov-Dec",
-    pricing: "£18K",
-    affinity: "Hospitality"
-  }
-];
+// TODO: Fetch creator match pool from API endpoint /api/creators/matches
+const CREATOR_MATCH_POOL = [];
 
 const FINANCIAL_PROFILES = {
   brand: {
@@ -409,28 +333,63 @@ function BrandSocialsSection() {
           Export metrics
         </button>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        {BRAND_SOCIALS.map((social) => (
-          <article key={social.channel} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{social.channel}</p>
-            <p className="text-2xl font-semibold text-brand-black">{social.followers}</p>
-            <p className="text-xs text-brand-black/60">{social.cadence}</p>
-            <p className="text-xs text-brand-red">{social.highlight}</p>
-          </article>
-        ))}
-      </div>
+      {BRAND_SOCIALS.length > 0 ? (
+        <div className="grid gap-4 md:grid-cols-3">
+          {BRAND_SOCIALS.map((social) => (
+            <article key={social.channel} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{social.channel}</p>
+              <p className="text-2xl font-semibold text-brand-black">{social.followers}</p>
+              <p className="text-xs text-brand-black/60">{social.cadence}</p>
+              <p className="text-xs text-brand-red">{social.highlight}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-6 text-center">
+          <p className="text-sm text-brand-black/60">No social analytics available yet.</p>
+          <p className="mt-2 text-xs text-brand-black/40">Connect your social accounts to see performance metrics here.</p>
+        </div>
+      )}
     </section>
   );
 }
 
 function BrandOpportunitiesSection({ session }) {
-  const [selectedOpportunityId, setSelectedOpportunityId] = useState(OPPORTUNITY_PIPELINE[0]?.id ?? null);
+  const [opportunities, setOpportunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState(null);
   const [shortlists, setShortlists] = useState({});
   const [approvals, setApprovals] = useState({});
 
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      try {
+        setError(null);
+        const response = await fetch("http://localhost:5001/api/opportunities", {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setOpportunities(data);
+        if (data.length > 0 && !selectedOpportunityId) {
+          setSelectedOpportunityId(data[0].id);
+        }
+      } catch (err) {
+        console.error("Error fetching opportunities:", err);
+        setError(err.message || "Failed to load opportunities");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOpportunities();
+  }, []);
+
   const selectedOpportunity = useMemo(
-    () => OPPORTUNITY_PIPELINE.find((deal) => deal.id === selectedOpportunityId) ?? null,
-    [selectedOpportunityId]
+    () => opportunities.find((deal) => deal.id === selectedOpportunityId) ?? null,
+    [opportunities, selectedOpportunityId]
   );
 
   const recommendedMatches = useMemo(() => {
@@ -480,9 +439,25 @@ function BrandOpportunitiesSection({ session }) {
           Add opportunity
         </button>
       </div>
-      <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
-        <div className="space-y-3">
-          {OPPORTUNITY_PIPELINE.map((deal) => {
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-black/20 border-t-brand-black"></div>
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+          <p className="text-sm text-red-600">Failed to load opportunities</p>
+          <p className="mt-2 text-xs text-red-500">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-full border border-red-600 px-4 py-2 text-xs uppercase tracking-[0.3em] text-red-600 hover:bg-red-600 hover:text-white"
+          >
+            Retry
+          </button>
+        </div>
+      ) : opportunities.length > 0 ? (
+        <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
+          <div className="space-y-3">
+            {opportunities.map((deal) => {
             const isActive = deal.id === selectedOpportunityId;
             return (
               <button
@@ -495,11 +470,11 @@ function BrandOpportunitiesSection({ session }) {
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="font-semibold text-brand-black">{deal.title}</p>
-                    <p className="text-xs text-brand-black/60">{deal.stage}</p>
+                    <p className="text-xs text-brand-black/60">{deal.status || "Active"}</p>
                   </div>
-                  <Badge tone="positive">{deal.value}</Badge>
+                  <Badge tone="positive">£{deal.payment?.toLocaleString() || "TBD"}</Badge>
                 </div>
-                <p className="mt-1 text-xs text-brand-black/60">Audience: {deal.audience}</p>
+                <p className="mt-1 text-xs text-brand-black/60">Brand: {deal.brand || "Unknown"}</p>
               </button>
             );
           })}
@@ -510,30 +485,37 @@ function BrandOpportunitiesSection({ session }) {
               <article className="space-y-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Campaign brief</p>
+                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Opportunity brief</p>
                     <h4 className="font-display text-2xl uppercase">{selectedOpportunity.title}</h4>
                   </div>
-                  <Badge tone="neutral">{selectedOpportunity.stage}</Badge>
+                  <Badge tone="neutral">{selectedOpportunity.status || "Active"}</Badge>
                 </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <OpportunityFact label="Audience size" value={selectedOpportunity.audience} />
-                  <OpportunityFact label="Demographics" value={selectedOpportunity.demographics} />
-                  <OpportunityFact label="Content style" value={selectedOpportunity.style} />
-                  <OpportunityFact label="Past performance" value={selectedOpportunity.performance} />
-                  <OpportunityFact label="Availability" value={selectedOpportunity.availability} />
-                  <OpportunityFact label="Pricing" value={selectedOpportunity.pricing} />
-                  <OpportunityFact label="Brand affinity" value={selectedOpportunity.affinity} />
+                <div className="space-y-2">
+                  <div className="rounded-lg bg-brand-white/50 p-3">
+                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Brand</p>
+                    <p className="mt-1 text-sm font-medium">{selectedOpportunity.brand || "Not specified"}</p>
+                  </div>
+                  <div className="rounded-lg bg-brand-white/50 p-3">
+                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Payment</p>
+                    <p className="mt-1 text-sm font-medium">£{selectedOpportunity.payment?.toLocaleString() || "TBD"}</p>
+                  </div>
+                  {selectedOpportunity.deliverables && (
+                    <div className="rounded-lg bg-brand-white/50 p-3">
+                      <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Deliverables</p>
+                      <p className="mt-1 text-sm">{selectedOpportunity.deliverables}</p>
+                    </div>
+                  )}
+                  {selectedOpportunity.deadline && (
+                    <div className="rounded-lg bg-brand-white/50 p-3">
+                      <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Deadline</p>
+                      <p className="mt-1 text-sm">{new Date(selectedOpportunity.deadline).toLocaleDateString()}</p>
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-2xl border border-dashed border-brand-black/20 p-3">
-                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Shortlist progress</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Applications</p>
                   <p className="mt-2 text-sm text-brand-black/70">
-                    {shortlistedNames.length || approvedNames.length ? (
-                      <>
-                        {shortlistedNames.length} shortlisted · {approvedNames.length} approved
-                      </>
-                    ) : (
-                      "No creators shortlisted yet."
-                    )}
+                    {selectedOpportunity.Applications?.length || 0} applications received
                   </p>
                 </div>
               </article>
@@ -624,6 +606,12 @@ function BrandOpportunitiesSection({ session }) {
           )}
         </div>
       </div>
+      ) : (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No opportunities in your pipeline yet.</p>
+          <p className="mt-2 text-xs text-brand-black/40">Click "Add opportunity" to start matching creators with your campaigns.</p>
+        </div>
+      )}
       <FileUploadPanel
         session={session}
         folder="brand-briefs"
@@ -826,9 +814,11 @@ function BrandProfileSection() {
           <p className="mt-2 text-sm text-brand-black/70">
             Only 12 spaces per year. Brands must apply; creators define how they identify and what markets they support.
           </p>
-          <button className="mt-4 w-full rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]">
-            Submit application
-          </button>
+          <FeatureGate feature="BRIEF_APPLICATIONS_ENABLED" mode="button">
+            <button className="mt-4 w-full rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]">
+              Submit application
+            </button>
+          </FeatureGate>
         </div>
       </div>
       <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">

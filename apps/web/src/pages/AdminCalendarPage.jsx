@@ -1,7 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { Badge } from "../components/Badge.jsx";
+import { 
+  getCalendarEvents, 
+  createCalendarEvent, 
+  deleteCalendarEvent,
+  syncGoogleCalendar 
+} from "../services/calendarClient.js";
 
 const CAL_PROVIDERS = [
   { id: "google", label: "Google Calendar" },
@@ -17,126 +23,6 @@ const TYPE_FILTERS = [
   { id: "event", label: "Events" }
 ];
 const DEFAULT_TYPE_ID = TYPE_FILTERS[0].id;
-const CURRENT_YEAR = new Date().getFullYear();
-
-const INITIAL_EVENTS = [
-  {
-    id: "evt-1",
-    title: "AI Banking Review",
-    date: `${CURRENT_YEAR}-01-05`,
-    time: "10:00",
-    brand: "Nova",
-    status: "Awaiting response",
-    notes: "Run-through with Nova finance",
-    category: "meeting",
-    confirmed: false
-  },
-  {
-    id: "evt-2",
-    title: "Creator kickoff sprint",
-    date: `${CURRENT_YEAR}-01-18`,
-    time: "14:00",
-    brand: "Gulf Air",
-    status: "Accepted",
-    notes: "Finalise Q1 creative requirements",
-    category: "content",
-    confirmed: true
-  },
-  {
-    id: "evt-3",
-    title: "Luxury drop rehearsal",
-    date: `${CURRENT_YEAR}-02-07`,
-    time: "09:00",
-    brand: "Atlantis",
-    status: "Tentative",
-    notes: "Confirm staging for Monaco activation",
-    category: "event",
-    confirmed: false
-  },
-  {
-    id: "evt-4",
-    title: "AI Copilot beta launch",
-    date: `${CURRENT_YEAR}-02-14`,
-    time: "16:00",
-    brand: "Break Labs",
-    status: "Awaiting response",
-    notes: "Greenlight press assets and influencer packs",
-    category: "content",
-    confirmed: false
-  },
-  {
-    id: "evt-5",
-    title: "Creator Success roundtable",
-    date: `${CURRENT_YEAR}-03-03`,
-    time: "11:30",
-    brand: "Global mix",
-    status: "Accepted",
-    notes: "Quarterly governance call with key creators",
-    category: "meeting",
-    confirmed: true
-  },
-  {
-    id: "evt-6",
-    title: "Monaco preview",
-    date: `${CURRENT_YEAR}-03-12`,
-    time: "15:00",
-    brand: "Atlantis",
-    status: "Tentative",
-    notes: "Walkthrough of guest arrival flow",
-    category: "event",
-    confirmed: false
-  },
-  {
-    id: "evt-7",
-    title: "AI Banking Go-Live",
-    date: `${CURRENT_YEAR}-04-01`,
-    time: "09:30",
-    brand: "Nova",
-    status: "Accepted",
-    notes: "Switch paid media & email to AI orchestration",
-    category: "event",
-    confirmed: true
-  },
-  {
-    id: "evt-8",
-    title: "Content pillar retro",
-    date: `${CURRENT_YEAR}-04-19`,
-    time: "13:00",
-    brand: "Launch Pods",
-    status: "Awaiting response",
-    notes: "Triage backlog and assign sprint owners",
-    category: "content",
-    confirmed: false
-  },
-  {
-    id: "evt-9",
-    title: "VIP retention diagnostics",
-    date: `${CURRENT_YEAR}-05-08`,
-    time: "10:30",
-    brand: "Gulf Air",
-    status: "Accepted",
-    notes: "Monthly metrics and escalation paths",
-    category: "meeting",
-    confirmed: true
-  }
-];
-
-const MEETING_SUMMARIES = [
-  {
-    id: "mtg-1",
-    title: "Nova finance sync",
-    summary:
-      "Discussed CPA targets and rollout schedule. Pending: finance approval for £60k paid media expansion.",
-    tasks: ["Update rate card for Nova", "Draft follow-up email w/ revised KPIs"]
-  },
-  {
-    id: "mtg-2",
-    title: "Ops pipeline retro",
-    summary: "AI flagged two briefs at risk. Ops to audit queue in next 48h.",
-    tasks: ["Assign support to GCC pods", "Review AI risk scores"]
-  }
-];
-
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function getCalendarMatrix(date = new Date()) {
@@ -173,9 +59,11 @@ export function CalendarBoard({
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
-  const [events, setEvents] = useState(INITIAL_EVENTS);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState({
-    google: true,
+    google: false,
     microsoft: false,
     apple: false,
     ical: false
@@ -199,6 +87,62 @@ export function CalendarBoard({
     }, {})
   );
   const [showEmailEvents, setShowEmailEvents] = useState(false);
+
+  // Load calendar events from API
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await getCalendarEvents();
+      if (response.success && response.data?.events) {
+        // Transform API events to match component format
+        const transformedEvents = response.data.events.map(event => ({
+          id: event.id,
+          title: event.title,
+          date: event.startTime.split('T')[0], // Extract date from ISO string
+          time: event.startTime.split('T')[1]?.substring(0, 5), // Extract HH:mm
+          brand: event.metadata?.brand || "",
+          status: event.metadata?.status || "Accepted",
+          category: event.category || event.metadata?.category || DEFAULT_TYPE_ID,
+          notes: event.description || "",
+          confirmed: true, // Events from API are considered confirmed
+          source: event.source,
+          location: event.location,
+          isAllDay: event.isAllDay
+        }));
+        setEvents(transformedEvents);
+        
+        // Check if Google Calendar is connected
+        const hasGoogleEvents = transformedEvents.some(e => e.source === 'google');
+        if (hasGoogleEvents) {
+          setConnectedProviders(prev => ({ ...prev, google: true }));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load calendar events:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSyncGoogleCalendar = async () => {
+    try {
+      setSyncing(true);
+      const response = await syncGoogleCalendar();
+      if (response.success) {
+        await loadEvents(); // Reload events after sync
+        alert("Google Calendar synced successfully!");
+      }
+    } catch (error) {
+      console.error("Failed to sync Google Calendar:", error);
+      alert(error.message || "Failed to sync Google Calendar. Please ensure you've granted calendar permissions.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
     today.getDate()
@@ -371,32 +315,59 @@ export function CalendarBoard({
     }));
   };
 
-  const handleSaveEvent = (event) => {
+  const handleSaveEvent = async (event) => {
     event.preventDefault();
     if (!formState.title || !formState.date) {
       alert("Title and date are required.");
       return;
     }
-    if (activeEventId) {
-      setEvents((prev) =>
-        prev.map((evt) => (evt.id === activeEventId ? { ...evt, ...formState } : evt))
-      );
-    } else {
-      setEvents((prev) => [
-        ...prev,
-        {
-          ...formState,
-          id: `evt-${Date.now()}`
-        }
-      ]);
+    
+    try {
+      if (activeEventId) {
+        // For now, just update locally (would need update API endpoint)
+        setEvents((prev) =>
+          prev.map((evt) => (evt.id === activeEventId ? { ...evt, ...formState } : evt))
+        );
+      } else {
+        // Create new event via API
+        const startTime = `${formState.date}T${formState.time || '00:00'}:00.000Z`;
+        const endTime = `${formState.date}T${formState.time ? 
+          String(Number(formState.time.split(':')[0]) + 1).padStart(2, '0') + ':' + formState.time.split(':')[1] 
+          : '01:00'}:00.000Z`;
+        
+        await createCalendarEvent({
+          title: formState.title,
+          startTime,
+          endTime,
+          description: formState.notes,
+          category: formState.category,
+          metadata: {
+            brand: formState.brand,
+            status: formState.status,
+            category: formState.category
+          }
+        });
+        
+        // Reload events after creation
+        await loadEvents();
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Failed to save event:", error);
+      alert("Failed to save event. Please try again.");
     }
-    setIsModalOpen(false);
   };
 
-  const handleDeleteEvent = (eventId) => {
-    setEvents((prev) => prev.filter((evt) => evt.id !== eventId));
-    if (activeEventId === eventId) {
-      setIsModalOpen(false);
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      await deleteCalendarEvent(eventId);
+      await loadEvents(); // Reload events after deletion
+      if (activeEventId === eventId) {
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to delete event:", error);
+      alert("Failed to delete event. Please try again.");
     }
   };
 
@@ -617,10 +588,23 @@ export function CalendarBoard({
       </section>
 
       <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <h3 className="font-display text-2xl uppercase">Calendar sync</h3>
-        <p className="text-sm text-brand-black/60">
-          Connect your source calendars. New events will sync into Break and dispatch tasks automatically.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-2xl uppercase">Calendar sync</h3>
+            <p className="text-sm text-brand-black/60">
+              Connect your source calendars. New events will sync into Break and dispatch tasks automatically.
+            </p>
+          </div>
+          {connectedProviders.google && (
+            <button
+              onClick={handleSyncGoogleCalendar}
+              disabled={syncing}
+              className="rounded-full border border-brand-red bg-brand-red px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-white disabled:opacity-50"
+            >
+              {syncing ? "Syncing..." : "Sync Now"}
+            </button>
+          )}
+        </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {CAL_PROVIDERS.map((provider) => (
             <div
@@ -633,17 +617,23 @@ export function CalendarBoard({
                   {connectedProviders[provider.id] ? "Synced" : "Not connected"}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleProvider(provider.id)}
-                className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em] ${
-                  connectedProviders[provider.id]
-                    ? "border-brand-red text-brand-red"
-                    : "border-brand-black text-brand-black"
-                }`}
-              >
-                {connectedProviders[provider.id] ? "Disconnect" : "Connect"}
-              </button>
+              {provider.id === 'google' ? (
+                <span className="rounded-full border border-brand-black/20 px-4 py-1 text-xs text-brand-black/60">
+                  Auto-sync
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toggleProvider(provider.id)}
+                  className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em] ${
+                    connectedProviders[provider.id]
+                      ? "border-brand-red text-brand-red"
+                      : "border-brand-black text-brand-black"
+                  }`}
+                >
+                  {connectedProviders[provider.id] ? "Disconnect" : "Connect"}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -663,12 +653,16 @@ export function CalendarBoard({
           </button>
         </div>
         <div className="mt-4 space-y-3">
-          {sortedFilteredEvents.length === 0 && (
+          {loading ? (
+            <p className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-linen/30 px-4 py-6 text-center text-sm text-brand-black/70">
+              Loading calendar events...
+            </p>
+          ) : sortedFilteredEvents.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-linen/30 px-4 py-6 text-center text-sm text-brand-black/70">
               No events match the selected filters yet.
             </p>
-          )}
-          {sortedFilteredEvents.map((event) => (
+          ) : (
+            sortedFilteredEvents.map((event) => (
             <div
               key={event.id}
               role="button"
@@ -719,7 +713,8 @@ export function CalendarBoard({
                 </button>
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </section>
 

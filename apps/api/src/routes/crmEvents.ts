@@ -1,0 +1,327 @@
+import { Router, type Request, type Response } from "express";
+import { requireAuth } from "../middleware/auth.js";
+import prisma from "../lib/prisma.js";
+
+const router = Router();
+
+// Apply authentication to all routes
+router.use(requireAuth);
+
+/**
+ * GET /api/crm-events
+ * List all CRM events with optional filters
+ */
+router.get("/", async (req: Request, res: Response) => {
+  try {
+    const { brandId, status, owner } = req.query;
+
+    const where: any = {};
+    if (brandId) where.brandId = brandId as string;
+    if (status) where.status = status as string;
+    if (owner) where.owner = owner as string;
+
+    const events = await prisma.crmEvent.findMany({
+      where,
+      include: {
+        Brand: {
+          select: {
+            id: true,
+            brandName: true,
+          },
+        },
+      },
+      orderBy: {
+        startDateTime: "desc",
+      },
+    });
+
+    res.json(events);
+  } catch (error) {
+    console.error("Error fetching CRM events:", error);
+    res.status(500).json({ error: "Failed to fetch events" });
+  }
+});
+
+/**
+ * GET /api/crm-events/:id
+ * Get a single CRM event by ID
+ */
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const event = await prisma.crmEvent.findUnique({
+      where: { id },
+      include: {
+        Brand: {
+          select: {
+            id: true,
+            brandName: true,
+            website: true,
+            industry: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    res.json(event);
+  } catch (error) {
+    console.error("Error fetching CRM event:", error);
+    res.status(500).json({ error: "Failed to fetch event" });
+  }
+});
+
+/**
+ * POST /api/crm-events
+ * Create a new CRM event
+ */
+router.post("/", async (req: Request, res: Response) => {
+  try {
+    const {
+      eventName,
+      brandId,
+      eventType,
+      status,
+      startDateTime,
+      endDateTime,
+      location,
+      description,
+      attendees,
+      linkedCampaignIds,
+      linkedDealIds,
+      linkedTalentIds,
+      owner,
+    } = req.body;
+
+    if (!eventName || !brandId || !eventType || !startDateTime) {
+      return res.status(400).json({
+        error: "Missing required fields: eventName, brandId, eventType, startDateTime",
+      });
+    }
+
+    const event = await prisma.crmEvent.create({
+      data: {
+        eventName,
+        brandId,
+        eventType,
+        status: status || "Planned",
+        startDateTime: new Date(startDateTime),
+        endDateTime: endDateTime ? new Date(endDateTime) : null,
+        location: location || null,
+        description: description || null,
+        attendees: attendees || null,
+        linkedCampaignIds: linkedCampaignIds || [],
+        linkedDealIds: linkedDealIds || [],
+        linkedTalentIds: linkedTalentIds || [],
+        owner: owner || null,
+        createdBy: req.user!.id,
+        notes: [],
+      },
+      include: {
+        Brand: {
+          select: {
+            id: true,
+            brandName: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json(event);
+  } catch (error) {
+    console.error("Error creating CRM event:", error);
+    res.status(500).json({ error: "Failed to create event" });
+  }
+});
+
+/**
+ * PATCH /api/crm-events/:id
+ * Update an existing CRM event
+ */
+router.patch("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      eventName,
+      eventType,
+      status,
+      startDateTime,
+      endDateTime,
+      location,
+      description,
+      attendees,
+      linkedCampaignIds,
+      linkedDealIds,
+      linkedTalentIds,
+      owner,
+    } = req.body;
+
+    const existing = await prisma.crmEvent.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    if (eventName !== undefined) updateData.eventName = eventName;
+    if (eventType !== undefined) updateData.eventType = eventType;
+    if (status !== undefined) updateData.status = status;
+    if (startDateTime !== undefined) updateData.startDateTime = new Date(startDateTime);
+    if (endDateTime !== undefined) updateData.endDateTime = endDateTime ? new Date(endDateTime) : null;
+    if (location !== undefined) updateData.location = location;
+    if (description !== undefined) updateData.description = description;
+    if (attendees !== undefined) updateData.attendees = attendees;
+    if (linkedCampaignIds !== undefined) updateData.linkedCampaignIds = linkedCampaignIds;
+    if (linkedDealIds !== undefined) updateData.linkedDealIds = linkedDealIds;
+    if (linkedTalentIds !== undefined) updateData.linkedTalentIds = linkedTalentIds;
+    if (owner !== undefined) updateData.owner = owner;
+
+    const updated = await prisma.crmEvent.update({
+      where: { id },
+      data: updateData,
+      include: {
+        Brand: {
+          select: {
+            id: true,
+            brandName: true,
+          },
+        },
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating CRM event:", error);
+    res.status(500).json({ error: "Failed to update event" });
+  }
+});
+
+/**
+ * DELETE /api/crm-events/:id
+ * Delete a CRM event
+ */
+router.delete("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await prisma.crmEvent.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    await prisma.crmEvent.delete({ where: { id } });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting CRM event:", error);
+    res.status(500).json({ error: "Failed to delete event" });
+  }
+});
+
+/**
+ * POST /api/crm-events/:id/notes
+ * Add a note to an event
+ */
+router.post("/:id/notes", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { text, author } = req.body;
+
+    if (!text || !author) {
+      return res.status(400).json({ error: "Missing required fields: text, author" });
+    }
+
+    const event = await prisma.crmEvent.findUnique({ where: { id } });
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    const newNote = {
+      at: new Date().toISOString(),
+      author,
+      text,
+    };
+
+    const updated = await prisma.crmEvent.update({
+      where: { id },
+      data: {
+        notes: [...(Array.isArray(event.notes) ? event.notes : []), newNote],
+        updatedAt: new Date(),
+      },
+      include: {
+        Brand: {
+          select: {
+            id: true,
+            brandName: true,
+          },
+        },
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Error adding note to event:", error);
+    res.status(500).json({ error: "Failed to add note" });
+  }
+});
+
+/**
+ * POST /api/crm-events/batch-import
+ * Batch import events from localStorage (migration endpoint)
+ */
+router.post("/batch-import", async (req: Request, res: Response) => {
+  try {
+    const { events } = req.body;
+
+    if (!Array.isArray(events)) {
+      return res.status(400).json({ error: "events must be an array" });
+    }
+
+    const createdEvents = [];
+
+    for (const event of events) {
+      try {
+        const created = await prisma.crmEvent.create({
+          data: {
+            eventName: event.eventName || "Untitled Event",
+            brandId: event.brandId,
+            eventType: event.eventType || "Other",
+            status: event.status || "Planned",
+            startDateTime: new Date(event.startDateTime),
+            endDateTime: event.endDateTime ? new Date(event.endDateTime) : null,
+            location: event.location || null,
+            description: event.description || null,
+            attendees: event.attendees || null,
+            linkedCampaignIds: event.linkedCampaignIds || [],
+            linkedDealIds: event.linkedDealIds || [],
+            linkedTalentIds: event.linkedTalentIds || [],
+            owner: event.owner || null,
+            createdBy: req.user!.id,
+            notes: event.notes || [],
+          },
+        });
+        createdEvents.push(created);
+      } catch (err) {
+        console.error("Error importing event:", event, err);
+        // Continue with other events
+      }
+    }
+
+    res.status(201).json({
+      message: `Successfully imported ${createdEvents.length} of ${events.length} events`,
+      imported: createdEvents.length,
+      total: events.length,
+    });
+  } catch (error) {
+    console.error("Error batch importing events:", error);
+    res.status(500).json({ error: "Failed to import events" });
+  }
+});
+
+export default router;

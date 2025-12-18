@@ -5,10 +5,15 @@ export const ADMIN_NAV_LINKS = [
   { label: "Calendar", to: "/admin/calendar" },
   { label: "Queues", to: "/admin/queues" },
   { label: "Approvals", to: "/admin/approvals" },
-  { label: "Contracts", to: "/admin/contracts" },
+  { label: "Documents / Contracts", to: "/admin/documents" },
   { label: "Users", to: "/admin/users" },
+  { label: "Brands", to: "/admin/brands" },
   { label: "Outreach", to: "/admin/outreach" },
+  { label: "Campaigns", to: "/admin/campaigns" },
+  { label: "Events", to: "/admin/events" },
+  { label: "Deals", to: "/admin/deals" },
   { label: "Messaging", to: "/admin/messaging" },
   { label: "Finance", to: "/admin/finance" },
+  { label: "CRM Settings", to: "/admin/crm-settings" },
   { label: "Settings", to: "/admin/settings" }
 ];

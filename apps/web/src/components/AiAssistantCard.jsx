@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { apiFetch } from "../services/apiClient.js";
+import { FeatureGate, useFeature, DisabledNotice } from "./FeatureGate.jsx";
 
+// UNLOCK WHEN: AI_ASSISTANT flag set to true + /api/ai/:role endpoints return real responses
 export function AiAssistantCard({ session, role, title = "AI Assistant", description }) {
+  const isAIEnabled = useFeature("AI_ASSISTANT");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +88,9 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
       <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{title}</p>
       {description ? <p className="text-sm text-brand-black/60">{description}</p> : null}
       
-      {showSuggestions && !response && canUse ? (
+      <DisabledNotice feature="AI_ASSISTANT" className="mt-3" />
+
+      {showSuggestions && !response && canUse && isAIEnabled ? (
         <div className="mt-3 space-y-2">
           <p className="text-xs font-medium text-brand-black/50 uppercase tracking-[0.3em]">Suggested prompts</p>
           {prompts.map((prompt, index) => (
@@ -100,24 +105,26 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
           ))}
         </div>
       ) : null}
-      
+
       <textarea
         value={input}
         onChange={(event) => setInput(event.target.value)}
         placeholder={canUse ? "Ask AI how to optimize this week…" : "Sign in to ask the assistant"}
-        disabled={!canUse || loading}
+        disabled={!canUse || loading || !isAIEnabled}
         rows={3}
-        className="mt-3 w-full rounded-2xl border border-brand-black/20 bg-brand-linen/70 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none"
+        className="mt-3 w-full rounded-2xl border border-brand-black/20 bg-brand-linen/70 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none disabled:opacity-50"
       />
       <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          onClick={askAssistant}
-          disabled={!canUse || loading}
-          className="rounded-full bg-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-white disabled:opacity-40"
-        >
-          {loading ? "Thinking…" : "Ask AI"}
-        </button>
+        <FeatureGate feature="AI_ASSISTANT" mode="button">
+          <button
+            type="button"
+            onClick={askAssistant}
+            disabled={!canUse || loading}
+            className="rounded-full bg-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-white disabled:opacity-40"
+          >
+            {loading ? "Thinking…" : "Ask AI"}
+          </button>
+        </FeatureGate>
         <button
           type="button"
           onClick={() => {

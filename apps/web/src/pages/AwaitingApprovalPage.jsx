@@ -1,6 +1,6 @@
 import React from "react";
 import { useAuth } from "../context/AuthContext.jsx";
-import { Roles } from "../auth/session.js";
+import { Roles } from "../constants/roles.js";
 
 /**
  * AwaitingApprovalPage

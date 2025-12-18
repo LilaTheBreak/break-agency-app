@@ -101,6 +101,7 @@ router.use(aiSocialInsightsRouter);
 router.use("/ai", aiDealExtractorRouter);
 router.use(documentExtractionRouter);
 router.use(campaignsRouter);
+router.use("/admin", adminUsersRouter);
 
 /* -------------------------------------------------------
    PROFILE ROUTES (authenticated)

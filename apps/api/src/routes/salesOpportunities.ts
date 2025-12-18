@@ -55,10 +55,11 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 
     // Audit log
     await logOutreachAudit({
-      outreachId,
       action: OutreachAuditAction.OPPORTUNITY_CREATED,
-      userId: req.user?.id,
-      metadata: { opportunityId: opportunity.id, name: opportunity.name }
+      entityType: "opportunity",
+      entityId: opportunity.id,
+      userId: req.user?.id || "system",
+      metadata: { outreachId, name: opportunity.name }
     });
 
     res.status(201).json({ opportunity });
@@ -233,13 +234,13 @@ router.post("/:id/convert-to-deal", requireAuth, requireAdmin, async (req, res) 
     });
 
     // Audit log
-    await logDealConversion({
-      opportunityId: id,
-      dealId: result.deal.id,
-      userId: req.user?.id,
-      value: result.deal.value,
-      currency: result.deal.currency
-    });
+    await logDealConversion(
+      id,
+      result.deal.id,
+      req.user?.id || "system",
+      result.deal.value ?? 0,
+      result.deal.currency
+    );
 
     res.json({ 
       deal: result.deal,
@@ -270,12 +271,12 @@ router.post("/:id/close", requireAuth, requireAdmin, async (req, res) => {
     });
 
     // Audit log
-    await logOpportunityClose({
-      opportunityId: id,
-      userId: req.user?.id,
+    await logOpportunityClose(
+      id,
+      req.user?.id || "system",
       status,
       reason
-    });
+    );
 
     res.json({ opportunity });
   } catch (error) {

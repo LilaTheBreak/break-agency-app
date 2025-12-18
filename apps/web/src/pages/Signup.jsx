@@ -38,9 +38,14 @@ export default function SignupPage() {
     try {
       const normalizedEmail = form.email.trim().toLowerCase();
       await signupWithEmail(normalizedEmail, form.password, form.role);
-      navigate("/dashboard", { replace: true });
+      navigate(`/onboarding?role=${form.role}`, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to sign up");
+      const message = err instanceof Error ? err.message : "Unable to sign up";
+      if (err?.code === 409 || /exist/i.test(message)) {
+        setError("Looks like this email already has an account. Try signing in to continue.");
+      } else {
+        setError(message || "Unable to sign up");
+      }
     } finally {
       setLoading(false);
     }
@@ -153,6 +158,11 @@ export default function SignupPage() {
             Sign in
           </Link>
         </p>
+        {error && /account/i.test(error) ? (
+          <p className="text-center text-xs text-brand-black/60">
+            Tip: use “Sign in” to continue your onboarding or access your dashboard.
+          </p>
+        ) : null}
       </div>
     </div>
   );

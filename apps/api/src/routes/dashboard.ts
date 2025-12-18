@@ -4,8 +4,8 @@ import prisma from "../lib/prisma.js";
 
 const router = Router();
 
-// GET /api/dashboard/creators/active - Get count of onboarded creators
-router.get("/creators/active", requireAuth, async (req: Request, res: Response) => {
+// GET /api/dashboard/creators/active - Get count of onboarded creators (public endpoint for homepage)
+router.get("/creators/active", async (req: Request, res: Response) => {
   try {
     // Count all users with creator roles, regardless of onboarding status
     // This includes: CREATOR, EXCLUSIVE_TALENT, UGC

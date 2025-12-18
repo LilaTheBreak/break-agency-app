@@ -45,12 +45,19 @@ import aiRouter from "./routes/ai.js";
 // Authenticity / Risk / Suitability
 import authenticityRouter from "./routes/authenticity.js";
 import opportunitiesRouter from "./routes/opportunities.js";
+import submissionsRouter from "./routes/submissions.js";
 import resourcesRouter from "./routes/resources.js";
 import riskRouter from "./routes/risk.js";
 import suitabilityRouter from "./routes/suitability.js";
 
+// Dev Auth (development only)
+import devAuthRouter from "./routes/devAuth.js";
+
 // User Approvals
 import userApprovalsRouter from "./routes/userApprovals.js";
+
+// Queues
+import queuesRouter from "./routes/queues.js";
 
 // Users Management
 import usersRouter from "./routes/users.js";
@@ -62,8 +69,14 @@ import exclusiveRouter from "./routes/exclusive.js";
 // Creator Onboarding
 import creatorRouter from "./routes/creator.js";
 
+// Analytics
+import analyticsRouter from "./routes/analytics.js";
+
 // Admin Finance
 import adminFinanceRouter from "./routes/admin/finance.js";
+
+// Admin Users
+import adminUsersRouter from "./routes/adminUsers.js";
 
 // Deals
 import dealsRouter from "./routes/deals.js";
@@ -86,6 +99,15 @@ import briefsRouter from "./routes/briefs.js";
 import brandCRMRouter from "./routes/brandCRM.js";
 import strategyRouter from "./routes/strategy.js";
 import creatorFitRouter from "./routes/creatorFit.js";
+
+// CRM: Brands, Contacts, Outreach, Campaigns, Events & Deals
+import crmBrandsRouter from "./routes/crmBrands.js";
+import crmContactsRouter from "./routes/crmContacts.js";
+import outreachRecordsRouter from "./routes/outreachRecords.js";
+import crmCampaignsRouter from "./routes/crmCampaigns.js";
+import crmEventsRouter from "./routes/crmEvents.js";
+import crmDealsRouter from "./routes/crmDeals.js";
+import crmContractsRouter from "./routes/crmContracts.js";
 
 // Bundles
 import bundlesRouter from "./routes/bundles.js";
@@ -156,6 +178,13 @@ app.use(express.json({ limit: "350mb" }));
 app.use(express.urlencoded({ extended: true, limit: "350mb" }));
 
 // ------------------------------------------------------
+// DEV AUTH (development only)
+// ------------------------------------------------------
+if (process.env.NODE_ENV !== 'production') {
+  app.use("/api/dev-auth", devAuthRouter);
+}
+
+// ------------------------------------------------------
 // INBOX ROUTES (all unique, no overlaps)
 // ------------------------------------------------------
 app.use("/api/inbox/awaiting-reply", inboxAwaitingRouter);
@@ -182,9 +211,10 @@ app.use("/api/notifications", notificationsRouter);
 app.use("/api/calendar", calendarIntelligenceRouter);
 
 // ------------------------------------------------------
-// OPPORTUNITIES
+// OPPORTUNITIES & SUBMISSIONS
 // ------------------------------------------------------
 app.use("/api/opportunities", opportunitiesRouter);
+app.use("/api/submissions", submissionsRouter);
 
 // ------------------------------------------------------
 // RESOURCES
@@ -203,6 +233,11 @@ app.use("/api/setup", setupRouter);
 app.use("/api/exclusive", exclusiveRouter);
 
 // ------------------------------------------------------
+// ANALYTICS
+// ------------------------------------------------------
+app.use("/api/analytics", analyticsRouter);
+
+// ------------------------------------------------------
 // CREATOR ONBOARDING
 // ------------------------------------------------------
 app.use(creatorRouter); // Routes already prefixed with /api/creator
@@ -213,9 +248,19 @@ app.use(creatorRouter); // Routes already prefixed with /api/creator
 app.use("/api/user-approvals", userApprovalsRouter);
 
 // ------------------------------------------------------
+// QUEUES
+// ------------------------------------------------------
+app.use("/api/queues", queuesRouter);
+
+// ------------------------------------------------------
 // ADMIN FINANCE CONTROL ROOM
 // ------------------------------------------------------
 app.use("/api/admin/finance", adminFinanceRouter);
+
+// ------------------------------------------------------
+// ADMIN USER MANAGEMENT
+// ------------------------------------------------------
+app.use("/api/admin", adminUsersRouter);
 
 // ------------------------------------------------------
 // AI
@@ -258,6 +303,17 @@ app.use("/api/briefs", briefsRouter);
 app.use("/api/brand-crm", brandCRMRouter);
 app.use("/api/strategy", strategyRouter);
 app.use("/api/creator-fit", creatorFitRouter);
+
+// ------------------------------------------------------
+// CRM: BRANDS, CONTACTS, OUTREACH, CAMPAIGNS & EVENTS
+// ------------------------------------------------------
+app.use("/api/crm-brands", crmBrandsRouter);
+app.use("/api/crm-contacts", crmContactsRouter);
+app.use("/api/outreach-records", outreachRecordsRouter);
+app.use("/api/crm-campaigns", crmCampaignsRouter);
+app.use("/api/crm-events", crmEventsRouter);
+app.use("/api/crm-deals", crmDealsRouter);
+app.use("/api/crm-contracts", crmContractsRouter);
 
 // ------------------------------------------------------
 // BUNDLES
@@ -353,6 +409,8 @@ const PORT = process.env.PORT || 5001;
 // Start queue + cron
 registerEmailQueueJob();
 // registerCronJobs(); // TEMPORARILY DISABLED - was hanging server startup
+
+console.log("[SERVER] About to start listening on port", PORT);
 
 // ------------------------------------------------------
 // SERVER START

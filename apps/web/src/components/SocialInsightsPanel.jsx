@@ -1,7 +1,10 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { useSocialInsights } from "../hooks/useSocialInsights.js";
+import { FeatureGate, useFeature, DisabledNotice } from "./FeatureGate.jsx";
 
+// UNLOCK WHEN: AI_SOCIAL_INSIGHTS flag set to true + /api/ai/social-insights working
 export function SocialInsightsPanel({ userId, onExport }) {
+  const isAIEnabled = useFeature("AI_SOCIAL_INSIGHTS");
   const { loading, error, insights, generateInsights } = useSocialInsights();
   const [lastRun, setLastRun] = useState(null);
 
@@ -32,6 +35,8 @@ export function SocialInsightsPanel({ userId, onExport }) {
 
   return (
     <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <DisabledNotice feature="AI_SOCIAL_INSIGHTS" className="mb-4" />
+      
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">AI Insights</p>
@@ -39,22 +44,26 @@ export function SocialInsightsPanel({ userId, onExport }) {
           <p className="text-xs text-brand-black/60">Last analysis: {lastRunLabel}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={!userId || loading}
-            className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] disabled:opacity-50"
-          >
-            {loading ? "Generating..." : "Generate AI Insights"}
-          </button>
-          <button
-            type="button"
-            onClick={() => onExport && insights && onExport(insights)}
-            disabled={!onExport || !insights}
-            className="rounded-full border border-brand-black/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 disabled:opacity-40"
-          >
-            Export Insights
-          </button>
+          <FeatureGate feature="AI_SOCIAL_INSIGHTS" mode="button">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!userId || loading}
+              className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] disabled:opacity-50"
+            >
+              {loading ? "Generating..." : "Generate AI Insights"}
+            </button>
+          </FeatureGate>
+          <FeatureGate feature="AI_SOCIAL_INSIGHTS" mode="button">
+            <button
+              type="button"
+              onClick={() => onExport && insights && onExport(insights)}
+              disabled={!onExport || !insights}
+              className="rounded-full border border-brand-black/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 disabled:opacity-40"
+            >
+              Export Insights
+            </button>
+          </FeatureGate>
         </div>
       </div>
 

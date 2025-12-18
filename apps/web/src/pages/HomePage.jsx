@@ -18,6 +18,20 @@ const highlightCards = [
 ];
 
 export function HomePage({ onRequestSignIn }) {
+  const [creatorCount, setCreatorCount] = React.useState(450);
+
+  React.useEffect(() => {
+    fetch("/api/dashboard/creators/active")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.count !== undefined) {
+          setCreatorCount(data.count);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch creator count:", err);
+      });
+  }, []);
   return (
     <div className="bg-slate-950 text-white">
       <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
@@ -54,7 +68,7 @@ export function HomePage({ onRequestSignIn }) {
               </Link>
             </div>
             <div className="grid gap-4 text-sm text-white/60 md:grid-cols-3">
-              <Stat label="Creators vetted" value="450+" footer="Across 18 markets" />
+              <Stat label="Creators vetted" value={`${creatorCount}+`} footer="Across 18 markets" />
               <Stat label="Campaigns shipped" value="120+" footer="Last 12 months" />
               <Stat label="Brief turnaround" value="72h" footer="Intake to shortlist" />
             </div>

@@ -46,9 +46,6 @@ export async function getGoogleCalendarClient(userId: string) {
  * @param calendar - An authenticated Google Calendar client instance.
  */
 export async function syncGoogleCalendarEvents(userId: string, calendar: ReturnType<typeof google.calendar>) {
-  const talent = await prisma.talent.findUnique({ where: { userId } });
-  if (!talent) return;
-
   const timeMin = new Date();
   timeMin.setDate(timeMin.getDate() - 30); // Sync events from the last 30 days
   const timeMax = new Date();
@@ -68,28 +65,50 @@ export async function syncGoogleCalendarEvents(userId: string, calendar: ReturnT
     return;
   }
 
+  // Find talent profile (optional - events can exist without talent profile)
+  const talent = await prisma.talent.findUnique({ where: { userId } });
+
   for (const event of events) {
-    if (!event.id || !event.summary || !event.start?.dateTime || !event.end?.dateTime) continue;
+    if (!event.id || !event.summary) continue;
+    
+    // Handle both all-day events and timed events
+    const startTime = event.start?.dateTime || event.start?.date;
+    const endTime = event.end?.dateTime || event.end?.date;
+    
+    if (!startTime || !endTime) continue;
+
+    const isAllDay = !event.start?.dateTime;
 
     await prisma.talentEvent.upsert({
-      where: { sourceId: event.id }, // Use a unique field from the source to prevent duplicates
+      where: { 
+        sourceId_userId: { 
+          sourceId: event.id,
+          userId: userId
+        }
+      },
       update: {
         title: event.summary,
-        startTime: new Date(event.start.dateTime),
-        endTime: new Date(event.end.dateTime),
-        description: event.description,
-        location: event.location,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        isAllDay: isAllDay,
+        description: event.description || null,
+        location: event.location || null,
+        updatedAt: new Date(),
       },
       create: {
-        talentId: talent.id,
+        userId: userId,
+        talentId: talent?.id || null,
         title: event.summary,
-        startTime: new Date(event.start.dateTime),
-        endTime: new Date(event.end.dateTime),
-        description: event.description,
-        location: event.location,
-        source: "google_calendar",
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        isAllDay: isAllDay,
+        description: event.description || null,
+        location: event.location || null,
+        source: "google",
         sourceId: event.id,
       },
     });
   }
+
+  console.log(`Synced ${events.length} Google Calendar events for user ${userId}`);
 }

@@ -9,6 +9,8 @@ import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx
 import { CalendarBoard } from "./AdminCalendarPage.jsx";
 import { ExclusiveOverviewEnhanced } from "./ExclusiveOverviewEnhanced.jsx";
 import { apiFetch } from "../services/apiClient.js";
+import { useRevenue, useMetrics, useSocials, useInsights, useGrowth, usePerformance } from "../hooks/useAnalytics.js";
+import { LineChart as RechartsLineChart, BarChart as RechartsBarChart, PieChart as RechartsPieChart } from "../components/charts/index.js";
 
 const NAV_LINKS = (basePath) => [
   { label: "Overview", to: `${basePath}`, end: true },
@@ -44,162 +46,35 @@ const TASKS = [];
 // TODO: Fetch AI-suggested tasks from API
 const SUGGESTED_TASKS = [];
 
-const SOCIAL_PLATFORMS = [
-  {
-    id: "instagram",
-    label: "Instagram",
-    handle: "@exclusive.creator",
-    stats: {
-      followers: "320K",
-      growth: "+1.2% WoW",
-      engagement: "5.3%",
-      komiClicks: "1.8K",
-      productClicks: "420"
-    },
-    topContent: [
-      { title: "Runway prep carousel", metric: "68K saves" },
-      { title: "AI copilot reel", metric: "1.2M views" }
-    ],
-    comments: ["Need full fit breakdown!", "AI copilot is genius 🔥"]
-  },
-  {
-    id: "tiktok",
-    label: "TikTok",
-    handle: "@exclusive.talent",
-    stats: {
-      followers: "580K",
-      growth: "+2.8% WoW",
-      engagement: "7.1%",
-      komiClicks: "2.4K",
-      productClicks: "610"
-    },
-    topContent: [
-      { title: "Supper club reveal", metric: "2.8M views" },
-      { title: "35hr residency vlog", metric: "430K likes" }
-    ],
-    comments: ["Need BTS of the supper club", "Where is the dress from??"]
-  },
-  {
-    id: "youtube",
-    label: "YouTube",
-    handle: "Exclusive Creator",
-    stats: {
-      followers: "210K",
-      growth: "+0.8% WoW",
-      engagement: "4.6%",
-      komiClicks: "980",
-      productClicks: "310"
-    },
-    topContent: [
-      { title: "Creator finance AMA", metric: "120K live views" },
-      { title: "Residency docu", metric: "88K watch hours" }
-    ],
-    comments: ["Please drop the deck template", "Post more finance deep dives!"]
-  }
-];
+// TODO: Fetch social platform analytics from API endpoint /api/analytics/socials
+const SOCIAL_PLATFORMS = [];
 
 const INITIAL_PILLARS = ["Luxury travel diaries", "AI copilot tips", "Residency IRL drops"];
 
-const TRENDING_CONTENT = [
-  {
-    id: "trend-1",
-    platform: "Instagram",
-    title: "Micro-itineraries carousel",
-    insight: "+24% saves on 5-slide travel story formats."
-  },
-  {
-    id: "trend-2",
-    platform: "TikTok",
-    title: "Ops POV mini-vlogs",
-    insight: "Under 40s prefer vertical tours w/ AI voiceover."
-  },
-  {
-    id: "trend-3",
-    platform: "YouTube",
-    title: "Creator finance AMAs",
-    insight: "Live chat monetisation spikes for finance topics."
-  },
-  {
-    id: "trend-4",
-    platform: "Instagram",
-    title: "Split-frame outfit planning",
-    insight: "Shoppable tags + luxury wardrobe racks trending."
-  },
-  {
-    id: "trend-5",
-    platform: "TikTok",
-    title: "Supper club guest reveals",
-    insight: "Countdown content boosting IRL attendance."
-  }
-];
+// TODO: Fetch trending content from API
+const TRENDING_CONTENT = [];
 
-const OPPORTUNITIES = [
-  {
-    title: "Doha pop-up",
-    status: "Awaiting reply",
-    brand: "Luxury Hospitality",
-    value: "£22K",
-    nextStep: "Send revised hero concept",
-    stage: "Awaiting reply"
-  },
-  {
-    title: "AI finance walkthrough",
-    status: "Reviewing offer",
-    brand: "Fintech Labs",
-    value: "£18K",
-    nextStep: "Negotiate usage rights",
-    stage: "Reviewing offer"
-  },
-  {
-    title: "Retail capsule",
-    status: "Pitch scheduled",
-    brand: "Heritage Retail",
-    value: "£25K",
-    nextStep: "Confirm travel windows",
-    stage: "Pitch scheduled"
-  },
-  {
-    title: "GCC Residency series",
-    status: "Briefing",
-    brand: "Break Agency",
-    value: "£40K",
-    nextStep: "Share location scouting deck",
-    stage: "Briefing"
-  }
-];
+// TODO: Fetch opportunities from API
+const OPPORTUNITIES = [];
 
-const FINANCIAL_SUMMARY = [
-  { label: "Projected revenue", value: "£74K" },
-  { label: "Payouts pending", value: "£9.6K" },
-  { label: "Invoices sent", value: "6" }
-];
+// TODO: Fetch financial summary from API
+const FINANCIAL_SUMMARY = [];
 const FINANCIAL_SERIES = {
   Week: [1200, 1600, 900, 2200, 1800],
   Month: [5200, 6100, 4300, 7800, 6500],
   YTD: [32000, 48000, 62000, 74000, 88000]
 };
-const INVOICES = [
-  { id: 1, client: "Break Hospitality", amount: "£4,500", status: "Pending", due: "15 Nov" },
-  { id: 2, client: "Fintech Labs", amount: "£6,200", status: "Paid", due: "02 Nov" }
-];
+// TODO: Fetch invoices from API
+const INVOICES = [];
 
-const MESSAGES = [
-  { subject: "Budget confirmation", context: "Brand ops · 2h ago" },
-  { subject: "Residency travel plan", context: "Ops desk · 5h ago" },
-  { subject: "Legal addendum", context: "Break legal · 1d ago" }
-];
+// TODO: Fetch messages from API
+const MESSAGES = [];
 
-const CREATOR_ALERTS = [
-  { id: "alert-1", label: "Komi spike", detail: "+34% click-through on Monaco itinerary", action: "Open dashboard" },
-  { id: "alert-2", label: "Product waitlist", detail: "Cookbook pre-orders crossed 12K", action: "View funnel" },
-  { id: "alert-3", label: "DM backlog", detail: "18 VIP replies waiting on travel upgrade", action: "Assign support" }
-];
+// TODO: Fetch creator alerts from API
+const CREATOR_ALERTS = [];
 
-const CREATOR_RESOURCES = [
-  { id: "tool-1", title: "Content brief generator", description: "AI prompts to spin new hooks in 3 clicks." },
-  { id: "tool-2", title: "Sponsorship ratecard", description: "Latest blended CPM + premium uplift." },
-  { id: "tool-3", title: "Residency playbook", description: "IRL launch checklist w/ staff ops." }
-];
+// TODO: Fetch creator resources from API
+const CREATOR_RESOURCES = [];
 
 export default function ExclusiveTalentDashboardLayout({ basePath = "/admin/view/exclusive", session }) {
   return (
@@ -220,7 +95,8 @@ export function ExclusiveOverviewPage() {
 }
 
 export function ExclusiveProfilePage() {
-  return <ExclusiveProfile />;
+  const { session, basePath } = useOutletContext() || {};
+  return <ExclusiveProfile session={session} basePath={basePath} />;
 }
 
 export function ExclusiveSocialsPage() {
@@ -584,6 +460,13 @@ function ExclusiveAnalytics({ session, basePath }) {
   const [range, setRange] = useState("30d");
   const displayBasePath = basePath || "/exclusive";
 
+  // Use new analytics hooks for general metrics
+  const { data: revenueData, loading: revenueLoading } = useRevenue('Month');
+  const { data: metricsData, loading: metricsLoading } = useMetrics();
+  const { data: socialsData, loading: socialsApiLoading } = useSocials();
+  const { data: insightsData, loading: insightsApiLoading } = useInsights();
+
+  // Legacy exclusive-specific state (keeping for exclusive endpoints)
   const [socialsState, setSocialsState] = useState({ loading: true, items: [], error: "" });
   const [insightsState, setInsightsState] = useState({ loading: true, items: [], error: "" });
   const [revenueState, setRevenueState] = useState({ loading: true, data: null, error: "" });
@@ -926,6 +809,68 @@ function ExclusiveAnalytics({ session, basePath }) {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        {/* Growth Tracking Chart */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-2">Growth tracking</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Audience growth</h3>
+          <p className="mt-1 text-sm text-brand-black/60 mb-4">Following trends across platforms — stay high-level.</p>
+          {socialsApiLoading ? (
+            <div className="h-64 rounded-2xl bg-brand-linen/50 animate-pulse"></div>
+          ) : socialsData?.platforms && socialsData.platforms.length > 0 ? (
+            <RechartsLineChart
+              data={socialsData.platforms.map((p, idx) => ({
+                platform: p.platform,
+                followers: p.followers,
+                idx: idx
+              }))}
+              xKey="platform"
+              yKey="followers"
+              color="#000000"
+              height={220}
+              formatValue={(v) => `${(v / 1000).toFixed(1)}K`}
+              showGrid={true}
+            />
+          ) : (
+            <div className="h-64 flex items-center justify-center text-brand-black/50">
+              <div className="text-center">
+                <p className="text-sm">Connect your social accounts</p>
+                <p className="text-xs mt-1">Growth data will appear here</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Social Platform Distribution */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-2">Platform reach</p>
+          <h3 className="font-display text-2xl uppercase text-brand-black">Where you shine</h3>
+          <p className="mt-1 text-sm text-brand-black/60 mb-4">Audience distribution by platform.</p>
+          {socialsApiLoading ? (
+            <div className="h-64 rounded-2xl bg-brand-linen/50 animate-pulse"></div>
+          ) : socialsData?.platforms && socialsData.platforms.length > 0 ? (
+            <RechartsPieChart
+              data={socialsData.platforms.map(p => ({
+                name: p.platform,
+                value: p.reach || p.followers || 0
+              }))}
+              colors={['#000000', '#2D2D2D', '#5A5A5A', '#878787', '#B4B4B4']}
+              height={220}
+              showLegend={true}
+              showLabels={false}
+              formatValue={(v) => `${(v / 1000).toFixed(1)}K`}
+            />
+          ) : (
+            <div className="h-64 flex items-center justify-center text-brand-black/50">
+              <div className="text-center">
+                <p className="text-sm">Connect your social accounts</p>
+                <p className="text-xs mt-1">Platform breakdown will appear here</p>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
@@ -1569,23 +1514,895 @@ function getFocusCycleLabel() {
   return `${season} cycle · Q${quarter} focus`;
 }
 
-function ExclusiveProfile() {
+function readLocalGoalsSummary() {
+  try {
+    const raw = localStorage.getItem("break_exclusive_goals_v1");
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const current = parsed?.version === 1 && parsed?.current ? parsed.current : parsed;
+    if (!current) return null;
+    const intentions = (current.creativeIntentions || []).map((i) => i?.title || i?.id || i).filter(Boolean);
+    const support = (current.supportAreas || []).map((i) => i?.title || i?.id || i).filter(Boolean);
+    const revenueLabel = current?.revenueRange?.label || "";
+    const commercialSkipped = Boolean(current?.commercialSkipped || current?.revenueRange?.id === "prefer-not");
+    return { intentions, support, revenueLabel, commercialSkipped };
+  } catch {
+    return null;
+  }
+}
+
+const EXCLUSIVE_PROFILE_STORAGE_KEY = "break_exclusive_profile_v1";
+
+function readExclusiveProfileDraft() {
+  try {
+    const raw = localStorage.getItem(EXCLUSIVE_PROFILE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.version === 1 && parsed?.current) return parsed;
+    return { version: 1, current: parsed, history: [] };
+  } catch {
+    return null;
+  }
+}
+
+function writeExclusiveProfileDraft(next) {
+  try {
+    localStorage.setItem(EXCLUSIVE_PROFILE_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+}
+
+function pushProfileVersion(previous, nextCurrent) {
+  const history = Array.isArray(previous?.history) ? previous.history.slice(0) : [];
+  if (previous?.current) history.unshift(previous.current);
+  return { version: 1, current: nextCurrent, history: history.slice(0, 10) };
+}
+
+function splitTags(value) {
+  return String(value || "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function Chip({ children }) {
   return (
-    <section id="exclusive-profile" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">My profile</p>
-      <p className="text-sm text-brand-black/70">Identity snapshot for the roster preview.</p>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <h3 className="font-display text-xl uppercase">{PROFILE_INFO.name}</h3>
-          <p className="text-sm text-brand-black/70">{PROFILE_INFO.bio}</p>
+    <span className="rounded-full border border-brand-black/10 bg-brand-white px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+      {children}
+    </span>
+  );
+}
+
+function SectionCard({ kicker, title, subtitle, children, onEdit, editLabel = "Edit" }) {
+  return (
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          {kicker ? <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{kicker}</p> : null}
+          {title ? <h3 className="font-display text-2xl uppercase text-brand-black">{title}</h3> : null}
+          {subtitle ? <p className="mt-1 text-sm text-brand-black/60">{subtitle}</p> : null}
         </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-sm text-brand-black/80">
-          <p>Location: {PROFILE_INFO.location}</p>
-          <p>Contact: {PROFILE_INFO.email}</p>
-          <p>Partner lead: {PROFILE_INFO.agent}</p>
+        {onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+          >
+            {editLabel}
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+function EditModal({ title, children, onClose, onSave, saveLabel = "Save" }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
+      <div className="w-full max-w-2xl rounded-[32px] border border-brand-black/15 bg-brand-white p-6 text-brand-black shadow-[0_35px_80px_rgba(0,0,0,0.4)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h4 className="font-display text-2xl uppercase">{title}</h4>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5"
+          >
+            Close
+          </button>
+        </div>
+        <div className="mt-4 space-y-3">{children}</div>
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+          >
+            {saveLabel}
+          </button>
         </div>
       </div>
-    </section>
+    </div>
+  );
+}
+
+function Input({ label, value, onChange, placeholder }) {
+  return (
+    <label className="block">
+      <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black outline-none focus:border-brand-black/30"
+      />
+    </label>
+  );
+}
+
+function TextArea({ label, value, onChange, placeholder, rows = 4 }) {
+  return (
+    <label className="block">
+      <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{label}</span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black outline-none focus:border-brand-black/30"
+      />
+    </label>
+  );
+}
+
+function Toggle({ label, description, checked, onChange }) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-brand-black">{label}</p>
+        {description ? <p className="mt-1 text-sm text-brand-black/60">{description}</p> : null}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`h-10 w-16 rounded-full border p-1 transition ${
+          checked ? "border-brand-black bg-brand-black" : "border-brand-black/20 bg-brand-white"
+        }`}
+        aria-pressed={checked}
+      >
+        <span
+          className={`block h-8 w-8 rounded-full bg-brand-white transition ${
+            checked ? "translate-x-6" : "translate-x-0 bg-brand-black/10"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+function ExclusiveProfile({ basePath }) {
+  const navigate = useNavigate();
+  const goals = useMemo(() => readLocalGoalsSummary(), []);
+  const [profileStore, setProfileStore] = useState(() => readExclusiveProfileDraft());
+  const current = profileStore?.current || {};
+
+  const [activeModal, setActiveModal] = useState("");
+  const [scratch, setScratch] = useState({});
+
+  const saveSection = (patch) => {
+    const nextCurrent = { ...current, ...patch, updatedAt: new Date().toISOString() };
+    const next = pushProfileVersion(profileStore, nextCurrent);
+    setProfileStore(next);
+    writeExclusiveProfileDraft(next);
+  };
+
+  const openEdit = (key, initial) => {
+    setScratch(initial);
+    setActiveModal(key);
+  };
+
+  const closeEdit = () => {
+    setScratch({});
+    setActiveModal("");
+  };
+
+  const displayBasePath = basePath || "/exclusive";
+
+  const positioning = current.positioning || {
+    statement: "",
+    bioLong: "",
+    nicheTags: []
+  };
+
+  const availability = current.availability || {
+    baseLocations: [],
+    travelFlexibility: "",
+    cadence: "",
+    blackoutNotes: ""
+  };
+
+  const content = current.content || {
+    formats: [],
+    strengths: [],
+    samples: []
+  };
+
+  const products = current.products || {
+    existing: [],
+    interests: [],
+    notes: ""
+  };
+
+  const events = current.events || {
+    openTo: [],
+    speakingInterests: [],
+    highlights: []
+  };
+
+  const documents = current.documents || [];
+
+  const visibility = current.visibility || {
+    brandReadyPreview: false,
+    showBio: true,
+    showSocialHandles: true,
+    keepNotesInternal: true
+  };
+
+  const tier = "Exclusive Talent";
+  const descriptor = positioning.statement
+    ? positioning.statement
+    : "Premium creator with white‑glove support across opportunities, events, and partnerships.";
+
+  const locationText = availability.baseLocations.length
+    ? availability.baseLocations.join(" · ")
+    : PROFILE_INFO.location;
+
+  const primaryContact = "Managed by The Break";
+  const partnerLead = PROFILE_INFO.agent;
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Profile</p>
+            <h2 className="font-display text-4xl uppercase text-brand-black">{PROFILE_INFO.name}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="neutral">{tier}</Badge>
+              <Chip>{locationText}</Chip>
+              <Chip>Partner lead: {partnerLead}</Chip>
+            </div>
+            <p className="mt-2 max-w-3xl text-sm text-brand-black/70">{descriptor}</p>
+            <p className="text-xs text-brand-black/60">Primary contact: {primaryContact}</p>
+          </div>
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Presentation-ready</p>
+            <p className="mt-2 text-sm text-brand-black/70">
+              This is an internal profile that stays clean for screenshots and future roster previews.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <SectionCard
+        kicker="Positioning"
+        title="Positioning & bio"
+        subtitle="Editorial, calm. Edit in one place — your team can help, you stay in control."
+        onEdit={() =>
+          openEdit("positioning", {
+            statement: positioning.statement,
+            bioLong: positioning.bioLong,
+            nicheTags: (positioning.nicheTags || []).join(", ")
+          })
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Positioning statement</p>
+            <p className="mt-2 text-sm text-brand-black/80">
+              {positioning.statement || "Add a short positioning line your team can use across outreach and opportunities."}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Bio</p>
+              <span className="text-xs uppercase tracking-[0.35em] text-brand-black/50">
+                {positioning.bioLong ? "Collapsible" : "Optional"}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-brand-black/70">
+              {positioning.bioLong
+                ? positioning.bioLong
+                : "Optional longer bio. Keep it human and specific — no pitch deck energy."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(positioning.nicheTags || []).length ? (
+              positioning.nicheTags.map((tag) => <Chip key={tag}>{tag}</Chip>)
+            ) : (
+              <p className="text-sm text-brand-black/60">Add niche tags to help matching and discovery.</p>
+            )}
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        kicker="Logistics"
+        title="Availability & logistics"
+        subtitle="Signals preferences, not commitments. High-level only."
+        onEdit={() =>
+          openEdit("availability", {
+            baseLocations: availability.baseLocations.join(", "),
+            travelFlexibility: availability.travelFlexibility,
+            cadence: availability.cadence,
+            blackoutNotes: availability.blackoutNotes
+          })
+        }
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Base locations</p>
+            <p className="mt-2 text-sm text-brand-black/70">
+              {availability.baseLocations.length ? availability.baseLocations.join(" · ") : "Add where you’re usually based."}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Travel flexibility</p>
+            <p className="mt-2 text-sm text-brand-black/70">{availability.travelFlexibility || "Optional — share what feels realistic."}</p>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Working cadence</p>
+            <p className="mt-2 text-sm text-brand-black/70">{availability.cadence || "Optional — e.g. weekly shoots, monthly trips."}</p>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Blackout periods (high level)</p>
+            <p className="mt-2 text-sm text-brand-black/70">{availability.blackoutNotes || "Optional — keep this high-level."}</p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        kicker="Social presence"
+        title="Social presence"
+        subtitle="Connection status and freshness — no follower obsession here."
+      >
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-brand-black/70">
+                Connect accounts to unlock analytics and insight quality.
+              </p>
+              <p className="mt-1 text-xs text-brand-black/60">
+                If you’re viewing this in admin preview, connection status may be unavailable.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`${displayBasePath}/socials`)}
+              className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+            >
+              Manage socials
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {["Instagram", "TikTok", "YouTube"].map((p) => (
+              <div key={p} className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{p}</p>
+                <p className="mt-2 text-sm text-brand-black/70">Status: Not connected</p>
+                <p className="mt-1 text-xs text-brand-black/60">Last synced: —</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        kicker="Focus"
+        title="Focus areas & goals"
+        subtitle="A calm read-only summary. Update via the Goals flow."
+        onEdit={() => navigate(`${displayBasePath}/goals`)}
+        editLabel="Update goals"
+      >
+        {goals ? (
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Creative direction</p>
+              <p className="mt-2 text-sm text-brand-black/70">
+                {goals.intentions.length ? goals.intentions.join(" • ") : "Not set yet"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Success (optional)</p>
+              <p className="mt-2 text-sm text-brand-black/70">
+                {goals.commercialSkipped ? "Skipped" : goals.revenueLabel || "Not set (totally fine)"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Support areas</p>
+              <p className="mt-2 text-sm text-brand-black/70">{goals.support.length ? goals.support.join(" • ") : "Not set yet"}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-6">
+            <p className="font-semibold text-brand-black">Goals help us support you better</p>
+            <p className="mt-2 text-sm text-brand-black/70">
+              Set goals when you’re ready — it’s a calm check-in, not a commitment.
+            </p>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        kicker="Content"
+        title="Content & formats"
+        subtitle="What you actually make — no scoring."
+        onEdit={() =>
+          openEdit("content", {
+            formats: (content.formats || []).join(", "),
+            strengths: (content.strengths || []).join(", "),
+            samples: (content.samples || []).join("\n")
+          })
+        }
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Core formats</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(content.formats || []).length ? content.formats.map((f) => <Chip key={f}>{f}</Chip>) : <p className="text-sm text-brand-black/60">Add formats (short-form video, long-form, live…).</p>}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Strength tags</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(content.strengths || []).length ? content.strengths.map((s) => <Chip key={s}>{s}</Chip>) : <p className="text-sm text-brand-black/60">Add strengths (storytelling, tutorials, POV…).</p>}
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Sample links (optional)</p>
+          {(content.samples || []).length ? (
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-brand-black/70">
+              {content.samples.map((url) => (
+                <li key={url}>
+                  <a className="underline underline-offset-4" href={url} target="_blank" rel="noreferrer">
+                    {url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-brand-black/60">Add 1–3 links that represent your best work.</p>
+          )}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        kicker="Products"
+        title="Products & monetisation"
+        subtitle="Strategic only — no revenue, no fulfilment details."
+        onEdit={() =>
+          openEdit("products", {
+            existing: (products.existing || []).join("\n"),
+            interests: (products.interests || []).join(", "),
+            notes: products.notes || ""
+          })
+        }
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Existing products</p>
+            {(products.existing || []).length ? (
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-brand-black/70">
+                {products.existing.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-brand-black/60">None listed yet.</p>
+            )}
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Interest areas</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(products.interests || []).length ? products.interests.map((i) => <Chip key={i}>{i}</Chip>) : <p className="text-sm text-brand-black/60">Courses · physical products · white-label…</p>}
+            </div>
+            <p className="mt-3 text-xs text-brand-black/60">Product development supported by The Break.</p>
+          </div>
+        </div>
+        {products.notes ? (
+          <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Notes</p>
+            <p className="mt-2 text-sm text-brand-black/70">{products.notes}</p>
+          </div>
+        ) : null}
+      </SectionCard>
+
+      <SectionCard
+        kicker="Events"
+        title="Events & speaking"
+        subtitle="Preference-first. Makes it easier to place you in the right rooms."
+        onEdit={() =>
+          openEdit("events", {
+            openTo: (events.openTo || []).join(", "),
+            speakingInterests: (events.speakingInterests || []).join(", "),
+            highlights: (events.highlights || []).join("\n")
+          })
+        }
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Open to</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(events.openTo || []).length ? events.openTo.map((i) => <Chip key={i}>{i}</Chip>) : <p className="text-sm text-brand-black/60">Panels · hosting · appearances…</p>}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Speaking interests</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(events.speakingInterests || []).length ? events.speakingInterests.map((i) => <Chip key={i}>{i}</Chip>) : <p className="text-sm text-brand-black/60">Topics you’d actually enjoy.</p>}
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Past highlights (optional)</p>
+          {(events.highlights || []).length ? (
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-brand-black/70">
+              {events.highlights.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-brand-black/60">Add 1–3 highlights if you want.</p>
+          )}
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        kicker="Assets"
+        title="Documents & assets"
+        subtitle="One source of truth for media kit, headshots, press links."
+        onEdit={() =>
+          openEdit("documents", {
+            list: (documents || []).map((d) => `${d.name} (${d.type || "file"})`).join("\n")
+          })
+        }
+        editLabel="Manage"
+      >
+        {(documents || []).length ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {documents.map((doc) => (
+              <div key={doc.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-5">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{doc.type || "Document"}</p>
+                <p className="mt-2 font-semibold text-brand-black">{doc.name}</p>
+                <p className="mt-1 text-xs text-brand-black/60">Visibility: {doc.visibility || "Internal"}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-6">
+            <p className="font-semibold text-brand-black">No assets yet</p>
+            <p className="mt-2 text-sm text-brand-black/70">Upload a media kit or headshots when you’re ready.</p>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        kicker="Trust"
+        title="Visibility & permissions"
+        subtitle="Plain language controls. No scary legal copy."
+        onEdit={() =>
+          openEdit("visibility", {
+            brandReadyPreview: Boolean(visibility.brandReadyPreview),
+            showBio: visibility.showBio !== false,
+            showSocialHandles: visibility.showSocialHandles !== false,
+            keepNotesInternal: visibility.keepNotesInternal !== false
+          })
+        }
+        editLabel="Adjust"
+      >
+        <div className="space-y-3">
+          <Toggle
+            label="Brand-ready preview"
+            description="Future-facing: allow a clean roster preview view when enabled."
+            checked={Boolean(visibility.brandReadyPreview)}
+            onChange={(checked) => saveSection({ visibility: { ...visibility, brandReadyPreview: checked } })}
+          />
+          <Toggle
+            label="Show bio in previews"
+            description="Keeps your positioning visible in future roster previews."
+            checked={visibility.showBio !== false}
+            onChange={(checked) => saveSection({ visibility: { ...visibility, showBio: checked } })}
+          />
+          <Toggle
+            label="Show social handles"
+            description="Lets brands see connected handles in future previews (optional)."
+            checked={visibility.showSocialHandles !== false}
+            onChange={(checked) => saveSection({ visibility: { ...visibility, showSocialHandles: checked } })}
+          />
+          <Toggle
+            label="Keep internal notes internal"
+            description="Agent/admin-only context is never shown in future brand views."
+            checked={visibility.keepNotesInternal !== false}
+            onChange={(checked) => saveSection({ visibility: { ...visibility, keepNotesInternal: checked } })}
+          />
+        </div>
+      </SectionCard>
+
+      {activeModal === "positioning" ? (
+        <EditModal
+          title="Edit positioning"
+          onClose={closeEdit}
+          onSave={() => {
+            const nicheTags = splitTags(scratch.nicheTags);
+            saveSection({ positioning: { statement: scratch.statement || "", bioLong: scratch.bioLong || "", nicheTags } });
+            closeEdit();
+          }}
+        >
+          <TextArea
+            label="Positioning statement"
+            value={scratch.statement || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, statement: v }))}
+            placeholder="One or two lines that describe your creative identity."
+            rows={3}
+          />
+          <TextArea
+            label="Longer bio (optional)"
+            value={scratch.bioLong || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, bioLong: v }))}
+            placeholder="Optional longer bio. Keep it human and specific."
+            rows={5}
+          />
+          <Input
+            label="Niche tags (comma separated)"
+            value={scratch.nicheTags || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, nicheTags: v }))}
+            placeholder="travel, luxury, wellness, finance…"
+          />
+          <p className="text-xs text-brand-black/60">Saved locally for now. Version history is kept internally.</p>
+        </EditModal>
+      ) : null}
+
+      {activeModal === "availability" ? (
+        <EditModal
+          title="Edit availability"
+          onClose={closeEdit}
+          onSave={() => {
+            saveSection({
+              availability: {
+                baseLocations: splitTags(scratch.baseLocations),
+                travelFlexibility: scratch.travelFlexibility || "",
+                cadence: scratch.cadence || "",
+                blackoutNotes: scratch.blackoutNotes || ""
+              }
+            });
+            closeEdit();
+          }}
+        >
+          <Input
+            label="Base locations (comma separated)"
+            value={scratch.baseLocations || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, baseLocations: v }))}
+            placeholder="Dubai, London, New York…"
+          />
+          <Input
+            label="Travel flexibility (optional)"
+            value={scratch.travelFlexibility || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, travelFlexibility: v }))}
+            placeholder="Open to travel monthly / only short trips / flexible…"
+          />
+          <Input
+            label="Preferred cadence (optional)"
+            value={scratch.cadence || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, cadence: v }))}
+            placeholder="Weekly shoots, 2 brand activations per month…"
+          />
+          <TextArea
+            label="Blackout periods (high level)"
+            value={scratch.blackoutNotes || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, blackoutNotes: v }))}
+            placeholder="High-level notes only (e.g. travel month, recovery week)."
+            rows={3}
+          />
+        </EditModal>
+      ) : null}
+
+      {activeModal === "content" ? (
+        <EditModal
+          title="Edit content & formats"
+          onClose={closeEdit}
+          onSave={() => {
+            const formats = splitTags(scratch.formats);
+            const strengths = splitTags(scratch.strengths);
+            const samples = String(scratch.samples || "")
+              .split("\n")
+              .map((l) => l.trim())
+              .filter(Boolean)
+              .slice(0, 6);
+            saveSection({ content: { formats, strengths, samples } });
+            closeEdit();
+          }}
+        >
+          <Input
+            label="Formats (comma separated)"
+            value={scratch.formats || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, formats: v }))}
+            placeholder="Short-form video, long-form, live…"
+          />
+          <Input
+            label="Strength tags (comma separated)"
+            value={scratch.strengths || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, strengths: v }))}
+            placeholder="Storytelling, tutorials, POV…"
+          />
+          <TextArea
+            label="Sample links (one per line)"
+            value={scratch.samples || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, samples: v }))}
+            placeholder="https://…"
+            rows={5}
+          />
+        </EditModal>
+      ) : null}
+
+      {activeModal === "products" ? (
+        <EditModal
+          title="Edit products & monetisation"
+          onClose={closeEdit}
+          onSave={() => {
+            const existing = String(scratch.existing || "")
+              .split("\n")
+              .map((l) => l.trim())
+              .filter(Boolean)
+              .slice(0, 10);
+            const interests = splitTags(scratch.interests);
+            saveSection({ products: { existing, interests, notes: scratch.notes || "" } });
+            closeEdit();
+          }}
+        >
+          <TextArea
+            label="Existing products (one per line)"
+            value={scratch.existing || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, existing: v }))}
+            placeholder="Course: …\nProduct: …"
+            rows={4}
+          />
+          <Input
+            label="Interest areas (comma separated)"
+            value={scratch.interests || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, interests: v }))}
+            placeholder="Courses, physical products, white-label…"
+          />
+          <TextArea
+            label="Notes (optional)"
+            value={scratch.notes || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, notes: v }))}
+            placeholder="Strategic notes only."
+            rows={3}
+          />
+        </EditModal>
+      ) : null}
+
+      {activeModal === "events" ? (
+        <EditModal
+          title="Edit events & speaking"
+          onClose={closeEdit}
+          onSave={() => {
+            const openTo = splitTags(scratch.openTo);
+            const speakingInterests = splitTags(scratch.speakingInterests);
+            const highlights = String(scratch.highlights || "")
+              .split("\n")
+              .map((l) => l.trim())
+              .filter(Boolean)
+              .slice(0, 10);
+            saveSection({ events: { openTo, speakingInterests, highlights } });
+            closeEdit();
+          }}
+        >
+          <Input
+            label="Open to (comma separated)"
+            value={scratch.openTo || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, openTo: v }))}
+            placeholder="Panels, hosting, appearances…"
+          />
+          <Input
+            label="Speaking interests (comma separated)"
+            value={scratch.speakingInterests || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, speakingInterests: v }))}
+            placeholder="Travel, entrepreneurship, wellness…"
+          />
+          <TextArea
+            label="Past highlights (optional, one per line)"
+            value={scratch.highlights || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, highlights: v }))}
+            placeholder="Talk at…\nHosted…"
+            rows={4}
+          />
+        </EditModal>
+      ) : null}
+
+      {activeModal === "documents" ? (
+        <EditModal
+          title="Documents & assets"
+          onClose={closeEdit}
+          onSave={() => {
+            const lines = String(scratch.list || "")
+              .split("\n")
+              .map((l) => l.trim())
+              .filter(Boolean)
+              .slice(0, 20);
+            const nextDocs = lines.map((line) => {
+              const match = line.match(/^(.*?)(?:\\s*\\((.*?)\\))?$/);
+              const name = (match?.[1] || line).trim();
+              const type = (match?.[2] || "file").trim();
+              return {
+                id: `${name}-${type}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+                name,
+                type,
+                visibility: "Internal"
+              };
+            });
+            saveSection({ documents: nextDocs });
+            closeEdit();
+          }}
+          saveLabel="Save list"
+        >
+          <TextArea
+            label="Files (one per line)"
+            value={scratch.list || ""}
+            onChange={(v) => setScratch((prev) => ({ ...prev, list: v }))}
+            placeholder="Media kit (PDF)\nHeadshots (ZIP)\nPress links (URL)"
+            rows={8}
+          />
+          <p className="text-xs text-brand-black/60">Upload UI comes next — for now this is a clean reference list.</p>
+        </EditModal>
+      ) : null}
+
+      {activeModal === "visibility" ? (
+        <EditModal
+          title="Visibility & permissions"
+          onClose={closeEdit}
+          onSave={() => {
+            saveSection({ visibility: { ...visibility, ...scratch } });
+            closeEdit();
+          }}
+          saveLabel="Save"
+        >
+          <Toggle
+            label="Brand-ready preview"
+            description="Future-facing: allow a clean roster preview view when enabled."
+            checked={Boolean(scratch.brandReadyPreview)}
+            onChange={(checked) => setScratch((prev) => ({ ...prev, brandReadyPreview: checked }))}
+          />
+          <Toggle
+            label="Show bio in previews"
+            description="Keeps your positioning visible in future roster previews."
+            checked={Boolean(scratch.showBio)}
+            onChange={(checked) => setScratch((prev) => ({ ...prev, showBio: checked }))}
+          />
+          <Toggle
+            label="Show social handles"
+            description="Lets brands see connected handles in future previews (optional)."
+            checked={Boolean(scratch.showSocialHandles)}
+            onChange={(checked) => setScratch((prev) => ({ ...prev, showSocialHandles: checked }))}
+          />
+          <Toggle
+            label="Keep internal notes internal"
+            description="Agent/admin-only context is never shown in future brand views."
+            checked={Boolean(scratch.keepNotesInternal)}
+            onChange={(checked) => setScratch((prev) => ({ ...prev, keepNotesInternal: checked }))}
+          />
+        </EditModal>
+      ) : null}
+    </div>
   );
 }
 
@@ -1811,6 +2628,9 @@ function ExclusiveFinancials() {
   const [invoices, setInvoices] = useState(INVOICES);
   const [chartPoints, setChartPoints] = useState(FINANCIAL_SERIES[timeframe]);
 
+  // Use real revenue API
+  const { data: revenueData, loading: revenueLoading, error: revenueError } = useRevenue(timeframe);
+
   useEffect(() => {
     setChartPoints(FINANCIAL_SERIES[timeframe] || FINANCIAL_SERIES.Month);
   }, [timeframe]);
@@ -1838,6 +2658,13 @@ function ExclusiveFinancials() {
     closeInvoiceModal();
   };
 
+  // Create financial summary from real API data or fallback to mock
+  const financialSummary = revenueData ? [
+    { label: "Current revenue", value: revenueData.current || "£0" },
+    { label: "Projected revenue", value: revenueData.projected || "£0" },
+    { label: "Trend", value: revenueData.trend || "—" }
+  ] : FINANCIAL_SUMMARY;
+
   return (
     <section id="exclusive-financials" className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between">
@@ -1863,7 +2690,27 @@ function ExclusiveFinancials() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {FINANCIAL_SUMMARY.map((item) => (
+        {revenueLoading ? (
+          <>
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 animate-pulse">
+              <div className="h-4 w-24 bg-brand-black/10 rounded"></div>
+              <div className="h-8 w-16 bg-brand-black/10 rounded mt-2"></div>
+            </div>
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 animate-pulse">
+              <div className="h-4 w-24 bg-brand-black/10 rounded"></div>
+              <div className="h-8 w-16 bg-brand-black/10 rounded mt-2"></div>
+            </div>
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 animate-pulse">
+              <div className="h-4 w-24 bg-brand-black/10 rounded"></div>
+              <div className="h-8 w-16 bg-brand-black/10 rounded mt-2"></div>
+            </div>
+          </>
+        ) : revenueError ? (
+          <div className="md:col-span-3 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-sm text-brand-black/70">Unable to load revenue data. Using fallback display.</p>
+          </div>
+        ) : null}
+        {!revenueLoading && financialSummary.map((item) => (
           <article key={item.label} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-brand-black">
             <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{item.label}</p>
             <p className="text-2xl font-semibold">{item.value}</p>
@@ -1871,9 +2718,30 @@ function ExclusiveFinancials() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Revenue trend</p>
-        <LineChart points={chartPoints} />
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-6">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Revenue trend</p>
+        {revenueLoading ? (
+          <div className="animate-pulse h-64 bg-brand-black/5 rounded"></div>
+        ) : revenueData?.breakdown && revenueData.breakdown.length > 0 ? (
+          <RechartsLineChart
+            data={revenueData.breakdown}
+            xKey="date"
+            yKey="amount"
+            color="#000000"
+            height={250}
+            formatValue={(v) => `£${Math.round(v / 1000)}K`}
+            formatXAxis={(v) => {
+              const date = new Date(v);
+              return date.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+            }}
+            showGrid={true}
+            showTooltip={true}
+          />
+        ) : (
+          <div className="h-64 flex items-center justify-center text-brand-black/50">
+            <p className="text-sm">Revenue trend data will appear here</p>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">

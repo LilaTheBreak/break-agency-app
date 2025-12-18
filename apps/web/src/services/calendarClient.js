@@ -27,3 +27,14 @@ export async function deleteCalendarEvent(eventId) {
   }
   return response.ok;
 }
+
+export async function syncGoogleCalendar() {
+  const response = await apiFetch("/api/calendar-events/sync", {
+    method: "POST",
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Failed to sync calendar" }));
+    throw new Error(errorData.error);
+  }
+  return response.json();
+}

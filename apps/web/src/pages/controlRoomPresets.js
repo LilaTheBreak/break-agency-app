@@ -6,21 +6,8 @@ export const CONTROL_ROOM_PRESETS = {
     title: "Admin Control Room",
     subtitle: "Monitor pipelines, unblock campaigns, and dispatch briefings across the platform.",
     navLinks: ADMIN_NAV_LINKS,
-    metrics: [
-      { label: "Active creators", value: "148", sub: "Onboarded + compliant" },
-      { label: "Live campaigns", value: "32", sub: "Across 7 markets" },
-      { label: "Pending briefs", value: "11", sub: "Awaiting approvals" }
-    ],
-    queue: {
-      label: "Queues",
-      title: "What needs attention",
-      cta: "Dispatch update",
-      items: [
-        { title: "Luxury hospitality roster", owner: "Mo Al Ghazi", status: "Ready for review" },
-        { title: "Creator residency NYC", owner: "Lila Prasad", status: "Contracts out" },
-        { title: "AI talent desk", owner: "Automation Pod", status: "Collecting requirements" }
-      ]
-    },
+    metrics: [],
+    queue: null,
     quickLinks: [
       {
         title: "Overview",
@@ -41,6 +28,31 @@ export const CONTROL_ROOM_PRESETS = {
         title: "Users",
         copy: "Audit creator, brand, and manager accounts. Impersonate or edit roles quickly.",
         to: "/admin/users"
+      },
+      {
+        title: "Brands",
+        copy: "Track brands as long-lived CRM entities across deals, tasks, outreach, and finance.",
+        to: "/admin/brands"
+      },
+      {
+        title: "Campaigns",
+        copy: "Group multi-deal activations so teams work around moments, not just contracts.",
+        to: "/admin/campaigns"
+      },
+      {
+        title: "Events",
+        copy: "Track brand dinners, trips, panels, and previews with prep + follow-up in context.",
+        to: "/admin/events"
+      },
+      {
+        title: "Deals",
+        copy: "The commercial spine. Every deal belongs to a brand and anchors work and follow-through.",
+        to: "/admin/deals"
+      },
+      {
+        title: "Documents / Contracts",
+        copy: "Track contract status, timing, and renewal risk in context — not just files.",
+        to: "/admin/documents"
       },
       {
         title: "Outreach",

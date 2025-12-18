@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Badge } from "./Badge.jsx";
 import { listContracts, createContractRequest, sendContractRequest, fetchContractStatus } from "../services/contractClient.js";
+import { FeatureGate, useFeature, DisabledNotice } from "./FeatureGate.jsx";
+
+const SIGNING_FLAG = "CONTRACT_SIGNING_ENABLED";
 
 const CONTRACT_TYPES = [
   "Creator Representation Agreement",
@@ -19,101 +22,9 @@ const DELIVERY_METHODS = [
 
 const STATUS_ORDER = ["Draft", "Sent", "Viewed", "Signed", "Expired", "Cancelled"];
 
-const SEED_CONTRACTS = [
-  {
-    id: "ctr-orion",
-    name: "Maison Orion Campaign Agreement",
-    type: "Brand Campaign Agreement",
-    creator: null,
-    brand: "Maison Orion",
-    founder: null,
-    owner: "Mo Al Ghazi",
-    value: "45,000",
-    currency: "GBP",
-    status: "Sent",
-    signatureStatus: "Awaiting signature",
-    lastUpdated: "2025-01-10T12:00:00Z",
-    startDate: "2025-01-15",
-    endDate: "2025-02-15",
-    commission: "15%",
-    territory: "UK + GCC social + paid",
-    deliveryMethod: "Send via PandaDoc",
-    timeline: [
-      { label: "Draft", timestamp: "2025-01-08T12:00:00Z" },
-      { label: "Sent", timestamp: "2025-01-10T12:00:00Z" }
-    ],
-    parties: [
-      { name: "Mo Al Ghazi", role: "Admin Owner", email: "mo@thebreak.co" },
-      { name: "Camille Ortiz", role: "Partnerships", email: "camille@maisonorion.com" }
-    ],
-    documents: [
-      { label: "Draft v1", url: "#", updatedAt: "2025-01-08T12:00:00Z" }
-    ],
-    notes: "Waiting on legal countersignature.",
-    risk: []
-  },
-  {
-    id: "ctr-elan",
-    name: "Elan Collective Representation",
-    type: "Creator Representation Agreement",
-    creator: "Elan Collective",
-    brand: null,
-    founder: null,
-    owner: "Automation Pod",
-    value: "12,500",
-    currency: "GBP",
-    status: "Draft",
-    signatureStatus: "Not sent",
-    lastUpdated: "2025-01-09T09:00:00Z",
-    startDate: "2025-01-20",
-    endDate: "2025-07-20",
-    commission: "20%",
-    territory: "Global organic",
-    deliveryMethod: "Draft only (internal review)",
-    timeline: [{ label: "Draft", timestamp: "2025-01-09T09:00:00Z" }],
-    parties: [
-      { name: "Automation Pod", role: "Admin Owner", email: "automation@thebreak.co" },
-      { name: "Sofia Wren", role: "Creative Director", email: "sofia@elan.world" }
-    ],
-    documents: [],
-    notes: "Need finance to approve commission structure.",
-    risk: ["Missing signatures"]
-  },
-  {
-    id: "ctr-aurora",
-    name: "Aurora Studio AI Pilot",
-    type: "Founder-Led Strategy Agreement",
-    creator: null,
-    brand: "Aurora Studio",
-    founder: "Lila Prasad",
-    owner: "Lila Prasad",
-    value: "28,000",
-    currency: "USD",
-    status: "Signed",
-    signatureStatus: "Signed",
-    lastUpdated: "2025-01-12T15:30:00Z",
-    startDate: "2025-01-18",
-    endDate: "2025-04-18",
-    commission: "N/A",
-    territory: "Global",
-    deliveryMethod: "Upload external contract (PDF)",
-    timeline: [
-      { label: "Draft", timestamp: "2025-01-05T09:00:00Z" },
-      { label: "Sent", timestamp: "2025-01-06T12:30:00Z" },
-      { label: "Viewed", timestamp: "2025-01-06T18:00:00Z" },
-      { label: "Signed", timestamp: "2025-01-12T15:30:00Z" }
-    ],
-    parties: [
-      { name: "Lila Prasad", role: "Admin Owner", email: "lila@thebreak.co" },
-      { name: "Noah Reid", role: "Head of Growth", email: "noah@aurorastudio.ai" }
-    ],
-    documents: [
-      { label: "Signed copy", url: "#", updatedAt: "2025-01-12T15:30:00Z" }
-    ],
-    notes: "Ready for invoicing.",
-    risk: []
-  }
-];
+// TODO: Fetch contracts from API endpoint /api/contracts
+// TODO: Fetch contracts from API endpoint /api/contracts
+const SEED_CONTRACTS = [];
 
 const STATUS_TONES = {
   Draft: "neutral",
@@ -125,9 +36,12 @@ const STATUS_TONES = {
 };
 
 export function ContractsPanel({ session, title = "Contracts", description }) {
-  const [contracts, setContracts] = useState(SEED_CONTRACTS);
+  // UNLOCK WHEN: CONTRACT_SIGNING_ENABLED flag + PandaDoc/DocuSign integration configured + /api/contracts endpoints functional
+  const isContractSigningEnabled = useFeature(SIGNING_FLAG);
+  
+  const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedId, setSelectedId] = useState(SEED_CONTRACTS[0]?.id || null);
+  const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterType, setFilterType] = useState("All");
@@ -208,6 +122,8 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
 
   const handleGenerate = async (event) => {
     event.preventDefault();
+    if (!isContractSigningEnabled) return; // Gate action
+    
     const newContract = {
       id: `ctr-${Date.now()}`,
       name: formState.name || "Untitled contract",
@@ -245,6 +161,8 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
   };
 
   const handleSend = async (contractId) => {
+    if (!isContractSigningEnabled) return; // Gate action
+    
     setContracts((prev) =>
       prev.map((c) =>
         c.id === contractId
@@ -307,13 +225,15 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
           <p className="text-sm text-brand-black/70">{description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em]"
-          >
-            Generate contract
-          </button>
+          <FeatureGate feature={SIGNING_FLAG} mode="button">
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em]"
+            >
+              Generate contract
+            </button>
+          </FeatureGate>
           <button
             type="button"
             onClick={() => setAlertMessage("Document sending is currently unavailable. You can still upload and track contracts manually.")}
@@ -323,6 +243,8 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
           </button>
         </div>
       </div>
+
+      {!isContractSigningEnabled && <DisabledNotice feature={SIGNING_FLAG} />}
 
       {alertMessage ? (
         <p className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3 text-sm text-brand-black/80">
@@ -466,13 +388,15 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
                           >
                             View
                           </button>
-                          <button
-                            type="button"
-                            className="rounded-full border border-brand-black/30 px-2 py-1"
-                            onClick={() => handleSend(contract.id)}
-                          >
-                            {contract.status === "Sent" ? "Resend" : "Send"}
-                          </button>
+                        <FeatureGate feature={SIGNING_FLAG} mode="button">
+                            <button
+                              type="button"
+                              className="rounded-full border border-brand-black/30 px-2 py-1"
+                              onClick={() => handleSend(contract.id)}
+                            >
+                              {contract.status === "Sent" ? "Resend" : "Send"}
+                            </button>
+                          </FeatureGate>
                           <button
                             type="button"
                             className="rounded-full border border-brand-black/30 px-2 py-1"

@@ -50,4 +50,195 @@ router.post("/admin/users", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/users/pending
+ * Get all users pending approval
+ */
+router.get("/admin/users/pending", async (req, res) => {
+  try {
+    const pendingUsers = await prisma.user.findMany({
+      where: {
+        onboarding_status: "PENDING_REVIEW"
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        created_at: true,
+        onboarding_responses: true,
+        admin_notes: true
+      },
+      orderBy: {
+        created_at: "desc"
+      }
+    });
+
+    res.json({ users: pendingUsers });
+  } catch (error) {
+    console.error("[ADMIN USERS PENDING]", error);
+    res.status(500).json({ error: "Failed to fetch pending users" });
+  }
+});
+
+/**
+ * POST /api/admin/users/:id/approve
+ * Approve a user
+ */
+router.post("/admin/users/:id/approve", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        onboarding_status: "APPROVED",
+        admin_notes: notes || null,
+        updated_at: new Date()
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        onboarding_status: true
+      }
+    });
+
+    // TODO: Send approval email notification
+
+    res.json({
+      success: true,
+      message: "User approved successfully",
+      user
+    });
+  } catch (error) {
+    console.error("[ADMIN USER APPROVE]", error);
+    res.status(500).json({ error: "Failed to approve user" });
+  }
+});
+
+/**
+ * POST /api/admin/users/:id/reject
+ * Reject a user
+ */
+router.post("/admin/users/:id/reject", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        onboarding_status: "REJECTED",
+        admin_notes: reason || "Application rejected",
+        updated_at: new Date()
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        onboarding_status: true
+      }
+    });
+
+    // TODO: Send rejection email notification
+
+    res.json({
+      success: true,
+      message: "User rejected",
+      user
+    });
+  } catch (error) {
+    console.error("[ADMIN USER REJECT]", error);
+    res.status(500).json({ error: "Failed to reject user" });
+  }
+});
+
+/**
+ * GET /api/admin/users
+ * Get all users with filtering
+ */
+router.get("/admin/users", async (req, res) => {
+  try {
+    const { status, role, search } = req.query;
+
+    const where: any = {};
+
+    if (status) {
+      where.onboarding_status = status;
+    }
+
+    if (role) {
+      where.role = role;
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search as string, mode: "insensitive" } },
+        { email: { contains: search as string, mode: "insensitive" } }
+      ];
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        onboarding_status: true,
+        created_at: true,
+        updated_at: true
+      },
+      orderBy: {
+        created_at: "desc"
+      },
+      take: 100 // Pagination TODO
+    });
+
+    res.json({ users });
+  } catch (error) {
+    console.error("[ADMIN USERS LIST]", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+/**
+ * PATCH /api/admin/users/:id
+ * Update user details (role, status, notes)
+ */
+router.patch("/admin/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role, onboarding_status, admin_notes } = req.body;
+
+    const updateData: any = { updated_at: new Date() };
+
+    if (role) updateData.role = role;
+    if (onboarding_status) updateData.onboarding_status = onboarding_status;
+    if (admin_notes !== undefined) updateData.admin_notes = admin_notes;
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        onboarding_status: true,
+        admin_notes: true
+      }
+    });
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error("[ADMIN USER UPDATE]", error);
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
 export default router;

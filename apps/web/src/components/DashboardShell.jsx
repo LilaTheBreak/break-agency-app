@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useDashboardSummary } from "../hooks/useDashboardSummary.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import { isAwaitingApproval } from "../lib/onboardingState.js";
 
 const DEFAULT_STATUS_SUMMARY = {
   tasksDue: 0,
@@ -26,6 +28,7 @@ export function DashboardShell({
   role,
   showStatusSummary = false
 }) {
+  const { user, logout } = useAuth();
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [userToggledNav, setUserToggledNav] = useState(false);
@@ -76,6 +79,8 @@ export function DashboardShell({
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [navCollapsed, userToggledNav]);
+
+  const showApprovalHold = isAwaitingApproval(user);
 
   const handleNavToggle = () => {
     setNavCollapsed((prev) => !prev);
@@ -235,16 +240,21 @@ export function DashboardShell({
               ) : null}
             </aside>
           )}
-          <div className="min-w-0 flex-1 rounded-3xl border border-brand-black/10 bg-brand-white/70 p-6 shadow-brand">
-            {showStatusSummary ? (
-              <DashboardStatusGrid
-                tiles={statusTiles}
-                nextSteps={mergedSummary.nextSteps}
-                loading={summaryLoading}
-                error={summaryError}
-              />
-            ) : null}
-            {children}
+          <div className="relative min-w-0 flex-1 rounded-3xl border border-brand-black/10 bg-brand-white/70 p-6 shadow-brand">
+            {showApprovalHold ? <ApprovalHoldOverlay onLogout={logout} /> : null}
+            <div className={showApprovalHold ? "pointer-events-none blur-[2px] opacity-70" : ""}>
+              <div className="space-y-6">
+                {showStatusSummary ? (
+                  <DashboardStatusGrid
+                    tiles={statusTiles}
+                    nextSteps={mergedSummary.nextSteps}
+                    loading={summaryLoading}
+                    error={summaryError}
+                  />
+                ) : null}
+                {children}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -290,9 +300,9 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error }) {
         {loading ? (
           <p className="mt-3 text-sm text-brand-black/60">Loading insights…</p>
         ) : (
-          <ul className="mt-3 space-y-2 text-sm text-brand-black/80">
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-brand-black/80">
             {(nextSteps && nextSteps.length ? nextSteps : ["No next steps queued by AI right now."]).map((step, index) => (
-              <li key={index}>• {step}</li>
+              <li key={index}>{step}</li>
             ))}
           </ul>
         )}
@@ -320,4 +330,33 @@ function formatCurrency(amount = 0, currency = "usd") {
   } catch {
     return `${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
   }
+}
+
+function ApprovalHoldOverlay({ onLogout }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-3xl bg-brand-black/60 backdrop-blur">
+      <div className="pointer-events-auto w-full max-w-xl space-y-4 rounded-2xl border border-white/15 bg-brand-black/80 p-6 text-center text-white shadow-[0_28px_90px_rgba(0,0,0,0.45)]">
+        <h3 className="font-display text-3xl uppercase leading-tight">Your account is being reviewed</h3>
+        <p className="text-sm text-white/80">
+          Thanks for completing onboarding. Our team is reviewing your account — you’ll receive an email once you’re approved.
+        </p>
+        <p className="text-xs uppercase tracking-[0.3em] text-white/60">This usually takes 1–2 business days.</p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="rounded-full border border-white/30 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white transition hover:-translate-y-0.5 hover:bg-white/10"
+          >
+            Log out
+          </button>
+          <Link
+            to="/"
+            className="rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-red hover:text-white"
+          >
+            Back to home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }

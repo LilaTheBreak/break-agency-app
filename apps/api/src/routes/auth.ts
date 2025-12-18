@@ -2,9 +2,9 @@ import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import prisma from "../lib/prisma.js";
-import { clearAuthCookie, setAuthCookie, createAuthToken, SESSION_COOKIE_NAME } from "../lib/jwt";
-import { buildSessionUser, type SessionUser } from "../lib/session";
-import { SignupSchema, LoginSchema } from "./authEmailSchemas";
+import { clearAuthCookie, setAuthCookie, createAuthToken, SESSION_COOKIE_NAME } from "../lib/jwt.js";
+import { buildSessionUser, type SessionUser } from "../lib/session.js";
+import { SignupSchema, LoginSchema } from "./authEmailSchemas.js";
 import { googleOAuthConfig } from "../config/google.js";
 
 const router = Router();
@@ -13,7 +13,13 @@ const router = Router();
 const GOOGLE_AUTH_BASE = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userinfo";
-const GOOGLE_SCOPES = ["openid", "email", "profile"];
+const GOOGLE_SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar.events"
+];
 
 const FRONTEND_ORIGIN =
   process.env.FRONTEND_ORIGIN ||
@@ -85,7 +91,6 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     ];
     const isSuperAdmin = adminEmails.includes(normalizedEmail);
 
-    console.log("DEBUG PRISMA USER MODEL:", prisma.user);
     /* ------------------------------------------
        Determine role for user
     ------------------------------------------ */
@@ -129,6 +134,35 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     console.log("✔ Google OAuth user upsert completed:", normalizedEmail, "with role:", assignedRole);
 
     /* ------------------------------------------
+       Store Google Account tokens for Calendar sync
+       NOTE: GoogleAccount model doesn't exist in schema yet
+       TODO: Add GoogleAccount model to schema for calendar sync
+    ------------------------------------------ */
+    // if (tokens.refresh_token || tokens.access_token) {
+    //   await prisma.googleAccount.upsert({
+    //     where: { userId: user.id },
+    //     update: {
+    //       email: normalizedEmail,
+    //       accessToken: tokens.access_token || null,
+    //       refreshToken: tokens.refresh_token || null,
+    //       expiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+    //       scope: tokens.scope || null,
+    //       updatedAt: new Date(),
+    //     },
+    //     create: {
+    //       userId: user.id,
+    //       email: normalizedEmail,
+    //       accessToken: tokens.access_token || null,
+    //       refreshToken: tokens.refresh_token || null,
+    //       expiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+    //       scope: tokens.scope || null,
+    //     },
+    //   });
+    //   console.log("✔ Google Account tokens stored for calendar sync");
+    // }
+    console.log("⚠ Google Account tokens NOT stored (GoogleAccount model not in schema)");
+
+    /* ------------------------------------------
        Set JWT cookie for session
     ------------------------------------------ */
     const token = createAuthToken({ id: user.id });
@@ -168,10 +202,12 @@ router.post("/auth/signup", async (req: Request, res: Response) => {
 
     const user = await prisma.user.create({
       data: {
+        id: crypto.randomUUID(),
         email: normalizedEmail,
         password: hashed,
         role: role, // Required role from signup
-        onboarding_status: "pending_review"
+        onboarding_status: "pending_review",
+        updatedAt: new Date()
       }
     });
 

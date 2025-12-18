@@ -112,8 +112,9 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
       navigation={navLinks.length ? undefined : tabs}
       showStatusSummary={showStatusSummary}
     >
-      {opportunities.length ? (
-        <section className="mb-6 space-y-4">
+      <div className="space-y-6">
+        {opportunities.length ? (
+          <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
@@ -169,114 +170,113 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
             </Link>
           </div>
         </section>
-      ) : null}
-      <div className="mb-6">
+        ) : null}
         <AiAssistantCard
           session={session}
           role={config.role || "admin"}
           title="AI Assistant"
           description="Ask AI how to optimize this week."
         />
-      </div>
-      {metrics.length > 0 ? (
-        <section className="grid gap-4 md:grid-cols-3">
-          {metrics.map((metric) => (
-            <div key={metric.label} className="rounded-3xl border border-brand-black/10 bg-brand-linen/80 p-5">
-              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{metric.label}</p>
-              <p className="mt-2 font-display text-4xl uppercase text-brand-black">{metric.value}</p>
-              <p className="text-sm text-brand-black/60">{metric.sub}</p>
-            </div>
-          ))}
-        </section>
-      ) : null}
-
-      {queue ? (
-        <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
-                {queue.label || "Queues"}
-              </p>
-              <h3 className="font-display text-2xl uppercase">{queue.title || "Pipeline"}</h3>
-            </div>
-            {queue.cta ? (
-              <button 
-                onClick={handleDispatchUpdate}
-                disabled={isDispatchLoading}
-                className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] transition hover:bg-brand-black hover:text-brand-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDispatchLoading ? "Creating draft..." : queue.cta}
-              </button>
-            ) : null}
-          </div>
-          <div className="mt-4 space-y-3">
-            {queue.items?.map((item) => (
-              <div
-                key={item.title}
-                className="flex flex-col gap-2 rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3 md:flex-row md:items-center md:justify-between"
-              >
-                <div>
-                  <p className="font-semibold text-brand-black">{item.title}</p>
-                  {item.owner ? (
-                    <p className="text-sm text-brand-black/60">Owner: {item.owner}</p>
-                  ) : item.meta ? (
-                    <p className="text-sm text-brand-black/60">{item.meta}</p>
-                  ) : null}
-                </div>
-                <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-3">
-                  {item.status ? (
-                    <Badge tone={item.tone || "positive"}>{item.status}</Badge>
-                  ) : null}
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className="rounded-full border border-brand-black/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5"
-                    >
-                      Mark complete
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-full border border-brand-red/40 bg-brand-red/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-red transition hover:-translate-y-0.5 hover:bg-brand-red/20"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
+        {metrics.length > 0 ? (
+          <section className="grid gap-4 md:grid-cols-3">
+            {metrics.map((metric) => (
+              <div key={metric.label} className="rounded-3xl border border-brand-black/10 bg-brand-linen/80 p-5">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{metric.label}</p>
+                <p className="mt-2 font-display text-4xl uppercase text-brand-black">{metric.value}</p>
+                <p className="text-sm text-brand-black/60">{metric.sub}</p>
               </div>
             ))}
-          </div>
-        </section>
-      ) : null}
+          </section>
+        ) : null}
 
-      {quickLinks.length > 0 ? (
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
-          {quickLinks.map((panel) =>
-            panel.to ? (
-              <Link
-                key={panel.title}
-                to={panel.to}
-                className="rounded-3xl border border-brand-black/10 bg-brand-linen/70 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition hover:-translate-y-1 hover:bg-brand-white"
-              >
+        {queue ? (
+          <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
                 <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
-                  {panel.title}
+                  {queue.label || "Queues"}
                 </p>
-                <p className="mt-2 text-sm text-brand-black/70">{panel.copy}</p>
-              </Link>
-            ) : (
-              <div
-                key={panel.title}
-                className="rounded-3xl border border-brand-black/10 bg-brand-linen/70 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)]"
-              >
-                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
-                  {panel.title}
-                </p>
-                <p className="mt-2 text-sm text-brand-black/70">{panel.copy}</p>
+                <h3 className="font-display text-2xl uppercase">{queue.title || "Pipeline"}</h3>
               </div>
-            )
-          )}
-        </section>
-      ) : null}
-      {children}
+              {queue.cta ? (
+                <button 
+                  onClick={handleDispatchUpdate}
+                  disabled={isDispatchLoading}
+                  className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] transition hover:bg-brand-black hover:text-brand-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDispatchLoading ? "Creating draft..." : queue.cta}
+                </button>
+              ) : null}
+            </div>
+            <div className="mt-4 space-y-3">
+              {queue.items?.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex flex-col gap-2 rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3 md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <p className="font-semibold text-brand-black">{item.title}</p>
+                    {item.owner ? (
+                      <p className="text-sm text-brand-black/60">Owner: {item.owner}</p>
+                    ) : item.meta ? (
+                      <p className="text-sm text-brand-black/60">{item.meta}</p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-col items-start gap-2 md:flex-row md:items-center md:gap-3">
+                    {item.status ? (
+                      <Badge tone={item.tone || "positive"}>{item.status}</Badge>
+                    ) : null}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="rounded-full border border-brand-black/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5"
+                      >
+                        Mark complete
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-full border border-brand-red/40 bg-brand-red/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-red transition hover:-translate-y-0.5 hover:bg-brand-red/20"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {quickLinks.length > 0 ? (
+          <section className="grid gap-4 md:grid-cols-2">
+            {quickLinks.map((panel) =>
+              panel.to ? (
+                <Link
+                  key={panel.title}
+                  to={panel.to}
+                  className="rounded-3xl border border-brand-black/10 bg-brand-linen/70 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition hover:-translate-y-1 hover:bg-brand-white"
+                >
+                  <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+                    {panel.title}
+                  </p>
+                  <p className="mt-2 text-sm text-brand-black/70">{panel.copy}</p>
+                </Link>
+              ) : (
+                <div
+                  key={panel.title}
+                  className="rounded-3xl border border-brand-black/10 bg-brand-linen/70 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)]"
+                >
+                  <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+                    {panel.title}
+                  </p>
+                  <p className="mt-2 text-sm text-brand-black/70">{panel.copy}</p>
+                </div>
+              )
+            )}
+          </section>
+        ) : null}
+        {children}
+      </div>
     </DashboardShell>
   );
 }

@@ -67,167 +67,98 @@ const STAGE_ACTIONS = {
   "Rejected": { label: "View feedback", nextStage: null }
 };
 
-const CREATOR_OPPORTUNITY_PIPELINE = [
-  {
-    id: "luxury-travel",
-    title: "Luxury Travel Drop",
-    brand: "FiveStar Collective",
-    payout: 8000,
-    due: "Pitch closes 12 Dec",
-    deliverables: "2x IG Reels + 1 TikTok travel diary",
-    status: "Open briefs",
-    requirements: ["Showcase elevated hotel experiences", "Highlight unique dining moments", "Tag brand hashtag #FiveStarResidency"],
-    lastUpdate: "Awaiting your application"
-  },
-  {
-    id: "ai-banking",
-    title: "AI Banking Launch",
-    brand: "NuWave Finance",
-    payout: 5200,
-    due: "Creative sync 14 Dec",
-    deliverables: "Explainer carousel + landing page walkthrough",
-    status: "Shortlisted",
-    requirements: ["Include AI compliance callout", "Use brand palette", "Mention referral code BREAK20"],
-    lastUpdate: "Send concept moodboard"
-  },
-  {
-    id: "doha-hospitality",
-    title: "Doha Hospitality Tour",
-    brand: "GCC Tourism Board",
-    payout: 9200,
-    due: "Draft due 18 Dec",
-    deliverables: "3x TikTok vlogs + itinerary PDF",
-    status: "Pending submissions",
-    requirements: ["Focus on premium experience", "Include Arabic subtitles", "Upload raw files to Break Drive"],
-    lastUpdate: "Waiting on final cut"
-  },
-  {
-    id: "fintech-onboarding",
-    title: "Fintech Walkthrough",
-    brand: "FlowPay",
-    payout: 6200,
-    due: "Approval call 22 Dec",
-    deliverables: "1x YouTube long-form + 2 cutdowns",
-    status: "Awaiting approval",
-    requirements: ["Show onboarding flow", "Add call-to-action overlay", "Highlight security features"],
-    lastUpdate: "Brand reviewing v2 today"
-  },
-  {
-    id: "residency-series",
-    title: "Creator Residency Series",
-    brand: "Break Agency",
-    payout: 11000,
-    due: "Wrap-up 02 Jan",
-    deliverables: "Live stream + recap reel",
-    status: "Accepted",
-    requirements: ["Share behind-the-scenes", "Capture community Q&A", "Deliver retro report"],
-    lastUpdate: "Payment queued once retro uploaded"
-  },
-  {
-    id: "fast-fashion",
-    title: "Fast Fashion Capsule",
-    brand: "StyleDrop",
-    payout: 3000,
-    due: "Pitch review rolling",
-    deliverables: "3x IG static + 1 story set",
-    status: "Rejected",
-    requirements: ["Focus on denim line", "No mention of competitors", "Highlight sustainability"],
-    lastUpdate: "Roster already filled—see feedback"
-  }
-];
+// TODO: Fetch creator opportunities from API endpoint /api/opportunities/creator
+const CREATOR_OPPORTUNITY_PIPELINE = [];
 
 const SUBMISSION_TABS = ["Drafts", "Revisions requested", "Awaiting approval", "Scheduled", "Approved", "Usage log"];
 
-const SUBMISSION_PAYLOADS = [
-  {
-    id: "submission-1",
-    title: "Luxury Travel Drop",
-    platform: "Instagram Reels",
-    type: "Video",
-    stage: "Awaiting approval",
-    files: [
-      { label: "Final edit.mp4", kind: "video" },
-      { label: "Thumbnail.png", kind: "thumbnail" },
-      { label: "Captions.srt", kind: "captions" }
-    ],
-    revisions: [{ note: "Tweak CTA to emphasise hospitality credit.", date: "Dec 03" }],
-    finalLinks: [{ label: "Reel link", url: "https://instagram.com/thebreakco" }],
-    captions: "Traveling through Doha with @FiveStarCollective — tap for premium perks.",
-    usageRights: "Global paid + organic 12 months",
-    schedule: "Ready to schedule after approval"
-  },
-  {
-    id: "submission-2",
-    title: "AI Banking Walkthrough",
-    platform: "TikTok",
-    type: "Short-form",
-    stage: "Revisions requested",
-    files: [
-      { label: "Draft v2.mp4", kind: "video" },
-      { label: "TikTok-caption.txt", kind: "captions" }
-    ],
-    revisions: [
-      { note: "Mention referral code earlier", date: "Dec 01" },
-      { note: "Add screenshot of security page", date: "Dec 02" }
-    ],
-    finalLinks: [],
-    captions: "The AI-powered onboarding that doesn't feel like paperwork. Use BREAK20.",
-    usageRights: "Organic only",
-    schedule: "Pending admin review"
-  },
-  {
-    id: "submission-3",
-    title: "Doha Hospitality Tour",
-    platform: "UGC variant",
-    type: "UGC package",
-    stage: "Scheduled",
-    files: [
-      { label: "UGC variant.mov", kind: "video" },
-      { label: "Story set.psd", kind: "deliverable" },
-      { label: "Thumbnail_UCG.png", kind: "thumbnail" }
-    ],
-    revisions: [],
-    finalLinks: [{ label: "Break Drive folder", url: "https://drive.google.com" }],
-    captions: "Slide into Doha with Break — curated experiences daily.",
-    usageRights: "Paid + whitelisting 18 months",
-    schedule: "Scheduled for Dec 15 10:00 GMT"
-  },
-  {
-    id: "submission-4",
-    title: "Residency Recap",
-    platform: "YouTube",
-    type: "Long-form",
-    stage: "Drafts",
-    files: [
-      { label: "Residency_script.docx", kind: "document" },
-      { label: "Thumbnail_draft.png", kind: "thumbnail" }
-    ],
-    revisions: [],
-    finalLinks: [],
-    captions: "Residency recap draft caption will go here.",
-    usageRights: "Pending admin approval",
-    schedule: "Not scheduled"
-  },
-  {
-    id: "submission-5",
-    title: "Retail Capsule Series",
-    platform: "Instagram + TikTok",
-    type: "Multi-platform",
-    stage: "Approved",
-    files: [
-      { label: "IG Reel_final.mp4", kind: "video" },
-      { label: "TikTok_cut.mov", kind: "video" },
-      { label: "Caption_pack.txt", kind: "captions" }
-    ],
-    revisions: [],
-    finalLinks: [{ label: "TikTok live link", url: "https://tiktok.com/@thebreakco" }],
-    captions: "Sneak peek at the capsule drop — code BREAKCAP for early access.",
-    usageRights: "Paid + brand whitelisting 24 months",
-    schedule: "Live since Dec 01"
-  }
-];
+// TODO: Fetch submission payloads from API endpoint /api/submissions
+const SUBMISSION_PAYLOADS = [];
 
 function CreatorOpportunitiesSection() {
+  const [opportunities, setOpportunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      try {
+        setError(null);
+        const response = await fetch('http://localhost:5001/api/opportunities/creator/all', {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setOpportunities(data.opportunities || []);
+      } catch (err) {
+        console.error('Error fetching opportunities:', err);
+        setError(err.message || 'Failed to load opportunities');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOpportunities();
+  }, []);
+
+  if (loading) {
+    return (
+      <section id="creator-opportunities" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities system</p>
+            <h3 className="font-display text-3xl uppercase">Apply, submit, track</h3>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-black/20 border-t-brand-black"></div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="creator-opportunities" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities system</p>
+            <h3 className="font-display text-3xl uppercase">Apply, submit, track</h3>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+          <p className="text-sm text-red-600">Failed to load opportunities</p>
+          <p className="mt-2 text-xs text-red-500">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-full border border-red-600 px-4 py-2 text-xs uppercase tracking-[0.3em] text-red-600 hover:bg-red-600 hover:text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (opportunities.length === 0) {
+    return (
+      <section id="creator-opportunities" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities system</p>
+            <h3 className="font-display text-3xl uppercase">Apply, submit, track</h3>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No opportunities yet</p>
+          <p className="mt-2 text-xs text-brand-black/40">Brand opportunities will appear here once campaigns are live</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="creator-opportunities" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -236,46 +167,85 @@ function CreatorOpportunitiesSection() {
           <h3 className="font-display text-3xl uppercase">Apply, submit, track</h3>
         </div>
       </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
-        <p className="text-sm text-brand-black/60">No opportunities yet</p>
-        <p className="mt-2 text-xs text-brand-black/40">Brand opportunities will appear here once campaigns are live</p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {opportunities.map((opp) => (
+          <OpportunitySummaryCard
+            key={opp.id}
+            opportunity={opp}
+            applicationStatus={opp.applicationStatus}
+            hasSubmission={opp.hasSubmission}
+          />
+        ))}
       </div>
     </section>
   );
 }
 
-function OpportunitySummaryCard({ opportunity, onAction, onTrack }) {
-  const action = STAGE_ACTIONS[opportunity.status];
+function OpportunitySummaryCard({ opportunity, applicationStatus, hasSubmission }) {
+  const handleApply = async () => {
+    if (applicationStatus) return;
+    
+    try {
+      const response = await fetch(`http://localhost:5001/api/opportunities/${opportunity.id}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          pitch: '',
+          proposedRate: null,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Application submitted successfully!');
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to apply');
+      }
+    } catch (error) {
+      console.error('Error applying to opportunity:', error);
+      alert('Failed to apply to opportunity');
+    }
+  };
+
   return (
     <article className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{opportunity.status}</p>
           <h4 className="font-semibold text-brand-black">{opportunity.title}</h4>
-          <p className="text-xs text-brand-black/60">{opportunity.brand}</p>
+          <p className="text-xs text-brand-black/60">{opportunity.brand || 'Brand'}</p>
         </div>
-        <Badge tone="positive">£{opportunity.payout.toLocaleString()}</Badge>
+        {opportunity.payment && (
+          <Badge tone="positive">{opportunity.payment}</Badge>
+        )}
       </div>
-      <p className="text-sm text-brand-black/70">{opportunity.due}</p>
-      <p className="text-xs text-brand-black/60">Deliverables: {opportunity.deliverables}</p>
-      <OpportunityTimeline stage={opportunity.status} compact />
+      
+      {opportunity.deliverables && (
+        <p className="text-sm text-brand-black/70">{opportunity.deliverables}</p>
+      )}
+      {opportunity.deadline && (
+        <p className="text-xs text-brand-black/60">Deadline: {opportunity.deadline}</p>
+      )}
+      
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onTrack}
-          className="rounded-full border border-brand-black px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em]"
-        >
-          Track status
-        </button>
-        {action ? (
+        {!applicationStatus && (
           <button
             type="button"
-            onClick={onAction}
-            className="rounded-full bg-brand-black px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-brand-white hover:bg-brand-black/90"
+            onClick={handleApply}
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-white hover:bg-brand-red/90"
           >
-            {action.label}
+            Apply now
           </button>
-        ) : null}
+        )}
+        {applicationStatus && (
+          <Badge tone={applicationStatus === 'shortlisted' ? 'positive' : 'neutral'}>
+            {applicationStatus}
+          </Badge>
+        )}
+        {hasSubmission && (
+          <Badge tone="info">Has submission</Badge>
+        )}
       </div>
     </article>
   );
@@ -386,6 +356,89 @@ function CreatorOnboardingSection() {
 }
 
 function CreatorSubmissionsSection({ session }) {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        setError(null);
+        const response = await fetch('http://localhost:5001/api/submissions', {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setSubmissions(data.submissions || []);
+      } catch (err) {
+        console.error('Error fetching submissions:', err);
+        setError(err.message || 'Failed to load submissions');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, []);
+
+  if (loading) {
+    return (
+      <section id="creator-submissions" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Submissions</p>
+            <h3 className="font-display text-3xl uppercase">Uploads, revisions, approvals</h3>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-black/20 border-t-brand-black"></div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="creator-submissions" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Submissions</p>
+            <h3 className="font-display text-3xl uppercase">Uploads, revisions, approvals</h3>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+          <p className="text-sm text-red-600">Failed to load submissions</p>
+          <p className="mt-2 text-xs text-red-500">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-full border border-red-600 px-4 py-2 text-xs uppercase tracking-[0.3em] text-red-600 hover:bg-red-600 hover:text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (submissions.length === 0) {
+    return (
+      <section id="creator-submissions" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Submissions</p>
+            <h3 className="font-display text-3xl uppercase">Uploads, revisions, approvals</h3>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No submissions yet</p>
+          <p className="mt-2 text-xs text-brand-black/40">Content submission tracking will appear once you have active campaigns</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="creator-submissions" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -394,9 +447,10 @@ function CreatorSubmissionsSection({ session }) {
           <h3 className="font-display text-3xl uppercase">Uploads, revisions, approvals</h3>
         </div>
       </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
-        <p className="text-sm text-brand-black/60">No submissions yet</p>
-        <p className="mt-2 text-xs text-brand-black/40">Content submission tracking will appear once you have active campaigns</p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {submissions.map((submission) => (
+          <SubmissionCard key={submission.id} submission={submission} />
+        ))}
       </div>
     </section>
   );
@@ -443,40 +497,44 @@ function CreatorCampaignsPanel({ session }) {
   );
 }
 
-function SubmissionCard({ submission, onSelect, onAdvance }) {
+function SubmissionCard({ submission }) {
+  const opportunityTitle = submission.opportunity?.title || submission.title || 'Submission';
+  const filesCount = Array.isArray(submission.files) ? submission.files.length : 0;
+  const revisionsCount = Array.isArray(submission.revisions) ? submission.revisions.length : 0;
+  
+  const statusColors = {
+    draft: 'neutral',
+    pending: 'info',
+    approved: 'positive',
+    revision: 'warning',
+    rejected: 'negative'
+  };
+
   return (
     <article className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{submission.stage}</p>
-          <h4 className="font-semibold text-brand-black">{submission.title}</h4>
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{submission.status}</p>
+          <h4 className="font-semibold text-brand-black">{opportunityTitle}</h4>
           <p className="text-xs text-brand-black/60">{submission.platform}</p>
         </div>
-        <Badge tone="positive">{submission.type}</Badge>
+        <Badge tone={statusColors[submission.status] || 'neutral'}>{submission.status}</Badge>
       </div>
-      <p className="text-xs text-brand-black/60">{submission.schedule}</p>
+      {submission.feedback && (
+        <p className="text-xs text-brand-black/60 italic">{submission.feedback}</p>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-[0.6rem] uppercase tracking-[0.35em] text-brand-black/50">
-        <span>{submission.files.length} files</span>
+        <span>{filesCount} files</span>
         <span className="h-px w-6 bg-brand-black/20" />
-        <span>{submission.revisions.length} revisions</span>
+        <span>{revisionsCount} revisions</span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={onSelect}
           className="rounded-full border border-brand-black px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em]"
         >
           View details
         </button>
-        {submission.stage !== "Approved" && submission.stage !== "Scheduled" ? (
-          <button
-            type="button"
-            onClick={onAdvance}
-            className="rounded-full bg-brand-black px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-brand-white hover:bg-brand-black/90"
-          >
-            {submission.stage === "Revisions requested" ? "Submit revision" : "Mark ready"}
-          </button>
-        ) : null}
       </div>
     </article>
   );

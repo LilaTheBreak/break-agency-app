@@ -1,11 +1,12 @@
 import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { NoAccessCard } from "./NoAccessCard.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { AwaitingApprovalPage } from "../pages/AwaitingApprovalPage.jsx";
-import { Roles } from "../auth/session.js";
+import { shouldRouteToOnboarding } from "../lib/onboardingState.js";
 
 export function ProtectedRoute({ allowed = [], children }) {
   const { user, loading, loginWithGoogle } = useAuth();
+  const location = useLocation();
 
   // Show loading state only on initial load when user is not yet known
   if (loading && !user) {
@@ -31,15 +32,16 @@ export function ProtectedRoute({ allowed = [], children }) {
   // Check if user needs onboarding approval (skip for admins)
   const userRole = user.role;
   const isAdmin = userRole === 'ADMIN' || userRole === 'SUPERADMIN';
-  
-  if (!isAdmin && user.onboardingStatus !== 'approved') {
-    return <AwaitingApprovalPage />;
+  const needsOnboarding = shouldRouteToOnboarding(user);
+  const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+
+  if (!isAdmin && needsOnboarding && !isOnboardingRoute) {
+    const search = userRole ? `?role=${userRole}` : "";
+    return <Navigate to={`/onboarding${search}`} replace />;
   }
 
   // Check if user's role is in the allowed list
-  // Handle both single role string and array of roles
-  const userRoles = Array.isArray(user.roles) ? user.roles : [userRole];
-  const canAccess = !allowed?.length || userRoles.some(role => allowed.includes(role));
+  const canAccess = !allowed?.length || allowed.includes(userRole);
   
   if (!canAccess) {
     return <NoAccessCard description="This module is restricted. Contact operations if you believe this is an error." />;

@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../services/apiClient.js";
 import { getCurrentUser, login as loginWithEmailClient, signup as signupWithEmailClient } from "../services/authClient.js";
+import { deriveOnboardingStatus } from "../lib/onboardingState.js";
 
 /**
  * Legacy context note:
@@ -39,7 +40,7 @@ export function AuthProvider({ children }) {
         payload.user
           ? {
               ...payload.user,
-              onboardingStatus: payload.user.onboardingStatus
+              onboardingStatus: deriveOnboardingStatus(payload.user)
             }
           : null
       );
@@ -93,11 +94,11 @@ export function AuthProvider({ children }) {
       }
       const payload = await response.json();
       const loggedInUser = payload.user || null;
-      
-      // Set user directly from login response instead of refreshing
-      setUser(loggedInUser);
-      
-      return loggedInUser;
+      const normalizedUser = loggedInUser
+        ? { ...loggedInUser, onboardingStatus: deriveOnboardingStatus(loggedInUser) }
+        : null;
+      setUser(normalizedUser);
+      return normalizedUser;
     },
     []
   );
@@ -109,12 +110,21 @@ export function AuthProvider({ children }) {
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
         const message = payload?.error || "Unable to sign up";
-        throw new Error(message);
+        const err = new Error(message);
+        err.code = payload?.code || response.status;
+        throw err;
       }
       await refreshUser();
     },
     [refreshUser]
   );
+
+  const syncOnboardingFromLocal = useCallback(() => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      return { ...prev, onboardingStatus: deriveOnboardingStatus(prev) };
+    });
+  }, []);
 
   const hasRole = useCallback(
     (...roles) => {
@@ -135,9 +145,10 @@ export function AuthProvider({ children }) {
       loginWithEmail,
       signupWithEmail,
       logout,
-      hasRole
+      hasRole,
+      syncOnboardingFromLocal
     }),
-    [user, loading, error, refreshUser, loginWithGoogle, loginWithEmail, signupWithEmail, logout, hasRole]
+    [user, loading, error, refreshUser, loginWithGoogle, loginWithEmail, signupWithEmail, logout, hasRole, syncOnboardingFromLocal]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,6 +2,9 @@ import React, { useMemo, useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { Badge } from "../components/Badge.jsx";
+import { OutreachRecordsPanel } from "../components/OutreachRecordsPanel.jsx";
+import { CampaignChip } from "../components/CampaignChip.jsx";
+import { linkDealToCampaign, readCrmCampaigns, unlinkDealFromCampaign } from "../lib/crmCampaigns.js";
 import {
   fetchOutreachRecords,
   createOutreachRecord,
@@ -22,277 +25,109 @@ const OUTREACH_STAGES = [
   { id: "closed-lost", label: "Closed Lost" }
 ];
 
-const INITIAL_OUTREACH = [
-  {
-    id: "orion",
-    target: "Maison Orion",
-    type: "Brand",
-    profile: {
-      website: "https://maisonorion.com",
-      industry: "Hospitality",
-      size: "Scale-up",
-      emails: [
-        { label: "Partnerships", email: "partnerships@maisonorion.com", lastContact: "2025-01-10T09:00:00Z", status: "Responded", threadUrl: "https://mail.google.com/mail/u/0/#label/orion" },
-        { label: "Marketing", email: "marketing@maisonorion.com", lastContact: "2025-01-08T13:00:00Z", status: "Awaiting reply", threadUrl: "https://mail.google.com/mail/u/0/#label/orion-marketing" }
-      ],
-      contacts: [
-        { name: "Amelia Hart", role: "VP Partnerships", email: "amelia@maisonorion.com", threadUrl: "https://mail.google.com/mail/u/0/#label/orion", lastContact: "2025-01-10T09:00:00Z", status: "Responded" },
-        { name: "Leo Diaz", role: "Marketing Lead", email: "leo@maisonorion.com", threadUrl: "https://mail.google.com/mail/u/0/#label/orion-marketing", lastContact: "2025-01-08T13:00:00Z", status: "Awaiting reply" }
-      ]
-    },
-    contact: "Amelia Hart · VP Partnerships",
-    link: "https://maisonorion.com",
-    owner: "Mo Al Ghazi",
-    source: "Referral",
-    stage: "conversation",
-    emailStats: { sent: 4, replies: 2 },
-    lastContact: "2025-01-10T09:00:00Z",
-    status: "Responded",
-    summary: "Budget guardrails shared. Needs hospitality deck + dates.",
-    nextFollowUp: "2025-01-18T12:00:00Z",
-    reminder: "Send hospitality case study bundle",
-    threadUrl: "https://mail.google.com/mail/u/0/#label/orion",
-    opportunityRef: "opp-orion"
-  },
-  {
-    id: "aurora",
-    target: "Aurora Studio",
-    type: "Brand",
-    profile: {
-      website: "https://aurorastudio.ai",
-      industry: "AI / Productivity",
-      size: "Startup",
-      emails: [
-        { label: "Growth", email: "growth@aurorastudio.ai", lastContact: "2025-01-12T15:30:00Z", status: "Responded", threadUrl: "https://mail.google.com/mail/u/0/#label/aurora" }
-      ],
-      contacts: [
-        { name: "Noah Reid", role: "Head of Growth", email: "noah@aurorastudio.ai", threadUrl: "https://mail.google.com/mail/u/0/#label/aurora", lastContact: "2025-01-12T15:30:00Z", status: "Responded" },
-        { name: "Priya Malhotra", role: "Partnerships", email: "priya@aurorastudio.ai", threadUrl: "https://mail.google.com/mail/u/0/#label/aurora", lastContact: "2025-01-11T11:00:00Z", status: "Responded" }
-      ]
-    },
-    contact: "Noah Reid · Head of Growth",
-    link: "https://aurorastudio.ai",
-    owner: "Lila Prasad",
-    source: "Manual",
-    stage: "meeting",
-    emailStats: { sent: 3, replies: 3 },
-    lastContact: "2025-01-12T15:30:00Z",
-    status: "Responded",
-    summary: "Co-marketing pilot locked. Meeting booked for media plan.",
-    nextFollowUp: "2025-01-15T09:00:00Z",
-    reminder: "Prep AI talent roster + CPM bands",
-    threadUrl: "https://mail.google.com/mail/u/0/#label/aurora",
-    opportunityRef: "opp-aurora"
-  },
-  {
-    id: "elan",
-    target: "Elan Collective",
-    type: "Creator",
-    profile: {
-      creatorName: "Elan Collective",
-      primaryPlatform: "Instagram",
-      socials: {
-        instagram: { handle: "@elan.collective", url: "https://instagram.com/elan.collective" },
-        tiktok: { handle: "@elan.tok", url: "https://www.tiktok.com/@elan.tok" },
-        youtube: null,
-        other: "Pinterest: /elancollective"
-      },
-      followers: "420k IG · 180k TikTok",
-      niche: "Luxury travel + interiors",
-      location: "Dubai / London",
-      reason: "Campaign invite",
-      fitNotes: "Strong alignment for heritage hotel series and high-touch concierge experiences.",
-      representation: "Yes",
-      inbound: "Yes"
-    },
-    contact: "Sofia Wren · Creative Director",
-    link: "https://elan.world",
-    owner: "Automation Pod",
-    source: "Inbound",
-    stage: "follow-up",
-    emailStats: { sent: 2, replies: 0 },
-    lastContact: "2025-01-06T11:00:00Z",
-    status: "No response",
-    summary: "Initial deck shared. Waiting on clarification of scope.",
-    nextFollowUp: "2025-01-14T10:00:00Z",
-    reminder: "Schedule nudge + link latest finance terms",
-    threadUrl: "https://mail.google.com/mail/u/0/#label/elan",
-    opportunityRef: "opp-elan"
-  },
-  {
-    id: "vista",
-    target: "Vista Shores",
-    type: "Brand",
-    profile: {
-      website: "https://vistashores.com",
-      industry: "Hospitality",
-      size: "Enterprise",
-      emails: [
-        { label: "PR", email: "press@vistashores.com", lastContact: null, status: "Not started", threadUrl: "" },
-        { label: "Partnerships", email: "partners@vistashores.com", lastContact: null, status: "Not started", threadUrl: "" }
-      ],
-      contacts: [
-        { name: "Camille Ortiz", role: "Partnerships Lead", email: "camille@vistashores.com", threadUrl: "", lastContact: null, status: "Not started" }
-      ]
-    },
-    contact: "Camille Ortiz · Partnerships Lead",
-    link: "https://vistashores.com",
-    owner: "Mo Al Ghazi",
-    source: "Event",
-    stage: "researched",
-    emailStats: { sent: 0, replies: 0 },
-    lastContact: null,
-    status: "Not started",
-    summary: "Luxury coastal resort series. Needs localized creators.",
-    nextFollowUp: "2025-01-17T08:00:00Z",
-    reminder: "Send intro with GCC case studies",
-    threadUrl: "",
-    opportunityRef: null
-  },
-  {
-    id: "atelier",
-    target: "Atelier North",
-    type: "Creator",
-    profile: {
-      creatorName: "Atelier North",
-      primaryPlatform: "YouTube",
-      socials: {
-        instagram: { handle: "@atelier.north", url: "https://instagram.com/atelier.north" },
-        tiktok: null,
-        youtube: { handle: "AtelierNorth", url: "https://youtube.com/@AtelierNorth" },
-        other: "Substack: ateliernorth.substack.com"
-      },
-      followers: "220k YT · 160k IG",
-      niche: "Heritage fashion + craft",
-      location: "Paris",
-      reason: "Representation",
-      fitNotes: "Long-form storytelling matches Break heritage series. Interested in residencies.",
-      representation: "No",
-      inbound: "Unknown"
-    },
-    contact: "Sage Kim · Manager",
-    link: "https://atelier.north",
-    owner: "Editorial Pod",
-    source: "Referral",
-    stage: "closed-won",
-    emailStats: { sent: 5, replies: 4 },
-    lastContact: "2025-01-09T18:00:00Z",
-    status: "Responded",
-    summary: "Signed onto heritage series. Needs rollout calendar.",
-    nextFollowUp: "2025-01-16T16:00:00Z",
-    reminder: "Send reporting template + travel briefs",
-    threadUrl: "https://mail.google.com/mail/u/0/#label/atelier",
-    opportunityRef: "opp-atelier"
-  }
-];
+function IconBubble({ children, tone = "neutral" }) {
+  const toneClass =
+    tone === "positive"
+      ? "bg-brand-red text-brand-white"
+      : tone === "muted"
+        ? "bg-brand-black/5 text-brand-black"
+        : "bg-brand-black text-brand-white";
+  return (
+    <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[0.8rem] ${toneClass}`} aria-hidden>
+      {children}
+    </span>
+  );
+}
 
-const INITIAL_NOTES = [
-  {
-    id: "note-1",
-    outreachId: "orion",
-    author: "Mo Al Ghazi",
-    body: "They want 2-market pilot (DXB + LON) with clear buyout terms.",
-    timestamp: "2025-01-10T12:00:00Z"
-  },
-  {
-    id: "note-2",
-    outreachId: "elan",
-    author: "Automation Pod",
-    body: "No response yet. Add tailored finance template to follow-up.",
-    timestamp: "2025-01-07T09:30:00Z"
-  },
-  {
-    id: "note-3",
-    outreachId: "aurora",
-    author: "Lila Prasad",
-    body: "Meeting booked via Gmail thread. Asked for paid media add-on.",
-    timestamp: "2025-01-12T15:45:00Z"
-  }
-];
+function PoundIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className={className} strokeWidth="1.8">
+      <path d="M8 9.5a4 4 0 1 1 8 0" />
+      <path d="M8 9.5v7.5m0 0h8m-8-3h6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
-const INITIAL_TASKS = [
-  {
-    id: "task-1",
-    outreachId: "orion",
-    title: "Send hospitality deck + calendar invite",
-    dueDate: "2025-01-18T10:00:00Z",
-    owner: "Mo Al Ghazi",
-    priority: "High",
-    status: "Open"
-  },
-  {
-    id: "task-2",
-    outreachId: "elan",
-    title: "Follow-up with pricing guardrails",
-    dueDate: "2025-01-14T10:00:00Z",
-    owner: "Automation Pod",
-    priority: "Medium",
-    status: "Queued"
-  },
-  {
-    id: "task-3",
-    outreachId: "aurora",
-    title: "Prep AI talent roster for meeting",
-    dueDate: "2025-01-15T09:00:00Z",
-    owner: "Lila Prasad",
-    priority: "High",
-    status: "In progress"
-  }
-];
+function HeartIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 20s-7-4.35-7-10a5 5 0 0 1 9.21-2.76H14a5 5 0 0 1 9 2.76c0 5.65-7 10-7 10z" />
+    </svg>
+  );
+}
 
-const INITIAL_OPPORTUNITIES = [
-  {
-    id: "opp-orion",
-    outreachId: "orion",
-    name: "Maison Orion villa residency program",
-    value: "£45,000 est",
-    status: "Open",
-    expectedClose: "2025-02-10"
-  },
-  {
-    id: "opp-aurora",
-    outreachId: "aurora",
-    name: "Aurora Studio AI co-marketing pilot",
-    value: "$28,000",
-    status: "Closed Won",
-    expectedClose: "2025-01-30"
-  },
-  {
-    id: "opp-elan",
-    outreachId: "elan",
-    name: "Elan Collective test order",
-    value: "£12,500",
-    status: "Closed Lost",
-    expectedClose: "2025-01-08"
-  },
-  {
-    id: "opp-atelier",
-    outreachId: "atelier",
-    name: "Atelier North heritage series",
-    value: "$32,000",
-    status: "Closed Won",
-    expectedClose: "2025-01-05"
-  }
-];
+function InstagramIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} stroke="currentColor" strokeWidth="1.4">
+      <rect x="5" y="5" width="14" height="14" rx="4" />
+      <circle cx="12" cy="12" r="3.2" />
+      <circle cx="16.5" cy="7.5" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
-const DEALS = [
-  {
-    id: "deal-aurora",
-    outreachId: "aurora",
-    name: "Aurora Studio AI co-marketing pilot",
-    value: "$28,000",
-    status: "Contracting",
-    notes: "Moving from outreach opp to full deal. Keep media add-ons."
-  },
-  {
-    id: "deal-atelier",
-    outreachId: "atelier",
-    name: "Atelier North heritage series",
-    value: "$32,000",
-    status: "Live",
-    notes: "Closed won; preserving outreach notes + threads."
-  }
-];
+function TikTokIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M14 4h2.2c.14 1.5 1.13 2.8 2.8 3v2.1a5.48 5.48 0 0 1-3.1-1.04V14a4.5 4.5 0 1 1-4.5-4.5h.5V12a2.5 2.5 0 1 0 1.6 2.33V4Z" />
+    </svg>
+  );
+}
+
+function YouTubeIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M4 8.5c0-1.3 1.05-2.35 2.35-2.35h11.3C18.95 6.15 20 7.2 20 8.5v7c0 1.3-1.05 2.35-2.35 2.35H6.35C5.05 17.85 4 16.8 4 15.5v-7Z" />
+      <path d="M10 9.5 15 12l-5 2.5V9.5Z" fill="white" />
+    </svg>
+  );
+}
+
+function LinkedInIcon({ className = "h-4 w-4" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M6.5 19h-3V9h3v10Zm-1.5-11.4a1.75 1.75 0 1 1 0-3.5 1.75 1.75 0 0 1 0 3.5Zm5.5 11.4h-3V9h2.9v1.4h.1c.4-.8 1.4-1.6 2.9-1.6 3.1 0 3.7 2 3.7 4.6V19h-3v-4.6c0-1.1-.1-2.4-1.5-2.4-1.5 0-1.7 1.2-1.7 2.3V19Z" />
+    </svg>
+  );
+}
+
+function IconChip({ icon, label, tone = "muted" }) {
+  const toneClass =
+    tone === "positive"
+      ? "border-brand-red/30 bg-brand-red/10 text-brand-red"
+      : "border-brand-black/15 bg-brand-linen/50 text-brand-black/80";
+  return (
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.7rem] uppercase tracking-[0.25em] ${toneClass}`}>
+      <span className="flex items-center justify-center text-brand-black">{icon}</span>
+      <span className="max-w-[160px] truncate">{label}</span>
+    </span>
+  );
+}
+
+const PLATFORM_ICON_MAP = {
+  instagram: InstagramIcon,
+  tiktok: TikTokIcon,
+  youtube: YouTubeIcon,
+  linkedin: LinkedInIcon
+};
+
+function PlatformChip({ platform, handle }) {
+  const key = platform?.toLowerCase?.() || "";
+  const Icon = PLATFORM_ICON_MAP[key] || null;
+  const label = handle || platform;
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-brand-black/15 bg-brand-white px-3 py-1 text-[0.7rem] uppercase tracking-[0.25em] text-brand-black/80">
+      {Icon ? (
+        <IconBubble tone="muted">
+          <Icon className="h-3.5 w-3.5" />
+        </IconBubble>
+      ) : (
+        <span className="h-2 w-2 rounded-full bg-brand-black/40" aria-hidden />
+      )}
+      <span className="max-w-[140px] truncate">{label}</span>
+    </span>
+  );
+}
 
 const priorityTone = {
   High: "positive",
@@ -366,7 +201,7 @@ function isWithinRange(dateValue, rangeDays) {
   return diff <= rangeDays * 24 * 60 * 60 * 1000;
 }
 
-export function AdminOutreachPage() {
+export function AdminOutreachPage({ session }) {
   const [records, setRecords] = useState([]);
   const [notes, setNotes] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -375,6 +210,7 @@ export function AdminOutreachPage() {
   const [dateRange, setDateRange] = useState(30); // days, null = all
   const [ownerFilter, setOwnerFilter] = useState("All");
   const [showArchived, setShowArchived] = useState(false);
+  const [activeView, setActiveView] = useState("pipeline"); // pipeline | records
 
   const [archivedOutreachIds, setArchivedOutreachIds] = useState(() =>
     readStorage(STORAGE_KEYS.archivedOutreachIds, [])
@@ -391,6 +227,7 @@ export function AdminOutreachPage() {
   const [localNotes, setLocalNotes] = useState(() => readStorage(STORAGE_KEYS.localNotes, []));
   const [localTasks, setLocalTasks] = useState(() => readStorage(STORAGE_KEYS.localTasks, []));
   const [noteEdits, setNoteEdits] = useState(() => readStorage(STORAGE_KEYS.noteEdits, {}));
+  const [crmCampaigns, setCrmCampaigns] = useState(() => readCrmCampaigns());
 
   const [outreachModalOpen, setOutreachModalOpen] = useState(false);
   const [editingOutreach, setEditingOutreach] = useState(null);
@@ -434,6 +271,7 @@ export function AdminOutreachPage() {
   const [dealForm, setDealForm] = useState({
     outreachId: "",
     opportunityId: "",
+    campaignId: "",
     name: "",
     value: "",
     status: "Open",
@@ -465,6 +303,11 @@ export function AdminOutreachPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!dealModalOpen && !drawer.open) return;
+    setCrmCampaigns(readCrmCampaigns());
+  }, [dealModalOpen, drawer.open, drawer.entityType, drawer.entityId]);
 
   useEffect(() => writeStorage(STORAGE_KEYS.archivedOutreachIds, archivedOutreachIds), [archivedOutreachIds]);
   useEffect(() => writeStorage(STORAGE_KEYS.outreachProfiles, profilesByOutreachId), [profilesByOutreachId]);
@@ -1077,6 +920,7 @@ export function AdminOutreachPage() {
     setDealForm({
       outreachId: outreachId || "",
       opportunityId: opportunityId || "",
+      campaignId: "",
       name:
         linkedOpportunity?.name ||
         (linkedRecord ? `${linkedRecord.target} deal` : "New deal"),
@@ -1094,6 +938,7 @@ export function AdminOutreachPage() {
     const payload = {
       outreachId: dealForm.outreachId || null,
       opportunityId: dealForm.opportunityId || null,
+      campaignId: dealForm.campaignId || null,
       name: dealForm.name.trim() || "Untitled deal",
       value: dealForm.value || "",
       status: dealForm.status || "Open",
@@ -1114,6 +959,11 @@ export function AdminOutreachPage() {
       archivedAt: null
     };
     setDeals((prev) => [created, ...prev]);
+    if (payload.campaignId) {
+      setCrmCampaigns(
+        linkDealToCampaign({ campaignId: payload.campaignId, dealId: created.id, dealLabel: created.name })
+      );
+    }
 
     if (payload.opportunityId) {
       updateOpportunityStatus(payload.opportunityId, "Closed Won");
@@ -1133,6 +983,27 @@ export function AdminOutreachPage() {
     setDeals((prev) => prev.map((deal) => (deal.id === dealId ? { ...deal, archivedAt: null } : deal)));
   };
 
+  const setDealCampaign = ({ dealId, campaignId }) => {
+    const targetDeal = deals.find((d) => d.id === dealId);
+    const previous = targetDeal?.campaignId || null;
+    const next = campaignId || null;
+    if (previous === next) return;
+
+    setDeals((prev) =>
+      prev.map((deal) =>
+        deal.id === dealId ? { ...deal, campaignId: next, updatedAt: new Date().toISOString() } : deal
+      )
+    );
+
+    if (previous) {
+      unlinkDealFromCampaign({ campaignId: previous, dealId });
+    }
+    if (next) {
+      linkDealToCampaign({ campaignId: next, dealId, dealLabel: targetDeal?.name || "" });
+    }
+    setCrmCampaigns(readCrmCampaigns());
+  };
+
   const openDrawer = (entityType, entityId) => {
     setDrawer({ open: true, entityType, entityId });
   };
@@ -1145,6 +1016,28 @@ export function AdminOutreachPage() {
     >
       <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-brand-black/10 bg-brand-white p-4">
         <div className="flex flex-wrap items-center gap-2">
+          <div className="mr-2 flex items-center gap-2 rounded-full border border-brand-black/20 bg-brand-white p-1">
+            <button
+              type="button"
+              onClick={() => setActiveView("pipeline")}
+              className={[
+                "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]",
+                activeView === "pipeline" ? "bg-brand-black text-brand-white" : "text-brand-black/70 hover:bg-brand-black/5"
+              ].join(" ")}
+            >
+              Pipeline
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView("records")}
+              className={[
+                "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]",
+                activeView === "records" ? "bg-brand-black text-brand-white" : "text-brand-black/70 hover:bg-brand-black/5"
+              ].join(" ")}
+            >
+              Records
+            </button>
+          </div>
           <select
             value={dateRange === null ? "all" : String(dateRange)}
             onChange={(event) => {
@@ -1179,37 +1072,50 @@ export function AdminOutreachPage() {
             Show archived
           </label>
         </div>
-        <button
-          type="button"
-          onClick={openNewOutreach}
-          className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
-        >
-          New Outreach
-        </button>
+        {activeView === "pipeline" ? (
+          <button
+            type="button"
+            onClick={openNewOutreach}
+            className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
+          >
+            New Outreach
+          </button>
+        ) : null}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Total outreach sent" value={totals.totalOutreach} sub="Initial + follow-ups" />
-        <MetricCard label="Response rate" value={`${totals.responseRate}%`} sub="Replies / sends" />
-        <MetricCard label="Conversion to meetings" value={`${totals.meetingConversion}%`} sub="Meetings booked" />
-        <MetricCard
-          label="Closed Won vs Lost"
-          value={`${totals.closedWon} / ${totals.closedLost}`}
-          sub="Opportunities outcome"
-        />
-      </section>
-
-      {loading ? (
-        <p className="mt-4 rounded-3xl border border-brand-black/10 bg-brand-white/70 p-4 text-sm text-brand-black/70">
-          Loading outreach…
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mt-4 rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-sm text-brand-black/80">
-          {error}
-        </p>
+      {activeView === "pipeline" ? (
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <MetricCard label="Total outreach sent" value={totals.totalOutreach} sub="Initial + follow-ups" />
+          <MetricCard label="Response rate" value={`${totals.responseRate}%`} sub="Replies / sends" />
+          <MetricCard label="Conversion to meetings" value={`${totals.meetingConversion}%`} sub="Meetings booked" />
+          <MetricCard
+            label="Closed Won vs Lost"
+            value={`${totals.closedWon} / ${totals.closedLost}`}
+            sub="Opportunities outcome"
+          />
+        </section>
       ) : null}
 
+      {activeView === "pipeline" ? (
+        <>
+          {loading ? (
+            <p className="mt-4 rounded-3xl border border-brand-black/10 bg-brand-white/70 p-4 text-sm text-brand-black/70">
+              Loading outreach…
+            </p>
+          ) : null}
+          {error ? (
+            <p className="mt-4 rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4 text-sm text-brand-black/80">
+              {error}
+            </p>
+          ) : null}
+        </>
+      ) : null}
+
+      {activeView === "records" ? (
+        <section className="mt-6">
+          <OutreachRecordsPanel session={session} mode="page" />
+        </section>
+      ) : (
       <section className="mt-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -1389,6 +1295,7 @@ export function AdminOutreachPage() {
           ))}
         </div>
       </section>
+      )}
 
       <section className="mt-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1581,7 +1488,7 @@ export function AdminOutreachPage() {
             Awaiting reply · Responded · No response · Per-contact visibility
           </p>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visibleRecords.map((record) => {
             const reminderDays = daysUntil(record.nextFollowUp);
             const followUpCopy =
@@ -1590,6 +1497,13 @@ export function AdminOutreachPage() {
                 : reminderDays < 0
                   ? `Follow-up overdue by ${Math.abs(reminderDays)}d`
                   : `Follow-up in ${reminderDays}d`;
+            const socials = record.profile?.socials || {};
+            const platformChips = [
+              socials.instagram ? { platform: "Instagram", handle: socials.instagram.handle } : null,
+              socials.tiktok ? { platform: "TikTok", handle: socials.tiktok.handle } : null,
+              socials.youtube ? { platform: "YouTube", handle: socials.youtube.handle } : null,
+              socials.linkedin ? { platform: "LinkedIn", handle: socials.linkedin.handle } : null
+            ].filter(Boolean);
             return (
               <div
                 key={record.id}
@@ -1606,6 +1520,13 @@ export function AdminOutreachPage() {
                   <Badge tone={statusTone[record.status] || "neutral"}>{record.status}</Badge>
                 </div>
                 <p className="mt-2 text-sm text-brand-black/70">{record.summary}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {record.value ? <IconChip icon={<PoundIcon className="h-3.5 w-3.5" />} label={record.value} /> : null}
+                  <IconChip icon={<HeartIcon className="h-3.5 w-3.5" />} label={record.status || "Relationship"} tone="positive" />
+                  {platformChips.map((platform) => (
+                    <PlatformChip key={`${record.id}-${platform.platform}`} platform={platform.platform} handle={platform.handle} />
+                  ))}
+                </div>
                 <div className="mt-3 text-[0.8rem] text-brand-black/70">
                   <p>Emails sent: {record.emailStats.sent} · Replies: {record.emailStats.replies}</p>
                   <p>Last contact: {formatDate(record.lastContact)}</p>
@@ -1921,6 +1842,7 @@ export function AdminOutreachPage() {
           setForm={setDealForm}
           outreachOptions={visibleRecords.filter((r) => !archivedOutreachIds.includes(r.id))}
           opportunityOptions={visibleOpportunities}
+          campaignOptions={crmCampaigns}
           context={dealContext}
           onClose={() => setDealModalOpen(false)}
           onSave={saveDeal}
@@ -1960,6 +1882,8 @@ export function AdminOutreachPage() {
           notes={normalizedNotes}
           noteEdits={noteEdits}
           tasks={normalizedTasks}
+          crmCampaigns={crmCampaigns}
+          onSetDealCampaign={setDealCampaign}
           onArchiveOutreach={archiveOutreach}
           onRestoreOutreach={restoreOutreach}
           onArchiveOpportunity={archiveOpportunity}
@@ -2526,7 +2450,7 @@ function OpportunityModal({ editing, form, setForm, outreachOptions, onClose, on
   );
 }
 
-function DealModal({ form, setForm, outreachOptions, opportunityOptions, context, onClose, onSave }) {
+function DealModal({ form, setForm, outreachOptions, opportunityOptions, campaignOptions, context, onClose, onSave }) {
   const warning = !form.outreachId ? "Deal created without linked outreach. You can still proceed, but traceability will be limited." : "";
   return (
     <ModalFrame
@@ -2584,6 +2508,21 @@ function DealModal({ form, setForm, outreachOptions, opportunityOptions, context
             {opportunityOptions.map((opp) => (
               <option key={opp.id} value={opp.id}>
                 {opp.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs uppercase tracking-[0.35em] text-brand-black/60 md:col-span-2">
+          Campaign (optional)
+          <select
+            value={form.campaignId || ""}
+            onChange={(event) => setForm((prev) => ({ ...prev, campaignId: event.target.value }))}
+            className="mt-1 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm"
+          >
+            <option value="">None</option>
+            {(campaignOptions || []).map((campaign) => (
+              <option key={campaign.id} value={campaign.id}>
+                {campaign.campaignName}
               </option>
             ))}
           </select>
@@ -2786,6 +2725,8 @@ function RecordDrawer({
   notes,
   noteEdits,
   tasks,
+  crmCampaigns,
+  onSetDealCampaign,
   onArchiveOutreach,
   onRestoreOutreach,
   onArchiveOpportunity,
@@ -2807,6 +2748,10 @@ function RecordDrawer({
   const outreach = entityType === "outreach" ? records.find((r) => r.id === entityId) : null;
   const opportunity = entityType === "opportunity" ? opportunities.find((o) => o.id === entityId) : null;
   const deal = entityType === "deal" ? deals.find((d) => d.id === entityId) : null;
+  const selectedCampaign = useMemo(() => {
+    if (!deal?.campaignId) return null;
+    return (crmCampaigns || []).find((c) => c.id === deal.campaignId) || null;
+  }, [crmCampaigns, deal?.campaignId]);
 
   const chain = (() => {
     if (entityType === "outreach") {
@@ -3196,6 +3141,53 @@ function RecordDrawer({
                   <option>No response</option>
                 </select>
                 <Badge tone="neutral">Last contact: {formatDate(deal.lastContact)}</Badge>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Campaign</p>
+                  <p className="mt-1 text-xs text-brand-black/60">Optional. Deals can exist with or without a campaign.</p>
+                </div>
+                {selectedCampaign ? (
+                  <CampaignChip name={selectedCampaign.campaignName} status={selectedCampaign.status} size="sm" />
+                ) : (
+                  <Badge tone="neutral">No campaign</Badge>
+                )}
+              </div>
+              <select
+                value={deal.campaignId || ""}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  onSetDealCampaign?.({ dealId: deal.id, campaignId: next });
+                }}
+                className="mt-3 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm"
+              >
+                <option value="">None</option>
+                {(crmCampaigns || []).map((campaign) => (
+                  <option key={campaign.id} value={campaign.id}>
+                    {campaign.campaignName}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href="/admin/campaigns"
+                  className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black"
+                >
+                  Manage campaigns
+                </a>
+                {deal.campaignId ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSetDealCampaign?.({ dealId: deal.id, campaignId: "" });
+                    }}
+                    className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black"
+                  >
+                    Unlink
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">

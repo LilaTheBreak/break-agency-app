@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { getDashboardPathForRole, shouldRouteToOnboarding } from "../lib/onboardingState.js";
 
 export default function GoogleSignIn({ open, onClose }) {
   const { loginWithGoogle, loginWithEmail, error } = useAuth();
@@ -23,22 +24,6 @@ export default function GoogleSignIn({ open, onClose }) {
     }
   };
 
-  const getRoleBasedRedirect = (userRole) => {
-    if (userRole === "ADMIN" || userRole === "SUPERADMIN") {
-      return "/admin/dashboard";
-    }
-    if (userRole === "BRAND" || userRole === "FOUNDER") {
-      return "/brand/dashboard";
-    }
-    if (userRole === "CREATOR" || userRole === "EXCLUSIVE_TALENT" || userRole === "UGC") {
-      return "/creator/dashboard";
-    }
-    if (userRole === "AGENT") {
-      return "/admin/dashboard";
-    }
-    return "/dashboard";
-  };
-
   const handleEmailLogin = async (event) => {
     event.preventDefault();
     setFormError("");
@@ -50,8 +35,11 @@ export default function GoogleSignIn({ open, onClose }) {
       setPassword("");
       if (onClose) onClose();
       
-      // Redirect based on user role
-      const redirectPath = getRoleBasedRedirect(loggedInUser?.role);
+      const needsOnboarding = shouldRouteToOnboarding(loggedInUser);
+      const roleSearch = loggedInUser?.role ? `?role=${loggedInUser.role}` : "";
+      const redirectPath = needsOnboarding
+        ? `/onboarding${roleSearch}`
+        : getDashboardPathForRole(loggedInUser?.role);
       
       // Small delay to ensure cookie is set before navigation
       await new Promise(resolve => setTimeout(resolve, 100));

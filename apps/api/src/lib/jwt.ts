@@ -46,31 +46,32 @@ function getJwtSecret() {
 function buildCookieConfig() {
   const isProd = process.env.NODE_ENV === "production";
   const usesHttps = process.env.USE_HTTPS === "true";
-  const isSecure = isProd || usesHttps;
-  const sameSite = isSecure ? "none" : "lax";
-
-  const base = {
-    httpOnly: true,
-    secure: isSecure,
-    sameSite,
-    maxAge: COOKIE_MAX_AGE,
-    path: "/"
-  };
-
+  
+  // In development (localhost), always use lax/false regardless of USE_HTTPS
+  // This ensures cookies work on http://localhost:5173
   if (!isProd) {
     return {
-      ...base,
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax" as const,
+      maxAge: COOKIE_MAX_AGE,
+      path: "/",
       domain: undefined
     };
   }
 
+  // In production, use secure cookies with proper domain
   const domain =
     process.env.COOKIE_DOMAIN ||
     process.env.SESSION_COOKIE_DOMAIN ||
     ".tbctbctbc.online";
 
   return {
-    ...base,
+    httpOnly: true,
+    secure: true,
+    sameSite: "none" as const,
+    maxAge: COOKIE_MAX_AGE,
+    path: "/",
     domain
   };
 }

@@ -10,7 +10,7 @@ import {
   Navigate
 } from "react-router-dom";
 import GoogleSignIn from "./auth/GoogleSignIn.jsx";
-import { Roles } from "./auth/session.js";
+import { Roles } from "./constants/roles.js";
 import { ProtectedRoute } from "./components/ProtectedRoute.jsx";
 import { RoleGate } from "./components/RoleGate.jsx";
 import { Footer } from "./components/Footer.jsx";
@@ -53,16 +53,23 @@ import OnboardingPage from "./pages/OnboardingPage.jsx";
 import AccountSetupPage from "./pages/AccountSetupPage.jsx";
 import { AdminQueuesPage } from "./pages/AdminQueuesPage.jsx";
 import { AdminApprovalsPage } from "./pages/AdminApprovalsPage.jsx";
+import AdminUserApprovals from "./pages/AdminUserApprovals.jsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.jsx";
+import { AdminBrandsPage } from "./pages/AdminBrandsPage.jsx";
+import { AdminCampaignsPage } from "./pages/AdminCampaignsPage.jsx";
+import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
+import { AdminDealsPage } from "./pages/AdminDealsPage.jsx";
 import AdminTasksPage from "./pages/AdminTasksPage.jsx";
 import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
 import { AdminOutreachPage } from "./pages/AdminOutreachPage.jsx";
 import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
 import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
+import { AdminCrmSettingsPage } from "./pages/AdminCrmSettingsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
 import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
 import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
 import { OpportunitiesAdmin } from "./pages/admin/OpportunitiesAdmin.jsx";
+import { AdminDocumentsPage } from "./pages/AdminDocumentsPage.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { CreatorPage } from "./pages/CreatorPage.jsx";
 import { LegalPrivacyPage } from "./pages/LegalPrivacy.jsx";
@@ -74,10 +81,12 @@ import { ExclusiveGoalsOnboardingPage } from "./pages/ExclusiveGoalsOnboardingPa
 import { BookFounderPage } from "./pages/BookFounder.jsx";
 import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
 import SignupPage from "./pages/Signup.jsx";
+import DevLogin from "./pages/DevLogin.jsx";
 import { MessagingContext } from "./context/messaging.js";
 import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
 import { useAuth } from "./context/AuthContext.jsx";
 import { BrandPage } from "./pages/BrandPage.jsx";
+import { shouldRouteToOnboarding } from "./lib/onboardingState.js";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -634,6 +643,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         <Route path="/press" element={<PressPage />} />
         <Route path="/book-founder" element={<BookFounderPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/dev-login" element={<DevLogin />} />
         <Route path="/setup" element={<AccountSetupPage />} />
         <Route path="/creator" element={<CreatorPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route
@@ -792,7 +802,55 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminOutreachPage />
+              <AdminOutreachPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/campaigns"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminCampaignsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/events"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminEventsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/deals"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminDealsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/crm-settings"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminCrmSettingsPage session={session} />
             </ProtectedRoute>
           }
         />
@@ -809,6 +867,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           }
         />
         <Route
+          path="/admin/user-approvals"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminUserApprovals />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/users"
           element={
             <ProtectedRoute
@@ -817,6 +887,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminUsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/brands"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminBrandsPage session={session} />
             </ProtectedRoute>
           }
         />
@@ -862,6 +944,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminContractsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/documents"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminDocumentsPage session={session} />
             </ProtectedRoute>
           }
         />
@@ -1012,6 +1106,10 @@ function DashboardRedirect({ session }) {
   if (!session) {
     return <Navigate to="/" replace />;
   }
+  if (shouldRouteToOnboarding(session)) {
+    const search = session.role ? `?role=${session.role}` : "";
+    return <Navigate to={`/onboarding${search}`} replace />;
+  }
   const userRole = session.role;
   if (userRole === 'ADMIN' || userRole === 'SUPERADMIN' || userRole === 'AGENT') {
     return <Navigate to="/admin/dashboard" replace />;
@@ -1076,8 +1174,13 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           { to: "/admin/activity", label: "Activity" },
                           { to: "/admin/queues", label: "Queues" },
                           { to: "/admin/outreach", label: "Outreach" },
+                          { to: "/admin/campaigns", label: "Campaigns" },
+                          { to: "/admin/events", label: "Events" },
+                          { to: "/admin/deals", label: "Deals" },
+                          { to: "/admin/documents", label: "Documents / Contracts" },
                           { to: "/admin/approvals", label: "Approvals" },
                           { to: "/admin/users", label: "Users" },
+                          { to: "/admin/brands", label: "Brands" },
                           { to: "/admin/messaging", label: "Messaging" },
                           { to: "/admin/finance", label: "Finance" },
                           { to: "/admin/settings", label: "Settings" }
@@ -1091,6 +1194,21 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                             {item.label}
                           </Link>
                         ))}
+                      </div>
+                      <div className="mt-3 border-t border-brand-black/10 pt-3">
+                        <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
+                          Quick add
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdminMenuOpen(false);
+                            alert("Quick add note (coming soon). For now, add notes inside Brand, Contact, or Deal drawers.");
+                          }}
+                          className="block w-full rounded-xl px-4 py-2 text-left text-sm hover:bg-brand-black/5"
+                        >
+                          Note / intelligence
+                        </button>
                       </div>
                       <div className="mt-3 border-t border-brand-black/10 pt-3">
                         <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">

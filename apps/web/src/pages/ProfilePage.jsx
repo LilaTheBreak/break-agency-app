@@ -8,7 +8,7 @@ import {
   DEFAULT_PROFILE
 } from "../data/users.js";
 import { fetchProfile, saveProfile } from "../services/profileClient.js";
-import { Roles } from "../auth/session.js";
+import { Roles } from "../constants/roles.js";
 import { getSuitabilityScore } from "../hooks/useSuitability.js";
 import SuitabilityScore from "../components/SuitabilityScore.jsx";
 import { useAuth } from "../context/AuthContext.jsx";

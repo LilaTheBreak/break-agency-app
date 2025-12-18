@@ -3,8 +3,14 @@ import { uploadFileRequest, listFilesRequest, deleteFileRequest } from "../servi
 import { useFileInsights } from "../hooks/useFileInsights.js";
 import DealExtractorPanel from "./DealExtractorPanel.jsx";
 import DocumentTextExtractor from "./DocumentTextExtractor.jsx";
+import { FeatureGate, useFeature, DisabledNotice } from "./FeatureGate.jsx";
+
+const UPLOAD_FLAG = "FILE_UPLOAD_ENABLED";
 
 export function FileUploadPanel({ session, folder, title, description, userId, onAddToDeal }) {
+  // UNLOCK WHEN: FILE_UPLOAD_ENABLED flag + /api/files endpoints functional + S3 storage configured
+  const isUploadEnabled = useFeature(UPLOAD_FLAG);
+  
   const [files, setFiles] = useState([]);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -91,11 +97,14 @@ export function FileUploadPanel({ session, folder, title, description, userId, o
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{title}</p>
           {description ? <p className="text-sm text-brand-black/60">{description}</p> : null}
         </div>
-        <label className="inline-flex cursor-pointer flex-shrink-0 items-center rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]">
-          {uploading ? "Uploading…" : "Upload file"}
-          <input type="file" className="hidden" onChange={handleUpload} disabled={uploading || !session?.email} />
-        </label>
+        <FeatureGate feature={UPLOAD_FLAG} mode="button">
+          <label className="inline-flex cursor-pointer flex-shrink-0 items-center rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]">
+            {uploading ? "Uploading…" : "Upload file"}
+            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading || !session?.email || !isUploadEnabled} />
+          </label>
+        </FeatureGate>
       </div>
+      {!isUploadEnabled && <DisabledNotice feature={UPLOAD_FLAG} />}
       {error ? <p className="mt-3 text-sm text-brand-red">{error}</p> : null}
       {loading ? (
         <p className="mt-3 text-sm text-brand-black/60">Loading attachments…</p>

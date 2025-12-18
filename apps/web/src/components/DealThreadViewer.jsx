@@ -4,12 +4,14 @@ import DealInsights from "./DealInsights.jsx";
 import { useDealNegotiation } from "../hooks/useDealNegotiation.js";
 import { useDeliverables } from "../hooks/useDeliverables.js";
 import DeliverableCard from "./DeliverableCard.jsx";
+import { OutreachRecordsPanel } from "./OutreachRecordsPanel.jsx";
 
 export default function DealThreadViewer({ thread }) {
+  const dealId = thread?.id;
+  const { data: insightData, status: insightStatus } = useDealInsights(dealId);
+  const { loading: negLoading, error: negError, data: negotiation, generate } = useDealNegotiation(dealId);
+  const { items: deliverables, runQA, runPredict } = useDeliverables(dealId);
   if (!thread) return null;
-  const { data: insightData, status: insightStatus } = useDealInsights(thread.id);
-  const { loading: negLoading, error: negError, data: negotiation, generate } = useDealNegotiation(thread.id);
-  const { items: deliverables, runQA, runPredict } = useDeliverables(thread.id);
   return (
     <div className="space-y-4 rounded-2xl border border-brand-black/10 bg-brand-white p-4">
       <div>
@@ -106,6 +108,17 @@ export default function DealThreadViewer({ thread }) {
           ))}
         </div>
       ) : null}
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-black/60">Outreach history</h3>
+        <OutreachRecordsPanel
+          mode="embedded"
+          filter={{ dealId: thread.id, brandId: thread.brand?.id }}
+          limit={6}
+          title="Outreach history"
+          subtitle=""
+        />
+      </div>
     </div>
   );
 }

@@ -1,7 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { getSuitabilityScore } from "../hooks/useSuitability.js";
-import SuitabilityScore from "../components/SuitabilityScore.jsx";
 
 const CLIENT_LOGOS = [
   { src: "/logos/amex.png", alt: "AMEX" },
@@ -14,21 +12,6 @@ const CLIENT_LOGOS = [
   { src: "/logos/sky.png", alt: "Sky" },
   { src: "/logos/sol-de-janeiro.png", alt: "Sol De Janeiro" },
   { src: "/logos/yves-saint-laurent.png", alt: "Yves Saint Laurent" }
-];
-
-const BRAND_STATS = [
-  {
-    title: "450+ vetted creators",
-    detail: "Connected across hospitality, fintech, retail, and lifestyle markets."
-  },
-  {
-    title: "120+ campaigns delivered",
-    detail: "Scaled through one accountable console across creators and brands."
-  },
-  {
-    title: "72h average brief turnaround",
-    detail: "Intake to shortlist happens in under three days every time."
-  }
 ];
 
 const brandNav = [
@@ -108,10 +91,7 @@ const clientTestimonials = [
   }
 ];
 
-export function BrandPage({ onRequestSignIn }) {
-  const [fitResult, setFitResult] = React.useState(null);
-  const [fitError, setFitError] = React.useState("");
-  const [fitLoading, setFitLoading] = React.useState(false);
+export function BrandPage() {
   const [activeTestimonial, setActiveTestimonial] = React.useState(0);
 
   React.useEffect(() => {
@@ -120,34 +100,6 @@ export function BrandPage({ onRequestSignIn }) {
     }, 5000);
     return () => clearInterval(timer);
   }, []);
-
-  const handleDemoFit = async () => {
-    setFitLoading(true);
-    setFitError("");
-    try {
-      const result = await getSuitabilityScore({
-        talent: {
-          categories: ["fashion", "lifestyle"],
-          audienceInterests: ["beauty", "shopping"],
-          avgEngagementRate: 3.5,
-          platforms: ["instagram", "tiktok"],
-          brandSafetyFlags: []
-        },
-        brief: {
-          industry: "fashion",
-          targetInterests: ["fashion", "beauty"],
-          goals: ["awareness"],
-          requiredPlatforms: ["instagram"],
-          excludedCategories: []
-        }
-      });
-      setFitResult(result);
-    } catch (err) {
-      setFitError(err instanceof Error ? err.message : "Unable to calculate fit");
-    } finally {
-      setFitLoading(false);
-    }
-  };
 
   return (
     <>
@@ -272,12 +224,6 @@ export function BrandPage({ onRequestSignIn }) {
             </Link>
               </div>
             </div>
-            {fitError ? <p className="mt-2 text-sm text-brand-red">{fitError}</p> : null}
-            {fitResult ? (
-              <div className="mt-4">
-                <SuitabilityScore {...fitResult} />
-              </div>
-            ) : null}
           </div>
         </div>
       </section>
@@ -397,7 +343,7 @@ export function BrandPage({ onRequestSignIn }) {
                 <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <div className="flex items-center justify-between border-t border-slate-200 bg-white/80 px-6 py-4">
+            <div className="flex items-center justify-center border-t border-slate-200 bg-white/80 px-6 py-4">
               <div className="flex gap-2">
                 {clientTestimonials.map((entry, index) => (
                   <button
@@ -410,24 +356,6 @@ export function BrandPage({ onRequestSignIn }) {
                     aria-label={`Show ${entry.brand} testimonial`}
                   />
                 ))}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveTestimonial((prev) => (prev - 1 + clientTestimonials.length) % clientTestimonials.length)
-                  }
-                  className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700 hover:bg-slate-100"
-                >
-                  Prev
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTestimonial((prev) => (prev + 1) % clientTestimonials.length)}
-                  className="rounded-full border border-slate-900 bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-brand-red/90"
-                >
-                  Next
-                </button>
               </div>
             </div>
           </div>
