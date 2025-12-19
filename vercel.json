@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "installCommand": "pnpm install --prefer-offline",
-  "buildCommand": "pnpm --filter @breakagency/web build",
+  "installCommand": "npm install -g pnpm@8.15.8 && pnpm install --frozen-lockfile",
+  "buildCommand": "cd apps/web && pnpm build",
   "outputDirectory": "apps/web/dist",
-  "framework": "vite",
+  "framework": null,
   "git": {
-    "ignoreCommand": "pnpm i --prefer-offline"
+    "ignoreCommand": "exit 0"
   },
   "env": {
     "VITE_API_URL": "https://break-agency-app-production.up.railway.app/api"
