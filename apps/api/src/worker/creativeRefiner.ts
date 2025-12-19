@@ -1,4 +1,4 @@
-// import { aiClient } from './aiClient'; // Assuming a shared AI client
+// import { aiClient } from './aiClient.js'; // Assuming a shared AI client
 
 interface RefinementInput {
   text: string;

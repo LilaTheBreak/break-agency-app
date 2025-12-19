@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { protect } from '../middleware/authMiddleware';
-import { requireRole } from '../middleware/requireRole';
+import { protect } from '../middleware/authMiddleware.js';
+import { requireRole } from '../middleware/requireRole.js';
 import {
   submitUgcApplication,
   getMyApplication,
   listUgcApplications,
   approveUgcApplication,
   rejectUgcApplication,
-} from '../controllers/ugc/applicationController';
+} from '../controllers/ugc/applicationController.js';
 
 const router = Router();
 

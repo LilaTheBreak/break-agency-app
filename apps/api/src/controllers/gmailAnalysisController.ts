@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import * as analysisService from "../services/gmail/gmailAnalysisService";
-import prisma from "../lib/prisma";
+import * as analysisService from "../services/gmail/gmailAnalysisService.js";
+import prisma from "../lib/prisma.js";
 
 export async function analyzeSingleEmail(
   req: Request,

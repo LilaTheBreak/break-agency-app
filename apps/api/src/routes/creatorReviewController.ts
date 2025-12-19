@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient, UserRoleType } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler';
+import { asyncHandler } from '../../middleware/asyncHandler.js';
 
 const prisma = new PrismaClient();
 

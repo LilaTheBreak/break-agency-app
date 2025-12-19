@@ -1,4 +1,4 @@
-import prisma from "../../lib/prisma";
+import prisma from "../../lib/prisma.js";
 import { encode as base64Encode } from "js-base64";
 import { google } from "googleapis";
 import { getOAuthClientForUser } from "../gmail/tokens.js";

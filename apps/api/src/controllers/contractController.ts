@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as contractService from "../services/contractService";
+import * as contractService from "../services/contractService.js";
 
 const ContractCreateSchema = z.object({
   dealId: z.string().cuid().optional(),

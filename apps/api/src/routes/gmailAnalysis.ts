@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
-import * as analysisController from "../controllers/gmailAnalysisController";
+import * as analysisController from "../controllers/gmailAnalysisController.js";
 
 const router = Router();
 

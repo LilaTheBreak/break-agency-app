@@ -1,4 +1,4 @@
-import { runCampaignLLM } from "./ai/campaignLLM";
+import { runCampaignLLM } from "./ai/campaignLLM.js";
 
 /**
  * Generates sets of hashtags for a campaign.

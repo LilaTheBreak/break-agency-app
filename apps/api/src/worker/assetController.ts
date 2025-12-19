@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { asyncHandler } from '../../middleware/asyncHandler';
-import { assetGenerationQueue } from '../../worker/queues';
+import { asyncHandler } from '../../middleware/asyncHandler.js';
+import { assetGenerationQueue } from '../../worker/queues.js';
 
 const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'EXCLUSIVE_TALENT', 'TALENT', 'FOUNDER', 'BRAND_PREMIUM'];
 

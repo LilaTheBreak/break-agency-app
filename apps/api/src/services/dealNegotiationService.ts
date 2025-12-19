@@ -1,8 +1,8 @@
 import prisma from "../lib/prisma.js";
-import { addEvent as addTimelineEntry } from "./dealTimelineService";
-import { generateNegotiationInsights } from "./ai/negotiationEngine";
-import { extractOfferFromEmail, OfferTerms } from "./ai/offerExtractionService";
-import { sendNegotiationReply } from "./email/sendOutbound";
+import { addEvent as addTimelineEntry } from "./dealTimelineService.js";
+import { generateNegotiationInsights } from "./ai/negotiationEngine.js";
+import { extractOfferFromEmail, OfferTerms } from "./ai/offerExtractionService.js";
+import { sendNegotiationReply } from "./email/sendOutbound.js";
 
 /**
  * Extracts offer terms from the latest email in a deal's thread.

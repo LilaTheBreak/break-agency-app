@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import prisma from "../../lib/prisma";
+import prisma from "../../lib/prisma.js";
 
 // This is a placeholder for a real reminder service.
 // In a production app, you would use a proper job queue.

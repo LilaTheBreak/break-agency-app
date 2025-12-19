@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { protect } from '../middleware/authMiddleware';
-import { requireRole } from '../middleware/requireRole';
+import { protect } from '../middleware/authMiddleware.js';
+import { requireRole } from '../middleware/requireRole.js';
 import {
   tagSingleAsset,
   retagSingleAsset,
   tagBatchAssets,
-} from '../controllers/creativeTaggingController';
+} from '../controllers/creativeTaggingController.js';
 
 const router = Router();
 

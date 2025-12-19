@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler';
-import { contractReviewQueue } from '../../worker/queues';
+import { asyncHandler } from '../../middleware/asyncHandler.js';
+import { contractReviewQueue } from '../../worker/queues.js';
 
 const prisma = new PrismaClient();
 

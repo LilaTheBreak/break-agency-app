@@ -1,7 +1,7 @@
 import { gmail_v1 as gmailV1 } from "googleapis";
-import prisma from "../../lib/prisma";
+import prisma from "../../lib/prisma.js";
 import { getOAuthClientForUser } from "./tokens.js";
-import { mapGmailMessageToDb } from "./mappings";
+import { mapGmailMessageToDb } from "./mappings.js";
 
 interface SyncStats {
   imported: number;

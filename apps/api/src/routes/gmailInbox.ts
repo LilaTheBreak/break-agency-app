@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
-import * as gmailInboxController from "../controllers/gmailInboxController";
+import * as gmailInboxController from "../controllers/gmailInboxController.js";
 
 const router = Router();
 

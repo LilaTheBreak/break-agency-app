@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { buildInboxReplyPrompt } from "../../prompts/inboxReplyPrompt";
-import { trackAITokens } from "./tokenTracker";
+import { buildInboxReplyPrompt } from "../../prompts/inboxReplyPrompt.js";
+import { trackAITokens } from "./tokenTracker.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const AI_MODEL = "gpt-4o";

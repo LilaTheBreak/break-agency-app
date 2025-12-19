@@ -1,6 +1,6 @@
-import prisma from "../../lib/prisma";
-import { listAndFetchMessages } from "./fetchMessages";
-import { mapGmailMessageToDb } from "./mappings";
+import prisma from "../../lib/prisma.js";
+import { listAndFetchMessages } from "./fetchMessages.js";
+import { mapGmailMessageToDb } from "./mappings.js";
 
 interface SyncStats {
   imported: number;

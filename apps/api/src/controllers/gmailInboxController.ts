@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import * as inboxService from "../services/gmail/inboxService";
-import { syncInboxForUser } from "../services/gmail/syncInbox";
-import prisma from "../lib/prisma";
+import * as inboxService from "../services/gmail/inboxService.js";
+import { syncInboxForUser } from "../services/gmail/syncInbox.js";
+import prisma from "../lib/prisma.js";
 
 async function checkTokenAndHandleError(userId: string, res: Response): Promise<boolean> {
   const token = await prisma.gmailToken.findUnique({ where: { userId } });

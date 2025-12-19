@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
-import * as threadController from "../controllers/threadController";
+import * as threadController from "../controllers/threadController.js";
 
 const router = Router();
 

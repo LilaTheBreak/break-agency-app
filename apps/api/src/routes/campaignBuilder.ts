@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { buildCampaignFromDeal } from "../services/campaignBuilderService";
+import { buildCampaignFromDeal } from "../services/campaignBuilderService.js";
 
 const router = Router();
 

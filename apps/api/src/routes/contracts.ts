@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
-import * as contractController from "../controllers/contractController";
+import * as contractController from "../controllers/contractController.js";
 
 const router = Router();
 

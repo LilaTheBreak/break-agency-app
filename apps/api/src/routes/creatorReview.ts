@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { protect } from '../../middleware/authMiddleware';
-import { requireRole } from '../../middleware/requireRole';
+import { protect } from '../../middleware/authMiddleware.js';
+import { requireRole } from '../../middleware/requireRole.js';
 import {
   getPendingReviews,
   approveCreator,
   overrideCreatorRole,
-} from '../../controllers/admin/creatorReviewController';
+} from '../../controllers/admin/creatorReviewController.js';
 
 const router = Router();
 

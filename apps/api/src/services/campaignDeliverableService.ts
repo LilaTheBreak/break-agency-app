@@ -1,4 +1,4 @@
-import { runCampaignLLM } from "./ai/campaignLLM";
+import { runCampaignLLM } from "./ai/campaignLLM.js";
 
 /**
  * Generates a list of deliverables for a campaign.

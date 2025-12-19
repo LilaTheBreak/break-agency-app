@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { cleanEmailBody } from "../gmail/gmailParser";
+import { cleanEmailBody } from "../gmail/gmailParser.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const AI_MODEL = "gpt-4o";

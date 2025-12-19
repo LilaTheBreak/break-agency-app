@@ -1,5 +1,5 @@
-import prisma from "../lib/prisma";
-import { addTimelineEntry } from "./dealTimelineService";
+import prisma from "../lib/prisma.js";
+import { addTimelineEntry } from "./dealTimelineService.js";
 
 export async function create(data: {
   dealId: string;

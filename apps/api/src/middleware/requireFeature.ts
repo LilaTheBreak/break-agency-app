@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { Feature, hasPermission } from '../config/permissions';
-import { logPermissionDenial } from '../services/logging/permissionLog';
+import { Feature, hasPermission } from '../config/permissions.js';
+import { logPermissionDenial } from '../services/logging/permissionLog.js';
 
 /**
  * Middleware to check if the authenticated user has access to a specific feature.

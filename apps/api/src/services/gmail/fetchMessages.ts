@@ -1,5 +1,5 @@
 import { gmail_v1 as gmailV1 } from "googleapis";
-import { getGoogleAPIClient } from "./tokens";
+import { getGoogleAPIClient } from "./tokens.js";
 
 /**
  * Lists and fetches the full details of the last 50 messages for a user.

@@ -1,13 +1,13 @@
-import prisma from "../lib/prisma";
-import { runCampaignLLM } from "./ai/campaignLLM";
-import * as campaignBuilderService from "./campaignBuilderService";
-import * as campaignForecastService from "./campaignForecastService";
-import * as creativeDirectionService from "./creativeDirectionService";
-import * as contentStrategyService from "./contentStrategyService";
-import * as campaignDeliverableService from "./campaignDeliverableService";
-import * as storyboardService from "./storyboardService";
-import * as hashtagService from "./hashtagService";
-import * as postingSchedulerService from "./postingSchedulerService";
+import prisma from "../lib/prisma.js";
+import { runCampaignLLM } from "./ai/campaignLLM.js";
+import * as campaignBuilderService from "./campaignBuilderService.js";
+import * as campaignForecastService from "./campaignForecastService.js";
+import * as creativeDirectionService from "./creativeDirectionService.js";
+import * as contentStrategyService from "./contentStrategyService.js";
+import * as campaignDeliverableService from "./campaignDeliverableService.js";
+import * as storyboardService from "./storyboardService.js";
+import * as hashtagService from "./hashtagService.js";
+import * as postingSchedulerService from "./postingSchedulerService.js";
 
 interface AutoPlanInput {
   dealId?: string;

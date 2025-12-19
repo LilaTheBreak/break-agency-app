@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { buildBundlePrompt } from "../../prompts/bundlePromptBuilder";
-import { trackAITokens } from "./tokenTracker";
+import { buildBundlePrompt } from "../../prompts/bundlePromptBuilder.js";
+import { trackAITokens } from "./tokenTracker.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const AI_MODEL = "gpt-4o";

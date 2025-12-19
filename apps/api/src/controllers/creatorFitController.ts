@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as creatorFitEngine from "../services/ai/creatorFitEngine";
-import prisma from "../lib/prisma";
+import * as creatorFitEngine from "../services/ai/creatorFitEngine.js";
+import prisma from "../lib/prisma.js";
 
 const CalculateFitSchema = z.object({
   talentId: z.string().cuid(),

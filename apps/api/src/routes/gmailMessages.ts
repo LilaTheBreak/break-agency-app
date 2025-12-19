@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma";
-import { syncGmailForUser } from "../services/gmail/syncGmail";
-import { getGoogleAPIClient } from "../services/gmail/tokens";
+import prisma from "../lib/prisma.js";
+import { syncGmailForUser } from "../services/gmail/syncGmail.js";
+import { getGoogleAPIClient } from "../services/gmail/tokens.js";
 
 const router = Router();
 

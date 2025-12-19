@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { trackAITokens } from "./tokenTracker";
+import { trackAITokens } from "./tokenTracker.js";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const AI_MODEL = "gpt-4o";
