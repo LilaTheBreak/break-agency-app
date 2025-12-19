@@ -8,7 +8,7 @@
     "ignoreCommand": "exit 0"
   },
   "env": {
-    "VITE_API_URL": "https://break-agency-app-production.up.railway.app/api"
+    "VITE_API_URL": "https://breakagencyapi-production.up.railway.app/api"
   },
   "headers": [
     {
