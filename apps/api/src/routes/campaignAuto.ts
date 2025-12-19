@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth.js";
 import * as campaignAutoController from "../controllers/campaignAutoController";
 
 const router = Router();

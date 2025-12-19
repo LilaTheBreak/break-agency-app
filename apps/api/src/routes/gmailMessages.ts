@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma";
 import { syncGmailForUser } from "../services/gmail/syncGmail";
 import { getGoogleAPIClient } from "../services/gmail/tokens";
