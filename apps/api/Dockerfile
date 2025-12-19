@@ -1,5 +1,8 @@
 FROM node:22-alpine AS base
 
+ARG NODE_ENV=production
+ENV NODE_ENV=production
+
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 WORKDIR /workspace
