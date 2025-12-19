@@ -40,5 +40,10 @@
   "prisma": {
     "schema": "apps/api/prisma/schema.prisma",
     "seed": "tsx apps/api/prisma/seed.ts"
+  },
+  "pnpm": {
+    "overrides": {
+      "parse5": "7.1.2"
+    }
   }
 }
