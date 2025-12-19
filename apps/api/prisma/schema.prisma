@@ -257,6 +257,8 @@ model Payment {
 
 model Payout {
   id               String    @id @default(uuid())
+  userId           String?
+  referenceId      String?   @unique
   creatorId        String
   dealId           String
   brandId          String?
@@ -273,6 +275,8 @@ model Payout {
   Brand            Brand?    @relation(fields: [brandId], references: [id])
   CreatedByUser    User?     @relation("PayoutCreatedBy", fields: [createdBy], references: [id])
 
+  @@index([userId])
+  @@index([referenceId])
   @@index([creatorId])
   @@index([dealId])
   @@index([brandId])
@@ -1021,8 +1025,10 @@ model AssetGeneration {
   deliverableId   String
   userId          String
   assetType       String
+  type            String?
   prompt          String   @db.Text
   generatedUrl    String?
+  aiOutput        String?  @db.Text
   status          String   @default("pending")
   metadata        Json?
   createdAt       DateTime @default(now())
@@ -1036,6 +1042,7 @@ model AssetGeneration {
 model ContractReview {
   id            String   @id @default(uuid())
   userId        String
+  fileId        String?
   contractText  String   @db.Text
   findings      Json?
   riskScore     Float?
@@ -1044,14 +1051,17 @@ model ContractReview {
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+  @@index([fileId])
   @@index([status])
 }
 
 model SignatureRequest {
   id            String   @id @default(uuid())
   userId        String
+  contractId    String?
   documentUrl   String
   signerEmail   String
+  signedPdfUrl  String?
   status        String   @default("pending")
   signedAt      DateTime?
   metadata      Json?
@@ -1059,22 +1069,24 @@ model SignatureRequest {
   updatedAt     DateTime @updatedAt
 
   @@index([userId])
+  @@index([contractId])
   @@index([status])
   @@index([signerEmail])
 }
 
 model OutreachAction {
-  id          String    @id @default(uuid())
-  sequenceId  String
-  stepId      String?
-  leadId      String?
-  actionType  String
-  status      String    @default("pending")
-  scheduledAt DateTime?
-  executedAt  DateTime?
-  metadata    Json?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  sequenceId   String
+  stepId       String?
+  leadId       String?
+  actionType   String
+  status       String    @default("pending")
+  errorMessage String?   @db.Text
+  scheduledAt  DateTime?
+  executedAt   DateTime?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([sequenceId])
   @@index([status])
@@ -1109,14 +1121,16 @@ model OutreachStep {
 }
 
 model Lead {
-  id        String   @id @default(uuid())
-  email     String
-  name      String?
-  company   String?
-  status    String   @default("new")
-  metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  email      String
+  brandEmail String?
+  name       String?
+  brandName  String?
+  company    String?
+  status     String   @default("new")
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([email])
   @@index([status])
@@ -1143,10 +1157,12 @@ model AIAgentTask {
 model CreatorBalance {
   id              String   @id @default(uuid())
   userId          String   @unique
+  available       Float    @default(0)
   availableAmount Float    @default(0)
   pendingAmount   Float    @default(0)
   totalEarned     Float    @default(0)
   currency        String   @default("usd")
+  metadata        Json?
   lastUpdated     DateTime @default(now())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1161,11 +1177,13 @@ model DeliverableItem {
   title           String
   description     String?   @db.Text
   deliverableType String?
+  platform        String?
   usageRights     String?
   frequency       String?
   dueDate         DateTime?
   dueAt           DateTime?
   approvedAt      DateTime?
+  locked          Boolean?  @default(false)
   status          String    @default("pending")
   metadata        Json?
   createdAt       DateTime  @default(now())
