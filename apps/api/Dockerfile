@@ -7,7 +7,7 @@ ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 WORKDIR /workspace
 
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@8 && npm install -g typescript
 
 # Layer dependencies
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
