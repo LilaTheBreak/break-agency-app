@@ -1,15 +1,20 @@
 import { apiFetch } from "./apiClient.js";
 
 export async function fetchThreads() {
-  const response = await apiFetch("/api/threads");
-  if (!response.ok) {
-    throw new Error("Unable to load messages");
+  try {
+    const response = await apiFetch("/threads");
+    if (!response.ok) {
+      throw new Error("Unable to load messages");
+    }
+    return response.json();
+  } catch (err) {
+    console.warn("Falling back to local threads", err);
+    return { threads: [] };
   }
-  return response.json();
 }
 
 export async function sendMessage(threadId, body) {
-  const response = await apiFetch("/api/messages", {
+  const response = await apiFetch("/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -24,7 +29,7 @@ export async function sendMessage(threadId, body) {
 }
 
 export async function markMessageRead(messageId) {
-  const response = await apiFetch(`/api/messages/${encodeURIComponent(messageId)}/read`, {
+  const response = await apiFetch(`/messages/${encodeURIComponent(messageId)}/read`, {
     method: "PATCH"
   });
   if (!response.ok) {

@@ -16,6 +16,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 function pickEditableFields(profile = DEFAULT_PROFILE) {
   return {
     name: profile.name || "",
+    avatarUrl: profile.avatarUrl || profile.profilePhoto || profile.avatar || "",
     location: profile.location || "",
     timezone: profile.timezone || "",
     pronouns: profile.pronouns || "",
@@ -172,6 +173,7 @@ export function ProfilePage({ variant = "default" }) {
 
   const meta = VARIANT_META[variant] || VARIANT_META.default;
   const heroImage =
+    formState.avatarUrl ||
     profile.avatarUrl ||
     profile.profilePhoto ||
     profile.avatar ||
@@ -264,6 +266,20 @@ export function ProfilePage({ variant = "default" }) {
             {error ? (
               <p className="mt-2 text-xs uppercase tracking-[0.35em] text-brand-red">{error}</p>
             ) : null}
+          </div>
+          <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">Profile photo URL</label>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="h-16 w-16 overflow-hidden rounded-full border border-brand-black/10 bg-brand-linen/60">
+              <img src={heroImage} alt="Profile preview" className="h-full w-full object-cover" />
+            </div>
+            <input
+              type="url"
+              value={formState.avatarUrl}
+              onChange={handleChange("avatarUrl")}
+              disabled={loading || saving}
+              className="flex-1 min-w-[200px] rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none disabled:opacity-60"
+              placeholder="https://your-photo.jpg"
+            />
           </div>
           <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">Name</label>
           <input

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, Outlet, useOutletContext } from "react-router-dom";
+import { Link, Outlet, useOutletContext, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { Badge } from "../components/Badge.jsx";
@@ -52,6 +52,7 @@ const BRAND_NAV_LINKS = (basePath) => [
   { label: "Contracts", to: `${basePath}/contracts` },
   { label: "Financials", to: `${basePath}/financials` },
   { label: "Messages", to: `${basePath}/messages` },
+  { label: "Email Opportunities", to: `/creator/opportunities` },
   { label: "Settings", to: `${basePath}/settings` }
 ];
 
@@ -732,6 +733,7 @@ function BrandFinancialSection() {
 }
 
 function BrandMessagesSection() {
+  const navigate = useNavigate();
   const threads = [
     { subject: "Budget approval", contact: "brand@client.com", status: "Awaiting finance sign-off" },
     { subject: "Creator roster feedback", contact: "mo@thebreakco.com", status: "Reply drafted" },
@@ -742,15 +744,23 @@ function BrandMessagesSection() {
     <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Messages</p>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Messages & Opportunities</p>
           <h3 className="font-display text-3xl uppercase">Threaded comms</h3>
         </div>
-        <Link
-          to="/admin/messaging"
-          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
-        >
-          Open inbox
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/creator/opportunities')}
+            className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-xs uppercase tracking-[0.3em] text-white shadow-lg transition-all hover:shadow-xl hover:scale-105"
+          >
+            Email Opportunities
+          </button>
+          <Link
+            to="/admin/messaging"
+            className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+          >
+            Open inbox
+          </Link>
+        </div>
       </div>
       <div className="space-y-2">
         {threads.map((thread) => (

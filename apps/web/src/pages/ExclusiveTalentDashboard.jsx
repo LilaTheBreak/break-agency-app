@@ -10,6 +10,9 @@ import { CalendarBoard } from "./AdminCalendarPage.jsx";
 import { ExclusiveOverviewEnhanced } from "./ExclusiveOverviewEnhanced.jsx";
 import { apiFetch } from "../services/apiClient.js";
 import { useRevenue, useMetrics, useSocials, useInsights, useGrowth, usePerformance } from "../hooks/useAnalytics.js";
+import { useCrmOnboarding } from "../hooks/useCrmOnboarding.js";
+import { CrmContactPanel } from "../components/CrmContactPanel.jsx";
+import { getContact } from "../lib/crmContacts.js";
 import { LineChart as RechartsLineChart, BarChart as RechartsBarChart, PieChart as RechartsPieChart } from "../components/charts/index.js";
 
 const NAV_LINKS = (basePath) => [
@@ -23,6 +26,7 @@ const NAV_LINKS = (basePath) => [
   { label: "Opportunities", to: `${basePath}/opportunities` },
   { label: "Tasks", to: `${basePath}/tasks` },
   { label: "Messages", to: `${basePath}/messages` },
+  { label: "Email Opportunities", to: `/creator/opportunities` },
   { label: "Settings", to: `${basePath}/settings` }
 ];
 
@@ -37,8 +41,55 @@ const PROFILE_INFO = {
 // TODO: Fetch from API
 const ACTIVE_CAMPAIGNS = [];
 
-// TODO: Fetch from API
-const PROJECTS = [];
+const PROJECTS = [
+  {
+    id: "proj-offer",
+    title: "Signature offer refresh",
+    owner: "Talent Ops",
+    status: "In progress",
+    due: "Fri",
+    summary: "Tighten positioning + update offer sheet.",
+    milestones: [
+      { title: "Offer draft v2", date: "Wed", status: "On track" },
+      { title: "Review with agent", date: "Thu", status: "Planned" }
+    ],
+    deliverables: [
+      { title: "Offer sheet + pricing", status: "Drafted" },
+      { title: "One-line pitch variants", status: "In review" }
+    ],
+    files: [
+      { title: "Offer board", type: "FigJam" },
+      { title: "Pricing sheet", type: "Sheet" }
+    ],
+    updates: [
+      { title: "Positioning note", body: "Keep luxury + tech angle; avoid daily-vlog positioning." },
+      { title: "Risk watch", body: "Rates must include paid usage buffer." }
+    ]
+  },
+  {
+    id: "proj-content",
+    title: "Content system tune-up",
+    owner: "Content Desk",
+    status: "Blocked",
+    due: "Next week",
+    summary: "Simplify weekly content cadence and asset handoff.",
+    milestones: [
+      { title: "Hook library update", date: "Today", status: "Delayed" },
+      { title: "B-roll kit upload", date: "Tomorrow", status: "Planned" }
+    ],
+    deliverables: [
+      { title: "Talking points pack", status: "Blocked (needs inputs)" },
+      { title: "Shot list per platform", status: "In progress" }
+    ],
+    files: [
+      { title: "Shot list master", type: "Doc" },
+      { title: "Hook swipe file", type: "Sheet" }
+    ],
+    updates: [
+      { title: "Dependency", body: "Waiting on latest brand usage terms to finalize shot list." }
+    ]
+  }
+];
 
 // TODO: Fetch tasks from API
 const TASKS = [];
@@ -90,8 +141,15 @@ export default function ExclusiveTalentDashboardLayout({ basePath = "/admin/view
 
 export function ExclusiveOverviewPage() {
   const { session, basePath } = useOutletContext() || {};
+  const onboarding = useCrmOnboarding(session?.email);
+  const contact = getContact(session?.email);
   // Use the new enhanced overview with full usability features
-  return <ExclusiveOverviewEnhanced session={session} basePath={basePath} />;
+  return (
+    <>
+      <ExclusiveOverviewEnhanced session={session} basePath={basePath} />
+      <CrmContactPanel contact={contact} heading="CRM contact" />
+    </>
+  );
 }
 
 export function ExclusiveProfilePage() {
@@ -2469,16 +2527,69 @@ function ExclusiveProjects() {
           New project
         </button>
       </div>
-      <p className="text-sm text-brand-black/70">Personal projects and goals - save edits and track progress.</p>
+      <p className="text-sm text-brand-black/70">Internal workstreams — not campaigns — with milestones, deliverables, assets, and updates.</p>
       <div className="space-y-3">
         {PROJECTS.map((project) => (
-          <article key={project.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <article key={project.id} className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-display text-lg uppercase">{project.title}</h3>
               <Badge tone="neutral">{project.status}</Badge>
             </div>
             <p className="text-sm text-brand-black/70">{project.summary}</p>
             <p className="text-xs text-brand-black/60">Owner: {project.owner} • Due: {project.due}</p>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2 rounded-xl border border-brand-black/10 bg-brand-white p-3">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Timelines & milestones</p>
+                {(project.milestones || []).map((milestone) => (
+                  <div key={milestone.title} className="flex items-center justify-between rounded-lg border border-brand-black/10 bg-brand-linen/40 px-2 py-1">
+                    <div>
+                      <p className="text-sm font-semibold text-brand-black">{milestone.title}</p>
+                      <p className="text-xs text-brand-black/60">{milestone.date}</p>
+                    </div>
+                    <Badge tone="neutral">{milestone.status}</Badge>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2 rounded-xl border border-brand-black/10 bg-brand-white p-3">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Deliverables</p>
+                {(project.deliverables || []).map((deliverable) => (
+                  <div key={deliverable.title} className="rounded-lg border border-brand-black/10 bg-brand-linen/40 px-2 py-1">
+                    <p className="text-sm font-semibold text-brand-black">{deliverable.title}</p>
+                    <p className="text-xs text-brand-black/60">Status: {deliverable.status}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2 rounded-xl border border-brand-black/10 bg-brand-white p-3">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Files & assets</p>
+                {(project.files || []).map((file) => (
+                  <div key={file.title} className="flex items-center justify-between rounded-lg border border-brand-black/10 bg-brand-linen/40 px-2 py-1">
+                    <div>
+                      <p className="text-sm font-semibold text-brand-black">{file.title}</p>
+                      <p className="text-xs text-brand-black/60">{file.type}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs uppercase tracking-[0.25em] text-brand-red underline"
+                    >
+                      Open
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2 rounded-xl border border-brand-black/10 bg-brand-white p-3">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Status updates</p>
+                {(project.updates || []).map((update) => (
+                  <div key={update.title} className="rounded-lg border border-brand-black/10 bg-brand-linen/40 px-2 py-1">
+                    <p className="text-sm font-semibold text-brand-black">{update.title}</p>
+                    <p className="text-sm text-brand-black/70">{update.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </article>
         ))}
       </div>
@@ -2893,17 +3004,35 @@ function LineChart({ points }) {
 }
 
 function ExclusiveMessages() {
+  const navigate = useNavigate();
   return (
     <section id="exclusive-messages" className="space-y-3 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Messages</p>
-      <p className="text-sm text-brand-black/70">Latest comms and alerts.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Messages & Opportunities</p>
+          <p className="text-sm text-brand-black/70">Latest comms, alerts, and AI-scanned opportunities.</p>
+        </div>
+        <button
+          onClick={() => navigate('/creator/opportunities')}
+          className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105"
+        >
+          View Email Opportunities
+        </button>
+      </div>
       <div className="space-y-2">
-        {MESSAGES.map((message) => (
-          <div key={message.subject} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-2 text-sm text-brand-black/80">
-            <p className="font-semibold">{message.subject}</p>
-            <p className="text-xs text-brand-black/60">{message.context}</p>
+        {MESSAGES.length > 0 ? (
+          MESSAGES.map((message) => (
+            <div key={message.subject} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-2 text-sm text-brand-black/80">
+              <p className="font-semibold">{message.subject}</p>
+              <p className="text-xs text-brand-black/60">{message.context}</p>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+            <p className="text-sm text-brand-black/60">No messages yet</p>
+            <p className="mt-2 text-xs text-brand-black/40">Check your Email Opportunities for AI-scanned inbox insights</p>
           </div>
-        ))}
+        )}
       </div>
     </section>
   );

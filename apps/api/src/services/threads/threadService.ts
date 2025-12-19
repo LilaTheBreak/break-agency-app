@@ -1,4 +1,5 @@
 import prisma from "../../lib/prisma.js";
+import { randomUUID } from "crypto";
 
 // In case your AI module isn't ready yet, use a safe fallback.
 async function generateAISummarySafe(messages: string[]) {
@@ -20,10 +21,10 @@ export const threadService = {
     return prisma.inboxMessage.findUnique({
       where: { threadId },
       include: {
-        emails: {
+        InboundEmail: {
           orderBy: { receivedAt: "asc" }
         },
-        threadMeta: true
+        InboxThreadMeta: true
       }
     });
   },
@@ -67,6 +68,7 @@ export const threadService = {
     return prisma.inboxThreadMeta.upsert({
       where: { threadId },
       create: {
+        id: randomUUID(),
         threadId,
         userId: "", // You may attach user context if needed
         aiThreadSummary: aiSummary,
@@ -120,6 +122,7 @@ export const threadService = {
     return prisma.inboxThreadMeta.upsert({
       where: { threadId },
       create: {
+        id: randomUUID(),
         threadId,
         userId: "", // assign when user context is added
         unreadCount,
@@ -134,3 +137,171 @@ export const threadService = {
 };
 
 export default threadService;
+
+// Export individual functions for controller use
+export async function listUnifiedThreads({ userId, page = 1, limit = 25 }: { userId: string; page?: number; limit?: number }) {
+  const skip = (page - 1) * limit;
+  
+  try {
+    const threads = await prisma.inboxMessage.findMany({
+      where: { userId },
+      include: {
+        InboxThreadMeta: true,
+        InboundEmail: {
+          orderBy: { receivedAt: 'desc' },
+          take: 1
+        }
+      },
+      orderBy: {
+        lastMessageAt: 'desc'
+      },
+      skip,
+      take: limit
+    });
+
+    const total = await prisma.inboxMessage.count({
+      where: { userId }
+    });
+
+    return {
+      threads: threads.map(thread => ({
+        id: thread.threadId,
+        subject: thread.subject,
+        participants: thread.participants,
+        lastMessageAt: thread.lastMessageAt,
+        unreadCount: thread.InboxThreadMeta?.unreadCount || 0,
+        isRead: thread.isRead,
+        priority: thread.InboxThreadMeta?.priority || 0,
+        aiSummary: thread.InboxThreadMeta?.aiThreadSummary,
+        snippet: thread.snippet
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  } catch (error) {
+    console.error('Error listing threads:', error);
+    // Return empty result instead of throwing
+    return {
+      threads: [],
+      total: 0,
+      page,
+      limit,
+      totalPages: 0
+    };
+  }
+}
+
+export async function getUnifiedThreadById(threadId: string, userId: string) {
+  try {
+    const thread = await prisma.inboxMessage.findFirst({
+      where: {
+        threadId,
+        userId
+      },
+      include: {
+        InboxThreadMeta: true,
+        InboundEmail: {
+          orderBy: { receivedAt: 'asc' }
+        }
+      }
+    });
+
+    if (!thread) return null;
+
+    return {
+      id: thread.threadId,
+      subject: thread.subject,
+      participants: thread.participants,
+      messages: thread.InboundEmail,
+      unreadCount: thread.InboxThreadMeta?.unreadCount || 0,
+      aiSummary: thread.InboxThreadMeta?.aiThreadSummary,
+      linkedDealId: thread.InboxThreadMeta?.linkedDealId,
+      snippet: thread.snippet,
+      isRead: thread.isRead,
+      lastMessageAt: thread.lastMessageAt
+    };
+  } catch (error) {
+    console.error('Error getting thread by ID:', error);
+    return null;
+  }
+}
+
+export async function getMessagesForThread(threadId: string, userId: string) {
+  try {
+    const thread = await prisma.inboxMessage.findFirst({
+      where: {
+        threadId,
+        userId
+      }
+    });
+
+    if (!thread) return null;
+
+    const messages = await prisma.inboundEmail.findMany({
+      where: { threadId },
+      orderBy: { receivedAt: 'asc' }
+    });
+
+    return messages;
+  } catch (error) {
+    console.error('Error getting messages for thread:', error);
+    return null;
+  }
+}
+
+export async function sendReplyToThread(threadId: string, userId: string, body: string) {
+  try {
+    // Get thread details
+    const thread = await prisma.inboxMessage.findFirst({
+      where: {
+        threadId,
+        userId
+      }
+    });
+
+    if (!thread) {
+      throw new Error('Thread not found');
+    }
+
+    // Get user email
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true }
+    });
+
+    if (!user?.email) {
+      throw new Error('User email not found');
+    }
+
+    // Create outbound email record
+    const reply = await prisma.inboundEmail.create({
+      data: {
+        id: randomUUID(),
+        userId,
+        fromEmail: user.email,
+        toEmail: thread.participants[0] || '',
+        subject: thread.subject ? `Re: ${thread.subject}` : 'Re: (no subject)',
+        body,
+        threadId,
+        receivedAt: new Date(),
+        direction: 'outbound',
+        isRead: true
+      }
+    });
+
+    // Update thread's last message time
+    await prisma.inboxMessage.update({
+      where: { id: thread.id },
+      data: {
+        lastMessageAt: new Date()
+      }
+    });
+
+    return reply;
+  } catch (error) {
+    console.error('Error sending reply:', error);
+    throw error;
+  }
+}

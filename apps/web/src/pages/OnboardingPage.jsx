@@ -10,8 +10,12 @@ import {
   persistOnboardingState,
   shouldRouteToOnboarding
 } from "../lib/onboardingState.js";
+import { submitOnboarding } from "../services/onboardingClient.js";
+import { saveCrmOnboarding } from "../lib/crmOnboarding.js";
+import { upsertContactFromOnboarding } from "../lib/crmContacts.js";
 
 const DEFAULT_FORM = {
+  preferredName: "",
   reality: "",
   context: "",
   platforms: [],
@@ -223,6 +227,7 @@ export default function OnboardingPage() {
 
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState("");
+  const [navCollapsed, setNavCollapsed] = useState(false);
 
   const ugcFlow = isUgcFlow(resolvedRole, form.context);
   const steps = useMemo(() => buildSteps(ugcFlow), [ugcFlow]);
@@ -254,6 +259,15 @@ export default function OnboardingPage() {
     }
   }, [user, loading, currentStep.id, navigate]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const shouldCollapse = window.scrollY > 180;
+      setNavCollapsed(shouldCollapse);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   if (loading && !user) {
     return (
       <div className="grid min-h-screen place-items-center bg-brand-linen px-6">
@@ -283,7 +297,7 @@ export default function OnboardingPage() {
     });
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const validation = validateStep(currentStep.id, form, ugcFlow);
     if (validation) {
       setError(validation);
@@ -291,13 +305,13 @@ export default function OnboardingPage() {
     }
     setError("");
     if (currentStep.id === "complete") {
-      finishOnboarding();
+      await finishOnboarding();
       return;
     }
     const nextIndex = Math.min(stepIndex + 1, steps.length - 1);
     const nextStepId = steps[nextIndex].id;
     if (nextStepId === "complete") {
-      finishOnboarding();
+      await finishOnboarding();
       setStepIndex(nextIndex);
       persistOnboardingState(user.email, {
         responses: form,
@@ -325,15 +339,37 @@ export default function OnboardingPage() {
     persistOnboardingState(user.email, { currentStep: steps[prevIndex].id });
   };
 
-  const finishOnboarding = () => {
-    markOnboardingSubmitted(user.email, resolvedRole, form.context);
-    syncOnboardingFromLocal();
+  const finishOnboarding = async () => {
+    try {
+      // Submit to backend API
+      const response = await submitOnboarding(form, resolvedRole, form.context);
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Failed to submit onboarding" }));
+        console.error("Onboarding submission failed:", error);
+        setError(error.error || "Failed to submit onboarding. Please try again.");
+        return false;
+      }
+
+      // Update local storage
+      markOnboardingSubmitted(user.email, resolvedRole, form.context);
+      saveCrmOnboarding(user.email, resolvedRole, form.context, form);
+      upsertContactFromOnboarding(user.email, resolvedRole, form);
+      syncOnboardingFromLocal();
+      return true;
+    } catch (err) {
+      console.error("Error submitting onboarding:", err);
+      setError("Failed to submit onboarding. Please try again.");
+      return false;
+    }
   };
 
-  const handleGoToDashboard = () => {
-    finishOnboarding();
-    const path = getDashboardPathForRole(resolvedRole);
-    navigate(path, { replace: true });
+  const handleGoToDashboard = async () => {
+    const success = await finishOnboarding();
+    if (success) {
+      const path = getDashboardPathForRole(resolvedRole);
+      navigate(path, { replace: true });
+    }
   };
 
   const renderPrimaryAction = () => {
@@ -382,61 +418,92 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-brand-ivory text-brand-black">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 lg:flex-row">
-        <aside className="w-full lg:w-[320px]">
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 text-brand-black shadow-[0_25px_80px_rgba(0,0,0,0.08)]">
-            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Unified creator onboarding</p>
-            <h1 className="mt-2 font-display text-3xl uppercase leading-tight text-brand-black">
-              Calm, clear momentum plan
-            </h1>
-            <p className="mt-3 text-sm text-brand-black/70">
-              We keep this under 10 minutes. Your answers route you to the right playbook without labels or judgement.
-            </p>
-            <div className="mt-6">
-              <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-brand-black/60">
-                <span>Step {stepIndex + 1}</span>
-                <span>of {stepTotal}</span>
-              </div>
-              <div className="mt-2 h-2 rounded-full bg-brand-black/10">
-                <div
-                  className="h-2 rounded-full bg-brand-red transition-all"
-                  style={{ width: `${progress}%` }}
-                  aria-label={`Progress ${progress}%`}
-                />
-              </div>
-              <ul className="mt-6 space-y-2 text-sm text-brand-black/80">
-                {steps.map((step, idx) => {
-                  const isActive = idx === stepIndex;
-                  const isDone = idx < stepIndex;
-                  return (
-                    <li
-                      key={step.id}
-                      className={[
-                        "flex items-center justify-between rounded-2xl border px-3 py-2",
-                        isActive
-                          ? "border-brand-red/60 bg-brand-red/10 text-brand-black"
-                          : "border-brand-black/10 bg-brand-linen/60"
-                      ].join(" ")}
-                    >
-                      <span className="flex items-center gap-2 text-brand-black">
-                        <span
-                          className={[
-                            "grid h-7 w-7 place-items-center rounded-full text-[0.65rem] font-semibold uppercase tracking-[0.2em]",
-                            isDone ? "bg-brand-red text-white" : "bg-brand-black/10 text-brand-black/70"
-                          ].join(" ")}
-                        >
-                          {idx + 1}
-                        </span>
-                        {step.title}
-                      </span>
-                      {isDone ? <span className="text-xs text-brand-black/60">Saved</span> : null}
-                    </li>
-                  );
-                })}
-              </ul>
+      <div className="sticky top-0 z-30 border-b border-brand-black/10 bg-brand-ivory/95 px-4 py-3 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-brand-red px-4 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-white">
+              Onboarding
             </div>
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">
+              Step {stepIndex + 1} of {stepTotal}
+            </p>
           </div>
-        </aside>
+          <div className="flex items-center gap-3">
+            <div className="h-2 w-48 rounded-full bg-brand-black/10 sm:w-64 md:w-80">
+              <div
+                className="h-2 rounded-full bg-brand-red transition-all"
+                style={{ width: `${progress}%` }}
+                aria-label={`Progress ${progress}%`}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setNavCollapsed((prev) => !prev)}
+              className="hidden rounded-full border border-brand-black/20 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:bg-brand-black/5 lg:inline-flex"
+            >
+              {navCollapsed ? "Show steps" : "Hide steps"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 lg:flex-row">
+        {!navCollapsed ? (
+          <aside className="w-full lg:w-[320px]">
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 text-brand-black shadow-[0_25px_80px_rgba(0,0,0,0.08)]">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Unified creator onboarding</p>
+              <h1 className="mt-2 font-display text-3xl uppercase leading-tight text-brand-black">
+                Calm, clear momentum plan
+              </h1>
+              <p className="mt-3 text-sm text-brand-black/70">
+                We keep this under 10 minutes. Your answers route you to the right playbook without labels or judgement.
+              </p>
+              <div className="mt-6">
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-brand-black/60">
+                  <span>Step {stepIndex + 1}</span>
+                  <span>of {stepTotal}</span>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-brand-black/10">
+                  <div
+                    className="h-2 rounded-full bg-brand-red transition-all"
+                    style={{ width: `${progress}%` }}
+                    aria-label={`Progress ${progress}%`}
+                  />
+                </div>
+                <ul className="mt-6 space-y-2 text-sm text-brand-black/80">
+                  {steps.map((step, idx) => {
+                    const isActive = idx === stepIndex;
+                    const isDone = idx < stepIndex;
+                    return (
+                      <li
+                        key={step.id}
+                        className={[
+                          "flex items-center justify-between rounded-2xl border px-3 py-2",
+                          isActive
+                            ? "border-brand-red/60 bg-brand-red/10 text-brand-black"
+                            : "border-brand-black/10 bg-brand-linen/60"
+                        ].join(" ")}
+                      >
+                        <span className="flex items-center gap-2 text-brand-black">
+                          <span
+                            className={[
+                              "grid h-7 w-7 place-items-center rounded-full text-[0.65rem] font-semibold uppercase tracking-[0.2em]",
+                              isDone ? "bg-brand-red text-white" : "bg-brand-black/10 text-brand-black/70"
+                            ].join(" ")}
+                          >
+                            {idx + 1}
+                          </span>
+                          {step.title}
+                        </span>
+                        {isDone ? <span className="text-xs text-brand-black/60">Saved</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </aside>
+        ) : null}
 
         <main className="min-w-0 flex-1 space-y-4">
           <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-[0_25px_90px_rgba(0,0,0,0.12)]">

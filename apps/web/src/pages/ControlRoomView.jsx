@@ -27,7 +27,9 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
     subtitle,
     queue,
     quickLinks = [],
-    opportunities = []
+    opportunities = [],
+    meetings,
+    projects
   } = config;
   const navLinks = config.navLinks ?? [];
   const tabs = config.tabs ?? [];
@@ -186,6 +188,140 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
                 <p className="text-sm text-brand-black/60">{metric.sub}</p>
               </div>
             ))}
+          </section>
+        ) : null}
+
+        {meetings ? (
+          <section
+            id={meetings.anchor || (config.role === "founder" ? "founder-sessions" : undefined)}
+            className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Meetings</p>
+                <h3 className="font-display text-2xl uppercase">Upcoming sessions & notes</h3>
+              </div>
+              <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                Founder → Break
+              </span>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Upcoming</p>
+                {meetings.upcoming && meetings.upcoming.length ? (
+                  meetings.upcoming.map((meeting) => (
+                    <div key={meeting.title} className="rounded-xl border border-brand-black/10 bg-brand-white px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold text-brand-black">{meeting.title}</p>
+                        <span className="text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/60">
+                          {meeting.date}
+                        </span>
+                      </div>
+                      <p className="text-xs text-brand-black/60">With {meeting.owner}</p>
+                      <p className="text-sm text-brand-black/70">{meeting.detail}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-brand-black/60">No sessions booked. Request a slot via Support.</p>
+                )}
+              </div>
+              <div className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Notes & action points</p>
+                {meetings.notes && meetings.notes.length ? (
+                  meetings.notes.map((note) => (
+                    <div key={note.title} className="rounded-xl border border-brand-black/10 bg-brand-white px-3 py-2">
+                      <p className="font-semibold text-brand-black">{note.title}</p>
+                      <p className="text-sm text-brand-black/70">{note.detail}</p>
+                      {note.action ? (
+                        <p className="text-xs uppercase tracking-[0.3em] text-brand-red">Next: {note.action}</p>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-brand-black/60">No notes captured yet.</p>
+                )}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {projects ? (
+          <section
+            id={projects.anchor || (config.role === "founder" ? "founder-projects" : undefined)}
+            className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Projects</p>
+                <h3 className="font-display text-2xl uppercase">Inward workstreams</h3>
+              </div>
+              <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                Internal projects (not campaigns)
+              </span>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Active projects</p>
+                {(projects.active || []).map((proj) => (
+                  <article key={proj.title} className="rounded-xl border border-brand-black/10 bg-brand-white px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-brand-black">{proj.title}</p>
+                      <Badge tone="neutral">{proj.status || "Active"}</Badge>
+                    </div>
+                    <p className="text-xs text-brand-black/60">Owner: {proj.owner}</p>
+                    <p className="text-xs text-brand-black/60">Due: {proj.due}</p>
+                    <p className="text-sm text-brand-black/70">{proj.detail}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Timelines & milestones</p>
+                {(projects.milestones || []).map((item) => (
+                  <div key={item.title} className="flex items-center justify-between rounded-xl border border-brand-black/10 bg-brand-white px-3 py-2">
+                    <div>
+                      <p className="font-semibold text-brand-black">{item.title}</p>
+                      <p className="text-xs text-brand-black/60">{item.date}</p>
+                    </div>
+                    <Badge tone="neutral">{item.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Deliverables</p>
+                {(projects.deliverables || []).map((deliv) => (
+                  <div key={deliv.title} className="rounded-xl border border-brand-black/10 bg-brand-white px-3 py-2">
+                    <p className="font-semibold text-brand-black">{deliv.title}</p>
+                    <p className="text-xs text-brand-black/60">Owner: {deliv.owner}</p>
+                    <p className="text-xs text-brand-black/60">Status: {deliv.status}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Files & assets</p>
+                {(projects.files || []).map((file) => (
+                  <div key={file.title} className="flex items-center justify-between rounded-xl border border-brand-black/10 bg-brand-white px-3 py-2">
+                    <div>
+                      <p className="font-semibold text-brand-black">{file.title}</p>
+                      <p className="text-xs text-brand-black/60">{file.type}</p>
+                    </div>
+                    <Link to={file.url || "#"} className="text-xs uppercase tracking-[0.3em] text-brand-red underline">
+                      Open
+                    </Link>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Status updates</p>
+                {(projects.updates || []).map((update) => (
+                  <div key={update.title} className="rounded-xl border border-brand-black/10 bg-brand-white px-3 py-2">
+                    <p className="font-semibold text-brand-black">{update.title}</p>
+                    <p className="text-sm text-brand-black/70">{update.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
         ) : null}
 

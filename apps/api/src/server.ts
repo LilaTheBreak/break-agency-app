@@ -38,6 +38,7 @@ import inboxCountersRouter from "./routes/inboxCounters.js";
 import inboxThreadRouter from "./routes/inboxThread.js";
 import inboxRescanRouter from "./routes/inboxRescan.js";
 import unifiedInboxRouter from "./routes/unifiedInbox.js";
+import emailOpportunitiesRouter from "./routes/emailOpportunities.js";
 
 // AI
 import aiRouter from "./routes/ai.js";
@@ -203,6 +204,7 @@ app.use("/api/inbox/unified", unifiedInboxRouter);
 app.use("/api/gmail/auth", gmailAuthRouter);
 app.use("/api/gmail/analysis", gmailAnalysisRouter);
 app.use("/api/gmail/inbox", gmailInboxRouter);
+app.use("/api/email-opportunities", emailOpportunitiesRouter);
 
 // ------------------------------------------------------
 // NOTIFICATIONS & CALENDAR

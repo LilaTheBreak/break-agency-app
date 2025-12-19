@@ -1,11 +1,21 @@
 import { Router, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 const prisma = new PrismaClient();
 
+// Middleware to check if user is admin
+const requireAdmin = (req: Request, res: Response, next: any) => {
+  const user = (req as any).user;
+  if (!user || (user.role !== "ADMIN" && user.role !== "SUPERADMIN")) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+};
+
 // Get all pending users
-router.get("/pending", async (req: Request, res: Response) => {
+router.get("/pending", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const pendingUsers = await prisma.user.findMany({
       where: {
@@ -34,7 +44,7 @@ router.get("/pending", async (req: Request, res: Response) => {
 });
 
 // Approve a user
-router.post("/:userId/approve", async (req: Request, res: Response) => {
+router.post("/:userId/approve", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -62,7 +72,7 @@ router.post("/:userId/approve", async (req: Request, res: Response) => {
 });
 
 // Reject a user
-router.post("/:userId/reject", async (req: Request, res: Response) => {
+router.post("/:userId/reject", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { reason } = req.body;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { loadOnboardingState, persistOnboardingState } from "../lib/onboardingState.js";
 
 const ROLE_OPTIONS = [
   { value: "BRAND", label: "Brand", description: "Commission campaigns and collaborations" },
@@ -16,6 +17,9 @@ export default function SignupPage() {
   const [form, setForm] = useState({ email: "", password: "", role: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [namePromptOpen, setNamePromptOpen] = useState(false);
+  const [preferredName, setPreferredName] = useState("");
+  const [postSignupEmail, setPostSignupEmail] = useState("");
 
   const handleGoogleSignup = () => {
     if (!form.role) {
@@ -38,7 +42,8 @@ export default function SignupPage() {
     try {
       const normalizedEmail = form.email.trim().toLowerCase();
       await signupWithEmail(normalizedEmail, form.password, form.role);
-      navigate(`/onboarding?role=${form.role}`, { replace: true });
+      setPostSignupEmail(normalizedEmail);
+      setNamePromptOpen(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to sign up";
       if (err?.code === 409 || /exist/i.test(message)) {
@@ -163,6 +168,79 @@ export default function SignupPage() {
             Tip: use “Sign in” to continue your onboarding or access your dashboard.
           </p>
         ) : null}
+      </div>
+      {namePromptOpen ? (
+        <NameCaptureModal
+          value={preferredName}
+          onChange={setPreferredName}
+          onClose={() => setNamePromptOpen(false)}
+          onSubmit={() => {
+            const emailKey = postSignupEmail || form.email.trim().toLowerCase();
+            const current = loadOnboardingState(emailKey);
+            persistOnboardingState(emailKey, {
+              responses: { ...(current.responses || {}), preferredName },
+              role: form.role,
+              status: "in_progress"
+            });
+            setNamePromptOpen(false);
+            navigate(`/onboarding?role=${form.role}`, { replace: true });
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function NameCaptureModal({ value, onChange, onClose, onSubmit }) {
+  const [touched, setTouched] = useState(false);
+  const invalid = touched && !value.trim();
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-brand-black/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-3xl border border-brand-black/10 bg-brand-white p-6 text-brand-black shadow-[0_30px_90px_rgba(0,0,0,0.25)]">
+        <div className="space-y-2 text-center">
+          <p className="text-[0.65rem] uppercase tracking-[0.35em] text-brand-red">Welcome</p>
+          <h3 className="text-2xl font-semibold">What should we call you?</h3>
+          <p className="text-sm text-brand-black/70">We’ll use this across your onboarding and dashboard.</p>
+        </div>
+        <div className="mt-5 space-y-3">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => {
+              setTouched(true);
+              onChange(e.target.value);
+            }}
+            onBlur={() => setTouched(true)}
+            className={[
+              "w-full rounded-2xl border px-4 py-3 text-sm focus:outline-none",
+              invalid ? "border-brand-red" : "border-brand-black/15 focus:border-brand-red"
+            ].join(" ")}
+            placeholder="First name"
+            autoFocus
+          />
+          {invalid ? <p className="text-xs text-brand-red">Please enter a name.</p> : null}
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-brand-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black hover:bg-brand-black/5"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTouched(true);
+                if (!value.trim()) return;
+                onSubmit();
+              }}
+              className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white transition hover:bg-brand-red"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

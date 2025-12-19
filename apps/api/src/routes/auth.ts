@@ -6,6 +6,7 @@ import { clearAuthCookie, setAuthCookie, createAuthToken, SESSION_COOKIE_NAME } 
 import { buildSessionUser, type SessionUser } from "../lib/session.js";
 import { SignupSchema, LoginSchema } from "./authEmailSchemas.js";
 import { googleOAuthConfig } from "../config/google.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -400,6 +401,47 @@ async function fetchGoogleProfile(accessToken: string, idToken?: string | null) 
 }
 
 /* ---------------------------------------------------------
+   POST /auth/onboarding/submit
+   Save onboarding responses and submit for admin approval
+--------------------------------------------------------- */
+router.post("/auth/onboarding/submit", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { responses, role, context } = req.body;
+    
+    if (!responses || typeof responses !== "object") {
+      return res.status(400).json({ error: "Invalid onboarding responses" });
+    }
+
+    // Update user with onboarding data and set status to pending_review
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        onboarding_responses: responses,
+        onboarding_status: "pending_review",
+        role: role || undefined,
+        updatedAt: new Date(),
+      },
+    });
+
+    console.log(`[ONBOARDING] User ${user.email} submitted onboarding for approval`);
+
+    return res.json({ 
+      success: true,
+      user: buildSessionUser(user),
+      message: "Onboarding submitted for review" 
+    });
+  } catch (err) {
+    console.error("Onboarding submission error:", err);
+    return res.status(500).json({ error: "Failed to submit onboarding" });
+  }
+});
+
+/* ---------------------------------------------------------
    ROLE REDIRECT LOGIC
 --------------------------------------------------------- */
 function buildPostAuthRedirect(user: SessionUser): string {
@@ -442,6 +484,60 @@ function decodeJwt<T>(token: string) {
     return null;
   }
 }
+
+/* ---------------------------------------------------------
+   UPDATE SOCIAL LINKS
+--------------------------------------------------------- */
+router.post("/auth/social-links", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { platform, url } = req.body;
+
+    if (!platform || !url) {
+      return res.status(400).json({ error: "Platform and URL are required" });
+    }
+
+    // Validate URL format
+    try {
+      new URL(url);
+    } catch {
+      return res.status(400).json({ error: "Invalid URL format" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Get existing social links or initialize empty object
+    const existingLinks = (user.socialLinks as any) || {};
+    
+    // Update with new platform link
+    const updatedLinks = {
+      ...existingLinks,
+      [platform]: url,
+    };
+
+    // Save to database
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        socialLinks: updatedLinks,
+      },
+    });
+
+    return res.json({
+      success: true,
+      socialLinks: updatedUser.socialLinks,
+    });
+  } catch (error) {
+    console.error("Error updating social links:", error);
+    return res.status(500).json({ error: "Failed to update social links" });
+  }
+});
 
 /* ---------------------------------------------------------
    TYPES

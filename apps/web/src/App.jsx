@@ -70,16 +70,19 @@ import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
 import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
 import { OpportunitiesAdmin } from "./pages/admin/OpportunitiesAdmin.jsx";
 import { AdminDocumentsPage } from "./pages/AdminDocumentsPage.jsx";
+import AdminResourceHub from "./pages/AdminResourceHub.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { CreatorPage } from "./pages/CreatorPage.jsx";
 import { LegalPrivacyPage } from "./pages/LegalPrivacy.jsx";
 import { ContactPage } from "./pages/Contact.jsx";
 import { HelpCenterPage } from "./pages/HelpCenter.jsx";
+import { SupportPage } from "./pages/SupportPage.jsx";
 import { PressPage } from "./pages/Press.jsx";
 import { CareersPage } from "./pages/CareersPage.jsx";
 import { ExclusiveGoalsOnboardingPage } from "./pages/ExclusiveGoalsOnboardingPage.jsx";
 import { BookFounderPage } from "./pages/BookFounder.jsx";
 import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
+import EmailOpportunities from "./pages/EmailOpportunities.jsx";
 import SignupPage from "./pages/Signup.jsx";
 import DevLogin from "./pages/DevLogin.jsx";
 import { MessagingContext } from "./context/messaging.js";
@@ -620,7 +623,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
             </div>
             <button
               type="button"
-              onClick={() => handleGateChoice("/signup")}
+              onClick={() => setAuthModalOpen(true)}
               className="text-[0.75rem] font-medium uppercase tracking-[0.3em] text-slate-600 underline-offset-4 hover:text-brand-red"
             >
               Existing member? Log in
@@ -646,6 +649,14 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         <Route path="/dev-login" element={<DevLogin />} />
         <Route path="/setup" element={<AccountSetupPage />} />
         <Route path="/creator" element={<CreatorPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
+        <Route
+          path="/creator/opportunities"
+          element={
+            <ProtectedRoute session={session}>
+              <EmailOpportunities />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/onboarding"
           element={
@@ -683,6 +694,28 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <ProfilePage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[
+                Roles.ADMIN,
+                Roles.SUPERADMIN,
+                Roles.AGENT,
+                Roles.BRAND,
+                Roles.FOUNDER,
+                Roles.CREATOR,
+                Roles.EXCLUSIVE_TALENT,
+                Roles.UGC,
+                Roles.TALENT_MANAGER
+              ]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <SupportPage />
             </ProtectedRoute>
           }
         />
@@ -972,6 +1005,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           }
         />
         <Route
+          path="/admin/resources"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminResourceHub />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/settings"
           element={
             <ProtectedRoute
@@ -1127,6 +1172,12 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   const location = useLocation();
   const isPublicResource = location.pathname.startsWith("/resource-hub");
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState(() => [
+    { id: "notif-1", title: "New message", detail: "Brand replied to your thread.", read: false, to: "/admin/messaging" },
+    { id: "notif-2", title: "Contract awaiting signature", detail: "UGC Spring Campaign", read: false, to: "/admin/contracts" },
+    { id: "notif-3", title: "Task due today", detail: "Review storyboard edits", read: true, to: "/admin/tasks" }
+  ]);
   const isAdmin = session?.role === 'ADMIN' || session?.role === 'SUPERADMIN';
 
   useEffect(() => {
@@ -1137,7 +1188,18 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
 
   useEffect(() => {
     setAdminMenuOpen(false);
+    setNotificationsOpen(false);
   }, [location.pathname]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const toggleNotifications = () => setNotificationsOpen((prev) => !prev);
+
+  const markAsRead = (id) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  };
+
+  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
 
   return (
     <header className="sticky top-0 z-30 border-b border-brand-white/10 bg-brand-black/95 text-brand-white backdrop-blur">
@@ -1154,6 +1216,63 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
               <span className="rounded-full border border-brand-white/30 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white/90">
                 {session.role || "member"}
               </span>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={toggleNotifications}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-brand-white/20 text-brand-white hover:-translate-y-0.5 hover:bg-brand-white/10"
+                  aria-label="Notifications"
+                  aria-pressed={notificationsOpen}
+                >
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <path d="M12 22c1.1 0 2-.9 2-2H10c0 1.1.9 2 2 2Z" />
+                    <path d="M18 16v-5a6 6 0 0 0-12 0v5" />
+                    <path d="M5 16h14l-1.2 2.4a2 2 0 0 1-1.8 1.1H8a2 2 0 0 1-1.8-1.1L5 16Z" />
+                  </svg>
+                  {unreadCount > 0 ? (
+                    <span className="absolute right-1 top-1 inline-flex h-2.5 w-2.5 rounded-full bg-brand-red" aria-label={`${unreadCount} unread notifications`} />
+                  ) : null}
+                </button>
+                {notificationsOpen ? (
+                  <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-[0_25px_80px_rgba(0,0,0,0.25)]">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[0.75rem] font-semibold uppercase tracking-[0.3em] text-brand-black">Notifications</p>
+                      <button
+                        type="button"
+                        className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-red hover:text-brand-black"
+                        onClick={markAllRead}
+                      >
+                        Mark all read
+                      </button>
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      {notifications.length === 0 ? (
+                        <p className="text-sm text-brand-black/60">You're all caught up.</p>
+                      ) : (
+                        notifications.map((note) => (
+                          <Link
+                            key={note.id}
+                            to={note.to || "/dashboard"}
+                            onClick={() => {
+                              markAsRead(note.id);
+                              setNotificationsOpen(false);
+                            }}
+                            className={[
+                              "block rounded-xl border px-3 py-2 transition",
+                              note.read
+                                ? "border-brand-black/10 bg-brand-white text-brand-black/70"
+                                : "border-brand-red/40 bg-brand-red/10 text-brand-black"
+                            ].join(" ")}
+                          >
+                            <p className="text-sm font-semibold text-brand-black">{note.title}</p>
+                            <p className="text-xs text-brand-black/70">{note.detail}</p>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               {isAdmin && (
                 <div className="relative">
                   <button
@@ -1164,7 +1283,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                     {session.name?.split(" ")[0] || session.email?.split("@")[0]?.split(".")[0] || "Admin"}
                   </button>
                   {adminMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+                    <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-[0_25px_80px_rgba(0,0,0,0.25)]">
                       <div>
                         <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
                           Control room
@@ -1182,6 +1301,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           { to: "/admin/users", label: "Users" },
                           { to: "/admin/brands", label: "Brands" },
                           { to: "/admin/messaging", label: "Messaging" },
+                          { to: "/admin/resources", label: "Resources" },
                           { to: "/admin/finance", label: "Finance" },
                           { to: "/admin/settings", label: "Settings" }
                         ].map((item) => (
@@ -1235,6 +1355,12 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                   )}
                 </div>
               )}
+              <Link
+                to="/support"
+                className="rounded-full border border-brand-red/70 px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-red transition hover:-translate-y-0.5 hover:bg-brand-red/10"
+              >
+                Support
+              </Link>
               <Link
                 to="/account/profile"
                 className="rounded-full border border-brand-white/30 px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white hover:bg-brand-white/10"

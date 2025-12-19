@@ -1,4 +1,4 @@
-import prisma from "../../lib/prisma";
+import prisma from "../../lib/prisma.js";
 
 /**
  * Generates a simple thread summary placeholder.
@@ -24,5 +24,27 @@ export async function getThreadSummary(threadId: string) {
       ok: false,
       error: "Failed to summarise thread"
     };
+  }
+}
+
+// Alias for American spelling
+export async function summarizeThread(threadId: string, userId: string) {
+  try {
+    // Verify user has access to thread
+    const thread = await prisma.inboxMessage.findFirst({
+      where: {
+        threadId,
+        userId
+      }
+    });
+
+    if (!thread) {
+      return null;
+    }
+
+    return getThreadSummary(threadId);
+  } catch (err) {
+    console.error("[threadSummaryService] summarizeThread error:", err);
+    return null;
   }
 }

@@ -118,6 +118,12 @@ export function getDashboardPathForRole(role) {
 }
 
 export function isAwaitingApproval(user) {
+  // Admins and superadmins should never see approval hold
+  const normalizedRole = normalizeRole(user?.role);
+  if (normalizedRole === Roles.ADMIN || normalizedRole === Roles.SUPERADMIN || normalizedRole === Roles.AGENT) {
+    return false;
+  }
+  
   const status = deriveOnboardingStatus(user);
   return status === "pending_review";
 }

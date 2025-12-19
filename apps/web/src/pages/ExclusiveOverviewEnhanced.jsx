@@ -26,6 +26,8 @@ import {
   formatCreatorDate,
   getActionSignal,
 } from "../utils/exclusiveOverviewHelpers.js";
+import { useCrmOnboarding } from "../hooks/useCrmOnboarding.js";
+import { OnboardingSnapshot } from "../components/OnboardingSnapshot.jsx";
 
 /**
  * Exclusive Talent Overview Page
@@ -51,6 +53,7 @@ export function ExclusiveOverviewEnhanced({ session, basePath: basePathProp }) {
   const { acceptEvent, declineEvent, processing } = useEventActions();
   const wellness = useWellnessCheckin();
   const aiAssistant = useAIAssistant();
+  const onboarding = useCrmOnboarding(session?.email);
 
   // First-time user flow
   useEffect(() => {
@@ -204,6 +207,8 @@ export function ExclusiveOverviewEnhanced({ session, basePath: basePathProp }) {
           </div>
         )}
       </section>
+
+      <OnboardingSnapshot data={onboarding} role={session?.role || "EXCLUSIVE_TALENT"} heading="Onboarding → CRM" />
 
       {/* Wellness Check-in (Opt-in, weekly) */}
       {wellness.shouldShow && !loading && (

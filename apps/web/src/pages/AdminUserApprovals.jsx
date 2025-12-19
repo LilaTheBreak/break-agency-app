@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DashboardShell } from '../components/DashboardShell';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
 export default function AdminUserApprovals() {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ export default function AdminUserApprovals() {
 
   useEffect(() => {
     // Only admin can access
-    if (user && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    if (user && user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
       navigate('/');
       return;
     }
@@ -26,7 +28,7 @@ export default function AdminUserApprovals() {
   const fetchPendingUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/users/pending', {
+      const response = await fetch(`${API_BASE}/api/admin/users/pending`, {
         credentials: 'include'
       });
       
@@ -67,7 +69,7 @@ export default function AdminUserApprovals() {
 
     try {
       setProcessing(true);
-      const endpoint = `/api/admin/users/${selectedUser.id}/${actionType}`;
+      const endpoint = `${API_BASE}/api/admin/users/${selectedUser.id}/${actionType}`;
       const body = actionType === 'approve' 
         ? { notes } 
         : { reason: notes };
@@ -117,6 +119,40 @@ export default function AdminUserApprovals() {
     } catch {
       return {};
     }
+  };
+
+  const renderOnboardingSnapshot = (responses) => {
+    if (!responses || Object.keys(responses).length === 0) return null;
+    const join = (val) => {
+      if (!val) return "—";
+      if (Array.isArray(val)) return val.length ? val.join(", ") : "—";
+      return val;
+    };
+    const fields = [
+      { label: "Primary goal", value: join(responses.primaryGoal) },
+      { label: "Platforms", value: join(responses.platforms) },
+      { label: "Formats", value: join(responses.formats) },
+      { label: "Niche", value: join(responses.primaryNiche) },
+      { label: "Angles", value: join(responses.contentAngles) },
+      { label: "Blockers", value: join(responses.blockers) },
+      { label: "Capacity", value: join(responses.capacity || responses.ugcCapacity) },
+      { label: "Lead time", value: join(responses.leadTime) },
+      { label: "Partnership preference", value: join(responses.partnershipPreference) },
+      { label: "Proof points", value: join(responses.proofPoints) }
+    ];
+    return (
+      <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Onboarding → CRM</p>
+        <div className="mt-2 grid gap-2 md:grid-cols-2">
+          {fields.map((field) => (
+            <div key={field.label} className="text-sm text-gray-800">
+              <p className="text-xs uppercase tracking-wide text-gray-500">{field.label}</p>
+              <p className="text-sm text-gray-900">{field.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -183,6 +219,62 @@ export default function AdminUserApprovals() {
                             </dd>
                           </div>
                           
+                          {responses.context && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Context</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{responses.context}</dd>
+                            </div>
+                          )}
+
+                          {responses.preferredName && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Preferred Name</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{responses.preferredName}</dd>
+                            </div>
+                          )}
+
+                          {responses.platforms && responses.platforms.length > 0 && (
+                            <div className="sm:col-span-2">
+                              <dt className="text-sm font-medium text-gray-500">Platforms</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{responses.platforms.join(', ')}</dd>
+                            </div>
+                          )}
+
+                          {responses.primaryNiche && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Primary Niche</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{responses.primaryNiche}</dd>
+                            </div>
+                          )}
+
+                          {responses.primaryGoal && (
+                            <div className="sm:col-span-2">
+                              <dt className="text-sm font-medium text-gray-500">Primary Goal</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{responses.primaryGoal}</dd>
+                            </div>
+                          )}
+
+                          {responses.revenueRange && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Revenue Range</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{responses.revenueRange}</dd>
+                            </div>
+                          )}
+
+                          {responses.targetAmount && (
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Target Amount</dt>
+                              <dd className="mt-1 text-sm text-gray-900">£{responses.targetAmount}</dd>
+                            </div>
+                          )}
+
+                          {responses.usp && (
+                            <div className="sm:col-span-2">
+                              <dt className="text-sm font-medium text-gray-500">USP</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{responses.usp}</dd>
+                            </div>
+                          )}
+                          
                           {responses.company && (
                             <div>
                               <dt className="text-sm font-medium text-gray-500">Company</dt>
@@ -210,7 +302,18 @@ export default function AdminUserApprovals() {
                               <dd className="mt-1 text-sm text-gray-900">{pendingUser.admin_notes}</dd>
                             </div>
                           )}
+
+                          {/* Show button to expand full details */}
+                          <div className="sm:col-span-2">
+                            <button
+                              onClick={() => console.log('Full responses:', responses)}
+                              className="text-sm text-blue-600 hover:text-blue-800 underline"
+                            >
+                              View full application details
+                            </button>
+                          </div>
                         </dl>
+                        {renderOnboardingSnapshot(responses)}
                       </div>
                       
                       <div className="flex flex-col gap-2 ml-6">

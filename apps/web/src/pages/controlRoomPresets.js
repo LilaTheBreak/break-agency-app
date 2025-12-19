@@ -247,28 +247,74 @@ export const CONTROL_ROOM_PRESETS = {
   founder: {
     role: "founder",
     title: "Founder Control Room",
-    subtitle: "High-level view for founders to scan growth, GTM signals, and revenue flows.",
-    tabs: ["Overview", "Growth", "Product", "People", "Investors"],
-    metrics: [
-      { label: "Monthly revenue", value: "£410K", sub: "Up 18% MoM" },
-      { label: "Gross margin", value: "62%", sub: "After payouts" },
-      { label: "New partners", value: "12", sub: "Signed this quarter" }
+    subtitle: "Your strategic home — clarity, direction, and hands-on support from The Break.",
+    tabs: [
+      { label: "Overview", anchor: "#founder-overview", default: true },
+      { label: "Strategy", anchor: "#founder-strategy" },
+      { label: "Offers & Revenue", anchor: "#founder-offers" },
+      { label: "Content & Distribution", anchor: "#founder-content" },
+      { label: "Projects", anchor: "#founder-projects" },
+      { label: "Sessions & Support", anchor: "#founder-sessions" },
+      { label: "Resources", anchor: "#founder-resources" },
+      { label: "Account", anchor: "#founder-account" }
     ],
+    metrics: [
+      { label: "Current focus", value: "Audience → Offer", sub: "Active strategy phase" },
+      { label: "Next actions", value: "3", sub: "Queued by The Break" },
+      { label: "Goal status", value: "On track", sub: "North Star alignment" }
+    ],
+    meetings: {
+      anchor: "founder-sessions",
+      upcoming: [
+        { title: "Weekly founder strategy", date: "Thu · 10:30 GMT", owner: "Strategy Pod", detail: "Reprioritize GTM sprint + AI newsletter." },
+        { title: "Offer lab: pricing", date: "Mon · 15:00 GMT", owner: "Revenue Ops", detail: "Validate new tiered offer + promo plan." }
+      ],
+      notes: [
+        { title: "Last session recap", detail: "Aligned on Audience → Offer focus. Homework: publish 2x founder POV threads.", action: "Draft talking points for Threads + LinkedIn." },
+        { title: "Next actions", detail: "Upload revised lead magnet copy; share KPIs from paid test.", action: "Send metrics to Strategy Pod for review." }
+      ]
+    },
+    projects: {
+      anchor: "founder-projects",
+      active: [
+        { title: "Audience → Offer sprint", owner: "Strategy Pod", status: "In motion", due: "This week", detail: "Clarify ICP, refine offer ladder, and prep nurture path." },
+        { title: "Founder content revamp", owner: "Content Desk", status: "In review", due: "Next week", detail: "Monthly talking points + AI-assisted outlines." }
+      ],
+      milestones: [
+        { title: "ICP + narrative lock", date: "Wed", status: "On track" },
+        { title: "Offer sheet v2", date: "Fri", status: "Needs inputs" },
+        { title: "Distribution map", date: "Next Mon", status: "Planned" }
+      ],
+      deliverables: [
+        { title: "Offer one-pager + pricing", owner: "Revenue Ops", status: "Drafted" },
+        { title: "Founder POV threads (2)", owner: "Content Desk", status: "In progress" },
+        { title: "Nurture email 0 + 1", owner: "Lifecycle", status: "Queued" }
+      ],
+      files: [
+        { title: "Narrative board", type: "FigJam", url: "#" },
+        { title: "Offer ladder sheet", type: "Sheet", url: "#" },
+        { title: "Promo plan", type: "Deck", url: "#" }
+      ],
+      updates: [
+        { title: "Strategy recap", body: "ICP narrowed to AI founders in UAE/UK; next focus is pricing proof." },
+        { title: "Risk watch", body: "Need KPI snapshots before scaling paid test." }
+      ]
+    },
     queue: {
       label: "Founder queue",
-      title: "Signals & escalations",
-      cta: "View briefs",
+      title: "Signals & clarity",
+      cta: "View plan",
       items: [
-        { title: "Paris retail activation", owner: "Experiential Pod", status: "Budget approval" },
-        { title: "AI underwriting launch", owner: "Product Pod", status: "Needs GTM sign-off" },
-        { title: "Break Fund close", owner: "Finance Pod", status: "Docs in diligence" }
+        { title: "Positioning update draft", owner: "Strategy Pod", status: "Ready for review" },
+        { title: "GTM sprint outline", owner: "Growth Desk", status: "Needs prioritization" },
+        { title: "Offer pricing review", owner: "Revenue Ops", status: "Awaiting notes" }
       ]
     },
     quickLinks: [
-      { title: "Investor desk", copy: "Narratives, pull requests, and board-ready snapshots." },
-      { title: "People ops", copy: "Hiring pipeline, enablement packs, and staffing charts." },
-      { title: "Product pulse", copy: "Roadmap, release health, and dependency tracking." },
-      { title: "Finance", copy: "Cash runway, receivables aging, payouts + AR." }
+      { title: "Strategy", copy: "Narrative, ICP, offer stack, GTM direction, and notes." },
+      { title: "Offers & revenue", copy: "Live offers, pricing guidance, and partnership ideas." },
+      { title: "Content & distribution", copy: "Platform focus, monthly talking points, and CTAs." },
+      { title: "Sessions & support", copy: "Book calls, drop async questions, and review notes." }
     ]
   },
   brand: {

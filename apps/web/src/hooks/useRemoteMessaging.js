@@ -22,7 +22,7 @@ export function useRemoteMessaging(session, enabled = true) {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
-    retry: 1
+    retry: 0
   });
 
   const sendMutation = useMutation({

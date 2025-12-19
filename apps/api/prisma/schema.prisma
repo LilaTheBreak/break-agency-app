@@ -452,6 +452,9 @@ model User {
   BrandCampaigns          BrandCampaign[]
   Submissions             Submission[]
   OpportunityApplications OpportunityApplication[]
+  ResourceRsvp            ResourceRsvp[]
+  EmailOpportunities      EmailOpportunity[]
+  EmailFeedback           EmailFeedback[]
 }
 
 enum DealStage {
@@ -500,19 +503,68 @@ model Opportunity {
 }
 
 model Resource {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  type        String
-  audience    String
-  protected   Boolean  @default(false)
-  createdById String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  id                  String            @id @default(uuid())
+  title               String
+  shortDescription    String
+  longDescription     String?
+  resourceType        ResourceType
+  uploadUrl           String?
+  externalUrl         String?
+  thumbnailUrl        String?
+  status              ResourceStatus    @default(DRAFT)
+  visibility          ResourceVisibility @default(PUBLIC)
+  allowedAudiences    String[]          @default([])
+  metadata            Json?
+  eventDate           DateTime?
+  eventTime           String?
+  hasReplay           Boolean?
+  rsvpEnabled         Boolean           @default(false)
+  rsvpOpen            Boolean           @default(true)
+  viewCount           Int               @default(0)
+  createdById         String
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  createdBy           User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  ResourceRsvp        ResourceRsvp[]
 
-  @@index([type, audience])
+  @@index([resourceType])
+  @@index([status])
+  @@index([visibility])
   @@index([createdById])
+}
+
+model ResourceRsvp {
+  id         String   @id @default(uuid())
+  resourceId String
+  userId     String
+  status     String   @default("confirmed")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, userId])
+  @@index([resourceId])
+  @@index([userId])
+}
+
+enum ResourceType {
+  TEMPLATE
+  GUIDE
+  ARTICLE
+  WEBINAR
+  EVENT
+}
+
+enum ResourceStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ResourceVisibility {
+  PUBLIC
+  PROTECTED
 }
 
 model File {
@@ -895,3 +947,56 @@ model OpportunityApplication {
   @@index([creatorId, status])
   @@index([opportunityId, status])
 }
+
+model EmailOpportunity {
+  id                String             @id @default(uuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gmailMessageId    String             @unique
+  threadId          String
+  subject           String
+  from              String
+  receivedAt        DateTime
+  category          String             // EVENT_INVITE | BRAND_OPPORTUNITY | COLLABORATION_REQUEST | INBOUND_BRAND_INTEREST
+  confidence        Float              // 0-1 score
+  brandName         String?
+  opportunityType   String?
+  deliverables      Json?              // Array of deliverable strings
+  dates             String?
+  location          String?
+  paymentDetails    String?
+  contactEmail      String?
+  isUrgent          Boolean            @default(false)
+  status            String             @default("NEW") // NEW | REPLIED | DECLINED | NEGOTIATING | AWAITING_BRIEF | IN_PROGRESS | ARCHIVED
+  notes             String?
+  isRelevant        Boolean?           // User feedback for ML training
+  emailBody         String?            @db.Text
+  suggestedActions  Json?              // Array of suggested action strings
+  lastActionAt      DateTime?
+  lastActionType    String?
+  responseNotes     String?            @db.Text
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  feedback          EmailFeedback[]
+
+  @@index([userId, status])
+  @@index([userId, category])
+  @@index([receivedAt])
+  @@index([isUrgent])
+}
+
+model EmailFeedback {
+  id                  String            @id @default(uuid())
+  userId              String
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailOpportunityId  String
+  emailOpportunity    EmailOpportunity  @relation(fields: [emailOpportunityId], references: [id], onDelete: Cascade)
+  isRelevant          Boolean
+  category            String
+  confidence          Float
+  createdAt           DateTime          @default(now())
+
+  @@index([userId])
+  @@index([emailOpportunityId])
+}
+

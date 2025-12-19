@@ -58,7 +58,7 @@ router.get("/admin/users/pending", async (req, res) => {
   try {
     const pendingUsers = await prisma.user.findMany({
       where: {
-        onboarding_status: "PENDING_REVIEW"
+        onboarding_status: "pending_review"
       },
       select: {
         id: true,
@@ -93,7 +93,7 @@ router.post("/admin/users/:id/approve", async (req, res) => {
     const user = await prisma.user.update({
       where: { id },
       data: {
-        onboarding_status: "APPROVED",
+        onboarding_status: "approved",
         admin_notes: notes || null,
         updated_at: new Date()
       },
@@ -131,7 +131,7 @@ router.post("/admin/users/:id/reject", async (req, res) => {
     const user = await prisma.user.update({
       where: { id },
       data: {
-        onboarding_status: "REJECTED",
+        onboarding_status: "rejected",
         admin_notes: reason || "Application rejected",
         updated_at: new Date()
       },

@@ -9,10 +9,15 @@ import { FileUploadPanel } from "../components/FileUploadPanel.jsx";
 import { ContractsPanel } from "../components/ContractsPanel.jsx";
 import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
+import { OnboardingSnapshot } from "../components/OnboardingSnapshot.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
 import { Roles } from "../auth/session.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
+import { useCrmOnboarding } from "../hooks/useCrmOnboarding.js";
+import { CrmContactPanel } from "../components/CrmContactPanel.jsx";
+import { getContact } from "../lib/crmContacts.js";
+import { useNavigate } from "react-router-dom";
 
 export function CreatorDashboard({ session }) {
   const auth = useAuth();
@@ -23,11 +28,13 @@ export function CreatorDashboard({ session }) {
   return (
     <ControlRoomView config={CONTROL_ROOM_PRESETS.talent} session={activeSession}>
       <CreatorRevenueSection />
+      <CreatorEmailOpportunitiesSection />
       <CreatorOpportunitiesSection />
       <CreatorCampaignsPanel session={activeSession} />
       <CreatorSubmissionsSection session={activeSession} />
       <CreatorOnboardingSection />
       <CreatorContractsSection session={activeSession} />
+      <CrmContactPanel contact={getContact(activeSession?.email)} heading="CRM contact" />
     </ControlRoomView>
   );
 }
@@ -44,6 +51,77 @@ function CreatorRevenueSection() {
       <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
         <p className="text-sm text-brand-black/60">Metrics not yet available</p>
         <p className="mt-2 text-xs text-brand-black/40">Revenue tracking, audience growth, and deal metrics will appear once your campaigns are live</p>
+      </div>
+    </section>
+  );
+}
+
+function CreatorEmailOpportunitiesSection() {
+  const navigate = useNavigate();
+  return (
+    <section className="mt-6 space-y-4 rounded-3xl border border-brand-black/10 bg-gradient-to-br from-purple-50 via-white to-pink-50 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-purple-600">AI-Powered Inbox</p>
+          <h3 className="font-display text-3xl uppercase">Email Opportunities</h3>
+          <p className="mt-2 text-sm text-brand-black/70">Automatically scan and classify brand opportunities from your Gmail inbox</p>
+        </div>
+        <button
+          onClick={() => navigate('/creator/opportunities')}
+          className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105 flex items-center gap-2"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          View Opportunities
+        </button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-2xl border border-purple-200 bg-white p-4">
+          <p className="text-xs text-brand-black/60 mb-1">Event Invites</p>
+          <p className="text-2xl font-bold text-purple-600">—</p>
+        </div>
+        <div className="rounded-2xl border border-blue-200 bg-white p-4">
+          <p className="text-xs text-brand-black/60 mb-1">Brand Opportunities</p>
+          <p className="text-2xl font-bold text-blue-600">—</p>
+        </div>
+        <div className="rounded-2xl border border-green-200 bg-white p-4">
+          <p className="text-xs text-brand-black/60 mb-1">Collaborations</p>
+          <p className="text-2xl font-bold text-green-600">—</p>
+        </div>
+        <div className="rounded-2xl border border-orange-200 bg-white p-4">
+          <p className="text-xs text-brand-black/60 mb-1">Inbound Interest</p>
+          <p className="text-2xl font-bold text-orange-600">—</p>
+        </div>
+      </div>
+      <div className="rounded-2xl border border-brand-black/10 bg-white p-6">
+        <div className="flex items-center gap-3 mb-3">
+          <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          <div>
+            <h4 className="font-semibold text-brand-black">How it works</h4>
+            <p className="text-xs text-brand-black/60">Connect your Gmail to unlock AI-powered opportunity detection</p>
+          </div>
+        </div>
+        <ul className="space-y-2 text-sm text-brand-black/70">
+          <li className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>AI scans your inbox for brand partnerships, event invites, and collaboration requests</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>Automatically extracts key details: brand names, dates, compensation, deliverables</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>Filters out spam, newsletters, and irrelevant emails</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <span>Provides suggested actions and confidence scores for each opportunity</span>
+          </li>
+        </ul>
       </div>
     </section>
   );
@@ -313,44 +391,11 @@ function OpportunityTimeline({ stage, compact = false }) {
 }
 
 function CreatorOnboardingSection() {
+  const { user } = useAuth();
+  const onboarding = useCrmOnboarding(user?.email);
   return (
     <section id="creator-account" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Onboarding questionnaire</p>
-      <h3 className="font-display text-3xl uppercase">Tell Break how you work</h3>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
-          Revenue target (annual)
-          <input type="number" placeholder="£120000" className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none" />
-        </label>
-        <label className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4 text-xs uppercase tracking-[0.3em] text-brand-black/60">
-          Affiliate linking
-          <select className="mt-2 w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none">
-            <option>Yes, I'm active</option>
-            <option>No, but open to it</option>
-            <option>Not interested</option>
-          </select>
-        </label>
-      </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Platforms</p>
-        <div className="mt-2 flex flex-wrap gap-2 text-sm">
-          {["Instagram", "TikTok", "YouTube", "Pinterest", "Newsletter"].map((platform) => (
-            <button
-              key={platform}
-              type="button"
-              className="rounded-full border border-brand-black/20 px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-black hover:border-brand-black"
-            >
-              {platform}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-brand-red">Gaps summary</p>
-        <p className="mt-2 text-sm text-brand-black/70">
-          The system identifies missing opportunities based on your submissions. Complete onboarding to unlock automation rules, AI agents, and proactive briefs tailored to your growth plan.
-        </p>
-      </div>
+      <OnboardingSnapshot data={onboarding} role={user?.role || Roles.CREATOR} heading="Onboarding → CRM" />
     </section>
   );
 }

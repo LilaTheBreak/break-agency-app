@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import * as threadService from "../services/threads/threadService";
-import * as summaryService from "../services/threads/threadSummaryService";
+import * as threadService from "../services/threads/threadService.js";
+import * as summaryService from "../services/threads/threadSummaryService.js";
 
 export async function listThreads(
   req: Request,
@@ -79,12 +79,16 @@ export async function replyToThread(
   next: NextFunction
 ): Promise<void> {
   try {
-    // This is a placeholder for a complex operation.
-    // A real implementation would determine the platform (Gmail, DM)
-    // and call the appropriate sending service.
     const { threadId } = req.params;
     const { body } = req.body;
-    res.status(501).json({ message: "Reply functionality not implemented yet.", threadId, body });
+    
+    if (!body || typeof body !== 'string') {
+      res.status(400).json({ error: "Message body is required" });
+      return;
+    }
+
+    const reply = await threadService.sendReplyToThread(threadId, req.user!.id, body);
+    res.json({ success: true, reply });
   } catch (error) {
     next(error);
   }

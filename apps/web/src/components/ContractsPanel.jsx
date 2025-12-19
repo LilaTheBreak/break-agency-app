@@ -443,8 +443,8 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
       </div>
 
       {modalOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-brand-black/40 p-4">
-          <div className="w-full max-w-3xl space-y-4 rounded-[32px] border border-brand-black/15 bg-brand-white p-6 text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-brand-black/40 p-4">
+          <div className="mx-auto my-6 w-full max-w-3xl space-y-4 rounded-[32px] border border-brand-black/15 bg-brand-white p-6 text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-display text-3xl uppercase">Generate contract</h3>
@@ -460,7 +460,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
                 Close
               </button>
             </div>
-            <form className="grid gap-3 md:grid-cols-2" onSubmit={handleGenerate}>
+            <form className="grid max-h-[70vh] gap-3 overflow-y-auto md:grid-cols-2" onSubmit={handleGenerate}>
               <label className="text-xs uppercase tracking-[0.35em]">
                 Contract name
                 <input
