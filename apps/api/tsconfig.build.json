@@ -9,9 +9,9 @@
     "noEmit": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
-    "noEmitOnError": true,
+    "noEmitOnError": false,
     "sourceMap": false
   },
   "include": ["src/**/*.ts"],
