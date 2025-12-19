@@ -8,7 +8,7 @@
     "ignoreCommand": "pnpm i --prefer-offline"
   },
   "env": {
-    "VITE_API_URL": "https://api.tbctbctbc.online/api"
+    "VITE_API_URL": "https://break-agency-app-production.up.railway.app/api"
   },
   "headers": [
     {
