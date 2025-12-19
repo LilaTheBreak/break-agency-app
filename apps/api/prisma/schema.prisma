@@ -20,7 +20,7 @@ model AgentProfile {
 }
 
 model AiTokenLog {
-  id               String   @id
+  id               String   @id @default(uuid())
   userId           String?
   action           String
   model            String
@@ -145,6 +145,7 @@ model InboundEmail {
   toEmail             String
   subject             String?
   body                String?
+  snippet             String?
   gmailId             String?              @unique
   threadId            String?
   receivedAt          DateTime             @default(now())
@@ -173,11 +174,19 @@ model InboxMessage {
   userId          String
   subject         String?
   snippet         String?
+  sender          String?
+  body            String?          @db.Text
   isRead          Boolean          @default(false)
   lastMessageAt   DateTime
+  receivedAt      DateTime         @default(now())
   participants    String[]
+  parsed          Json?
   InboundEmail    InboundEmail[]
   InboxThreadMeta InboxThreadMeta?
+
+  @@index([userId])
+  @@index([receivedAt])
+  @@index([lastMessageAt])
 }
 
 model InboxThreadMeta {
@@ -227,17 +236,23 @@ model Notification {
 }
 
 model Payment {
-  id                  String    @id
-  dealId              String
-  talentId            String?
-  amount              Float
-  status              String    @default("PENDING")
-  expectedPaymentDate DateTime?
-  actualPaymentDate   DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime
-  Deal                Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  Talent              Talent?   @relation(fields: [talentId], references: [id])
+  id                     String    @id
+  dealId                 String
+  talentId               String?
+  amount                 Float
+  currency               String?   @default("usd")
+  status                 String    @default("PENDING")
+  stripePaymentIntentId  String?   @unique
+  metadata               Json?
+  expectedPaymentDate    DateTime?
+  actualPaymentDate      DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime
+  Deal                   Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Talent                 Talent?   @relation(fields: [talentId], references: [id])
+
+  @@index([stripePaymentIntentId])
+  @@index([status])
 }
 
 model Payout {
@@ -998,5 +1013,166 @@ model EmailFeedback {
 
   @@index([userId])
   @@index([emailOpportunityId])
+}
+
+// Missing models for worker/AI features
+model AssetGeneration {
+  id              String   @id @default(uuid())
+  deliverableId   String
+  userId          String
+  assetType       String
+  prompt          String   @db.Text
+  generatedUrl    String?
+  status          String   @default("pending")
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([deliverableId])
+  @@index([userId])
+  @@index([status])
+}
+
+model ContractReview {
+  id            String   @id @default(uuid())
+  userId        String
+  contractText  String   @db.Text
+  findings      Json?
+  riskScore     Float?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SignatureRequest {
+  id            String   @id @default(uuid())
+  userId        String
+  documentUrl   String
+  signerEmail   String
+  status        String   @default("pending")
+  signedAt      DateTime?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([signerEmail])
+}
+
+model OutreachAction {
+  id          String    @id @default(uuid())
+  sequenceId  String
+  stepId      String?
+  leadId      String?
+  actionType  String
+  status      String    @default("pending")
+  scheduledAt DateTime?
+  executedAt  DateTime?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([sequenceId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model OutreachSequence {
+  id        String   @id @default(uuid())
+  leadId    String
+  name      String
+  status    String   @default("active")
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+}
+
+model OutreachStep {
+  id          String   @id @default(uuid())
+  sequenceId  String
+  stepNumber  Int
+  actionType  String
+  delay       Int?
+  template    String?  @db.Text
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sequenceId])
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  email     String
+  name      String?
+  company   String?
+  status    String   @default("new")
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email])
+  @@index([status])
+}
+
+model AIAgentTask {
+  id          String    @id @default(uuid())
+  userId      String
+  taskType    String
+  payload     Json
+  status      String    @default("pending")
+  result      Json?
+  error       String?   @db.Text
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([taskType])
+}
+
+model CreatorBalance {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  availableAmount Float    @default(0)
+  pendingAmount   Float    @default(0)
+  totalEarned     Float    @default(0)
+  currency        String   @default("usd")
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model DeliverableItem {
+  id              String    @id @default(uuid())
+  dealId          String
+  userId          String?
+  title           String
+  description     String?   @db.Text
+  deliverableType String?
+  usageRights     String?
+  frequency       String?
+  dueDate         DateTime?
+  dueAt           DateTime?
+  approvedAt      DateTime?
+  status          String    @default("pending")
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([userId])
+  @@index([status])
 }
 
