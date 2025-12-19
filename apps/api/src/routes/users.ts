@@ -120,25 +120,22 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id/roles", async (req: Request, res: Response) => {
-  const { roles } = req.body;
-  if (!Array.isArray(roles)) {
-    return res.status(400).json({ error: "Invalid payload: 'roles' must be an array of strings." });
+router.put("/:id/role", async (req: Request, res: Response) => {
+  const { role } = req.body;
+  if (!role || typeof role !== 'string') {
+    return res.status(400).json({ error: "Invalid payload: 'role' must be a string." });
   }
 
   try {
-    const rolesInDb = await prisma.role.findMany({ where: { name: { in: roles } } });
-    const roleIds = rolesInDb.map(r => r.id);
+    const updatedUser = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { role }
+    });
 
-    await prisma.$transaction([
-      prisma.userRole.deleteMany({ where: { userId: req.params.id } }),
-      prisma.userRole.createMany({ data: roleIds.map(roleId => ({ userId: req.params.id, roleId })) }),
-    ]);
-
-    res.status(200).json({ success: true, message: "User roles updated." });
+    res.status(200).json({ success: true, message: "User role updated.", user: updatedUser });
   } catch (error) {
-    console.error("Failed to update user roles:", error);
-    res.status(500).json({ error: "Failed to update user roles." });
+    console.error("Failed to update user role:", error);
+    res.status(500).json({ error: "Failed to update user role." });
   }
 });
 
@@ -201,7 +198,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
     
     res.status(201).json(newUser);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return res.status(409).json({ error: "A user with this email already exists." });
     }

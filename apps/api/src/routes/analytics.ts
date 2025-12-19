@@ -127,7 +127,7 @@ router.get('/growth', async (req: Request, res: Response) => {
     const period = (req.query.period as string) || 'Month';
 
     // Generate sample growth data
-    const timeline = [];
+    const timeline: any[] = [];
     const now = new Date();
     const baseFollowers = 105000;
     

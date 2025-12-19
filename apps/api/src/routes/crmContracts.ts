@@ -282,8 +282,8 @@ router.post("/batch-import", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Contracts array is required" });
     }
 
-    const imported = [];
-    const errors = [];
+    const imported: any[] = [];
+    const errors: any[] = [];
 
     for (const contract of contracts) {
       try {

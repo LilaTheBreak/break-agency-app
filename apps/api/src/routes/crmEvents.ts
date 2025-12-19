@@ -283,7 +283,7 @@ router.post("/batch-import", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "events must be an array" });
     }
 
-    const createdEvents = [];
+    const createdEvents: any[] = [];
 
     for (const event of events) {
       try {

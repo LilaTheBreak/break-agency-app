@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { syncGmailForUser } from "../services/gmail/syncGmail.js";
-import { getGoogleAPIClient } from "../services/gmail/tokens.js";
+import { getOAuthClientForUser } from "../services/gmail/tokens.js";
 
 const router = Router();
 
