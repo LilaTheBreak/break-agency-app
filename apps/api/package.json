@@ -13,7 +13,7 @@
     "dev:watch": "tsx watch src/server.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "postinstall": "prisma generate --schema=./prisma/schema.prisma",
+    "postinstall": "if [ \"$NODE_ENV\" != \"production\" ]; then prisma generate --schema=./prisma/schema.prisma; fi",
     "seed:auth": "tsx prisma/seeds/seedRoles.ts",
     "migrate": "dotenv -e .env -- prisma migrate dev"
   },

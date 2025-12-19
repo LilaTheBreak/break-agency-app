@@ -18,6 +18,9 @@ RUN pnpm install --frozen-lockfile --filter @breakagency/shared --filter @breaka
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 
+# Generate Prisma client now that schema is available
+RUN pnpm --filter @breakagency/api prisma generate
+
 # Build shared + api, then prune to production deps
 RUN pnpm --filter @breakagency/shared build && \
     pnpm --filter @breakagency/api build && \
