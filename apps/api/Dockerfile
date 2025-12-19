@@ -24,10 +24,9 @@ COPY apps/api ./apps/api
 # Generate Prisma client now that schema is available
 RUN pnpm --filter @breakagency/api prisma generate
 
-# Build shared + api, then prune to production deps
+# Build shared + api
 RUN pnpm --filter @breakagency/shared build && \
-    pnpm --filter @breakagency/api build && \
-    pnpm prune --prod --filter @breakagency/api
+    pnpm --filter @breakagency/api build
 
 FROM node:22-alpine AS runner
 ENV NODE_ENV=production
