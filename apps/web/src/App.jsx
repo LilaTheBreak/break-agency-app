@@ -631,6 +631,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           </div>
         </div>
       )}
+      <GoogleSignIn open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       <SiteChrome
         session={session}
         onRequestSignIn={() => setAuthModalOpen(true)}
@@ -1515,7 +1516,7 @@ function LandingPage() {
                 </Link>
                 <Link
                   to="/creator"
-                  className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 underline-offset-4 hover:text-brand-red"
+                  className="w-full rounded-full border border-slate-300 bg-white px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 transition hover:border-brand-red hover:text-brand-red shadow-[0_6px_18px_rgba(0,0,0,0.05)] sm:w-auto"
                 >
                   Apply as a creator
                 </Link>
@@ -1546,7 +1547,7 @@ function LandingPage() {
                   <img
                     src={client.src}
                     alt={client.alt}
-                    className="h-32 w-48 object-contain scale-150"
+                    className="h-28 w-auto object-contain md:h-36 lg:h-40 xl:h-44 2xl:h-48"
                     loading="lazy"
                   />
                 </div>
@@ -1608,7 +1609,7 @@ function LandingPage() {
               </ul>
               <Link
                 to="/creator"
-                className="mt-6 inline-flex rounded-full border border-slate-900 px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 transition hover:border-brand-red hover:text-brand-red"
+                className="mt-6 inline-flex rounded-full border border-slate-300 bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 transition hover:border-brand-red hover:text-brand-red shadow-[0_6px_18px_rgba(0,0,0,0.05)]"
               >
                 Apply as a creator
               </Link>
