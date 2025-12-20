@@ -51,6 +51,9 @@ import resourcesRouter from "./routes/resources.js";
 import riskRouter from "./routes/risk.js";
 import suitabilityRouter from "./routes/suitability.js";
 
+// Auth
+import authRouter from "./routes/auth.js";
+
 // Dev Auth (development only)
 import devAuthRouter from "./routes/devAuth.js";
 
@@ -195,6 +198,11 @@ app.use(express.urlencoded({ extended: true, limit: "350mb" }));
 if (process.env.NODE_ENV !== 'production') {
   app.use("/api/dev-auth", devAuthRouter);
 }
+
+// ------------------------------------------------------
+// AUTH ROUTES (Google OAuth, session management)
+// ------------------------------------------------------
+app.use("/api/auth", authRouter);
 
 // ------------------------------------------------------
 // INBOX ROUTES (all unique, no overlaps)
