@@ -248,6 +248,8 @@ export const CONTROL_ROOM_PRESETS = {
     role: "founder",
     title: "Founder Control Room",
     subtitle: "Your strategic home — clarity, direction, and hands-on support from The Break.",
+    orientation:
+      "This is your strategic home. Use this space to review audience signals, see how strategy is evolving, and understand what The Break is focused on for you.",
     tabs: [
       { label: "Overview", anchor: "#founder-overview", default: true },
       { label: "Strategy", anchor: "#founder-strategy" },
@@ -262,6 +264,73 @@ export const CONTROL_ROOM_PRESETS = {
       { label: "Current focus", value: "Audience → Offer", sub: "Active strategy phase" },
       { label: "Next actions", value: "3", sub: "Queued by The Break" },
       { label: "Goal status", value: "On track", sub: "North Star alignment" }
+    ],
+    goals: {
+      primary: ["Establish authority as the go-to operator for AI-driven consumer launches.", "Protect premium positioning while scaling partnerships."],
+      quarterFocus: "Q1 focus: validate offer ladder and grow qualified pipeline from founder-led content.",
+      notPriority: "Not a priority right now: expanding into unrelated niches that dilute positioning."
+    },
+    audienceSignals: [
+      {
+        title: "What your audience is responding to",
+        points: [
+          "Threads that unpack behind-the-scenes of founder decisions get the highest saves.",
+          "Mini-teardowns of AI launch playbooks drive DMs asking for templates.",
+          "Requests for pricing transparency and how you vet partners."
+        ]
+      },
+      {
+        title: "What needs more clarity",
+        points: [
+          "Difference between founder-led strategy vs. self-serve platform access.",
+          "Who your offer is best for: emerging brands vs. scaled operators."
+        ]
+      }
+    ],
+    brandTrust: {
+      clarity: [
+        "Positioning understood as: founder-led strategy plus platform execution.",
+        "Audience recognizes premium tier but wants clearer entry points."
+      ],
+      trustSignals: [
+        "Saves and shares on pricing/offer breakdown posts.",
+        "DMs requesting direct consultations after case-study drops."
+      ],
+      misalignment: [
+        "Some comments still conflate you with a generic agency — need sharper language on 'operator-led'."
+      ]
+    },
+    nicheAlignment: [
+      { label: "AI founders & operators", status: "Strong alignment", note: "High engagement on GTM threads and case studies." },
+      { label: "Luxury / premium consumer", status: "Mixed signals", note: "Interest present but needs clearer offer fit." },
+      { label: "General creator economy", status: "Early / exploratory", note: "Use for top-of-funnel visibility, not core focus." }
+    ],
+    brandEcosystem: [
+      { label: "Founder brand site", url: "#", description: "Primary narrative and offer access point." },
+      { label: "Offers", url: "#", description: "Current offer ladder and pricing hypotheses." },
+      { label: "Instagram", url: "#", description: "Founder POV, behind-the-scenes, and launches." },
+      { label: "LinkedIn", url: "#", description: "Operator audience and B2B positioning." },
+      { label: "X / Threads", url: "#", description: "Real-time thinking, market signals, and asks." },
+      { label: "Email list / community", url: "#", description: "Deeper strategy drops and nurture." }
+    ],
+    meetingsTranslation: [
+      {
+        title: "Weekly founder strategy",
+        insight: "Audience → Offer sequencing needs clearer entry offer.",
+        decision: "Lead with a diagnostic + rapid offer lab before retainer.",
+        action: "Break is drafting the diagnostic outline and pricing guardrails."
+      },
+      {
+        title: "Offer lab: pricing",
+        insight: "Premium tier is well-received; mid-tier positioning is fuzzy.",
+        decision: "Rename mid-tier to 'Operator Sprint' with defined outcomes.",
+        action: "Update offer ladder draft and social proof for Operator Sprint."
+      }
+    ],
+    strategyUpdates: [
+      { title: "Offer ladder draft updated", detail: "Added Operator Sprint entry point + premium guardrails.", when: "Today" },
+      { title: "Audience signal review completed", detail: "Validated AI founders as primary lane; luxury remains secondary.", when: "This week" },
+      { title: "Pricing assumptions stress-tested", detail: "Modeled margin vs. delivery load for three tiers.", when: "This week" }
     ],
     meetings: {
       anchor: "founder-sessions",

@@ -533,22 +533,22 @@ export function AdminTasksPage() {
           </div>
         }
       >
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-            <p className="text-sm text-brand-black/80">Tasks are action. Notes are memory. Outreach is contact.</p>
-            <p className="mt-2 text-xs text-brand-black/60">
-              Optional: link to a deal/brand/campaign/event/contract to keep follow-through contextual.
-            </p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Title" value={draft.title} onChange={(v) => setDraft((p) => ({ ...p, title: v }))} placeholder="e.g. Send contract v2 for review" />
-            <Field label="Owner" value={draft.owner} onChange={(v) => setDraft((p) => ({ ...p, owner: v }))} placeholder="Agent / admin" />
-            <Select label="Status" value={draft.status} onChange={(v) => setDraft((p) => ({ ...p, status: v }))} options={TASK_STATUSES} />
-            <Select label="Priority" value={draft.priority} onChange={(v) => setDraft((p) => ({ ...p, priority: v }))} options={TASK_PRIORITIES} />
-            <Field label="Due date" type="datetime-local" value={draft.dueDate} onChange={(v) => setDraft((p) => ({ ...p, dueDate: v }))} />
-          </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-sm text-brand-black/80">Tasks are action. Notes are memory. Outreach is contact.</p>
+          <p className="mt-2 text-xs text-brand-black/60">
+            Optional: link to a deal/brand/campaign/event/contract to keep follow-through contextual.
+          </p>
+        </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Title" value={draft.title} onChange={(v) => setDraft((p) => ({ ...p, title: v }))} placeholder="e.g. Send contract v2 for review" />
+          <Field label="Owner" value={draft.owner} onChange={(v) => setDraft((p) => ({ ...p, owner: v }))} placeholder="Agent / admin" />
+          <Select label="Status" value={draft.status} onChange={(v) => setDraft((p) => ({ ...p, status: v }))} options={TASK_STATUSES} />
+          <Select label="Priority" value={draft.priority} onChange={(v) => setDraft((p) => ({ ...p, priority: v }))} options={TASK_PRIORITIES} />
+          <Field label="Due date" type="datetime-local" value={draft.dueDate} onChange={(v) => setDraft((p) => ({ ...p, dueDate: v }))} />
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
           <Select
             label="Brand (optional)"
             value={draft.brandId || ""}
@@ -582,7 +582,6 @@ export function AdminTasksPage() {
             onChange={(v) => setDraft((p) => ({ ...p, contractId: v }))}
             options={[{ value: "", label: "None" }, ...contracts.map((c) => ({ value: c.id, label: c.contractName }))]}
           />
-        </div>
         </div>
       </ModalFrame>
     </DashboardShell>

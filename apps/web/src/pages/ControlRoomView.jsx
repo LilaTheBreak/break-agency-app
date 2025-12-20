@@ -25,11 +25,19 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
   const {
     title,
     subtitle,
+    orientation,
     queue,
     quickLinks = [],
     opportunities = [],
     meetings,
-    projects
+    projects,
+    goals,
+    audienceSignals,
+    brandTrust,
+    nicheAlignment,
+    brandEcosystem,
+    meetingsTranslation,
+    strategyUpdates
   } = config;
   const navLinks = config.navLinks ?? [];
   const tabs = config.tabs ?? [];
@@ -115,6 +123,155 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
       showStatusSummary={showStatusSummary}
     >
       <div className="space-y-6">
+        {config.role === "founder" && orientation ? (
+          <section className="rounded-3xl border border-brand-black/10 bg-brand-linen/70 p-5">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">How to use this space</p>
+            <p className="mt-2 text-sm text-brand-black/70">{orientation}</p>
+          </section>
+        ) : null}
+
+        {config.role === "founder" ? (
+          <>
+            <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Your goals</p>
+                  <h3 className="font-display text-2xl uppercase">Founder North Star</h3>
+                </div>
+                <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                  Calm, strategic focus
+                </span>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Primary goal(s)</p>
+                  <ul className="mt-2 space-y-2 text-sm text-brand-black/70">
+                    {(goals?.primary || ["Goals will be captured here as we align on your intent."]).map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Current quarter focus</p>
+                  <p className="mt-2 text-sm text-brand-black/70">{goals?.quarterFocus || "Quarterly focus will be added once we set the near-term plan."}</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Not a priority right now</p>
+                  <p className="mt-2 text-sm text-brand-black/70">{goals?.notPriority || "We’ll note deprioritized items to protect focus."}</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Audience signals</p>
+                  <h3 className="font-display text-2xl uppercase">What your audience is responding to</h3>
+                </div>
+                <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                  Qualitative, not vanity metrics
+                </span>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {(audienceSignals || [
+                  { title: "Signals will populate here", points: ["We’ll synthesize what your audience is leaning into across platforms."] }
+                ]).map((entry) => (
+                  <div key={entry.title} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                    <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{entry.title}</p>
+                    <ul className="mt-2 space-y-2 text-sm text-brand-black/70">
+                      {(entry.points || []).map((point) => (
+                        <li key={point}>• {point}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Brand understanding & trust read</p>
+                  <h3 className="font-display text-2xl uppercase">Clarity over reach</h3>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Positioning clarity</p>
+                  <ul className="mt-2 space-y-2 text-sm text-brand-black/70">
+                    {(brandTrust?.clarity || ["We’ll capture how clearly your audience understands your positioning."]).map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Trust signals</p>
+                  <ul className="mt-2 space-y-2 text-sm text-brand-black/70">
+                    {(brandTrust?.trustSignals || ["Trust signals will appear here as we collect feedback, saves, and DMs."]).map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Where to sharpen</p>
+                  <ul className="mt-2 space-y-2 text-sm text-brand-black/70">
+                    {(brandTrust?.misalignment || ["Messaging gaps will be tracked here to keep language tight."]).map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Niche performance & alignment</p>
+                  <h3 className="font-display text-2xl uppercase">Where you’re resonating</h3>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                {(nicheAlignment || [{ label: "Primary niche will appear here", status: "In review", note: "We’ll map engagement strength by niche." }]).map((niche) => (
+                  <div key={niche.label} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-brand-black">{niche.label}</p>
+                      <Badge tone={niche.status === "Strong alignment" ? "positive" : niche.status === "Mixed signals" ? "neutral" : "caution"}>
+                        {niche.status}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-sm text-brand-black/70">{niche.note}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Your brand ecosystem</p>
+                  <h3 className="font-display text-2xl uppercase">Assets we’re building around</h3>
+                </div>
+                <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                  Links are client-facing
+                </span>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                {(brandEcosystem || [{ label: "Brand assets will be linked here", description: "We’ll link your core properties as they’re confirmed.", url: "#" }]).map((asset) => (
+                  <div key={asset.label} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                    <p className="font-semibold text-brand-black">{asset.label}</p>
+                    <p className="text-sm text-brand-black/70">{asset.description}</p>
+                    <Link
+                      to={asset.url || "#"}
+                      className="mt-2 inline-flex text-xs uppercase tracking-[0.3em] text-brand-red underline underline-offset-4"
+                    >
+                      Open
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        ) : null}
         {opportunities.length ? (
           <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -179,6 +336,30 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
           title="AI Assistant"
           description="Ask AI how to optimize this week."
         />
+        {config.role === "founder" && (strategyUpdates?.length || 0) > 0 ? (
+          <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Strategy updates</p>
+                <h3 className="font-display text-2xl uppercase">Progress between sessions</h3>
+              </div>
+              <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                Founder visibility
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {(strategyUpdates || []).map((update) => (
+                <div key={update.title} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-brand-black">{update.title}</p>
+                    <span className="text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/60">{update.when || "This week"}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-brand-black/70">{update.detail}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {metrics.length > 0 ? (
           <section className="grid gap-4 md:grid-cols-3">
             {metrics.map((metric) => (
@@ -222,7 +403,7 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-brand-black/60">No sessions booked. Request a slot via Support.</p>
+                  <p className="text-sm text-brand-black/60">Sessions will appear here as they are scheduled. Request a slot via Support.</p>
                 )}
               </div>
               <div className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
@@ -238,9 +419,39 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-brand-black/60">No notes captured yet.</p>
+                  <p className="text-sm text-brand-black/60">Notes will appear as your sessions are documented.</p>
                 )}
               </div>
+            </div>
+          </section>
+        ) : null}
+        {config.role === "founder" ? (
+          <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Meetings → Strategy translation</p>
+                <h3 className="font-display text-2xl uppercase">How conversations become action</h3>
+              </div>
+              <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                Founder sessions to execution
+              </span>
+            </div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {(meetingsTranslation || [
+                {
+                  title: "Strategy sessions will map here",
+                  insight: "We’ll capture the key insight from each conversation.",
+                  decision: "Decisions will be summarized so you have a clear record.",
+                  action: "Next moves will show what The Break is executing."
+                }
+              ]).map((item) => (
+                <div key={item.title} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="font-semibold text-brand-black">{item.title}</p>
+                  <p className="mt-2 text-sm text-brand-black/70"><strong>Insight:</strong> {item.insight}</p>
+                  <p className="text-sm text-brand-black/70"><strong>Decision:</strong> {item.decision}</p>
+                  <p className="text-sm text-brand-black/70"><strong>Action:</strong> {item.action}</p>
+                </div>
+              ))}
             </div>
           </section>
         ) : null}
