@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = useCallback(async () => {
     setError(null);
     console.log("Fetching Google OAuth URL...");
-    const response = await apiFetch("/auth/google/url");
+    const response = await apiFetch("/api/auth/google/url");
     console.log("Response status:", response.status);
     const payload = await response.json().catch(() => ({}));
     console.log("Payload:", payload);
@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await apiFetch("/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
     } catch (err) {
       console.warn("Failed to log out", err);
     } finally {
