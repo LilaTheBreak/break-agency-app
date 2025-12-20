@@ -156,13 +156,24 @@ console.log(">>> GOOGLE_REDIRECT_URI =", process.env.GOOGLE_REDIRECT_URI);
 const app = express();
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
+// Support multiple origins (comma-separated)
+const allowedOrigins = FRONTEND_ORIGIN.split(',').map(o => o.trim());
 
 // ------------------------------------------------------
 // CORE MIDDLEWARE
 // ------------------------------------------------------
 app.use(
   cors({
-    origin: FRONTEND_ORIGIN,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
     credentials: true
   })
 );
