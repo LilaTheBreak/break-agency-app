@@ -536,6 +536,143 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
           </section>
         ) : null}
 
+        {config.role === "founder" ? (
+          <>
+            <section id="founder-strategy" className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Strategy</p>
+                  <h3 className="font-display text-2xl uppercase">Current thesis & moves</h3>
+                </div>
+                <span className="rounded-full border border-brand-black/15 bg-brand-linen/60 px-3 py-1 text-[0.7rem] uppercase tracking-[0.3em] text-brand-black/70">
+                  Founder-facing
+                </span>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Strategic thesis</p>
+                  <p className="mt-2 text-sm text-brand-black/70">We’ll keep your current strategic bet summarized here. Expect updates after each session.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Risks / watchouts</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Risks and assumptions we’re monitoring for the active phase.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Decision log</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Key decisions from founder sessions will be logged here so you have a single source of truth.</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="founder-offers" className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Offers & revenue</p>
+                  <h3 className="font-display text-2xl uppercase">Offer ladder & revenue thinking</h3>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Offer ladder</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Entry, core, and premium offers with working price ranges will appear here.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Revenue priorities</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Where we’re focusing revenue this quarter: proof, pipeline, or pricing validation.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Proof points</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Case studies, testimonials, and signals we’ll activate to support the offer.</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="founder-content" className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Content & distribution</p>
+                  <h3 className="font-display text-2xl uppercase">What we’re saying and where</h3>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Talk tracks</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Monthly themes and talking points — updated as signals evolve.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Channels</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Primary channels and cadence. We’ll note where we’re doubling down.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">CTAs & destinations</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Where traffic is being directed (offer, waitlist, diagnostic, community).</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="founder-sessions" className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Sessions & support</p>
+                  <h3 className="font-display text-2xl uppercase">Access & rhythm</h3>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Session cadence</p>
+                  <p className="mt-2 text-sm text-brand-black/70">We’ll list weekly/biweekly founder sessions and the intent for each.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Async support</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Where to drop questions between sessions; expect replies from Strategy Pod.</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="founder-resources" className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Resources</p>
+                  <h3 className="font-display text-2xl uppercase">Reference materials</h3>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Narrative board</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Link to the latest narrative board or FigJam once available.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Offer one-pagers</p>
+                  <p className="mt-2 text-sm text-brand-black/70">PDFs/Sheets summarizing the active offer stack.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Playbooks</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Distribution, launch, and nurture playbooks will be linked here.</p>
+                </div>
+              </div>
+            </section>
+
+            <section id="founder-account" className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Account</p>
+                  <h3 className="font-display text-2xl uppercase">Admin & preferences</h3>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Profile & access</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Profile details, access, and session preferences will be managed here.</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Billing & plan</p>
+                  <p className="mt-2 text-sm text-brand-black/70">Billing preferences and plan details will surface here when connected.</p>
+                </div>
+              </div>
+            </section>
+          </>
+        ) : null}
+
         {queue ? (
           <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">

@@ -29,6 +29,7 @@ import filesRouter from "./routes/files.js";
 import gmailAuthRouter from "./routes/gmailAuth.js";
 import gmailAnalysisRouter from "./routes/gmailAnalysis.js";
 import gmailInboxRouter from "./routes/gmailInbox.js";
+import gmailMessagesRouter from "./routes/gmailMessages.js";
 import inboxAwaitingRouter from "./routes/inboxAwaitingReply.js";
 import inboxPriorityRouter from "./routes/inboxPriority.js";
 import inboxTrackingRouter from "./routes/inboxTracking.js";
@@ -223,6 +224,7 @@ app.use("/api/inbox/unified", unifiedInboxRouter);
 app.use("/api/gmail/auth", gmailAuthRouter);
 app.use("/api/gmail/analysis", gmailAnalysisRouter);
 app.use("/api/gmail/inbox", gmailInboxRouter);
+app.use("/api", gmailMessagesRouter);
 app.use("/api/email-opportunities", emailOpportunitiesRouter);
 
 // ------------------------------------------------------
