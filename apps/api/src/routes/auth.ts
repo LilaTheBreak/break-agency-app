@@ -175,7 +175,15 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     /* ------------------------------------------
        Redirect user to correct dashboard
     ------------------------------------------ */
-    res.redirect(buildPostAuthRedirect(buildSessionUser(user)));
+    const sessionUser = buildSessionUser(user);
+    const redirectUrl = buildPostAuthRedirect(sessionUser);
+    console.log(">>> REDIRECT INFO:", {
+      email: user.email,
+      role: user.role,
+      sessionUserRole: sessionUser.role,
+      redirectUrl
+    });
+    res.redirect(redirectUrl);
   } catch (error) {
     console.error("Google OAuth callback error", error);
     // Surface the underlying error message for debugging (safe - does not expose secrets)
