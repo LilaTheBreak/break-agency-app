@@ -61,10 +61,10 @@ function buildCookieConfig() {
   }
 
   // In production, use secure cookies with proper domain
-  const domain =
-    process.env.COOKIE_DOMAIN ||
-    process.env.SESSION_COOKIE_DOMAIN ||
-    ".tbctbctbc.online";
+  // IMPORTANT: Don't set domain for cross-origin API calls
+  // The cookie will be scoped to the API domain (breakagencyapi-production.up.railway.app)
+  // and sent with credentials: "include" from the frontend
+  const domain = undefined; // Let browser set cookie for current domain
 
   return {
     httpOnly: true,
