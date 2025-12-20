@@ -60,11 +60,10 @@ function buildCookieConfig() {
     };
   }
 
-  // In production, use secure cookies with proper domain
-  // IMPORTANT: Don't set domain for cross-origin API calls
-  // The cookie will be scoped to the API domain (breakagencyapi-production.up.railway.app)
-  // and sent with credentials: "include" from the frontend
-  const domain = undefined; // Let browser set cookie for current domain
+  // In production, use secure cookies with shared domain
+  // IMPORTANT: Set domain to .tbctbctbc.online so cookies work across subdomains
+  // This allows api.tbctbctbc.online to set cookies that tbctbctbc.online can read
+  const domain = process.env.COOKIE_DOMAIN || ".tbctbctbc.online";
 
   return {
     httpOnly: true,
