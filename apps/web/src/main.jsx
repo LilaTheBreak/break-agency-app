@@ -18,4 +18,9 @@ const appTree = (
   </React.StrictMode>
 );
 
+const prerenderShell = document.getElementById("prerender-shell");
+if (prerenderShell) {
+  prerenderShell.remove();
+}
+
 ReactDOM.createRoot(document.getElementById("root")).render(appTree);
