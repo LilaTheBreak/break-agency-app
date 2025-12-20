@@ -3,9 +3,13 @@ import { googleConfig } from "../../config/env.js";
 
 const clientId = googleConfig.clientId;
 const clientSecret = googleConfig.clientSecret;
-const redirectUri = googleConfig.redirectUri;
+// Gmail auth uses a different callback URL than main OAuth
+const gmailRedirectUri = process.env.GMAIL_REDIRECT_URI || 
+  googleConfig.redirectUri.replace('/api/auth/google/callback', '/api/gmail/auth/callback');
 
-const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+console.log('[GMAIL AUTH] Using redirect URI:', gmailRedirectUri);
+
+const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, gmailRedirectUri);
 
 export function getGmailAuthUrl(state: string) {
   return oauth2Client.generateAuthUrl({
@@ -35,7 +39,7 @@ export async function exchangeCodeForTokens(code: string) {
 }
 
 export async function refreshAccessToken(refreshToken: string) {
-  const client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  const client = new google.auth.OAuth2(clientId, clientSecret, gmailRedirectUri);
   client.setCredentials({ refresh_token: refreshToken });
   const { credentials } = await client.getAccessToken();
   return {

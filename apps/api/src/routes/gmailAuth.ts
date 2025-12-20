@@ -4,19 +4,28 @@ import { getGmailAuthUrl, exchangeCodeForTokens } from "../integrations/gmail/go
 import { google } from "googleapis";
 import { googleConfig } from "../config/env.js";
 import { refreshAccessToken } from "../integrations/gmail/googleAuth.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
 
-router.get("/gmail/auth/url", (_req, res) => {
-  const url = getGmailAuthUrl("");
+router.get("/gmail/auth/url", requireAuth, (req, res) => {
+  const url = getGmailAuthUrl(req.user!.id);
   res.json({ url });
 });
 
 router.get("/gmail/auth/callback", async (req, res) => {
   const code = typeof req.query.code === "string" ? req.query.code : null;
-  if (!code || !req.user?.id) {
-    return res.status(400).json({ error: true, message: "Missing code or user" });
+  const state = typeof req.query.state === "string" ? req.query.state : null;
+  
+  if (!code) {
+    return res.status(400).json({ error: true, message: "Missing authorization code" });
+  }
+  
+  // State contains the userId
+  const userId = state || req.user?.id;
+  if (!userId) {
+    return res.status(400).json({ error: true, message: "Missing user ID" });
   }
   const tokens = await exchangeCodeForTokens(code);
   console.log("[GMAIL OAUTH CALLBACK] Tokens returned:", tokens);
@@ -29,7 +38,7 @@ router.get("/gmail/auth/callback", async (req, res) => {
     });
   }
   await prisma.gmailToken.upsert({
-    where: { userId: req.user.id },
+    where: { userId },
     update: {
       accessToken: tokens.accessToken ?? "",
       refreshToken: tokens.refreshToken,
@@ -39,7 +48,7 @@ router.get("/gmail/auth/callback", async (req, res) => {
       idToken: tokens.idToken ?? null,
     },
     create: {
-      userId: req.user.id,
+      userId,
       accessToken: tokens.accessToken ?? "",
       refreshToken: tokens.refreshToken,
       expiryDate: tokens.expiresAt ?? null,
@@ -48,7 +57,9 @@ router.get("/gmail/auth/callback", async (req, res) => {
       idToken: tokens.idToken ?? null,
     }
   });
-  const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/inbox?gmail_connected=1`;
+  
+  console.log(`[GMAIL AUTH] Successfully connected Gmail for user ${userId}`);
+  const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
   res.redirect(302, redirectUrl);
 });
 

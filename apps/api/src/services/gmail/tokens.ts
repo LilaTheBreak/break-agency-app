@@ -14,15 +14,18 @@ export async function getOAuthClientForUser(userId: string) {
     where: { userId },
   });
 
-  const client = new google.auth.OAuth2(
-    googleConfig.clientId,
-    googleConfig.clientSecret,
-    googleConfig.redirectUri
-  );
-
   if (!token || !token.refreshToken) {
     throw new GmailNotConnectedError();
   }
+
+  const gmailRedirectUri = process.env.GMAIL_REDIRECT_URI || 
+    googleConfig.redirectUri.replace('/api/auth/google/callback', '/api/gmail/auth/callback');
+
+  const client = new google.auth.OAuth2(
+    googleConfig.clientId,
+    googleConfig.clientSecret,
+    gmailRedirectUri
+  );
 
   client.setCredentials({
     access_token: token.accessToken,
