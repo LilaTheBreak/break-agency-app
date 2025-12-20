@@ -36,7 +36,7 @@ const TEST_LOGIN_PASSWORD = process.env.TEST_LOGIN_PASSWORD ?? DEFAULT_TEST_ADMI
 /* ---------------------------------------------------------
    1. GOOGLE AUTH URL (LOGIN)
 --------------------------------------------------------- */
-router.get("/auth/google/url", (_req, res) => {
+router.get("/google/url", (_req, res) => {
   console.log(">>> HIT /auth/google/url");
 
   const { clientId, clientSecret, redirectUri } = googleOAuthConfig;
@@ -59,7 +59,7 @@ router.get("/auth/google/url", (_req, res) => {
 /* ---------------------------------------------------------
    2. GOOGLE OAUTH CALLBACK
 --------------------------------------------------------- */
-router.get("/auth/google/callback", async (req: Request, res: Response) => {
+router.get("/google/callback", async (req: Request, res: Response) => {
   console.log(">>> GOOGLE OAUTH CALLBACK HIT", req.query);
   try {
     const code = typeof req.query.code === "string" ? req.query.code : null;
@@ -184,7 +184,7 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
 // -------------------------
 // POST /auth/signup
 // -------------------------
-router.post("/auth/signup", async (req: Request, res: Response) => {
+router.post("/signup", async (req: Request, res: Response) => {
   try {
     const parsed = SignupSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -226,7 +226,7 @@ router.post("/auth/signup", async (req: Request, res: Response) => {
 // -------------------------
 // POST /auth/login
 // -------------------------
-router.post("/auth/login", async (req: Request, res: Response) => {
+router.post("/login", async (req: Request, res: Response) => {
   try {
     const parsed = LoginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -294,7 +294,7 @@ router.post("/auth/login", async (req: Request, res: Response) => {
 /* ---------------------------------------------------------
    3. /auth/me
 --------------------------------------------------------- */
-router.get("/auth/me", async (req: Request, res: Response) => {
+router.get("/me", async (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
@@ -317,7 +317,7 @@ router.get("/auth/me", async (req: Request, res: Response) => {
 /* ---------------------------------------------------------
    4. LOGOUT
 --------------------------------------------------------- */
-router.post("/auth/logout", (_req: Request, res: Response) => {
+router.post("/logout", (_req: Request, res: Response) => {
   clearAuthCookie(res);
   res.json({ success: true });
 });
@@ -404,7 +404,7 @@ async function fetchGoogleProfile(accessToken: string, idToken?: string | null) 
    POST /auth/onboarding/submit
    Save onboarding responses and submit for admin approval
 --------------------------------------------------------- */
-router.post("/auth/onboarding/submit", requireAuth, async (req: Request, res: Response) => {
+router.post("/onboarding/submit", requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
@@ -488,7 +488,7 @@ function decodeJwt<T>(token: string) {
 /* ---------------------------------------------------------
    UPDATE SOCIAL LINKS
 --------------------------------------------------------- */
-router.post("/auth/social-links", requireAuth, async (req: Request, res: Response) => {
+router.post("/social-links", requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     const { platform, url } = req.body;
