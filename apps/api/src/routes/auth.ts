@@ -22,10 +22,13 @@ const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events"
 ];
 
-const FRONTEND_ORIGIN =
+const FRONTEND_ORIGIN_RAW =
   process.env.FRONTEND_ORIGIN ||
   process.env.WEB_APP_URL ||
   "http://localhost:5173";
+
+// Support comma-separated origins, use first for redirects
+const FRONTEND_ORIGIN = FRONTEND_ORIGIN_RAW.split(',')[0].trim();
 
 const DEFAULT_TEST_ADMIN_EMAIL = "lila@thebreakco.com";
 const DEFAULT_TEST_ADMIN_PASSWORD = "password";
