@@ -230,7 +230,7 @@ router.post("/signup", async (req: Request, res: Response) => {
     const token = createAuthToken({ id: user.id });
     setAuthCookie(res, token);
 
-    return res.json({ user: buildSessionUser(user) });
+    return res.json({ user: buildSessionUser(user), token });
   } catch (err) {
     console.error("Signup error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -299,7 +299,7 @@ router.post("/login", async (req: Request, res: Response) => {
     setAuthCookie(res, token);
     console.log("[LOGIN] Cookie should be set, cookie name:", SESSION_COOKIE_NAME);
 
-    return res.json({ user: buildSessionUser(user) });
+    return res.json({ user: buildSessionUser(user), token });
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ error: "Internal server error" });

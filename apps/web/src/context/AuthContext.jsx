@@ -107,6 +107,12 @@ export function AuthProvider({ children }) {
         throw new Error(message);
       }
       const payload = await response.json();
+      
+      // Store token for cross-domain auth
+      if (payload.token) {
+        localStorage.setItem('auth_token', payload.token);
+      }
+      
       const loggedInUser = payload.user || null;
       const normalizedUser = loggedInUser
         ? { ...loggedInUser, onboardingStatus: deriveOnboardingStatus(loggedInUser) }
@@ -128,6 +134,13 @@ export function AuthProvider({ children }) {
         err.code = payload?.code || response.status;
         throw err;
       }
+      
+      // Store token for cross-domain auth
+      const payload = await response.json();
+      if (payload.token) {
+        localStorage.setItem('auth_token', payload.token);
+      }
+      
       await refreshUser();
     },
     [refreshUser]
