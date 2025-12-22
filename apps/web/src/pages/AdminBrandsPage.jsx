@@ -429,15 +429,19 @@ export function AdminBrandsPage({ session }) {
         }
 
         // Fetch brands and contacts from API
+        console.log('[CRM] Initial data load...');
         const [brandsData, contactsData] = await Promise.all([
           fetchBrands(),
           fetchContacts(),
         ]);
 
+        console.log('[CRM] Initial brands loaded:', brandsData.brands?.length || 0);
+        console.log('[CRM] Initial contacts loaded:', contactsData.contacts?.length || 0);
         setBrands(brandsData.brands || []);
         setContacts(contactsData.contacts || []);
       } catch (error) {
         console.error("[CRM] Error loading data:", error);
+        alert('Failed to load CRM data. Please refresh the page.');
       } finally {
         setLoading(false);
       }
@@ -470,10 +474,13 @@ export function AdminBrandsPage({ session }) {
 
   const refreshData = async () => {
     try {
+      console.log('[CRM] Refreshing brands and contacts...');
       const [brandsData, contactsData] = await Promise.all([
         fetchBrands(),
         fetchContacts(),
       ]);
+      console.log('[CRM] Fetched brands:', brandsData.brands?.length || 0);
+      console.log('[CRM] Fetched contacts:', contactsData.contacts?.length || 0);
       setBrands(brandsData.brands || []);
       setContacts(contactsData.contacts || []);
     } catch (error) {
@@ -598,7 +605,10 @@ export function AdminBrandsPage({ session }) {
 
   const upsert = async () => {
     const name = editorDraft.brandName.trim();
-    if (!name) return;
+    if (!name) {
+      alert('Brand name is required');
+      return;
+    }
     if (editorMode === "create") {
       try {
         setLoading(true);
@@ -610,13 +620,24 @@ export function AdminBrandsPage({ session }) {
           internalNotes: editorDraft.internalNotes,
           owner: editorDraft.owner || ownerDefault
         };
-        const newBrand = await createBrand(brandData);
+        console.log('[BRAND CREATE] Submitting brand data:', brandData);
+        const response = await createBrand(brandData);
+        console.log('[BRAND CREATE] API response:', response);
+        
+        // API returns { brand: { id, ... } }
+        const newBrand = response.brand;
+        if (!newBrand || !newBrand.id) {
+          throw new Error('Invalid response from server');
+        }
+        
+        console.log('[BRAND CREATE] Brand created successfully:', newBrand.id);
         await refreshData();
+        console.log('[BRAND CREATE] Data refreshed, closing drawer');
         setEditorOpen(false);
         setDrawerBrandId(newBrand.id);
       } catch (error) {
-        console.error('Failed to create brand:', error);
-        alert('Failed to create brand. Please try again.');
+        console.error('[BRAND CREATE] Failed to create brand:', error);
+        alert('Failed to create brand: ' + (error.message || 'Please try again.'));
       } finally {
         setLoading(false);
       }
