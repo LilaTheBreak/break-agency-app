@@ -22,12 +22,12 @@ export const features = {
    * - /api/ai/* endpoints tested and working
    * - AI service files return real responses (not stubs)
    */
-  AI_ENABLED: false,
-  AI_INSIGHTS: false,
-  AI_ASSISTANT: false,
-  AI_REPLY_SUGGESTIONS: false,
-  AI_DEAL_EXTRACTION: false,
-  AI_SOCIAL_INSIGHTS: false,
+  AI_ENABLED: true, // ✅ Unlocked: AI assistant backend implemented
+  AI_INSIGHTS: true, // ✅ Unlocked: Business summary and insights working
+  AI_ASSISTANT: true, // ✅ Unlocked: Role-based AI assistant ready
+  AI_REPLY_SUGGESTIONS: true, // ✅ Unlocked: Email reply generation working
+  AI_DEAL_EXTRACTION: true, // ✅ Unlocked: Deal extraction from emails working
+  AI_SOCIAL_INSIGHTS: false, // TODO: Social insights endpoint needs implementation
 
   /**
    * Campaign Analytics
