@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
@@ -149,25 +150,116 @@ function TextArea({ label, value, onChange, placeholder, rows = 5 }) {
 }
 
 function Drawer({ open, title, onClose, children, actions }) {
+  const drawerRef = useRef(null);
+
+  // Handle ESC key to close drawer
+  useEffect(() => {
+    if (!open) return;
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, onClose]);
+
+  // Trap focus inside drawer
+  useEffect(() => {
+    if (!open) return;
+
+    const drawerElement = drawerRef.current;
+    if (!drawerElement) return;
+
+    const focusableElements = drawerElement.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTab = (e) => {
+      if (e.key !== "Tab") return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement?.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement?.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    drawerElement.addEventListener("keydown", handleTab);
+    firstElement?.focus();
+
+    return () => {
+      drawerElement.removeEventListener("keydown", handleTab);
+    };
+  }, [open]);
+
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <aside className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto border-l border-brand-black/10 bg-brand-white p-6 shadow-[0_35px_120px_rgba(0,0,0,0.25)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Brands</p>
-            <h3 className="font-display text-2xl uppercase text-brand-black">{title}</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            {actions}
-            <TextButton onClick={onClose}>Close</TextButton>
+
+  const drawerContent = (
+    <div
+      className="fixed inset-0 z-[9999]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drawer-title"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Drawer Panel */}
+      <aside
+        ref={drawerRef}
+        className="absolute right-0 top-0 flex h-full w-full max-w-[480px] flex-col border-l border-brand-black/10 bg-brand-white shadow-[0_35px_120px_rgba(0,0,0,0.25)]"
+      >
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 border-b border-brand-black/5 bg-brand-white px-6 pb-4 pt-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Brands</p>
+              <h3 id="drawer-title" className="font-display text-2xl uppercase text-brand-black">{title}</h3>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              {actions}
+              <TextButton onClick={onClose}>Close</TextButton>
+            </div>
           </div>
         </div>
-        <div className="mt-5 space-y-4">{children}</div>
+
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="space-y-6">{children}</div>
+        </div>
       </aside>
     </div>
   );
+
+  // Render drawer via portal to document.body
+  return createPortal(drawerContent, document.body);
 }
 
 function EmptyState({ onAdd }) {
@@ -1406,9 +1498,10 @@ export function AdminBrandsPage({ session }) {
           </PrimaryButton>
         }
       >
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-5">
-          <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Core details</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {/* Core Details Section */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Core details</p>
+          <div className="space-y-4">
             <Field
               label="Brand name"
               value={editorDraft.brandName}
@@ -1427,6 +1520,13 @@ export function AdminBrandsPage({ session }) {
               onChange={(v) => setEditorDraft((prev) => ({ ...prev, industry: v }))}
               options={BRAND_INDUSTRIES}
             />
+          </div>
+        </div>
+
+        {/* Status & Ownership Section */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Status & Ownership</p>
+          <div className="space-y-4">
             <Select
               label="Status"
               value={editorDraft.status}
@@ -1440,14 +1540,17 @@ export function AdminBrandsPage({ session }) {
               placeholder="Agent/admin name"
             />
           </div>
-          <div className="mt-4">
-            <TextArea
-              label="Internal notes"
-              value={editorDraft.internalNotes}
-              onChange={(v) => setEditorDraft((prev) => ({ ...prev, internalNotes: v }))}
-              placeholder="Relationship context, preferences, constraints…"
-            />
-          </div>
+        </div>
+
+        {/* Internal Notes Section */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Internal Notes</p>
+          <TextArea
+            label="Internal notes"
+            value={editorDraft.internalNotes}
+            onChange={(v) => setEditorDraft((prev) => ({ ...prev, internalNotes: v }))}
+            placeholder="Relationship context, preferences, constraints…"
+          />
         </div>
       </Drawer>
 
@@ -1465,9 +1568,10 @@ export function AdminBrandsPage({ session }) {
           </PrimaryButton>
         }
       >
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-5">
-          <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Core details</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {/* Core Details Section */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Core details</p>
+          <div className="space-y-4">
             <Field
               label="First name"
               value={contactDraft.firstName}
@@ -1492,6 +1596,13 @@ export function AdminBrandsPage({ session }) {
               onChange={(v) => setContactDraft((prev) => ({ ...prev, relationshipStatus: v }))}
               options={["New", "Warm", "Active", "Dormant"]}
             />
+          </div>
+        </div>
+
+        {/* Contact Information Section */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Contact Information</p>
+          <div className="space-y-4">
             <Field
               label="Email (optional)"
               value={contactDraft.email}
@@ -1516,24 +1627,31 @@ export function AdminBrandsPage({ session }) {
               onChange={(v) => setContactDraft((prev) => ({ ...prev, preferredContactMethod: v }))}
               options={["", "Email", "WhatsApp", "Instagram", "Phone"]}
             />
+          </div>
+        </div>
+
+        {/* Ownership & Settings Section */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Ownership & Settings</p>
+          <div className="space-y-4">
             <Field
               label="Owner"
               value={contactDraft.owner}
               onChange={(v) => setContactDraft((prev) => ({ ...prev, owner: v }))}
               placeholder="Agent/admin name"
             />
-          </div>
-          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-brand-black/10 bg-brand-white/70 px-4 py-3">
-            <input
-              id="primaryContact"
-              type="checkbox"
-              checked={Boolean(contactDraft.primaryContact)}
-              onChange={(e) => setContactDraft((prev) => ({ ...prev, primaryContact: e.target.checked }))}
-              className="h-4 w-4"
-            />
-            <label htmlFor="primaryContact" className="text-sm text-brand-black/70">
-              Mark as primary contact for this brand
-            </label>
+            <div className="flex items-center gap-3 rounded-2xl border border-brand-black/10 bg-brand-white/70 px-4 py-3">
+              <input
+                id="primaryContact"
+                type="checkbox"
+                checked={Boolean(contactDraft.primaryContact)}
+                onChange={(e) => setContactDraft((prev) => ({ ...prev, primaryContact: e.target.checked }))}
+                className="h-4 w-4"
+              />
+              <label htmlFor="primaryContact" className="text-sm text-brand-black/70">
+                Mark as primary contact for this brand
+              </label>
+            </div>
           </div>
         </div>
       </Drawer>
