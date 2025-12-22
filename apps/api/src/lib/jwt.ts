@@ -60,10 +60,11 @@ function buildCookieConfig() {
     };
   }
 
-  // In production, use secure cookies with shared domain
-  // IMPORTANT: Set domain to .tbctbctbc.online so cookies work across subdomains
-  // This allows api.tbctbctbc.online to set cookies that tbctbctbc.online can read
-  const domain = process.env.COOKIE_DOMAIN || ".tbctbctbc.online";
+  // In production, use secure cookies with optional domain
+  // IMPORTANT: Domain should be set via COOKIE_DOMAIN env var for shared custom domains
+  // If COOKIE_DOMAIN is empty/undefined, cookies work without domain restriction
+  // This allows cross-domain auth via Bearer tokens (stored in localStorage)
+  const domain = process.env.COOKIE_DOMAIN || undefined;
 
   return {
     httpOnly: true,
