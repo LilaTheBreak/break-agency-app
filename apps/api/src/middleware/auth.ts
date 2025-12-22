@@ -4,10 +4,21 @@ import prisma from "../lib/prisma.js";
 import { buildSessionUser } from "../lib/session.js";
 
 export async function attachUserFromSession(req: Request, _res: Response, next: NextFunction) {
-  const token = req.cookies?.[SESSION_COOKIE_NAME];
+  // Try cookie first
+  let token = req.cookies?.[SESSION_COOKIE_NAME];
   console.log("[AUTH] Checking for cookie:", SESSION_COOKIE_NAME, "- Found:", !!token, "- All cookies:", Object.keys(req.cookies || {}));
+  
+  // Fallback to Authorization header for cross-domain
   if (!token) {
-    console.log("[AUTH] No token found in cookies");
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+      console.log("[AUTH] Using Bearer token from Authorization header");
+    }
+  }
+  
+  if (!token) {
+    console.log("[AUTH] No token found in cookies or Authorization header");
     req.user = null;
     return next();
   }

@@ -12,12 +12,20 @@ export function apiUrl(path = "") {
 export async function apiFetch(path, options = {}) {
   const target = /^https?:/i.test(path) ? path : apiUrl(path);
 
+  const headers = {
+    "Content-Type": "application/json",
+    ...options.headers
+  };
+
+  // Add Bearer token from localStorage for cross-domain auth
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const response = await fetch(target, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers
-    },
+    headers,
     credentials: "include"
   });
   return response;

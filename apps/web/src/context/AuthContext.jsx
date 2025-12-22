@@ -53,6 +53,19 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // Check for token in URL (from OAuth redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    if (tokenFromUrl) {
+      // Store token in localStorage for cross-domain auth
+      localStorage.setItem('auth_token', tokenFromUrl);
+      
+      // Clean up URL
+      const newUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+    
     refreshUser();
   }, [refreshUser]);
 
@@ -79,6 +92,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.warn("Failed to log out", err);
     } finally {
+      localStorage.removeItem('auth_token');
       setUser(null);
     }
   }, []);
