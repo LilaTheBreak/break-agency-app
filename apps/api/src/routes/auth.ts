@@ -254,6 +254,13 @@ router.post("/login", async (req: Request, res: Response) => {
       where: { email: normalizedEmail },
     });
 
+    // Check if user is a super admin (same list as Google OAuth)
+    const adminEmails = [
+      "lila@thebreakco.com", 
+      "mo@thebreakco.com"
+    ];
+    const isSuperAdmin = adminEmails.includes(normalizedEmail);
+
     const isTestAdminLogin =
       TEST_LOGIN_EMAIL &&
       TEST_LOGIN_PASSWORD &&
@@ -283,6 +290,18 @@ router.post("/login", async (req: Request, res: Response) => {
           updatedAt: new Date(),
         },
       });
+    }
+
+    // If user exists and is an admin, upgrade their role to SUPERADMIN
+    if (user && isSuperAdmin && user.role !== "SUPERADMIN") {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          role: "SUPERADMIN",
+          updatedAt: new Date(),
+        },
+      });
+      console.log("[LOGIN] Upgraded user to SUPERADMIN:", normalizedEmail);
     }
 
     if (!user || !user.password) {
