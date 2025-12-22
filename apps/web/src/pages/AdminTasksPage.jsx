@@ -390,7 +390,7 @@ export function AdminTasksPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-3 md:grid-cols-4">{
+            <div className="grid gap-3 md:grid-cols-4">
               <input
                 type="search"
                 value={search}
@@ -409,7 +409,7 @@ export function AdminTasksPage() {
               </select>
               <select
                 value={brandFilter}
-                onChange=(e) => setBrandFilter(e.target.value)}
+                onChange={(e) => setBrandFilter(e.target.value)}
                 className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
               >
                 {brandOptions.map((brand) => (
