@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { EmptyStateWithHint } from "../components/CrmMetaRuleHelper.jsx";
@@ -69,23 +70,117 @@ function PrimaryButton({ children, onClick, disabled }) {
 }
 
 function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
+  const modalRef = useRef(null);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    if (!open) return;
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, onClose]);
+
+  // Trap focus inside modal
+  useEffect(() => {
+    if (!open) return;
+
+    const modalElement = modalRef.current;
+    if (!modalElement) return;
+
+    const focusableElements = modalElement.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTab = (e) => {
+      if (e.key !== "Tab") return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement?.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement?.focus();
+          e.preventDefault();
+        }
+      }
+    };
+
+    modalElement.addEventListener("keydown", handleTab);
+    firstElement?.focus();
+
+    return () => {
+      modalElement.removeEventListener("keydown", handleTab);
+    };
+  }, [open]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50" onClick={(e) => e.stopPropagation()}>
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute left-1/2 top-1/2 w-[min(820px,calc(100%-2rem))] max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-[0_35px_120px_rgba(0,0,0,0.25)]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{subtitle}</p>
-            <h3 className="font-display text-2xl uppercase text-brand-black">{title}</h3>
+
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      
+      {/* Modal Content */}
+      <div 
+        ref={modalRef}
+        className="relative w-full max-w-[820px] max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-black/10 bg-brand-white shadow-[0_35px_120px_rgba(0,0,0,0.25)]"
+      >
+        <div className="sticky top-0 z-10 bg-brand-white border-b border-brand-black/5 px-6 pt-6 pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{subtitle}</p>
+              <h3 id="modal-title" className="font-display text-2xl uppercase text-brand-black">{title}</h3>
+            </div>
+            <TextButton onClick={onClose}>Close</TextButton>
           </div>
-          <TextButton onClick={onClose}>Close</TextButton>
         </div>
-        <div className="mt-4 space-y-4">{children}</div>
-        {footer ? <div className="mt-6">{footer}</div> : null}
+        
+        <div className="px-6 py-4 space-y-4">
+          {children}
+        </div>
+        
+        {footer && (
+          <div className="sticky bottom-0 z-10 bg-brand-white border-t border-brand-black/5 px-6 py-4">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
+
+  // Render modal via portal to document.body
+  return createPortal(modalContent, document.body);
 }
 
 function Select({ label, value, onChange, options, disabled }) {
