@@ -83,6 +83,10 @@ import adminFinanceRouter from "./routes/admin/finance.js";
 // Admin Users
 import adminUsersRouter from "./routes/adminUsers.js";
 
+// Creator Goals & Wellness
+import creatorGoalsRouter from "./routes/creatorGoals.js";
+import wellnessCheckinsRouter from "./routes/wellnessCheckins.js";
+
 // Deals
 import dealsRouter from "./routes/deals.js";
 import dealTimelineRouter from "./routes/dealTimeline.js";
@@ -255,6 +259,12 @@ app.use("/api/setup", setupRouter);
 // EXCLUSIVE TALENT
 // ------------------------------------------------------
 app.use("/api/exclusive", exclusiveRouter);
+
+// ------------------------------------------------------
+// CREATOR GOALS & WELLNESS
+// ------------------------------------------------------
+app.use("/api/creator-goals", creatorGoalsRouter);
+app.use("/api/wellness-checkins", wellnessCheckinsRouter);
 
 // ------------------------------------------------------
 // ANALYTICS
