@@ -8,7 +8,8 @@ import { CampaignChip } from "../components/CampaignChip.jsx";
 import { EventChip } from "../components/EventChip.jsx";
 import { ContractChip } from "../components/ContractChip.jsx";
 import { Badge } from "../components/Badge.jsx";
-import { deleteCrmTask, readCrmTasks, TASK_PRIORITIES, TASK_STATUSES, upsertCrmTask, validateTask } from "../lib/crmTasks.js";
+import { TASK_PRIORITIES, TASK_STATUSES } from "../lib/crmTasks.js";
+import { fetchCrmTasks, createCrmTask, updateCrmTask, deleteCrmTask } from "../services/crmTasksClient.js";
 import { readCrmDeals } from "../lib/crmDeals.js";
 import { readCrmCampaigns } from "../lib/crmCampaigns.js";
 import { readCrmEvents } from "../lib/crmEvents.js";
@@ -123,7 +124,9 @@ function Field({ label, type = "text", value, onChange, placeholder }) {
 }
 
 export function AdminTasksPage() {
-  const [tasks, setTasks] = useState(() => readCrmTasks());
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState("");
   const [formError, setFormError] = useState("");
@@ -151,9 +154,23 @@ export function AdminTasksPage() {
   const brandOptions = useMemo(() => ["All brands", ...(brands || []).map((b) => b.brandName || b.name)], [brands]);
   const owners = useMemo(() => ["All owners", ...new Set((tasks || []).map((task) => task.owner).filter(Boolean))], [tasks]);
 
+  // Load tasks from API
   useEffect(() => {
-    setTasks(readCrmTasks());
-  }, [createOpen, editingId]);
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await fetchCrmTasks();
+        setTasks(data);
+      } catch (err) {
+        console.error("Failed to load tasks:", err);
+        setError(err.message || "Failed to load tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTasks();
+  }, []);
 
   const [draft, setDraft] = useState({
     title: "",
@@ -220,43 +237,61 @@ export function AdminTasksPage() {
     setCreateOpen(true);
   };
 
-  const saveTask = () => {
-    const at = nowIso();
-    const next = {
-      id: editingId || `task-${Date.now()}`,
-      title: draft.title,
-      status: draft.status,
-      priority: draft.priority,
-      dueDate: draft.dueDate ? new Date(draft.dueDate).toISOString() : null,
-      owner: draft.owner || "Admin",
-      brandId: draft.brandId || null,
-      dealId: draft.dealId || null,
-      campaignId: draft.campaignId || null,
-      eventId: draft.eventId || null,
-      contractId: draft.contractId || null,
-      createdAt: editingId ? tasks.find((t) => t.id === editingId)?.createdAt || at : at,
-      updatedAt: at
-    };
+  const saveTask = async () => {
+    try {
+      setFormError("");
+      
+      if (!draft.title || !draft.title.trim()) {
+        setFormError("Task title is required.");
+        return;
+      }
 
-    const verdict = validateTask(next);
-    if (!verdict.ok) {
-      setFormError(verdict.errors.join(" "));
-      return;
+      const hasContext = Boolean(draft.brandId || draft.dealId || draft.campaignId || draft.eventId || draft.contractId);
+      if (!hasContext && !confirm("Create a task with no CRM context link? This is allowed, but harder to track later.")) {
+        return;
+      }
+
+      const taskData = {
+        title: draft.title,
+        status: draft.status,
+        priority: draft.priority,
+        dueDate: draft.dueDate ? new Date(draft.dueDate).toISOString() : null,
+        owner: draft.owner || null,
+        brandId: draft.brandId || null,
+        dealId: draft.dealId || null,
+        campaignId: draft.campaignId || null,
+        eventId: draft.eventId || null,
+        contractId: draft.contractId || null
+      };
+
+      if (editingId) {
+        await updateCrmTask(editingId, taskData);
+      } else {
+        await createCrmTask(taskData);
+      }
+
+      // Reload tasks
+      const data = await fetchCrmTasks();
+      setTasks(data);
+      setCreateOpen(false);
+      setEditingId("");
+    } catch (err) {
+      console.error("Error saving task:", err);
+      setFormError(err.message || "Failed to save task");
     }
-    const hasContext = Boolean(next.brandId || next.dealId || next.campaignId || next.eventId || next.contractId);
-    if (!hasContext && !confirm("Create a task with no CRM context link? This is allowed, but harder to track later.")) {
-      return;
-    }
-    upsertCrmTask(next);
-    setTasks(readCrmTasks());
-    setCreateOpen(false);
-    setEditingId("");
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm("Delete this task?")) return;
-    deleteCrmTask(id);
-    setTasks(readCrmTasks());
+    
+    try {
+      await deleteCrmTask(id);
+      const data = await fetchCrmTasks();
+      setTasks(data);
+    } catch (err) {
+      console.error("Error deleting task:", err);
+      alert(err.message || "Failed to delete task");
+    }
   };
 
   useEffect(() => {
@@ -342,42 +377,55 @@ export function AdminTasksPage() {
           </div>
           <PrimaryButton onClick={openCreate}>Add task</PrimaryButton>
         </div>
-        <div className="grid gap-3 md:grid-cols-4">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Global search"
-            className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-          >
-            {STATUS_OPTIONS.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
-          <select
-            value={brandFilter}
-            onChange={(e) => setBrandFilter(e.target.value)}
-            className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-          >
-            {brandOptions.map((brand) => (
-              <option key={brand}>{brand}</option>
-            ))}
-          </select>
-          <select
-            value={ownerFilter}
-            onChange={(e) => setOwnerFilter(e.target.value)}
-            className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-          >
-            {owners.map((owner) => (
-              <option key={owner}>{owner}</option>
-            ))}
-          </select>
-        </div>
+        
+        {error && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+        
+        {loading ? (
+          <div className="py-12 text-center text-sm text-brand-black/60">
+            Loading tasks...
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-3 md:grid-cols-4">{
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Global search"
+                className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+              <select
+                value={brandFilter}
+                onChange=(e) => setBrandFilter(e.target.value)}
+                className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+              >
+                {brandOptions.map((brand) => (
+                  <option key={brand}>{brand}</option>
+                ))}
+              </select>
+              <select
+                value={ownerFilter}
+                onChange={(e) => setOwnerFilter(e.target.value)}
+                className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+              >
+                {owners.map((owner) => (
+                  <option key={owner}>{owner}</option>
+                ))}
+              </select>
+            </div>
         <div className="overflow-x-auto">
           <table className="mt-4 w-full text-left text-sm text-brand-black/80">
             <thead>
@@ -503,6 +551,8 @@ export function AdminTasksPage() {
               </article>
             ))}
           </div>
+        )}
+          </>
         )}
       </section>
 

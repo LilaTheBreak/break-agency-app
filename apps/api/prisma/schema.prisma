@@ -468,6 +468,7 @@ model User {
   FinanceActivityLogs     FinanceActivityLog[]
   EventsCreated           CreatorEvent[]          @relation("EventCreatedBy")
   TasksCreated            CreatorTask[]           @relation("TaskCreatedBy")
+  CrmTasksCreated         CrmTask[]               @relation("CrmTaskCreatedBy")
   BrandCampaigns          BrandCampaign[]
   Submissions             Submission[]
   OpportunityApplications OpportunityApplication[]
@@ -676,6 +677,37 @@ model OutreachTask {
   @@index([outreachId])
   @@index([dueDate])
   @@index([status])
+}
+
+model CrmTask {
+  id          String    @id @default(uuid())
+  title       String
+  status      String    @default("Pending") // Pending | In progress | Awaiting release | Complete
+  priority    String    @default("Medium") // Low | Medium | High
+  dueDate     DateTime?
+  owner       String?
+  brandId     String?
+  dealId      String?
+  campaignId  String?
+  eventId     String?
+  contractId  String?
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Brand       CrmBrand? @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  Campaign    CrmCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  User        User?     @relation("CrmTaskCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([owner])
+  @@index([brandId])
+  @@index([dealId])
+  @@index([campaignId])
+  @@index([eventId])
+  @@index([contractId])
+  @@index([createdBy])
 }
 
 model OutreachEmailThread {
@@ -915,6 +947,7 @@ model CrmBrand {
   updatedAt          DateTime          @updatedAt
   Contacts           CrmBrandContact[]
   OutreachRecords    Outreach[]        @relation("CrmBrandOutreach")
+  Tasks              CrmTask[]
 }
 
 model CrmBrandContact {
@@ -957,6 +990,7 @@ model CrmCampaign {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   Brand               Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  Tasks               CrmTask[]
 
   @@index([brandId])
   @@index([status])

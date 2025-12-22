@@ -113,6 +113,7 @@ import crmCampaignsRouter from "./routes/crmCampaigns.js";
 import crmEventsRouter from "./routes/crmEvents.js";
 import crmDealsRouter from "./routes/crmDeals.js";
 import crmContractsRouter from "./routes/crmContracts.js";
+import crmTasksRouter from "./routes/crmTasks.js";
 
 // Bundles
 import bundlesRouter from "./routes/bundles.js";
@@ -337,6 +338,7 @@ app.use("/api/crm-campaigns", crmCampaignsRouter);
 app.use("/api/crm-events", crmEventsRouter);
 app.use("/api/crm-deals", crmDealsRouter);
 app.use("/api/crm-contracts", crmContractsRouter);
+app.use("/api/crm-tasks", crmTasksRouter);
 
 // ------------------------------------------------------
 // BUNDLES
