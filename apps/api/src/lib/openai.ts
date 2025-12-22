@@ -4,9 +4,9 @@ if (!process.env.OPENAI_API_KEY) {
   console.warn("⚠️  WARNING: OPENAI_API_KEY is missing in environment variables");
 }
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY ?? "",
-});
+export const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 /**
  * Simple helper for chat completions.

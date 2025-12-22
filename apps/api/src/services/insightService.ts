@@ -4,7 +4,9 @@ import { safeEnv } from "../utils/safeEnv.js";
 
 const OPENAI_API_KEY = safeEnv("OPENAI_API_KEY", "dev-openai-key");
 const OPENAI_MODEL = safeEnv("OPENAI_MODEL", "gpt-4o-mini");
-const client = new OpenAI({ apiKey: OPENAI_API_KEY });
+const client = OPENAI_API_KEY && OPENAI_API_KEY !== "dev-openai-key"
+  ? new OpenAI({ apiKey: OPENAI_API_KEY })
+  : null;
 
 export async function generateCreatorInsights(userId: string) {
   const latest = await prisma.socialAnalytics.findMany({

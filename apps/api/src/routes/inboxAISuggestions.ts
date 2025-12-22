@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import OpenAI from "openai";
 
 const router = Router();
-const client = new OpenAI();
+const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 /**
  * GET /api/inbox/ai-suggestions/:emailId

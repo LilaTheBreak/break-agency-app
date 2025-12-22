@@ -58,3 +58,21 @@ export async function getOAuthClientForUser(userId: string) {
 
   return client;
 }
+
+/**
+ * Gets a Google API client (Gmail) for a specific user
+ * @param userId The ID of the user
+ * @returns A Gmail API client instance or null if auth fails
+ */
+export async function getGoogleAPIClient(userId: string) {
+  try {
+    const client = await getOAuthClientForUser(userId);
+    return google.gmail({ version: "v1", auth: client });
+  } catch (error) {
+    if (error instanceof GmailNotConnectedError) {
+      console.error(`Gmail not connected for user ${userId}`);
+      return null;
+    }
+    throw error;
+  }
+}
