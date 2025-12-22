@@ -626,12 +626,14 @@ model Outreach {
   archived           Boolean                @default(false)
   linkedCreatorId    String?
   linkedBrandId      String?
+  linkedCrmBrandId   String?
   createdBy          String
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
   User               User                   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   LinkedCreator      User?                  @relation("OutreachLinkedCreator", fields: [linkedCreatorId], references: [id])
   LinkedBrand        Brand?                 @relation("OutreachLinkedBrand", fields: [linkedBrandId], references: [id])
+  LinkedCrmBrand     CrmBrand?              @relation("CrmBrandOutreach", fields: [linkedCrmBrandId], references: [id])
   OutreachNote       OutreachNote[]
   OutreachTask       OutreachTask[]
   OutreachEmailThread OutreachEmailThread[]
@@ -644,6 +646,7 @@ model Outreach {
   @@index([archived])
   @@index([linkedCreatorId])
   @@index([linkedBrandId])
+  @@index([linkedCrmBrandId])
 }
 
 model OutreachNote {
@@ -895,6 +898,41 @@ model CampaignBrandPivot {
   @@unique([campaignId, brandId])
   @@index([campaignId])
   @@index([brandId])
+}
+
+model CrmBrand {
+  id                 String            @id @default(uuid())
+  brandName          String
+  website            String?
+  industry           String            @default("Other")
+  status             String            @default("Prospect") // Prospect | Active | On Hold | Inactive
+  owner              String?
+  internalNotes      String?
+  activity           Json[]            @default([]) // [{at: ISO string, label: string}]
+  lastActivityAt     DateTime?
+  lastActivityLabel  String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  Contacts           CrmBrandContact[]
+  OutreachRecords    Outreach[]        @relation("CrmBrandOutreach")
+}
+
+model CrmBrandContact {
+  id              String    @id @default(uuid())
+  crmBrandId      String
+  firstName       String?
+  lastName        String?
+  email           String?
+  phone           String?
+  title           String?
+  primaryContact  Boolean   @default(false)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  CrmBrand        CrmBrand  @relation(fields: [crmBrandId], references: [id], onDelete: Cascade)
+
+  @@index([crmBrandId])
+  @@index([email])
 }
 
 model CrmCampaign {
