@@ -496,6 +496,8 @@ export function AdminTasksPage() {
             <p className="px-4 py-6 text-center text-sm text-brand-black/60">No tasks match your filters.</p>
           ) : null}
         </div>
+          </>
+        )}
       </section>
 
       <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6 space-y-4">
@@ -551,8 +553,6 @@ export function AdminTasksPage() {
               </article>
             ))}
           </div>
-        )}
-          </>
         )}
       </section>
 
