@@ -61,7 +61,7 @@ function PrimaryButton({ children, onClick, disabled }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:cursor-not-allowed disabled:opacity-60"
+      className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-black/90 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-brand-black"
     >
       {children}
     </button>
@@ -71,9 +71,9 @@ function PrimaryButton({ children, onClick, disabled }) {
 function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50" onClick={(e) => e.stopPropagation()}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute left-1/2 top-1/2 w-[min(820px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-[0_35px_120px_rgba(0,0,0,0.25)]">
+      <div className="absolute left-1/2 top-1/2 w-[min(820px,calc(100%-2rem))] max-h-[90vh] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-[0_35px_120px_rgba(0,0,0,0.25)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{subtitle}</p>
@@ -566,7 +566,7 @@ export function AdminTasksPage() {
           setFormError("");
         }}
         footer={
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {formError ? <p className="mr-auto text-sm text-brand-red">{formError}</p> : null}
             <TextButton
               onClick={() => {
@@ -577,7 +577,7 @@ export function AdminTasksPage() {
             >
               Cancel
             </TextButton>
-            <PrimaryButton onClick={saveTask} disabled={!draft.title.trim()}>
+            <PrimaryButton onClick={saveTask}>
               {editingId ? "Save task" : "Create task"}
             </PrimaryButton>
           </div>
