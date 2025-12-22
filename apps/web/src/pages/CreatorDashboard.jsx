@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { apiFetch } from "../services/apiClient.js";
 import { ControlRoomView } from "./ControlRoomView.jsx";
 import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 import { ProgressBar } from "../components/ProgressBar.jsx";
@@ -162,9 +163,7 @@ function CreatorOpportunitiesSection() {
     const fetchOpportunities = async () => {
       try {
         setError(null);
-        const response = await fetch('http://localhost:5001/api/opportunities/creator/all', {
-          credentials: 'include',
-        });
+        const response = await apiFetch('/api/opportunities/creator/all');
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -264,10 +263,8 @@ function OpportunitySummaryCard({ opportunity, applicationStatus, hasSubmission 
     if (applicationStatus) return;
     
     try {
-      const response = await fetch(`http://localhost:5001/api/opportunities/${opportunity.id}/apply`, {
+      const response = await apiFetch(`/api/opportunities/${opportunity.id}/apply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           pitch: '',
           proposedRate: null,
@@ -409,9 +406,7 @@ function CreatorSubmissionsSection({ session }) {
     const fetchSubmissions = async () => {
       try {
         setError(null);
-        const response = await fetch('http://localhost:5001/api/submissions', {
-          credentials: 'include',
-        });
+        const response = await apiFetch('/api/submissions');
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }

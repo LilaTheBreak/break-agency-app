@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../services/apiClient.js';
 import { getDashboardPathForRole, shouldRouteToOnboarding } from "../lib/onboardingState.js";
 
 export default function DevLogin() {
@@ -23,10 +24,8 @@ export default function DevLogin() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5001/api/dev-auth/login', {
+      const response = await apiFetch('/api/dev-auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ email }),
       });
 

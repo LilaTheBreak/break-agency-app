@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, Outlet, useOutletContext, useNavigate } from "react-router-dom";
+import { apiFetch } from "../services/apiClient.js";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { Badge } from "../components/Badge.jsx";
@@ -367,9 +368,7 @@ function BrandOpportunitiesSection({ session }) {
     const fetchOpportunities = async () => {
       try {
         setError(null);
-        const response = await fetch("http://localhost:5001/api/opportunities", {
-          credentials: "include",
-        });
+        const response = await apiFetch("/api/opportunities");
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }

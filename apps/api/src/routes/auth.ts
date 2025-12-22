@@ -7,6 +7,7 @@ import { buildSessionUser, type SessionUser } from "../lib/session.js";
 import { SignupSchema, LoginSchema } from "./authEmailSchemas.js";
 import { googleOAuthConfig } from "../config/google.js";
 import { requireAuth } from "../middleware/auth.js";
+import { authRateLimiter, sensitiveOperationLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 
@@ -135,7 +136,11 @@ router.get("/google/callback", async (req: Request, res: Response) => {
         updatedAt: new Date(),
       },
     });
-    console.log("✔ Google OAuth user upsert completed:", normalizedEmail, "with role:", assignedRole);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log("✔ Google OAuth user upsert completed:", normalizedEmail, "with role:", assignedRole);
+    } else {
+      console.log("[INFO] OAuth user authenticated", { role: assignedRole });
+    }
 
     /* ------------------------------------------
        Store Google Account tokens for Calendar sync
@@ -181,12 +186,16 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     // Append token to URL for cross-domain auth
     const urlWithToken = `${redirectUrl}${redirectUrl.includes('?') ? '&' : '?'}token=${token}`;
     
-    console.log(">>> REDIRECT INFO:", {
-      email: user.email,
-      role: user.role,
-      sessionUserRole: sessionUser.role,
-      redirectUrl: urlWithToken
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(">>> REDIRECT INFO:", {
+        email: user.email,
+        role: user.role,
+        sessionUserRole: sessionUser.role,
+        redirectUrl: urlWithToken
+      });
+    } else {
+      console.log("[INFO] OAuth redirect completed", { role: user.role });
+    }
     res.redirect(urlWithToken);
   } catch (error) {
     console.error("Google OAuth callback error", error);
@@ -199,7 +208,9 @@ router.get("/google/callback", async (req: Request, res: Response) => {
 // -------------------------
 // POST /auth/signup
 // -------------------------
-router.post("/signup", async (req: Request, res: Response) => {
+// POST /auth/signup
+// -------------------------
+router.post("/signup", authRateLimiter, async (req: Request, res: Response) => {
   try {
     const parsed = SignupSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -241,7 +252,9 @@ router.post("/signup", async (req: Request, res: Response) => {
 // -------------------------
 // POST /auth/login
 // -------------------------
-router.post("/login", async (req: Request, res: Response) => {
+// POST /auth/login
+// -------------------------
+router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
   try {
     const parsed = LoginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -301,7 +314,11 @@ router.post("/login", async (req: Request, res: Response) => {
           updatedAt: new Date(),
         },
       });
-      console.log("[LOGIN] Upgraded user to SUPERADMIN:", normalizedEmail);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("[LOGIN] Upgraded user to SUPERADMIN:", normalizedEmail);
+      } else {
+        console.log("[INFO] User upgraded to SUPERADMIN");
+      }
     }
 
     if (!user || !user.password) {
@@ -314,7 +331,11 @@ router.post("/login", async (req: Request, res: Response) => {
     }
 
     const token = createAuthToken({ id: user.id });
-    console.log("[LOGIN] Setting auth cookie for user:", user.email, "role:", user.role);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log("[LOGIN] Setting auth cookie for user:", user.email, "role:", user.role);
+    } else {
+      console.log("[INFO] Auth cookie set", { role: user.role });
+    }
     setAuthCookie(res, token);
     console.log("[LOGIN] Cookie should be set, cookie name:", SESSION_COOKIE_NAME);
 
@@ -462,7 +483,11 @@ router.post("/onboarding/submit", requireAuth, async (req: Request, res: Respons
       },
     });
 
-    console.log(`[ONBOARDING] User ${user.email} submitted onboarding for approval`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[ONBOARDING] User ${user.email} submitted onboarding for approval`);
+    } else {
+      console.log(`[INFO] Onboarding submission received`, { role: user.role });
+    }
 
     return res.json({ 
       success: true,

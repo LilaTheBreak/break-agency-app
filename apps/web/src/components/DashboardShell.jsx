@@ -342,7 +342,7 @@ function ApprovalHoldOverlay({ platforms, onLogout }) {
   const [error, setError] = useState(null);
   const [connectedPlatforms, setConnectedPlatforms] = useState({});
 
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
   // Platform icons using actual icon components
   const PlatformIcon = ({ platform }) => {

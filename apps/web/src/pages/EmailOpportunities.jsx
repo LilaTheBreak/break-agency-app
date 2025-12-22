@@ -26,7 +26,7 @@ const ThumbsDown = makeIcon("👎");
 const RefreshCw = makeIcon("⟳");
 const BarChart3 = makeIcon("▤");
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3003";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 const categoryConfig = {
   EVENT_INVITE: {

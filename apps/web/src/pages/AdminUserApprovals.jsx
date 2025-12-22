@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DashboardShell } from '../components/DashboardShell';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 export default function AdminUserApprovals() {
   const [pendingUsers, setPendingUsers] = useState([]);

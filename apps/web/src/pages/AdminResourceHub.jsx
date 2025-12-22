@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 const RESOURCE_TYPES = ["TEMPLATE", "GUIDE", "ARTICLE", "WEBINAR", "EVENT"];
 const RESOURCE_STATUS = ["DRAFT", "PUBLISHED", "ARCHIVED"];
