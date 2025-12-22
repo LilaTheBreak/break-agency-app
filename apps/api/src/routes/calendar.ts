@@ -6,14 +6,15 @@ import { getGoogleCalendarClient, syncGoogleCalendarEvents } from "../lib/google
 
 const router = Router();
 
-router.use("/api/calendar-events", requireAuth);
+// All routes require authentication
+router.use(requireAuth);
 
 /**
- * GET /api/calendar-events
+ * GET /events
  * Fetches all calendar events for the logged-in user.
  * Also triggers a Google Calendar sync if an account is linked.
  */
-router.get("/api/calendar-events", async (req: Request, res: Response) => {
+router.get("/events", async (req: Request, res: Response) => {
   const userId = req.user!.id;
 
   try {
@@ -56,10 +57,10 @@ const EventCreateSchema = z.object({
 });
 
 /**
- * POST /api/calendar-events
+ * POST /events
  * Creates a new calendar event.
  */
-router.post("/api/calendar-events", async (req: Request, res: Response) => {
+router.post("/events", async (req: Request, res: Response) => {
   const parsed = EventCreateSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: "Invalid payload.", details: parsed.error.flatten() });
@@ -89,10 +90,10 @@ router.post("/api/calendar-events", async (req: Request, res: Response) => {
 });
 
 /**
- * DELETE /api/calendar-events/:id
+ * DELETE /events/:id
  * Deletes a calendar event.
  */
-router.delete("/api/calendar-events/:id", async (req: Request, res: Response) => {
+router.delete("/events/:id", async (req: Request, res: Response) => {
   try {
     const eventId = req.params.id;
     const userId = req.user!.id;
