@@ -1,14 +1,9 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001";
+import { apiFetch } from "./apiClient.js";
 
 async function fetchWithAuth(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  // Use apiFetch which includes Bearer token for cross-domain auth
+  const fullUrl = url.startsWith('http') ? url : url;
+  const response = await apiFetch(fullUrl, options);
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Request failed" }));
@@ -23,35 +18,35 @@ async function fetchWithAuth(url, options = {}) {
 // ============================================
 
 export async function fetchBrands() {
-  return fetchWithAuth(`${API_BASE}/api/crm-brands`);
+  return fetchWithAuth(`/api/crm-brands`);
 }
 
 export async function fetchBrand(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-brands/${id}`);
+  return fetchWithAuth(`/api/crm-brands/${id}`);
 }
 
 export async function createBrand(data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-brands`, {
+  return fetchWithAuth(`/api/crm-brands`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function updateBrand(id, data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-brands/${id}`, {
+  return fetchWithAuth(`/api/crm-brands/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteBrand(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-brands/${id}`, {
+  return fetchWithAuth(`/api/crm-brands/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function importLocalStorageData({ brands, contacts, outreach }) {
-  return fetchWithAuth(`${API_BASE}/api/crm-brands/batch-import`, {
+  return fetchWithAuth(`/api/crm-brands/batch-import`, {
     method: "POST",
     body: JSON.stringify({ brands, contacts, outreach }),
   });
@@ -63,37 +58,37 @@ export async function importLocalStorageData({ brands, contacts, outreach }) {
 
 export async function fetchContacts(brandId = null) {
   const url = brandId
-    ? `${API_BASE}/api/crm-contacts?brandId=${brandId}`
-    : `${API_BASE}/api/crm-contacts`;
+    ? `/api/crm-contacts?brandId=${brandId}`
+    : `/api/crm-contacts`;
   return fetchWithAuth(url);
 }
 
 export async function fetchContact(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contacts/${id}`);
+  return fetchWithAuth(`/api/crm-contacts/${id}`);
 }
 
 export async function createContact(data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contacts`, {
+  return fetchWithAuth(`/api/crm-contacts`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function updateContact(id, data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contacts/${id}`, {
+  return fetchWithAuth(`/api/crm-contacts/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteContact(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contacts/${id}`, {
+  return fetchWithAuth(`/api/crm-contacts/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function addContactNote(id, text, author) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contacts/${id}/notes`, {
+  return fetchWithAuth(`/api/crm-contacts/${id}/notes`, {
     method: "POST",
     body: JSON.stringify({ text, author }),
   });
@@ -112,38 +107,38 @@ export async function fetchOutreachRecords(filters = {}) {
   if (filters.channel) params.set("channel", filters.channel);
   if (filters.limit) params.set("limit", filters.limit);
 
-  const url = `${API_BASE}/api/outreach-records${params.toString() ? `?${params}` : ""}`;
+  const url = `/api/outreach-records${params.toString() ? `?${params}` : ""}`;
   return fetchWithAuth(url);
 }
 
 export async function fetchOutreachRecord(id) {
-  return fetchWithAuth(`${API_BASE}/api/outreach-records/${id}`);
+  return fetchWithAuth(`/api/outreach-records/${id}`);
 }
 
 export async function createOutreachRecord(data) {
-  return fetchWithAuth(`${API_BASE}/api/outreach-records`, {
+  return fetchWithAuth(`/api/outreach-records`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function updateOutreachRecord(id, data) {
-  return fetchWithAuth(`${API_BASE}/api/outreach-records/${id}`, {
+  return fetchWithAuth(`/api/outreach-records/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteOutreachRecord(id) {
-  return fetchWithAuth(`${API_BASE}/api/outreach-records/${id}`, {
+  return fetchWithAuth(`/api/outreach-records/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function fetchOutreachStats(brandId = null) {
   const url = brandId
-    ? `${API_BASE}/api/outreach-records/summary/stats?brandId=${brandId}`
-    : `${API_BASE}/api/outreach-records/summary/stats`;
+    ? `/api/outreach-records/summary/stats?brandId=${brandId}`
+    : `/api/outreach-records/summary/stats`;
   return fetchWithAuth(url);
 }
 
@@ -157,49 +152,49 @@ export async function fetchCampaigns(filters = {}) {
   if (filters.status) params.set("status", filters.status);
   if (filters.owner) params.set("owner", filters.owner);
 
-  const url = `${API_BASE}/api/crm-campaigns${params.toString() ? `?${params}` : ""}`;
+  const url = `/api/crm-campaigns${params.toString() ? `?${params}` : ""}`;
   return fetchWithAuth(url);
 }
 
 export async function fetchCampaign(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-campaigns/${id}`);
+  return fetchWithAuth(`/api/crm-campaigns/${id}`);
 }
 
 export async function createCampaign(data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-campaigns`, {
+  return fetchWithAuth(`/api/crm-campaigns`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function updateCampaign(id, data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-campaigns/${id}`, {
+  return fetchWithAuth(`/api/crm-campaigns/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteCampaign(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-campaigns/${id}`, {
+  return fetchWithAuth(`/api/crm-campaigns/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function linkDealToCampaign(campaignId, dealId, dealLabel = null) {
-  return fetchWithAuth(`${API_BASE}/api/crm-campaigns/${campaignId}/link-deal`, {
+  return fetchWithAuth(`/api/crm-campaigns/${campaignId}/link-deal`, {
     method: "POST",
     body: JSON.stringify({ dealId, dealLabel }),
   });
 }
 
 export async function unlinkDealFromCampaign(campaignId, dealId) {
-  return fetchWithAuth(`${API_BASE}/api/crm-campaigns/${campaignId}/unlink-deal/${dealId}`, {
+  return fetchWithAuth(`/api/crm-campaigns/${campaignId}/unlink-deal/${dealId}`, {
     method: "DELETE",
   });
 }
 
 export async function importCampaignsFromLocalStorage(campaigns) {
-  return fetchWithAuth(`${API_BASE}/api/crm-campaigns/batch-import`, {
+  return fetchWithAuth(`/api/crm-campaigns/batch-import`, {
     method: "POST",
     body: JSON.stringify({ campaigns }),
   });
@@ -216,45 +211,45 @@ export async function fetchEvents(filters = {}) {
   if (filters.owner) params.append("owner", filters.owner);
 
   const url = params.toString() 
-    ? `${API_BASE}/api/crm-events?${params.toString()}`
-    : `${API_BASE}/api/crm-events`;
+    ? `/api/crm-events?${params.toString()}`
+    : `/api/crm-events`;
   
   return fetchWithAuth(url);
 }
 
 export async function fetchEvent(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-events/${id}`);
+  return fetchWithAuth(`/api/crm-events/${id}`);
 }
 
 export async function createEvent(data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-events`, {
+  return fetchWithAuth(`/api/crm-events`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function updateEvent(id, data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-events/${id}`, {
+  return fetchWithAuth(`/api/crm-events/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteEvent(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-events/${id}`, {
+  return fetchWithAuth(`/api/crm-events/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function addEventNote(id, text, author) {
-  return fetchWithAuth(`${API_BASE}/api/crm-events/${id}/notes`, {
+  return fetchWithAuth(`/api/crm-events/${id}/notes`, {
     method: "POST",
     body: JSON.stringify({ text, author }),
   });
 }
 
 export async function importEventsFromLocalStorage(events) {
-  return fetchWithAuth(`${API_BASE}/api/crm-events/batch-import`, {
+  return fetchWithAuth(`/api/crm-events/batch-import`, {
     method: "POST",
     body: JSON.stringify({ events }),
   });
@@ -271,45 +266,45 @@ export async function fetchDeals(filters = {}) {
   if (filters.owner) params.set("owner", filters.owner);
   
   const url = params.toString()
-    ? `${API_BASE}/api/crm-deals?${params.toString()}`
-    : `${API_BASE}/api/crm-deals`;
+    ? `/api/crm-deals?${params.toString()}`
+    : `/api/crm-deals`;
   
   return fetchWithAuth(url);
 }
 
 export async function fetchDeal(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-deals/${id}`);
+  return fetchWithAuth(`/api/crm-deals/${id}`);
 }
 
 export async function createDeal(data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-deals`, {
+  return fetchWithAuth(`/api/crm-deals`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function updateDeal(id, data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-deals/${id}`, {
+  return fetchWithAuth(`/api/crm-deals/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteDeal(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-deals/${id}`, {
+  return fetchWithAuth(`/api/crm-deals/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function addDealNote(id, text, author) {
-  return fetchWithAuth(`${API_BASE}/api/crm-deals/${id}/notes`, {
+  return fetchWithAuth(`/api/crm-deals/${id}/notes`, {
     method: "POST",
     body: JSON.stringify({ text, author }),
   });
 }
 
 export async function importDealsFromLocalStorage(deals) {
-  return fetchWithAuth(`${API_BASE}/api/crm-deals/batch-import`, {
+  return fetchWithAuth(`/api/crm-deals/batch-import`, {
     method: "POST",
     body: JSON.stringify({ deals }),
   });
@@ -327,45 +322,45 @@ export async function fetchContracts(filters = {}) {
   if (filters.owner) params.set("owner", filters.owner);
   
   const url = params.toString()
-    ? `${API_BASE}/api/crm-contracts?${params.toString()}`
-    : `${API_BASE}/api/crm-contracts`;
+    ? `/api/crm-contracts?${params.toString()}`
+    : `/api/crm-contracts`;
   
   return fetchWithAuth(url);
 }
 
 export async function fetchContract(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contracts/${id}`);
+  return fetchWithAuth(`/api/crm-contracts/${id}`);
 }
 
 export async function createContract(data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contracts`, {
+  return fetchWithAuth(`/api/crm-contracts`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function updateContract(id, data) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contracts/${id}`, {
+  return fetchWithAuth(`/api/crm-contracts/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteContract(id) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contracts/${id}`, {
+  return fetchWithAuth(`/api/crm-contracts/${id}`, {
     method: "DELETE",
   });
 }
 
 export async function addContractNote(id, note) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contracts/${id}/notes`, {
+  return fetchWithAuth(`/api/crm-contracts/${id}/notes`, {
     method: "POST",
     body: JSON.stringify({ note }),
   });
 }
 
 export async function importContractsFromLocalStorage(contracts) {
-  return fetchWithAuth(`${API_BASE}/api/crm-contracts/batch-import`, {
+  return fetchWithAuth(`/api/crm-contracts/batch-import`, {
     method: "POST",
     body: JSON.stringify({ contracts }),
   });
