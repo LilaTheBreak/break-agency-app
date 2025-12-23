@@ -293,9 +293,26 @@ router.post("/", async (req: Request, res: Response) => {
     await createTaskNotifications(task, "created");
 
     return res.status(201).json(task);
-  } catch (error) {
-    console.error("Error creating CRM task:", error);
-    return res.status(500).json({ error: "Failed to create task" });
+  } catch (error: any) {
+    console.error("[CRM Tasks] Error creating task:", {
+      error: error.message,
+      code: error.code,
+      meta: error.meta,
+      userId: req.user?.id,
+      title: title?.substring(0, 50)
+    });
+    
+    // Return specific error messages for common issues
+    if (error.code === 'P2003') {
+      return res.status(400).json({ 
+        error: "Invalid reference: One or more related entities (brand, campaign, etc.) do not exist" 
+      });
+    }
+    
+    return res.status(500).json({ 
+      error: "Failed to create task",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

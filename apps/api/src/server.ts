@@ -7,6 +7,8 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 
 import routes from "./routes/index.js";
+import activityRouter from "./routes/activity.js";
+import auditRouter from "./routes/audit.js";
 
 // Middleware
 import { requestContextMiddleware } from "./middleware/requestContext.js";
@@ -393,6 +395,12 @@ app.use("/webhooks/signature", signatureWebhookRouter);
 // INSIGHTS
 // ------------------------------------------------------
 app.use("/api/insights", insightsRouter);
+
+// ------------------------------------------------------
+// ACTIVITY & AUDIT LOGS
+// ------------------------------------------------------
+app.use(activityRouter); // Routes already include /api/activity prefix
+app.use(auditRouter); // Routes already include /audit prefix
 
 // ------------------------------------------------------
 // GLOBAL MIDDLEWARE (AFTER ROUTING)

@@ -6,8 +6,9 @@ import prisma from "../lib/prisma.js";
 const router = Router();
 
 router.get("/api/approvals", requireAuth, async (req: Request, res: Response) => {
-  const userRoles = req.user?.roles?.map(r => r.role.name) || [];
-  if (!userRoles.includes("ADMIN") && !userRoles.includes("SUPER_ADMIN")) {
+  // Check single role field (not roles array)
+  const userRole = req.user?.role || "";
+  if (userRole !== "ADMIN" && userRole !== "SUPERADMIN") {
     // Return empty array instead of 403 - graceful degradation
     return res.status(200).json([]);
   }
