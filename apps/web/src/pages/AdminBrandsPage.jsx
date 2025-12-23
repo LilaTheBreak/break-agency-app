@@ -428,19 +428,25 @@ export function AdminBrandsPage({ session }) {
           console.log("[CRM] LocalStorage data found:", counts);
         }
 
-        // Fetch brands and contacts from API
+        // Fetch brands and contacts from API independently
         console.log('[CRM] Initial data load...');
-        const [brandsData, contactsData] = await Promise.all([
-          fetchBrands(),
-          fetchContacts(),
-        ]);
+        
+        const brandsResult = await fetchBrands().catch(err => {
+          console.error('[CRM] Failed to load brands:', err.message);
+          throw err; // Brands are critical - fail hard
+        });
+        
+        const contactsResult = await fetchContacts().catch(err => {
+          console.warn('[CRM] Failed to load contacts (non-blocking):', err.message);
+          return { contacts: [] }; // Contacts are optional - continue with empty array
+        });
 
-        console.log('[CRM] Initial brands loaded:', brandsData.brands?.length || 0);
-        console.log('[CRM] Initial contacts loaded:', contactsData.contacts?.length || 0);
-        setBrands(brandsData.brands || []);
-        setContacts(contactsData.contacts || []);
+        console.log('[CRM] Initial brands loaded:', brandsResult.brands?.length || 0);
+        console.log('[CRM] Initial contacts loaded:', contactsResult.contacts?.length || 0);
+        setBrands(brandsResult.brands || []);
+        setContacts(contactsResult.contacts || []);
       } catch (error) {
-        console.error("[CRM] Error loading data:", error);
+        console.error("[CRM] Critical error loading brands:", error);
         alert('Failed to load CRM data. Please refresh the page.');
       } finally {
         setLoading(false);
@@ -455,14 +461,19 @@ export function AdminBrandsPage({ session }) {
       const result = await migrateLocalStorageToDatabase();
       console.log("[CRM] Migration complete:", result);
       
-      // Reload data
-      const [brandsData, contactsData] = await Promise.all([
-        fetchBrands(),
-        fetchContacts(),
-      ]);
+      // Reload data independently
+      const brandsResult = await fetchBrands().catch(err => {
+        console.error('[CRM] Failed to reload brands after migration:', err.message);
+        return { brands: [] };
+      });
       
-      setBrands(brandsData.brands || []);
-      setContacts(contactsData.contacts || []);
+      const contactsResult = await fetchContacts().catch(err => {
+        console.warn('[CRM] Failed to reload contacts after migration (non-blocking):', err.message);
+        return { contacts: [] };
+      });
+      
+      setBrands(brandsResult.brands || []);
+      setContacts(contactsResult.contacts || []);
       setMigrationNeeded(false);
     } catch (error) {
       console.error("[CRM] Migration failed:", error);
@@ -475,16 +486,23 @@ export function AdminBrandsPage({ session }) {
   const refreshData = async () => {
     try {
       console.log('[CRM] Refreshing brands and contacts...');
-      const [brandsData, contactsData] = await Promise.all([
-        fetchBrands(),
-        fetchContacts(),
-      ]);
-      console.log('[CRM] Fetched brands:', brandsData.brands?.length || 0);
-      console.log('[CRM] Fetched contacts:', contactsData.contacts?.length || 0);
-      setBrands(brandsData.brands || []);
-      setContacts(contactsData.contacts || []);
+      // Fetch brands and contacts independently - don't let contacts failure block brands
+      const brandsResult = await fetchBrands().catch(err => {
+        console.error('[CRM] Failed to fetch brands:', err.message);
+        return { brands: brands || [] }; // Keep existing brands on failure
+      });
+      
+      const contactsResult = await fetchContacts().catch(err => {
+        console.warn('[CRM] Failed to fetch contacts (non-blocking):', err.message);
+        return { contacts: contacts || [] }; // Keep existing contacts on failure
+      });
+      
+      console.log('[CRM] Fetched brands:', brandsResult.brands?.length || 0);
+      console.log('[CRM] Fetched contacts:', contactsResult.contacts?.length || 0);
+      setBrands(brandsResult.brands || []);
+      setContacts(contactsResult.contacts || []);
     } catch (error) {
-      console.error("[CRM] Error refreshing data:", error);
+      console.error("[CRM] Unexpected error refreshing data:", error);
     }
   };
 
