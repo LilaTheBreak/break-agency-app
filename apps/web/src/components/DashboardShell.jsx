@@ -3,6 +3,7 @@ import { NavLink, Link } from "react-router-dom";
 import { useDashboardSummary } from "../hooks/useDashboardSummary.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { isAwaitingApproval, loadOnboardingState } from "../lib/onboardingState.js";
+import NotificationBell from "./NotificationBell.jsx";
 
 const DEFAULT_STATUS_SUMMARY = {
   tasksDue: 0,
@@ -182,14 +183,21 @@ export function DashboardShell({
     <div className="min-h-screen bg-brand-ivory text-brand-black">
       <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
         <div className="space-y-3">
-          <p className="font-subtitle text-xs uppercase tracking-[0.4em] text-brand-red">
-            Secure console
-          </p>
-          <h1 className="font-display text-4xl uppercase tracking-wide text-brand-black">
-            <span className="inline-flex h-1 w-12 rounded-full bg-brand-red align-middle" />
-            <span className="ml-3">{title}</span>
-          </h1>
-          <p className="text-base text-brand-black/70">{subtitle}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="font-subtitle text-xs uppercase tracking-[0.4em] text-brand-red">
+                Secure console
+              </p>
+              <h1 className="font-display text-4xl uppercase tracking-wide text-brand-black">
+                <span className="inline-flex h-1 w-12 rounded-full bg-brand-red align-middle" />
+                <span className="ml-3">{title}</span>
+              </h1>
+              <p className="text-base text-brand-black/70">{subtitle}</p>
+            </div>
+            <div className="flex items-start gap-2">
+              <NotificationBell />
+            </div>
+          </div>
         </div>
         <div
           className={[

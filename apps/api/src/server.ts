@@ -349,6 +349,7 @@ app.use("/api/crm-events", crmEventsRouter);
 app.use("/api/crm-deals", crmDealsRouter);
 app.use("/api/crm-contracts", crmContractsRouter);
 app.use("/api/crm-tasks", crmTasksRouter);
+app.use("/api/notifications", notificationsRouter);
 
 // ------------------------------------------------------
 // BUNDLES

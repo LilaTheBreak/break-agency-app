@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { createTaskNotifications, canViewTask, buildTaskVisibilityWhere } from "../services/taskNotifications.js";
 
 const router = Router();
 
@@ -75,6 +76,8 @@ router.get("/talents", async (req: Request, res: Response) => {
 router.get("/", async (req: Request, res: Response) => {
   try {
     const { status, priority, owner, brandId, campaignId } = req.query;
+    const userId = req.user?.id;
+    const userRole = req.user?.role || "";
 
     const where: any = {};
     if (status && typeof status === "string") where.status = status;
@@ -82,6 +85,10 @@ router.get("/", async (req: Request, res: Response) => {
     if (owner && typeof owner === "string") where.owner = owner;
     if (brandId && typeof brandId === "string") where.brandId = brandId;
     if (campaignId && typeof campaignId === "string") where.campaignId = campaignId;
+    
+    // Apply visibility filtering based on user role
+    const visibilityWhere = buildTaskVisibilityWhere(userId!, userRole);
+    Object.assign(where, visibilityWhere);
 
     const tasks = await prisma.crmTask.findMany({
       where,
@@ -118,8 +125,13 @@ router.get("/", async (req: Request, res: Response) => {
         }
       }
     });
+    
+    // Additional filter for mentions (JSON field - can't filter in Prisma)
+    const filteredTasks = tasks.filter(task => 
+      canViewTask(task, userId!, userRole)
+    );
 
-    return res.json(tasks);
+    return res.json(filteredTasks);
   } catch (error) {
     console.error("Error fetching CRM tasks:", error);
     return res.status(500).json({ error: "Failed to fetch tasks" });
@@ -133,6 +145,8 @@ router.get("/", async (req: Request, res: Response) => {
 router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role || "";
 
     const task = await prisma.crmTask.findUnique({
       where: { id },
@@ -165,6 +179,15 @@ router.get("/:id", async (req: Request, res: Response) => {
         }
       }
     });
+
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    
+    // Check if user has permission to view this task
+    if (!canViewTask(task, userId!, userRole)) {
+      return res.status(403).json({ error: "Access denied" });
+    }
 
     if (!task) {
       return res.status(404).json({ error: "Task not found" });
@@ -265,6 +288,9 @@ router.post("/", async (req: Request, res: Response) => {
         }
       }
     });
+    
+    // Create notifications for mentions and assignments
+    await createTaskNotifications(task, "created");
 
     return res.status(201).json(task);
   } catch (error) {
@@ -369,6 +395,9 @@ router.patch("/:id", async (req: Request, res: Response) => {
         }
       }
     });
+    
+    // Create notifications for new mentions and assignments
+    await createTaskNotifications(task, "updated");
 
     return res.json(task);
   } catch (error) {
@@ -384,6 +413,12 @@ router.patch("/:id", async (req: Request, res: Response) => {
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userRole = req.user?.role || "";
+    
+    // Only SuperAdmins can delete tasks
+    if (userRole !== "SUPERADMIN") {
+      return res.status(403).json({ error: "Only Super Admins can delete tasks" });
+    }
 
     const existing = await prisma.crmTask.findUnique({ where: { id } });
     if (!existing) {
