@@ -39,17 +39,33 @@ export async function apiFetch(path, options = {}) {
       } catch (e) {
         // If response is HTML (auth redirect, error page), return safe error object
         if (text.trim().startsWith('<!')) {
-          console.warn(`[API] Received HTML instead of JSON from ${path}. Possible auth redirect.`);
+          // Only warn on real auth issues (401), not permission issues
+          if (this.status === 401) {
+            console.warn(`[API] Authentication required for ${path}`);
+          }
           return { error: "Authentication required", _isHtmlResponse: true };
         }
-        console.error(`[API] Invalid JSON from ${path}:`, text.substring(0, 100));
+        // Only log parsing errors for 500s, not expected failures
+        if (this.status >= 500) {
+          console.error(`[API] Invalid JSON from ${path}:`, text.substring(0, 100));
+        }
         throw new Error(`Invalid JSON response from ${path}`);
       }
     };
 
+    // Log only real errors (500+), not permission/not-found
+    if (response.status >= 500) {
+      console.error(`[API] Server error ${response.status} for ${path}`);
+    } else if (response.status === 403 || response.status === 404) {
+      // Silent - these are often expected (permissions, feature flags)
+    }
+
     return response;
   } catch (error) {
-    console.error(`[API] Fetch error for ${path}:`, error);
+    // Only log unexpected network errors
+    if (error.name !== 'AbortError') {
+      console.error(`[API] Network error for ${path}:`, error);
+    }
     throw error;
   }
 }
