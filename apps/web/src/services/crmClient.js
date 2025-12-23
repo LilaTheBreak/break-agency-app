@@ -1,16 +1,23 @@
 import { apiFetch } from "./apiClient.js";
 
 async function fetchWithAuth(url, options = {}) {
-  // Use apiFetch which includes Bearer token for cross-domain auth
-  const fullUrl = url.startsWith('http') ? url : url;
-  const response = await apiFetch(fullUrl, options);
+  try {
+    // Use apiFetch which includes Bearer token for cross-domain auth
+    const fullUrl = url.startsWith('http') ? url : url;
+    const response = await apiFetch(fullUrl, options);
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Request failed" }));
-    throw new Error(error.error || "Request failed");
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Request failed" }));
+      console.warn(`[CRM] ${options.method || 'GET'} ${url} failed:`, response.status);
+      throw new Error(error.error || "Request failed");
+    }
+
+    return response.json();
+  } catch (error) {
+    // Log error but don't crash - let caller handle gracefully
+    console.warn(`[CRM] Request failed for ${url}:`, error.message);
+    throw error;
   }
-
-  return response.json();
 }
 
 // ============================================

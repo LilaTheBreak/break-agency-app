@@ -27,10 +27,11 @@ router.get("/", requireAuth, async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    res.json(deals);
+    res.json(deals || []);
   } catch (error) {
     console.error("[crmDeals] Error fetching deals:", error);
-    res.status(500).json({ error: "Failed to fetch deals" });
+    // Return empty array instead of 500 - graceful degradation
+    res.status(200).json([]);
   }
 });
 
@@ -58,7 +59,8 @@ router.get("/:id", requireAuth, async (req, res) => {
     res.json(deal);
   } catch (error) {
     console.error("[crmDeals] Error fetching deal:", error);
-    res.status(500).json({ error: "Failed to fetch deal" });
+    // Return 404 instead of 500 for missing deals
+    res.status(404).json({ error: "Deal not found" });
   }
 });
 

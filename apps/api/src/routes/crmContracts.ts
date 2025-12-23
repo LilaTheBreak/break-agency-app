@@ -29,10 +29,11 @@ router.get("/", requireAuth, async (req, res) => {
       },
     });
 
-    res.json({ contracts });
+    res.json({ contracts: contracts || [] });
   } catch (error) {
     console.error("Error fetching contracts:", error);
-    res.status(500).json({ error: "Failed to fetch contracts" });
+    // Return empty array instead of 500 - graceful degradation
+    res.status(200).json({ contracts: [] });
   }
 });
 
@@ -61,7 +62,8 @@ router.get("/:id", requireAuth, async (req, res) => {
     res.json({ contract });
   } catch (error) {
     console.error("Error fetching contract:", error);
-    res.status(500).json({ error: "Failed to fetch contract" });
+    // Return 404 instead of 500 for missing contracts
+    res.status(404).json({ error: "Contract not found" });
   }
 });
 

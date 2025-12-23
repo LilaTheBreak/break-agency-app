@@ -60,6 +60,7 @@ import devAuthRouter from "./routes/devAuth.js";
 
 // User Approvals
 import userApprovalsRouter from "./routes/userApprovals.js";
+import approvalsRouter from "./routes/approvals.js";
 
 // Queues
 import queuesRouter from "./routes/queues.js";
@@ -280,6 +281,7 @@ app.use(creatorRouter); // Routes already prefixed with /api/creator
 // USER APPROVALS
 // ------------------------------------------------------
 app.use("/api/user-approvals", userApprovalsRouter);
+app.use(approvalsRouter); // Routes already include /api/approvals prefix
 
 // ------------------------------------------------------
 // QUEUES
