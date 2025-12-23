@@ -1,101 +1,160 @@
 import { apiFetch } from "./apiClient.js";
 
 export async function fetchOutreachRecords() {
-  const response = await apiFetch("/outreach/records");
-  if (!response.ok) {
-    throw new Error("Failed to fetch outreach records");
+  try {
+    const response = await apiFetch("/api/outreach/records");
+    if (!response.ok) {
+      console.warn("[Outreach] Failed to fetch outreach records:", response.status);
+      return []; // Return empty array instead of throwing
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("[Outreach] Error fetching outreach records:", error.message);
+    return []; // Safe fallback
   }
-  return response.json();
 }
 
 export async function createOutreachRecord(data) {
-  const response = await apiFetch("/outreach/records", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
-  if (!response.ok) {
-    throw new Error("Failed to create outreach record");
+  try {
+    const response = await apiFetch("/api/outreach/records", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      throw new Error("Failed to create outreach record");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("[Outreach] Error creating outreach record:", error.message);
+    throw error; // Creation errors should be thrown
   }
-  return response.json();
 }
 
 export async function updateOutreachRecord(id, updates) {
-  const response = await apiFetch(`/outreach/records/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updates)
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update outreach record");
+  try {
+    const response = await apiFetch(`/api/outreach/records/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!response.ok) {
+      throw new Error("Failed to update outreach record");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("[Outreach] Error updating outreach record:", error.message);
+    throw error; // Update errors should be thrown
   }
-  return response.json();
 }
 
 export async function fetchGmailThread(outreachId) {
-  const response = await apiFetch(`/outreach/records/${outreachId}/gmail-thread`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch Gmail thread");
+  try {
+    const response = await apiFetch(`/api/outreach/records/${outreachId}/gmail-thread`);
+    if (!response.ok) {
+      console.warn("[Outreach] Failed to fetch Gmail thread:", response.status);
+      return null; // Return null instead of throwing
+    }
+    return response.json();
+  } catch (error) {
+    console.warn("[Outreach] Error fetching Gmail thread:", error.message);
+    return null; // Safe fallback
   }
-  return response.json();
 }
 
 export async function addOutreachNote(outreachId, body) {
-  const response = await apiFetch(`/outreach/records/${outreachId}/notes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ body })
-  });
-  if (!response.ok) {
-    throw new Error("Failed to add note");
+  try {
+    const response = await apiFetch(`/api/outreach/records/${outreachId}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body })
+    });
+    if (!response.ok) {
+      throw new Error("Failed to add note");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("[Outreach] Error adding note:", error.message);
+    throw error; // Creation errors should be thrown
   }
-  return response.json();
 }
 
 export async function fetchOutreachNotes(outreachId) {
-  const response = await apiFetch(`/outreach/records/${outreachId}/notes`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch notes");
+  try {
+    const response = await apiFetch(`/api/outreach/records/${outreachId}/notes`);
+    if (!response.ok) {
+      console.warn("[Outreach] Failed to fetch notes:", response.status);
+      return []; // Return empty array instead of throwing
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("[Outreach] Error fetching notes:", error.message);
+    return []; // Safe fallback
   }
-  return response.json();
 }
 
 export async function addOutreachTask(outreachId, taskData) {
-  const response = await apiFetch(`/outreach/records/${outreachId}/tasks`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(taskData)
-  });
-  if (!response.ok) {
-    throw new Error("Failed to add task");
+  try {
+    const response = await apiFetch(`/api/outreach/records/${outreachId}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(taskData)
+    });
+    if (!response.ok) {
+      throw new Error("Failed to add task");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("[Outreach] Error adding task:", error.message);
+    throw error; // Creation errors should be thrown
   }
-  return response.json();
 }
 
 export async function fetchOutreachTasks(outreachId) {
-  const response = await apiFetch(`/outreach/records/${outreachId}/tasks`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch tasks");
+  try {
+    const response = await apiFetch(`/api/outreach/records/${outreachId}/tasks`);
+    if (!response.ok) {
+      console.warn("[Outreach] Failed to fetch tasks:", response.status);
+      return []; // Return empty array instead of throwing
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("[Outreach] Error fetching tasks:", error.message);
+    return []; // Safe fallback
   }
-  return response.json();
 }
 
 export async function updateOutreachTask(taskId, updates) {
-  const response = await apiFetch(`/outreach/tasks/${taskId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updates)
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update task");
+  try {
+    const response = await apiFetch(`/api/outreach/tasks/${taskId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!response.ok) {
+      throw new Error("Failed to update task");
+    }
+    return response.json();
+  } catch (error) {
+    console.error("[Outreach] Error updating task:", error.message);
+    throw error; // Update errors should be thrown
   }
-  return response.json();
 }
 
 export async function fetchUpcomingReminders() {
-  const response = await apiFetch("/outreach/reminders");
-  if (!response.ok) {
-    throw new Error("Failed to fetch reminders");
+  try {
+    const response = await apiFetch("/api/outreach/reminders");
+    if (!response.ok) {
+      console.warn("[Outreach] Failed to fetch reminders:", response.status);
+      return []; // Return empty array instead of throwing
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("[Outreach] Error fetching reminders:", error.message);
+    return []; // Safe fallback
   }
-  return response.json();
 }
