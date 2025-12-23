@@ -28,19 +28,24 @@ export function useAuditLogs({ userId, limit = 50, entityType } = {}) {
     setError("");
     try {
       const response = await apiFetch(endpoint);
-      if (response.status === 403) {
+      if (response.status === 403 || response.status === 404) {
         setLogs([]);
         setError("");
         return;
       }
       if (!response.ok) {
-        throw new Error("Unable to load audit logs");
+        console.warn("Audit logs request failed:", response.status);
+        setLogs([]);
+        setError("");
+        return;
       }
       const payload = await response.json();
       setLogs(payload.logs ?? []);
     } catch (err) {
-      console.error("Audit logs error:", err);
-      setError(err instanceof Error ? err.message : "Unable to load audit logs");
+      console.warn("Audit logs error:", err);
+      // Silently fail - don't show error to user
+      setLogs([]);
+      setError("");
     } finally {
       setLoading(false);
     }

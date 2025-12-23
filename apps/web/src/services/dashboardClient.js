@@ -14,16 +14,21 @@ export async function getDashboardStats() {
  * @param {number} limit - The number of items to fetch.
  */
 export async function getRecentActivity(limit = 5) {
-  const response = await apiFetch(`/api/activity?limit=${limit}`);
-  if (response.status === 403) {
+  try {
+    const response = await apiFetch(`/api/activity?limit=${limit}`);
+    if (response.status === 403 || response.status === 404) {
+      return [];
+    }
+    if (!response.ok) {
+      console.warn("Failed to fetch recent activity:", response.status);
+      return [];
+    }
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("Activity feed error:", error);
     return [];
   }
-  if (!response.ok) {
-    const error = new Error("Failed to fetch recent activity");
-    error.status = response.status;
-    throw error;
-  }
-  return response.json();
 }
 
 /**

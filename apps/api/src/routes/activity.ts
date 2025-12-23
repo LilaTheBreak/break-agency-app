@@ -5,9 +5,10 @@ import prisma from "../lib/prisma.js";
 const router = Router();
 
 router.get("/api/activity", requireAuth, async (req: Request, res: Response) => {
-  const userRoles = req.user?.roles?.map(r => r.role.name) || [];
-  if (!userRoles.includes("ADMIN") && !userRoles.includes("SUPER_ADMIN")) {
-    return res.status(403).json({ error: "Forbidden: Access is restricted to administrators." });
+  // Check single role field (not roles array)
+  const userRole = req.user?.role || "";
+  if (userRole !== "ADMIN" && userRole !== "SUPERADMIN") {
+    return res.status(200).json([]); // Return empty array instead of 403
   }
 
   try {
@@ -24,7 +25,9 @@ router.get("/api/activity", requireAuth, async (req: Request, res: Response) => 
     });
     res.json(activity);
   } catch (error) {
-    res.status(500).json({ error: "Could not load activity feed." });
+    console.error("Activity feed error:", error);
+    // Return empty array on error - don't crash dashboard
+    res.status(200).json([]);
   }
 });
 

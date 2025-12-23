@@ -52,12 +52,19 @@ export function AdminActivityPage() {
       if (trimmedUser) params.set("userId", trimmedUser);
       if (filters.entityType) params.set("entityType", filters.entityType);
       const response = await apiFetch(`/audit?${params.toString()}`);
-      if (response.status === 403) {
+      if (response.status === 403 || response.status === 404) {
         setLogs([]);
+        setPagination({ page: 1, totalPages: 1, total: 0, limit: PAGE_LIMIT });
         setError("");
         return;
       }
-      if (!response.ok) throw new Error("Unable to load audit logs");
+      if (!response.ok) {
+        console.warn("Audit logs request failed:", response.status);
+        setLogs([]);
+        setPagination({ page: 1, totalPages: 1, total: 0, limit: PAGE_LIMIT });
+        setError("");
+        return;
+      }
       const payload = await response.json();
       setLogs(payload.logs ?? []);
       setPagination(
@@ -69,8 +76,11 @@ export function AdminActivityPage() {
         }
       );
     } catch (err) {
-      console.error("Audit logs error:", err);
-      setError("Unable to load audit logs");
+      console.warn("Audit logs error:", err);
+      // Silently fail - don't crash UI
+      setLogs([]);
+      setPagination({ page: 1, totalPages: 1, total: 0, limit: PAGE_LIMIT });
+      setError("");
     } finally {
       setLoading(false);
     }
