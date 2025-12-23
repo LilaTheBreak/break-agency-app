@@ -648,6 +648,7 @@ export function AdminBrandsPage({ session }) {
     setEditorDraft({
       brandName: "",
       website: "",
+      logo: "",
       industry: "Other",
       status: "Prospect",
       owner: ownerDefault,
@@ -661,6 +662,7 @@ export function AdminBrandsPage({ session }) {
     setEditorDraft({
       brandName: brand.brandName || "",
       website: brand.website || "",
+      logo: brand.logo || "",
       industry: brand.industry || "Other",
       status: brand.status || "Prospect",
       owner: brand.owner || ownerDefault,
@@ -681,6 +683,7 @@ export function AdminBrandsPage({ session }) {
         const brandData = {
           brandName: name,
           website: editorDraft.website.trim(),
+          logo: editorDraft.logo.trim(),
           industry: editorDraft.industry,
           status: editorDraft.status,
           internalNotes: editorDraft.internalNotes,
@@ -715,6 +718,7 @@ export function AdminBrandsPage({ session }) {
       const brandData = {
         brandName: name,
         website: editorDraft.website.trim(),
+        logo: editorDraft.logo.trim(),
         industry: editorDraft.industry,
         status: editorDraft.status,
         internalNotes: editorDraft.internalNotes,
@@ -1611,6 +1615,12 @@ export function AdminBrandsPage({ session }) {
               value={editorDraft.website}
               onChange={(v) => setEditorDraft((prev) => ({ ...prev, website: v }))}
               placeholder="https://…"
+            />
+            <Field
+              label="Logo URL (optional)"
+              value={editorDraft.logo}
+              onChange={(v) => setEditorDraft((prev) => ({ ...prev, logo: v }))}
+              placeholder="https://… (direct image URL)"
             />
             <Select
               label="Industry"

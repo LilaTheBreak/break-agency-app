@@ -7,6 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model AIAgentTask {
+  id          String    @id
+  userId      String
+  taskType    String
+  payload     Json
+  status      String    @default("pending")
+  result      Json?
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+
+  @@index([status])
+  @@index([taskType])
+  @@index([userId])
+}
+
+model AIPromptHistory {
+  id        String   @id
+  creatorId String
+  prompt    String
+  response  String
+  category  String?
+  helpful   Boolean?
+  createdAt DateTime @default(now())
+  Talent    Talent   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([creatorId, createdAt])
+}
+
 model AgentProfile {
   id          String   @id
   userId      String   @unique
@@ -20,7 +52,7 @@ model AgentProfile {
 }
 
 model AiTokenLog {
-  id               String   @id @default(uuid())
+  id               String   @id
   userId           String?
   action           String
   model            String
@@ -32,6 +64,25 @@ model AiTokenLog {
   User             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model AssetGeneration {
+  id            String   @id
+  deliverableId String
+  userId        String
+  assetType     String
+  type          String?
+  prompt        String
+  generatedUrl  String?
+  aiOutput      String?
+  status        String   @default("pending")
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+
+  @@index([deliverableId])
+  @@index([status])
+  @@index([userId])
+}
+
 model Brand {
   id                    String              @id
   name                  String              @unique
@@ -39,28 +90,289 @@ model Brand {
   restrictedCategories  String[]
   preferredCreatorTypes String[]
   targetAudience        Json?
+  CrmCampaign           CrmCampaign[]
   Deal                  Deal[]
-  SuitabilityResult     SuitabilityResult[]
-  LinkedOutreach        Outreach[]          @relation("OutreachLinkedBrand")
   Invoice               Invoice[]
+  Outreach              Outreach[]
   Payout                Payout[]
-  CrmCampaigns          CrmCampaign[]
+  SuitabilityResult     SuitabilityResult[]
+}
+
+model BrandCampaign {
+  id                 String               @id
+  title              String
+  ownerId            String
+  stage              String               @default("PLANNING")
+  brands             Json?
+  creatorTeams       Json?
+  metadata           Json?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  User               User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  CampaignBrandPivot CampaignBrandPivot[]
+
+  @@index([createdAt])
+  @@index([ownerId])
+  @@index([stage])
+}
+
+model CampaignBrandPivot {
+  id            String        @id
+  campaignId    String
+  brandId       String
+  metrics       Json?
+  createdAt     DateTime      @default(now())
+  BrandCampaign BrandCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, brandId])
+  @@index([brandId])
+  @@index([campaignId])
+}
+
+model ContractReview {
+  id           String   @id
+  userId       String
+  fileId       String?
+  contractText String
+  findings     Json?
+  riskScore    Float?
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+
+  @@index([fileId])
+  @@index([status])
+  @@index([userId])
+}
+
+model CreatorBalance {
+  id              String   @id
+  userId          String   @unique
+  available       Float    @default(0)
+  availableAmount Float    @default(0)
+  pendingAmount   Float    @default(0)
+  totalEarned     Float    @default(0)
+  currency        String   @default("usd")
+  metadata        Json?
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+
+  @@index([userId])
+}
+
+model CreatorEvent {
+  id            String    @id
+  creatorId     String
+  eventName     String
+  eventType     String
+  description   String?
+  location      String?
+  startAt       DateTime
+  endAt         DateTime?
+  status        String    @default("suggested")
+  source        String    @default("agent")
+  sourceUserId  String?
+  declineReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  Talent        Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  User          User?     @relation(fields: [sourceUserId], references: [id])
+
+  @@index([creatorId, status])
+  @@index([startAt])
+  @@index([status])
+}
+
+model CreatorGoal {
+  id                 String               @id
+  creatorId          String
+  goalCategory       String               @default("growth")
+  goalType           String
+  title              String
+  targetValue        Float?
+  targetUnit         String?
+  timeframe          String?
+  progress           Float                @default(0)
+  active             Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  Talent             Talent               @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  CreatorGoalVersion CreatorGoalVersion[]
+
+  @@index([creatorId, active])
+  @@index([goalCategory])
+  @@index([goalType])
+}
+
+model CreatorGoalVersion {
+  id            String      @id
+  creatorGoalId String
+  snapshot      Json
+  changedAt     DateTime    @default(now())
+  changedBy     String
+  changeType    String
+  CreatorGoal   CreatorGoal @relation(fields: [creatorGoalId], references: [id], onDelete: Cascade)
+
+  @@index([changedBy])
+  @@index([creatorGoalId, changedAt])
+}
+
+model CreatorInsight {
+  id          String    @id
+  creatorId   String
+  insightType String
+  title       String
+  summary     String
+  context     String?
+  metadata    Json?
+  priority    Int       @default(0)
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  Talent      Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, createdAt])
+  @@index([creatorId, isRead])
+  @@index([insightType])
+}
+
+model CreatorTask {
+  id                  String       @id
+  creatorId           String
+  title               String
+  description         String?
+  taskType            String
+  dueAt               DateTime?
+  completedAt         DateTime?
+  priority            String       @default("medium")
+  status              String       @default("pending")
+  linkedDealId        String?
+  linkedDeliverableId String?
+  createdBy           String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime
+  User                User?        @relation(fields: [createdBy], references: [id])
+  Talent              Talent       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  Deal                Deal?        @relation(fields: [linkedDealId], references: [id])
+  Deliverable         Deliverable? @relation(fields: [linkedDeliverableId], references: [id])
+
+  @@index([creatorId, dueAt])
+  @@index([creatorId, status])
+  @@index([linkedDealId])
+  @@index([priority])
+}
+
+model CrmBrand {
+  id                String            @id
+  brandName         String
+  website           String?
+  industry          String            @default("Other")
+  status            String            @default("Prospect")
+  owner             String?
+  internalNotes     String?
+  activity          Json[]            @default([])
+  lastActivityAt    DateTime?
+  lastActivityLabel String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  CrmBrandContact   CrmBrandContact[]
+  CrmTask           CrmTask[]
+  Outreach          Outreach[]
+}
+
+model CrmBrandContact {
+  id             String   @id
+  crmBrandId     String
+  firstName      String?
+  lastName       String?
+  email          String?
+  phone          String?
+  title          String?
+  primaryContact Boolean  @default(false)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+  CrmBrand       CrmBrand @relation(fields: [crmBrandId], references: [id], onDelete: Cascade)
+
+  @@index([crmBrandId])
+  @@index([email])
+}
+
+model CrmCampaign {
+  id                String    @id
+  campaignName      String
+  brandId           String
+  campaignType      String    @default("Other")
+  status            String    @default("Draft")
+  startDate         DateTime?
+  endDate           DateTime?
+  internalSummary   String?
+  goals             String?
+  keyNotes          String?
+  owner             String?
+  linkedDealIds     String[]  @default([])
+  linkedTalentIds   String[]  @default([])
+  linkedTaskIds     String[]  @default([])
+  linkedOutreachIds String[]  @default([])
+  linkedEventIds    String[]  @default([])
+  activity          Json[]    @default([])
+  lastActivityAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  Brand             Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  CrmTask           CrmTask[]
+
+  @@index([brandId])
+  @@index([lastActivityAt])
+  @@index([owner])
+  @@index([status])
+}
+
+model CrmTask {
+  id          String       @id
+  title       String
+  status      String       @default("Pending")
+  priority    String       @default("Medium")
+  dueDate     DateTime?
+  owner       String?
+  brandId     String?
+  dealId      String?
+  campaignId  String?
+  eventId     String?
+  contractId  String?
+  createdBy   String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  CrmBrand    CrmBrand?    @relation(fields: [brandId], references: [id])
+  CrmCampaign CrmCampaign? @relation(fields: [campaignId], references: [id])
+  User        User?        @relation(fields: [createdBy], references: [id])
+
+  @@index([brandId])
+  @@index([campaignId])
+  @@index([contractId])
+  @@index([createdBy])
+  @@index([dealId])
+  @@index([dueDate])
+  @@index([eventId])
+  @@index([owner])
+  @@index([priority])
+  @@index([status])
 }
 
 model Deal {
-  id                      String              @id
+  id                      String            @id
   userId                  String
   talentId                String
   brandId                 String
-  stage                   DealStage           @default(NEW_LEAD)
+  stage                   DealStage         @default(NEW_LEAD)
   value                   Float?
-  currency                String              @default("USD")
+  currency                String            @default("USD")
   brandName               String?
   aiSummary               String?
   notes                   String?
   expectedClose           DateTime?
-  opportunityId           String?             @unique
-  createdAt               DateTime            @default(now())
+  createdAt               DateTime          @default(now())
   updatedAt               DateTime
   campaignLiveAt          DateTime?
   closedAt                DateTime?
@@ -69,17 +381,18 @@ model Deal {
   deliverablesCompletedAt DateTime?
   negotiationStartedAt    DateTime?
   proposalSentAt          DateTime?
-  Brand                   Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  Talent                  Talent              @relation(fields: [talentId], references: [id], onDelete: Cascade)
-  User                    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Opportunity             SalesOpportunity?   @relation(fields: [opportunityId], references: [id])
+  opportunityId           String?           @unique
+  CreatorTask             CreatorTask[]
+  Brand                   Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  SalesOpportunity        SalesOpportunity? @relation(fields: [opportunityId], references: [id])
+  Talent                  Talent            @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  User                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   DealNegotiation         DealNegotiation?
   DealTimeline            DealTimeline[]
   Deliverable             Deliverable[]
   Invoice                 Invoice[]
   Payment                 Payment[]
   Payout                  Payout[]
-  CreatorTask             CreatorTask[]
 
   @@index([opportunityId])
 }
@@ -120,8 +433,153 @@ model Deliverable {
   approvedAt      DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime
-  Deal            Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
   CreatorTask     CreatorTask[]
+  Deal            Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+}
+
+model DeliverableItem {
+  id              String    @id
+  dealId          String
+  userId          String?
+  title           String
+  description     String?
+  deliverableType String?
+  platform        String?
+  usageRights     String?
+  frequency       String?
+  dueDate         DateTime?
+  dueAt           DateTime?
+  approvedAt      DateTime?
+  locked          Boolean?  @default(false)
+  status          String    @default("pending")
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+
+  @@index([dealId])
+  @@index([status])
+  @@index([userId])
+}
+
+model EmailFeedback {
+  id                 String           @id
+  userId             String
+  emailOpportunityId String
+  isRelevant         Boolean
+  category           String
+  confidence         Float
+  createdAt          DateTime         @default(now())
+  EmailOpportunity   EmailOpportunity @relation(fields: [emailOpportunityId], references: [id], onDelete: Cascade)
+  User               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([emailOpportunityId])
+  @@index([userId])
+}
+
+model EmailOpportunity {
+  id               String          @id
+  userId           String
+  gmailMessageId   String          @unique
+  threadId         String
+  subject          String
+  from             String
+  receivedAt       DateTime
+  category         String
+  confidence       Float
+  brandName        String?
+  opportunityType  String?
+  deliverables     Json?
+  dates            String?
+  location         String?
+  paymentDetails   String?
+  contactEmail     String?
+  isUrgent         Boolean         @default(false)
+  status           String          @default("NEW")
+  notes            String?
+  isRelevant       Boolean?
+  emailBody        String?
+  suggestedActions Json?
+  lastActionAt     DateTime?
+  lastActionType   String?
+  responseNotes    String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime
+  EmailFeedback    EmailFeedback[]
+  User             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([isUrgent])
+  @@index([receivedAt])
+  @@index([userId, category])
+  @@index([userId, status])
+}
+
+model File {
+  id        String   @id
+  userId    String?
+  key       String
+  url       String?
+  filename  String
+  type      String
+  folder    String?
+  size      Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  User      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([folder])
+  @@index([userId])
+}
+
+model FinanceActivityLog {
+  id            String   @id
+  actionType    String
+  referenceType String
+  referenceId   String
+  amount        Float?
+  currency      String?
+  metadata      Json?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  User          User?    @relation(fields: [createdBy], references: [id])
+
+  @@index([actionType])
+  @@index([createdAt])
+  @@index([referenceId])
+  @@index([referenceType])
+}
+
+model FinanceDocument {
+  id         String   @id
+  fileUrl    String
+  fileName   String?
+  fileType   String
+  linkedType String
+  linkedId   String
+  uploadedBy String
+  uploadedAt DateTime @default(now())
+  User       User     @relation(fields: [uploadedBy], references: [id])
+
+  @@index([linkedId])
+  @@index([linkedType])
+  @@index([uploadedBy])
+}
+
+model FinanceReconciliation {
+  id          String   @id
+  type        String
+  referenceId String
+  amount      Float
+  currency    String   @default("USD")
+  method      String?
+  notes       String?
+  confirmedAt DateTime
+  createdBy   String
+  createdAt   DateTime @default(now())
+  User        User     @relation(fields: [createdBy], references: [id])
+
+  @@index([confirmedAt])
+  @@index([referenceId])
+  @@index([type])
 }
 
 model GmailToken {
@@ -145,7 +603,6 @@ model InboundEmail {
   toEmail             String
   subject             String?
   body                String?
-  snippet             String?
   gmailId             String?              @unique
   threadId            String?
   receivedAt          DateTime             @default(now())
@@ -159,6 +616,7 @@ model InboundEmail {
   aiRecommendedAction String?
   aiConfidence        Float?
   aiJson              Json?
+  snippet             String?
   InboxMessage        InboxMessage?        @relation(fields: [inboxMessageId], references: [id], onDelete: Cascade)
   User                User?                @relation(fields: [userId], references: [id])
   TrackingPixelEvent  TrackingPixelEvent[]
@@ -174,19 +632,19 @@ model InboxMessage {
   userId          String
   subject         String?
   snippet         String?
-  sender          String?
-  body            String?          @db.Text
   isRead          Boolean          @default(false)
   lastMessageAt   DateTime
-  receivedAt      DateTime         @default(now())
   participants    String[]
+  body            String?
   parsed          Json?
+  receivedAt      DateTime         @default(now())
+  sender          String?
   InboundEmail    InboundEmail[]
   InboxThreadMeta InboxThreadMeta?
 
-  @@index([userId])
-  @@index([receivedAt])
   @@index([lastMessageAt])
+  @@index([receivedAt])
+  @@index([userId])
 }
 
 model InboxThreadMeta {
@@ -204,23 +662,38 @@ model InboxThreadMeta {
 model Invoice {
   id            String    @id
   dealId        String
-  brandId       String?
-  invoiceNumber String    @unique
   amount        Float
-  currency      String    @default("USD")
   status        String    @default("draft")
   issuedAt      DateTime
   dueAt         DateTime
   paidAt        DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime
-  Deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  brandId       String?
+  currency      String    @default("USD")
+  invoiceNumber String    @unique
   Brand         Brand?    @relation(fields: [brandId], references: [id])
+  Deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
-  @@index([dealId])
   @@index([brandId])
-  @@index([status])
+  @@index([dealId])
   @@index([dueAt])
+  @@index([status])
+}
+
+model Lead {
+  id         String   @id
+  email      String   @unique
+  brandEmail String?
+  name       String?
+  brandName  String?
+  company    String?
+  status     String   @default("new")
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  @@index([status])
 }
 
 model Notification {
@@ -235,28 +708,206 @@ model Notification {
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Payment {
-  id                     String    @id
-  dealId                 String
-  talentId               String?
-  amount                 Float
-  currency               String?   @default("usd")
-  status                 String    @default("PENDING")
-  stripePaymentIntentId  String?   @unique
-  metadata               Json?
-  expectedPaymentDate    DateTime?
-  actualPaymentDate      DateTime?
-  createdAt              DateTime  @default(now())
+model Opportunity {
+  id                     String                   @id
+  brand                  String
+  location               String
+  title                  String
+  deliverables           String
+  payment                String
+  deadline               String
+  status                 String                   @default("Live brief · Login required to apply")
+  image                  String
+  logo                   String
+  type                   String
+  isActive               Boolean                  @default(true)
+  createdBy              String
+  createdAt              DateTime                 @default(now())
   updatedAt              DateTime
-  Deal                   Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  Talent                 Talent?   @relation(fields: [talentId], references: [id])
+  OpportunityApplication OpportunityApplication[]
+  Submission             Submission[]
 
-  @@index([stripePaymentIntentId])
+  @@index([createdBy])
+  @@index([isActive, createdAt])
+}
+
+model OpportunityApplication {
+  id            String      @id
+  opportunityId String
+  creatorId     String
+  status        String      @default("pending")
+  pitch         String?
+  proposedRate  Float?
+  appliedAt     DateTime    @default(now())
+  reviewedAt    DateTime?
+  notes         String?
+  User          User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  Opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, creatorId])
+  @@index([creatorId, status])
+  @@index([opportunityId, status])
+}
+
+model Outreach {
+  id                                  String                @id
+  target                              String
+  type                                String                @default("Brand")
+  contact                             String?
+  contactEmail                        String?
+  link                                String?
+  owner                               String?
+  source                              String?
+  stage                               String                @default("not-started")
+  status                              String                @default("Not started")
+  summary                             String?
+  threadUrl                           String?
+  gmailThreadId                       String?
+  emailsSent                          Int                   @default(0)
+  emailsReplies                       Int                   @default(0)
+  lastContact                         DateTime?
+  nextFollowUp                        DateTime?
+  reminder                            String?
+  opportunityRef                      String?
+  archived                            Boolean               @default(false)
+  linkedCreatorId                     String?
+  linkedBrandId                       String?
+  createdBy                           String
+  createdAt                           DateTime              @default(now())
+  updatedAt                           DateTime
+  linkedCrmBrandId                    String?
+  User_Outreach_createdByToUser       User                  @relation("Outreach_createdByToUser", fields: [createdBy], references: [id], onDelete: Cascade)
+  Brand                               Brand?                @relation(fields: [linkedBrandId], references: [id])
+  User_Outreach_linkedCreatorIdToUser User?                 @relation("Outreach_linkedCreatorIdToUser", fields: [linkedCreatorId], references: [id])
+  CrmBrand                            CrmBrand?             @relation(fields: [linkedCrmBrandId], references: [id])
+  OutreachEmailThread                 OutreachEmailThread[]
+  OutreachNote                        OutreachNote[]
+  OutreachTask                        OutreachTask[]
+  SalesOpportunity                    SalesOpportunity?
+
+  @@index([archived])
+  @@index([createdBy])
+  @@index([gmailThreadId])
+  @@index([linkedBrandId])
+  @@index([linkedCreatorId])
+  @@index([linkedCrmBrandId])
+  @@index([nextFollowUp])
+  @@index([stage])
+}
+
+model OutreachAction {
+  id           String    @id
+  sequenceId   String
+  stepId       String?
+  leadId       String?
+  actionType   String
+  status       String    @default("pending")
+  errorMessage String?
+  scheduledAt  DateTime?
+  executedAt   DateTime?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+
+  @@index([scheduledAt])
+  @@index([sequenceId])
   @@index([status])
 }
 
+model OutreachEmailThread {
+  id            String   @id
+  outreachId    String
+  gmailThreadId String   @unique
+  lastMessageAt DateTime
+  status        String   @default("awaiting_reply")
+  lastSyncedAt  DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  Outreach      Outreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+
+  @@index([gmailThreadId])
+  @@index([outreachId])
+  @@index([status])
+}
+
+model OutreachNote {
+  id         String   @id
+  outreachId String
+  author     String
+  body       String
+  createdAt  DateTime @default(now())
+  Outreach   Outreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([outreachId])
+}
+
+model OutreachSequence {
+  id        String   @id
+  leadId    String
+  name      String
+  status    String   @default("active")
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([leadId])
+  @@index([status])
+}
+
+model OutreachStep {
+  id         String   @id
+  sequenceId String
+  stepNumber Int
+  actionType String
+  delay      Int?
+  template   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+
+  @@index([sequenceId])
+}
+
+model OutreachTask {
+  id         String    @id
+  outreachId String
+  title      String
+  dueDate    DateTime?
+  owner      String?
+  priority   String    @default("Medium")
+  status     String    @default("Open")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  Outreach   Outreach  @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+
+  @@index([dueDate])
+  @@index([outreachId])
+  @@index([status])
+}
+
+model Payment {
+  id                    String    @id
+  dealId                String
+  talentId              String?
+  amount                Float
+  status                String    @default("PENDING")
+  expectedPaymentDate   DateTime?
+  actualPaymentDate     DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime
+  currency              String?   @default("usd")
+  metadata              Json?
+  stripePaymentIntentId String?   @unique
+  Deal                  Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Talent                Talent?   @relation(fields: [talentId], references: [id])
+
+  @@index([status])
+  @@index([stripePaymentIntentId])
+}
+
 model Payout {
-  id               String    @id @default(uuid())
+  id               String    @id
   userId           String?
   referenceId      String?   @unique
   creatorId        String
@@ -269,83 +920,65 @@ model Payout {
   paidAt           DateTime?
   createdBy        String?
   createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  Creator          Talent    @relation("PayoutCreator", fields: [creatorId], references: [id], onDelete: Cascade)
-  Deal             Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  updatedAt        DateTime
   Brand            Brand?    @relation(fields: [brandId], references: [id])
-  CreatedByUser    User?     @relation("PayoutCreatedBy", fields: [createdBy], references: [id])
+  User             User?     @relation(fields: [createdBy], references: [id])
+  Talent           Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  Deal             Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([referenceId])
+  @@index([brandId])
   @@index([creatorId])
   @@index([dealId])
-  @@index([brandId])
-  @@index([status])
   @@index([expectedPayoutAt])
-}
-
-model FinanceReconciliation {
-  id            String   @id @default(uuid())
-  type          String
-  referenceId   String
-  amount        Float
-  currency      String   @default("USD")
-  method        String?
-  notes         String?
-  confirmedAt   DateTime
-  createdBy     String
-  createdAt     DateTime @default(now())
-  CreatedByUser User     @relation(fields: [createdBy], references: [id])
-
-  @@index([type])
   @@index([referenceId])
-  @@index([confirmedAt])
+  @@index([status])
+  @@index([userId])
 }
 
-model FinanceDocument {
-  id             String   @id @default(uuid())
-  fileUrl        String
-  fileName       String?
-  fileType       String
-  linkedType     String
-  linkedId       String
-  uploadedBy     String
-  uploadedAt     DateTime @default(now())
-  UploadedByUser User     @relation(fields: [uploadedBy], references: [id])
+model Resource {
+  id               String             @id
+  title            String
+  shortDescription String
+  longDescription  String?
+  resourceType     ResourceType
+  uploadUrl        String?
+  externalUrl      String?
+  thumbnailUrl     String?
+  status           ResourceStatus     @default(DRAFT)
+  visibility       ResourceVisibility @default(PUBLIC)
+  allowedAudiences String[]           @default([])
+  metadata         Json?
+  eventDate        DateTime?
+  eventTime        String?
+  hasReplay        Boolean?
+  rsvpEnabled      Boolean            @default(false)
+  rsvpOpen         Boolean            @default(true)
+  viewCount        Int                @default(0)
+  createdById      String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  User             User               @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  ResourceRsvp     ResourceRsvp[]
 
-  @@index([linkedType])
-  @@index([linkedId])
-  @@index([uploadedBy])
+  @@index([createdById])
+  @@index([resourceType])
+  @@index([status])
+  @@index([visibility])
 }
 
-model FinanceActivityLog {
-  id            String    @id @default(uuid())
-  actionType    String
-  referenceType String
-  referenceId   String
-  amount        Float?
-  currency      String?
-  metadata      Json?
-  createdBy     String?
-  createdAt     DateTime  @default(now())
-  CreatedByUser User?     @relation(fields: [createdBy], references: [id])
+model ResourceRsvp {
+  id         String   @id
+  resourceId String
+  userId     String
+  status     String   @default("confirmed")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  Resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([actionType])
-  @@index([referenceType])
-  @@index([referenceId])
-  @@index([createdAt])
-}
-
-model XeroConnection {
-  id           String    @id @default(uuid())
-  connected    Boolean   @default(false)
-  tenantId     String?
-  accessToken  String?
-  refreshToken String?
-  expiresAt    DateTime?
-  lastSyncedAt DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  @@unique([resourceId, userId])
+  @@index([resourceId])
+  @@index([userId])
 }
 
 model RiskEvent {
@@ -358,6 +991,87 @@ model RiskEvent {
   details    Json?
   createdAt  DateTime @default(now())
   User       User?    @relation(fields: [userId], references: [id])
+}
+
+model SalesOpportunity {
+  id              String    @id
+  outreachId      String    @unique
+  name            String
+  value           Float
+  currency        String    @default("USD")
+  expectedCloseAt DateTime?
+  status          String    @default("open")
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  Deal            Deal?
+  Outreach        Outreach  @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+
+  @@index([expectedCloseAt])
+  @@index([outreachId])
+  @@index([status])
+}
+
+model SignatureRequest {
+  id           String    @id
+  userId       String
+  contractId   String?
+  documentUrl  String
+  signerEmail  String
+  signedPdfUrl String?
+  status       String    @default("pending")
+  signedAt     DateTime?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+
+  @@index([contractId])
+  @@index([signerEmail])
+  @@index([status])
+  @@index([userId])
+}
+
+model SocialAccountConnection {
+  id           String    @id
+  creatorId    String
+  platform     String
+  handle       String
+  connected    Boolean   @default(false)
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  lastSyncedAt DateTime?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  Talent       Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([creatorId, platform])
+  @@index([creatorId, connected])
+  @@index([platform])
+}
+
+model Submission {
+  id            String       @id
+  creatorId     String
+  opportunityId String?
+  title         String
+  platform      String
+  status        String       @default("draft")
+  contentUrl    String?
+  files         Json?
+  revisions     Json?
+  feedback      String?
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime
+  User          User         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  Opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
+
+  @@index([createdAt])
+  @@index([creatorId, status])
+  @@index([opportunityId])
 }
 
 model SuitabilityResult {
@@ -380,19 +1094,19 @@ model Talent {
   name                    String
   categories              String[]
   stage                   String?
+  AIPromptHistory         AIPromptHistory[]
+  CreatorEvent            CreatorEvent[]
+  CreatorGoal             CreatorGoal[]
+  CreatorInsight          CreatorInsight[]
+  CreatorTask             CreatorTask[]
   Deal                    Deal[]
   Payment                 Payment[]
+  Payout                  Payout[]
+  SocialAccountConnection SocialAccountConnection[]
   SuitabilityResult       SuitabilityResult[]
   User                    User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   TalentAssignment        TalentAssignment[]
-  Payout                  Payout[]                  @relation("PayoutCreator")
-  CreatorGoal             CreatorGoal[]
-  CreatorEvent            CreatorEvent[]
-  SocialAccountConnection SocialAccountConnection[]
-  CreatorInsight          CreatorInsight[]
-  CreatorTask             CreatorTask[]
   WellnessCheckin         WellnessCheckin[]
-  AIPromptHistory         AIPromptHistory[]
 }
 
 model TalentAssignment {
@@ -416,65 +1130,89 @@ model TrackingPixelEvent {
 }
 
 model User {
-  id                      String                  @id
-  email                   String                  @unique
-  password                String?
-  name                    String?
-  avatarUrl               String?
-  createdAt               DateTime                @default(now())
-  updatedAt               DateTime                @updatedAt
-  upgrade_suggested       Boolean?                @default(false)
-  include_in_roster       Boolean                 @default(false)
-  ugcApproved             Boolean                 @default(false)
-  ugcRates                Json?
-  ugc_portfolio_url       String?
-  ugc_categories          String[]                @default([])
-  roster_category         String?
-  subscriptionStatus      String?                 @default("free")
-  managedTalentIds        String[]                @default([])
-  creator_score           Int?
-  creator_score_reason    Json?
-  role_recommended        String?
-  admin_notes             String?
-  onboarding_responses    Json?
-  friends_of_house_id     String?
-  onboarding_status       String?                 @default("pending_review")
-  location                String?
-  timezone                String?
-  pronouns                String?
-  accountType             String?
-  status                  String?
-  bio                     String?
-  socialLinks             Json?
-  onboardingComplete      Boolean?                @default(false)
-  role                    String                  @default("CREATOR")
-  AgentProfile            AgentProfile?
-  AiTokenLog              AiTokenLog[]
-  Deal                    Deal[]
-  DealTimeline            DealTimeline[]
-  GmailToken              GmailToken?
-  InboundEmail            InboundEmail[]
-  Notification            Notification[]
-  RiskEvent               RiskEvent[]
-  Talent                  Talent?
-  TalentAssignment        TalentAssignment[]
-  Resource                Resource[]
-  File                    File[]
-  Outreach                Outreach[]
-  LinkedOutreachAsCreator Outreach[]              @relation("OutreachLinkedCreator")
-  PayoutsCreated          Payout[]                @relation("PayoutCreatedBy")
-  ReconciliationsCreated  FinanceReconciliation[]
-  DocumentsUploaded       FinanceDocument[]
-  FinanceActivityLogs     FinanceActivityLog[]
-  EventsCreated           CreatorEvent[]          @relation("EventCreatedBy")
-  TasksCreated            CreatorTask[]           @relation("TaskCreatedBy")
-  CrmTasksCreated         CrmTask[]               @relation("CrmTaskCreatedBy")
-  BrandCampaigns          BrandCampaign[]
-  Submissions             Submission[]
-  OpportunityApplications OpportunityApplication[]
-  ResourceRsvp            ResourceRsvp[]
-  EmailOpportunities      EmailOpportunity[]
-  EmailFeedback           EmailFeedback[]
+  id                                      String                   @id
+  email                                   String                   @unique
+  password                                String?
+  name                                    String?
+  avatarUrl                               String?
+  createdAt                               DateTime                 @default(now())
+  updatedAt                               DateTime
+  accountType                             String?
+  admin_notes                             String?
+  bio                                     String?
+  creator_score                           Int?
+  creator_score_reason                    Json?
+  friends_of_house_id                     String?
+  include_in_roster                       Boolean                  @default(false)
+  location                                String?
+  managedTalentIds                        String[]                 @default([])
+  onboardingComplete                      Boolean?                 @default(false)
+  onboarding_responses                    Json?
+  onboarding_status                       String?                  @default("pending_review")
+  pronouns                                String?
+  role                                    String                   @default("CREATOR")
+  role_recommended                        String?
+  roster_category                         String?
+  socialLinks                             Json?
+  status                                  String?
+  subscriptionStatus                      String?                  @default("free")
+  timezone                                String?
+  ugcApproved                             Boolean                  @default(false)
+  ugcRates                                Json?
+  ugc_categories                          String[]                 @default([])
+  ugc_portfolio_url                       String?
+  upgrade_suggested                       Boolean?                 @default(false)
+  AgentProfile                            AgentProfile?
+  AiTokenLog                              AiTokenLog[]
+  BrandCampaign                           BrandCampaign[]
+  CreatorEvent                            CreatorEvent[]
+  CreatorTask                             CreatorTask[]
+  CrmTask                                 CrmTask[]
+  Deal                                    Deal[]
+  DealTimeline                            DealTimeline[]
+  EmailFeedback                           EmailFeedback[]
+  EmailOpportunity                        EmailOpportunity[]
+  File                                    File[]
+  FinanceActivityLog                      FinanceActivityLog[]
+  FinanceDocument                         FinanceDocument[]
+  FinanceReconciliation                   FinanceReconciliation[]
+  GmailToken                              GmailToken?
+  InboundEmail                            InboundEmail[]
+  Notification                            Notification[]
+  OpportunityApplication                  OpportunityApplication[]
+  Outreach_Outreach_createdByToUser       Outreach[]               @relation("Outreach_createdByToUser")
+  Outreach_Outreach_linkedCreatorIdToUser Outreach[]               @relation("Outreach_linkedCreatorIdToUser")
+  Payout                                  Payout[]
+  Resource                                Resource[]
+  ResourceRsvp                            ResourceRsvp[]
+  RiskEvent                               RiskEvent[]
+  Submission                              Submission[]
+  Talent                                  Talent?
+  TalentAssignment                        TalentAssignment[]
+}
+
+model WellnessCheckin {
+  id          String   @id
+  creatorId   String
+  energyLevel Int
+  workload    String
+  notes       String?
+  createdAt   DateTime @default(now())
+  Talent      Talent   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, createdAt])
+}
+
+model XeroConnection {
+  id           String    @id
+  connected    Boolean   @default(false)
+  tenantId     String?
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
 }
 
 enum DealStage {
@@ -489,83 +1227,10 @@ enum DealStage {
   LOST
 }
 
-enum SocialPlatform {
-  TIKTOK
-  INSTAGRAM
-  YOUTUBE
-  X
-  LINKEDIN
-  FACEBOOK
-  GMAIL
-}
-
-model Opportunity {
-  id           String                   @id @default(uuid())
-  brand        String
-  location     String
-  title        String
-  deliverables String
-  payment      String
-  deadline     String
-  status       String                   @default("Live brief · Login required to apply")
-  image        String
-  logo         String
-  type         String
-  isActive     Boolean                  @default(true)
-  createdBy    String
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
-  Applications OpportunityApplication[]
-  Submissions  Submission[]
-
-  @@index([isActive, createdAt])
-  @@index([createdBy])
-}
-
-model Resource {
-  id                  String            @id @default(uuid())
-  title               String
-  shortDescription    String
-  longDescription     String?
-  resourceType        ResourceType
-  uploadUrl           String?
-  externalUrl         String?
-  thumbnailUrl        String?
-  status              ResourceStatus    @default(DRAFT)
-  visibility          ResourceVisibility @default(PUBLIC)
-  allowedAudiences    String[]          @default([])
-  metadata            Json?
-  eventDate           DateTime?
-  eventTime           String?
-  hasReplay           Boolean?
-  rsvpEnabled         Boolean           @default(false)
-  rsvpOpen            Boolean           @default(true)
-  viewCount           Int               @default(0)
-  createdById         String
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  createdBy           User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  ResourceRsvp        ResourceRsvp[]
-
-  @@index([resourceType])
-  @@index([status])
-  @@index([visibility])
-  @@index([createdById])
-}
-
-model ResourceRsvp {
-  id         String   @id @default(uuid())
-  resourceId String
-  userId     String
-  status     String   @default("confirmed")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  Resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  User       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([resourceId, userId])
-  @@index([resourceId])
-  @@index([userId])
+enum ResourceStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum ResourceType {
@@ -576,693 +1241,17 @@ enum ResourceType {
   EVENT
 }
 
-enum ResourceStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
 enum ResourceVisibility {
   PUBLIC
   PROTECTED
 }
 
-model File {
-  id        String   @id @default(uuid())
-  userId    String?
-  key       String
-  url       String?
-  filename  String
-  type      String
-  folder    String?
-  size      Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  User      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([folder])
+enum SocialPlatform {
+  TIKTOK
+  INSTAGRAM
+  YOUTUBE
+  X
+  LINKEDIN
+  FACEBOOK
+  GMAIL
 }
-
-model Outreach {
-  id                 String                 @id @default(uuid())
-  target             String
-  type               String                 @default("Brand")
-  contact            String?
-  contactEmail       String?
-  link               String?
-  owner              String?
-  source             String?
-  stage              String                 @default("not-started")
-  status             String                 @default("Not started")
-  summary            String?
-  threadUrl          String?
-  gmailThreadId      String?
-  emailsSent         Int                    @default(0)
-  emailsReplies      Int                    @default(0)
-  lastContact        DateTime?
-  nextFollowUp       DateTime?
-  reminder           String?
-  opportunityRef     String?
-  archived           Boolean                @default(false)
-  linkedCreatorId    String?
-  linkedBrandId      String?
-  linkedCrmBrandId   String?
-  createdBy          String
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
-  User               User                   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  LinkedCreator      User?                  @relation("OutreachLinkedCreator", fields: [linkedCreatorId], references: [id])
-  LinkedBrand        Brand?                 @relation("OutreachLinkedBrand", fields: [linkedBrandId], references: [id])
-  LinkedCrmBrand     CrmBrand?              @relation("CrmBrandOutreach", fields: [linkedCrmBrandId], references: [id])
-  OutreachNote       OutreachNote[]
-  OutreachTask       OutreachTask[]
-  OutreachEmailThread OutreachEmailThread[]
-  SalesOpportunity   SalesOpportunity?
-
-  @@index([createdBy])
-  @@index([stage])
-  @@index([gmailThreadId])
-  @@index([nextFollowUp])
-  @@index([archived])
-  @@index([linkedCreatorId])
-  @@index([linkedBrandId])
-  @@index([linkedCrmBrandId])
-}
-
-model OutreachNote {
-  id          String   @id @default(uuid())
-  outreachId  String
-  author      String
-  body        String
-  createdAt   DateTime @default(now())
-  Outreach    Outreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
-
-  @@index([outreachId])
-  @@index([createdAt])
-}
-
-model OutreachTask {
-  id          String   @id @default(uuid())
-  outreachId  String
-  title       String
-  dueDate     DateTime?
-  owner       String?
-  priority    String   @default("Medium")
-  status      String   @default("Open")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  Outreach    Outreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
-
-  @@index([outreachId])
-  @@index([dueDate])
-  @@index([status])
-}
-
-model CrmTask {
-  id          String    @id @default(uuid())
-  title       String
-  status      String    @default("Pending") // Pending | In progress | Awaiting release | Complete
-  priority    String    @default("Medium") // Low | Medium | High
-  dueDate     DateTime?
-  owner       String?
-  brandId     String?
-  dealId      String?
-  campaignId  String?
-  eventId     String?
-  contractId  String?
-  createdBy   String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  Brand       CrmBrand? @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  Campaign    CrmCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  User        User?     @relation("CrmTaskCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
-
-  @@index([status])
-  @@index([priority])
-  @@index([dueDate])
-  @@index([owner])
-  @@index([brandId])
-  @@index([dealId])
-  @@index([campaignId])
-  @@index([eventId])
-  @@index([contractId])
-  @@index([createdBy])
-}
-
-model OutreachEmailThread {
-  id              String   @id @default(uuid())
-  outreachId      String
-  gmailThreadId   String   @unique
-  lastMessageAt   DateTime
-  status          String   @default("awaiting_reply")
-  lastSyncedAt    DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  Outreach        Outreach @relation(fields: [outreachId], references: [id], onDelete: Cascade)
-
-  @@index([outreachId])
-  @@index([gmailThreadId])
-  @@index([status])
-}
-
-model SalesOpportunity {
-  id              String    @id @default(uuid())
-  outreachId      String    @unique
-  name            String
-  value           Float
-  currency        String    @default("USD")
-  expectedCloseAt DateTime?
-  status          String    @default("open")
-  notes           String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  Outreach        Outreach  @relation(fields: [outreachId], references: [id], onDelete: Cascade)
-  Deal            Deal?
-
-  @@index([outreachId])
-  @@index([status])
-  @@index([expectedCloseAt])
-}
-
-// ============================================
-// EXCLUSIVE TALENT CREATOR-SAFE MODELS
-// ============================================
-
-model CreatorGoal {
-  id              String              @id @default(uuid())
-  creatorId       String
-  goalCategory    String              @default("growth") // creative | commercial | growth | personal | wellbeing
-  goalType        String              // speaking | product | revenue | content | balance | other
-  title           String
-  targetValue     Float?
-  targetUnit      String?             // revenue_range | count | timeframe | percentage
-  timeframe       String?             // Q1 2024 | 6 months | this quarter | etc
-  progress        Float               @default(0) // 0-1 decimal
-  active          Boolean             @default(true)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  Creator         Talent              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  GoalVersions    CreatorGoalVersion[]
-
-  @@index([creatorId, active])
-  @@index([goalType])
-  @@index([goalCategory])
-}
-
-model CreatorGoalVersion {
-  id            String       @id @default(uuid())
-  creatorGoalId String
-  snapshot      Json         // Full goal state at time of change
-  changedAt     DateTime     @default(now())
-  changedBy     String       // creator | agent | admin | system
-  changeType    String       // created | updated | archived
-  CreatorGoal   CreatorGoal  @relation(fields: [creatorGoalId], references: [id], onDelete: Cascade)
-
-  @@index([creatorGoalId, changedAt])
-  @@index([changedBy])
-}
-
-model CreatorEvent {
-  id            String    @id @default(uuid())
-  creatorId     String
-  eventName     String
-  eventType     String    // meeting | shoot | launch | appearance
-  description   String?
-  location      String?
-  startAt       DateTime
-  endAt         DateTime?
-  status        String    @default("suggested") // suggested | invited | accepted | declined
-  source        String    @default("agent") // agent | admin | system
-  sourceUserId  String?
-  declineReason String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  Creator       Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  SourceUser    User?     @relation("EventCreatedBy", fields: [sourceUserId], references: [id])
-
-  @@index([creatorId, status])
-  @@index([startAt])
-  @@index([status])
-}
-
-model SocialAccountConnection {
-  id           String    @id @default(uuid())
-  creatorId    String
-  platform     String    // instagram | tiktok | youtube | x | linkedin
-  handle       String
-  connected    Boolean   @default(false)
-  accessToken  String?
-  refreshToken String?
-  expiresAt    DateTime?
-  lastSyncedAt DateTime?
-  metadata     Json?     // Platform-specific data
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  Creator      Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@unique([creatorId, platform])
-  @@index([creatorId, connected])
-  @@index([platform])
-}
-
-model CreatorInsight {
-  id          String    @id @default(uuid())
-  creatorId   String
-  insightType String    // performance | trend | audience | opportunity
-  title       String
-  summary     String
-  context     String?   // Additional context/explanation
-  metadata    Json?     // Any supporting data
-  priority    Int       @default(0)
-  isRead      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  expiresAt   DateTime? // Optional expiry for time-sensitive insights
-  Creator     Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@index([creatorId, isRead])
-  @@index([creatorId, createdAt])
-  @@index([insightType])
-}
-
-model CreatorTask {
-  id                  String       @id @default(uuid())
-  creatorId           String
-  title               String
-  description         String?
-  taskType            String       // creative | attendance | review | approval
-  dueAt               DateTime?
-  completedAt         DateTime?
-  priority            String       @default("medium") // low | medium | high | urgent
-  status              String       @default("pending") // pending | in_progress | completed | cancelled
-  linkedDealId        String?
-  linkedDeliverableId String?
-  createdBy           String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  Creator             Talent       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  Deal                Deal?        @relation(fields: [linkedDealId], references: [id])
-  Deliverable         Deliverable? @relation(fields: [linkedDeliverableId], references: [id])
-  CreatedByUser       User?        @relation("TaskCreatedBy", fields: [createdBy], references: [id])
-
-  @@index([creatorId, status])
-  @@index([creatorId, dueAt])
-  @@index([linkedDealId])
-  @@index([priority])
-}
-
-model WellnessCheckin {
-  id          String   @id @default(uuid())
-  creatorId   String
-  energyLevel Int      // 1-5 scale
-  workload    String   // light | comfortable | busy | overwhelming
-  notes       String?
-  createdAt   DateTime @default(now())
-  Creator     Talent   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@index([creatorId, createdAt])
-}
-
-model AIPromptHistory {
-  id        String   @id @default(uuid())
-  creatorId String
-  prompt    String
-  response  String
-  category  String?  // content_ideas | career_advice | scheduling | general
-  helpful   Boolean? // Optional feedback
-  createdAt DateTime @default(now())
-  Creator   Talent   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-
-  @@index([creatorId, createdAt])
-  @@index([category])
-}
-
-// ============================================
-// CAMPAIGN MANAGEMENT MODELS
-// ============================================
-
-model BrandCampaign {
-  id           String                 @id @default(uuid())
-  title        String
-  ownerId      String
-  stage        String                 @default("PLANNING") // PLANNING | ACTIVE | REVIEW | COMPLETE
-  brands       Json?                  // Array of brand objects {id, name, email, ...}
-  creatorTeams Json?                  // Array of creator team objects
-  metadata     Json?                  // Additional campaign metadata
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
-  Owner        User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  brandLinks   CampaignBrandPivot[]
-
-  @@index([ownerId])
-  @@index([stage])
-  @@index([createdAt])
-}
-
-model CampaignBrandPivot {
-  id         String        @id @default(uuid())
-  campaignId String
-  brandId    String
-  metrics    Json?         // {reach, revenue, pacing, opportunities, matches}
-  createdAt  DateTime      @default(now())
-  Campaign   BrandCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  @@unique([campaignId, brandId])
-  @@index([campaignId])
-  @@index([brandId])
-}
-
-model CrmBrand {
-  id                 String            @id @default(uuid())
-  brandName          String
-  website            String?
-  industry           String            @default("Other")
-  status             String            @default("Prospect") // Prospect | Active | On Hold | Inactive
-  owner              String?
-  internalNotes      String?
-  activity           Json[]            @default([]) // [{at: ISO string, label: string}]
-  lastActivityAt     DateTime?
-  lastActivityLabel  String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  Contacts           CrmBrandContact[]
-  OutreachRecords    Outreach[]        @relation("CrmBrandOutreach")
-  Tasks              CrmTask[]
-}
-
-model CrmBrandContact {
-  id              String    @id @default(uuid())
-  crmBrandId      String
-  firstName       String?
-  lastName        String?
-  email           String?
-  phone           String?
-  title           String?
-  primaryContact  Boolean   @default(false)
-  notes           String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  CrmBrand        CrmBrand  @relation(fields: [crmBrandId], references: [id], onDelete: Cascade)
-
-  @@index([crmBrandId])
-  @@index([email])
-}
-
-model CrmCampaign {
-  id                  String    @id @default(uuid())
-  campaignName        String
-  brandId             String
-  campaignType        String    @default("Other") // Sponsorship | Content Series | Event | Product Launch | Other
-  status              String    @default("Draft") // Draft | Active | Paused | Completed | Archived
-  startDate           DateTime?
-  endDate             DateTime?
-  internalSummary     String?
-  goals               String?
-  keyNotes            String?
-  owner               String?
-  linkedDealIds       String[]  @default([])
-  linkedTalentIds     String[]  @default([])
-  linkedTaskIds       String[]  @default([])
-  linkedOutreachIds   String[]  @default([])
-  linkedEventIds      String[]  @default([])
-  activity            Json[]    @default([]) // [{at: ISO string, label: string}]
-  lastActivityAt      DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  Brand               Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  Tasks               CrmTask[]
-
-  @@index([brandId])
-  @@index([status])
-  @@index([owner])
-  @@index([lastActivityAt])
-}
-
-model Submission {
-  id            String    @id @default(uuid())
-  creatorId     String
-  creator       User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  opportunityId String?
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
-  title         String
-  platform      String    // instagram | tiktok | youtube | x | linkedin
-  status        String    @default("draft") // draft | pending | approved | revision | rejected
-  contentUrl    String?   // Link to submitted content
-  files         Json?     // Array of file metadata
-  revisions     Json?     // Array of revision history
-  feedback      String?   // Latest feedback
-  submittedAt   DateTime?
-  approvedAt    DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  @@index([creatorId, status])
-  @@index([opportunityId])
-  @@index([createdAt])
-}
-
-model OpportunityApplication {
-  id            String       @id @default(uuid())
-  opportunityId String
-  opportunity   Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  creatorId     String
-  creator       User         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  status        String       @default("pending") // pending | shortlisted | accepted | rejected
-  pitch         String?      // Creator's application pitch
-  proposedRate  Float?       // Creator's proposed rate
-  appliedAt     DateTime     @default(now())
-  reviewedAt    DateTime?
-  notes         String?      // Internal notes from reviewer
-
-  @@unique([opportunityId, creatorId])
-  @@index([creatorId, status])
-  @@index([opportunityId, status])
-}
-
-model EmailOpportunity {
-  id                String             @id @default(uuid())
-  userId            String
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gmailMessageId    String             @unique
-  threadId          String
-  subject           String
-  from              String
-  receivedAt        DateTime
-  category          String             // EVENT_INVITE | BRAND_OPPORTUNITY | COLLABORATION_REQUEST | INBOUND_BRAND_INTEREST
-  confidence        Float              // 0-1 score
-  brandName         String?
-  opportunityType   String?
-  deliverables      Json?              // Array of deliverable strings
-  dates             String?
-  location          String?
-  paymentDetails    String?
-  contactEmail      String?
-  isUrgent          Boolean            @default(false)
-  status            String             @default("NEW") // NEW | REPLIED | DECLINED | NEGOTIATING | AWAITING_BRIEF | IN_PROGRESS | ARCHIVED
-  notes             String?
-  isRelevant        Boolean?           // User feedback for ML training
-  emailBody         String?            @db.Text
-  suggestedActions  Json?              // Array of suggested action strings
-  lastActionAt      DateTime?
-  lastActionType    String?
-  responseNotes     String?            @db.Text
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  feedback          EmailFeedback[]
-
-  @@index([userId, status])
-  @@index([userId, category])
-  @@index([receivedAt])
-  @@index([isUrgent])
-}
-
-model EmailFeedback {
-  id                  String            @id @default(uuid())
-  userId              String
-  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emailOpportunityId  String
-  emailOpportunity    EmailOpportunity  @relation(fields: [emailOpportunityId], references: [id], onDelete: Cascade)
-  isRelevant          Boolean
-  category            String
-  confidence          Float
-  createdAt           DateTime          @default(now())
-
-  @@index([userId])
-  @@index([emailOpportunityId])
-}
-
-// Missing models for worker/AI features
-model AssetGeneration {
-  id              String   @id @default(uuid())
-  deliverableId   String
-  userId          String
-  assetType       String
-  type            String?
-  prompt          String   @db.Text
-  generatedUrl    String?
-  aiOutput        String?  @db.Text
-  status          String   @default("pending")
-  metadata        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([deliverableId])
-  @@index([userId])
-  @@index([status])
-}
-
-model ContractReview {
-  id            String   @id @default(uuid())
-  userId        String
-  fileId        String?
-  contractText  String   @db.Text
-  findings      Json?
-  riskScore     Float?
-  status        String   @default("pending")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([userId])
-  @@index([fileId])
-  @@index([status])
-}
-
-model SignatureRequest {
-  id            String   @id @default(uuid())
-  userId        String
-  contractId    String?
-  documentUrl   String
-  signerEmail   String
-  signedPdfUrl  String?
-  status        String   @default("pending")
-  signedAt      DateTime?
-  metadata      Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([userId])
-  @@index([contractId])
-  @@index([status])
-  @@index([signerEmail])
-}
-
-model OutreachAction {
-  id           String    @id @default(uuid())
-  sequenceId   String
-  stepId       String?
-  leadId       String?
-  actionType   String
-  status       String    @default("pending")
-  errorMessage String?   @db.Text
-  scheduledAt  DateTime?
-  executedAt   DateTime?
-  metadata     Json?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@index([sequenceId])
-  @@index([status])
-  @@index([scheduledAt])
-}
-
-model OutreachSequence {
-  id        String   @id @default(uuid())
-  leadId    String
-  name      String
-  status    String   @default("active")
-  metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([leadId])
-  @@index([status])
-}
-
-model OutreachStep {
-  id          String   @id @default(uuid())
-  sequenceId  String
-  stepNumber  Int
-  actionType  String
-  delay       Int?
-  template    String?  @db.Text
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([sequenceId])
-}
-
-model Lead {
-  id         String   @id @default(uuid())
-  email      String
-  brandEmail String?
-  name       String?
-  brandName  String?
-  company    String?
-  status     String   @default("new")
-  metadata   Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@unique([email])
-  @@index([status])
-}
-
-model AIAgentTask {
-  id          String    @id @default(uuid())
-  userId      String
-  taskType    String
-  payload     Json
-  status      String    @default("pending")
-  result      Json?
-  error       String?   @db.Text
-  startedAt   DateTime?
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@index([userId])
-  @@index([status])
-  @@index([taskType])
-}
-
-model CreatorBalance {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  available       Float    @default(0)
-  availableAmount Float    @default(0)
-  pendingAmount   Float    @default(0)
-  totalEarned     Float    @default(0)
-  currency        String   @default("usd")
-  metadata        Json?
-  lastUpdated     DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([userId])
-}
-
-model DeliverableItem {
-  id              String    @id @default(uuid())
-  dealId          String
-  userId          String?
-  title           String
-  description     String?   @db.Text
-  deliverableType String?
-  platform        String?
-  usageRights     String?
-  frequency       String?
-  dueDate         DateTime?
-  dueAt           DateTime?
-  approvedAt      DateTime?
-  locked          Boolean?  @default(false)
-  status          String    @default("pending")
-  metadata        Json?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  @@index([dealId])
-  @@index([userId])
-  @@index([status])
-}
-

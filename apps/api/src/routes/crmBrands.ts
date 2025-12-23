@@ -81,6 +81,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     const {
       brandName,
       website,
+      logo,
       industry,
       status,
       owner,
@@ -96,6 +97,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
       data: {
         brandName: brandName.trim(),
         website: website?.trim() || null,
+        logo: logo?.trim() || null,
         industry: industry || "Other",
         status: status || "Prospect",
         owner: owner?.trim() || null,
@@ -120,6 +122,7 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
     const {
       brandName,
       website,
+      logo,
       industry,
       status,
       owner,
@@ -142,6 +145,7 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
       data: {
         brandName: brandName?.trim() || existing.brandName,
         website: website !== undefined ? (website?.trim() || null) : existing.website,
+        logo: logo !== undefined ? (logo?.trim() || null) : existing.logo,
         industry: industry || existing.industry,
         status: status || existing.status,
         owner: owner !== undefined ? (owner?.trim() || null) : existing.owner,
