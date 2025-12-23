@@ -264,21 +264,25 @@ model CreatorTask {
 }
 
 model CrmBrand {
-  id                String            @id
-  brandName         String
-  website           String?
-  industry          String            @default("Other")
-  status            String            @default("Prospect")
-  owner             String?
-  internalNotes     String?
-  activity          Json[]            @default([])
-  lastActivityAt    DateTime?
-  lastActivityLabel String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime
-  CrmBrandContact   CrmBrandContact[]
-  CrmTask           CrmTask[]
-  Outreach          Outreach[]
+  id                   String            @id
+  brandName            String
+  website              String?
+  logo                 String?
+  industry             String            @default("Other")
+  status               String            @default("Prospect")
+  lifecycleStage       String?           // Lead | Prospect | Active | Dormant | Inactive
+  relationshipStrength String?           // Strong | Moderate | Weak | New
+  primaryContactId     String?
+  owner                String?
+  internalNotes        String?
+  activity             Json[]            @default([])
+  lastActivityAt       DateTime?
+  lastActivityLabel    String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime
+  CrmBrandContact      CrmBrandContact[]
+  CrmTask              CrmTask[]
+  Outreach             Outreach[]
 }
 
 model CrmBrandContact {

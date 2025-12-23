@@ -43,6 +43,23 @@ const BRAND_INDUSTRIES = [
   "Other"
 ];
 
+const LIFECYCLE_STAGES = [
+  { value: "", label: "Not set" },
+  { value: "Lead", label: "Lead" },
+  { value: "Prospect", label: "Prospect" },
+  { value: "Active", label: "Active" },
+  { value: "Dormant", label: "Dormant" },
+  { value: "Inactive", label: "Inactive" }
+];
+
+const RELATIONSHIP_STRENGTHS = [
+  { value: "", label: "Not set" },
+  { value: "New", label: "New" },
+  { value: "Weak", label: "Weak" },
+  { value: "Moderate", label: "Moderate" },
+  { value: "Strong", label: "Strong" }
+];
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -283,11 +300,16 @@ function Select({ label, value, onChange, options }) {
         onChange={(e) => onChange(e.target.value)}
         className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black outline-none focus:border-brand-black/30"
       >
-        {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
+        {options.map((o) => {
+          const isObject = typeof o === 'object' && o !== null;
+          const optionValue = isObject ? o.value : o;
+          const optionLabel = isObject ? o.label : o;
+          return (
+            <option key={optionValue} value={optionValue}>
+              {optionLabel}
+            </option>
+          );
+        })}
       </select>
     </label>
   );
@@ -593,6 +615,9 @@ export function AdminBrandsPage({ session }) {
     website: "",
     industry: "Other",
     status: "Prospect",
+    lifecycleStage: "",
+    relationshipStrength: "",
+    primaryContactId: "",
     owner: ownerDefault,
     internalNotes: ""
   });
@@ -783,6 +808,9 @@ export function AdminBrandsPage({ session }) {
       logo: "",
       industry: "Other",
       status: "Prospect",
+      lifecycleStage: "",
+      relationshipStrength: "",
+      primaryContactId: "",
       owner: ownerDefault,
       internalNotes: ""
     });
@@ -797,6 +825,9 @@ export function AdminBrandsPage({ session }) {
       logo: brand.logo || "",
       industry: brand.industry || "Other",
       status: brand.status || "Prospect",
+      lifecycleStage: brand.lifecycleStage || "",
+      relationshipStrength: brand.relationshipStrength || "",
+      primaryContactId: brand.primaryContactId || "",
       owner: brand.owner || ownerDefault,
       internalNotes: brand.internalNotes || ""
     });
@@ -818,6 +849,9 @@ export function AdminBrandsPage({ session }) {
           logo: editorDraft.logo.trim(),
           industry: editorDraft.industry,
           status: editorDraft.status,
+          lifecycleStage: editorDraft.lifecycleStage || null,
+          relationshipStrength: editorDraft.relationshipStrength || null,
+          primaryContactId: editorDraft.primaryContactId || null,
           internalNotes: editorDraft.internalNotes,
           owner: editorDraft.owner || ownerDefault
         };
@@ -853,6 +887,9 @@ export function AdminBrandsPage({ session }) {
         logo: editorDraft.logo.trim(),
         industry: editorDraft.industry,
         status: editorDraft.status,
+        lifecycleStage: editorDraft.lifecycleStage || null,
+        relationshipStrength: editorDraft.relationshipStrength || null,
+        primaryContactId: editorDraft.primaryContactId || null,
         internalNotes: editorDraft.internalNotes,
         owner: editorDraft.owner || ownerDefault
       };
@@ -1227,8 +1264,26 @@ export function AdminBrandsPage({ session }) {
                   <p className="mt-2 text-sm text-brand-black/80">{selectedBrand.status}</p>
                 </div>
                 <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Lifecycle stage</p>
+                  <p className="mt-2 text-sm text-brand-black/80">{selectedBrand.lifecycleStage || "—"}</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Relationship</p>
+                  <p className="mt-2 text-sm text-brand-black/80">{selectedBrand.relationshipStrength || "—"}</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
                   <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Owner</p>
                   <p className="mt-2 text-sm text-brand-black/80">{selectedBrand.owner || "—"}</p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Primary contact</p>
+                  <p className="mt-2 text-sm text-brand-black/80">
+                    {selectedBrand.primaryContactId
+                      ? brandContacts.find(c => c.id === selectedBrand.primaryContactId)
+                        ? `${brandContacts.find(c => c.id === selectedBrand.primaryContactId).firstName || ""} ${brandContacts.find(c => c.id === selectedBrand.primaryContactId).lastName || ""}`.trim() || "—"
+                        : "—"
+                      : "—"}
+                  </p>
                 </div>
                 <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
                   <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Created</p>
@@ -1912,6 +1967,37 @@ export function AdminBrandsPage({ session }) {
               value={editorDraft.owner}
               onChange={(v) => setEditorDraft((prev) => ({ ...prev, owner: v }))}
               placeholder="Agent/admin name"
+            />
+          </div>
+        </div>
+
+        {/* Relationship & Lifecycle Section */}
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+          <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Relationship & Lifecycle</p>
+          <div className="space-y-4">
+            <Select
+              label="Lifecycle stage (optional)"
+              value={editorDraft.lifecycleStage}
+              onChange={(v) => setEditorDraft((prev) => ({ ...prev, lifecycleStage: v }))}
+              options={LIFECYCLE_STAGES}
+            />
+            <Select
+              label="Relationship strength (optional)"
+              value={editorDraft.relationshipStrength}
+              onChange={(v) => setEditorDraft((prev) => ({ ...prev, relationshipStrength: v }))}
+              options={RELATIONSHIP_STRENGTHS}
+            />
+            <Select
+              label="Primary contact (optional)"
+              value={editorDraft.primaryContactId}
+              onChange={(v) => setEditorDraft((prev) => ({ ...prev, primaryContactId: v }))}
+              options={[
+                { value: "", label: "None" },
+                ...brandContacts.map(c => ({ 
+                  value: c.id, 
+                  label: `${c.firstName || ""} ${c.lastName || ""}`.trim() || c.email || "Unnamed" 
+                }))
+              ]}
             />
           </div>
         </div>
