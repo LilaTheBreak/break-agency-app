@@ -101,6 +101,54 @@ function PrimaryButton({ children, onClick }) {
   );
 }
 
+function BrandAvatar({ name, logo, size = "md" }) {
+  const sizeClasses = {
+    sm: "h-8 w-8 text-xs",
+    md: "h-12 w-12 text-sm",
+    lg: "h-16 w-16 text-lg"
+  };
+
+  const getInitials = (brandName) => {
+    if (!brandName) return "?";
+    const words = brandName.trim().split(/\s+/);
+    if (words.length === 1) {
+      return words[0].substring(0, 2).toUpperCase();
+    }
+    return (words[0][0] + words[1][0]).toUpperCase();
+  };
+
+  if (logo) {
+    return (
+      <div className={`flex-shrink-0 overflow-hidden rounded-full border border-brand-black/10 bg-brand-white ${sizeClasses[size]}`}>
+        <img
+          src={logo}
+          alt={name}
+          className="h-full w-full object-cover"
+          onError={(e) => {
+            // Fallback to initials if image fails to load
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+        <div
+          className="h-full w-full flex items-center justify-center bg-gradient-to-br from-brand-linen to-brand-white font-semibold text-brand-black/70"
+          style={{ display: 'none' }}
+        >
+          {getInitials(name)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex-shrink-0 overflow-hidden rounded-full border border-brand-black/10 bg-gradient-to-br from-brand-linen to-brand-white ${sizeClasses[size]}`}>
+      <div className="flex h-full w-full items-center justify-center font-semibold text-brand-black/70">
+        {getInitials(name)}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, value, onChange, placeholder }) {
   return (
     <label className="block">
@@ -850,27 +898,36 @@ export function AdminBrandsPage({ session }) {
         {filtered.length === 0 ? (
           <EmptyState onAdd={openCreate} />
         ) : (
-          <section className="space-y-3">
+          <section className="space-y-4">
             {filtered.map((brand) => {
               const hints = deriveHint(brand);
               return (
                 <article
                   key={brand.id}
-                  className="rounded-3xl border border-brand-black/10 bg-brand-white p-5 transition hover:-translate-y-0.5 hover:shadow-[0_25px_80px_rgba(0,0,0,0.08)]"
+                  className="cursor-pointer rounded-3xl border border-brand-black/10 bg-brand-white p-6 transition hover:-translate-y-0.5 hover:bg-brand-linen/20 hover:shadow-[0_25px_80px_rgba(0,0,0,0.08)]"
+                  onClick={() => openDrawer(brand.id)}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <BrandChip name={brand.brandName} status={brand.status} />
-                        <Pill tone="neutral">{brand.industry || "Other"}</Pill>
-                        <Pill tone={brand.status === "Active" ? "positive" : "neutral"}>{brand.status}</Pill>
+                  <div className="flex items-start gap-4">
+                    <BrandAvatar name={brand.brandName} logo={brand.logo} size="md" />
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div className="space-y-2">
+                        <h3 className="font-display text-xl uppercase text-brand-black">{brand.brandName}</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Pill tone="neutral">{brand.industry || "Other"}</Pill>
+                          <Pill tone={brand.status === "Active" ? "positive" : "neutral"}>{brand.status}</Pill>
+                          {hints.map((h) => (
+                            <Pill key={h} tone="neutral">
+                              {h}
+                            </Pill>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-brand-black/70">
-                        <span>Owner: <span className="font-semibold text-brand-black">{brand.owner || "—"}</span></span>
-                        <span className="text-brand-black/30">•</span>
-                        <span>Last activity: <span className="font-semibold text-brand-black">{shortActivity(brand.lastActivityLabel)}</span></span>
-                        <span className="text-brand-black/30">•</span>
-                        <span className="text-brand-black/60">{formatWhen(brand.lastActivityAt)}</span>
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-brand-black/60">
+                        <span>Owner: <span className="font-semibold text-brand-black/80">{brand.owner || "—"}</span></span>
+                        <span className="text-brand-black/20">•</span>
+                        <span>Last activity: <span className="font-semibold text-brand-black/80">{shortActivity(brand.lastActivityLabel)}</span></span>
+                        <span className="text-brand-black/20">•</span>
+                        <span className="text-brand-black/50">{formatWhen(brand.lastActivityAt)}</span>
                       </div>
                       {brand.website ? (
                         <a
@@ -878,21 +935,13 @@ export function AdminBrandsPage({ session }) {
                           href={toExternalUrl(brand.website)}
                           target="_blank"
                           rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {brand.website}
                         </a>
                       ) : null}
-                      {hints.length ? (
-                        <div className="flex flex-wrap gap-2">
-                          {hints.map((h) => (
-                            <Pill key={h} tone="neutral">
-                              {h}
-                            </Pill>
-                          ))}
-                        </div>
-                      ) : null}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <TextButton onClick={() => openDrawer(brand.id)}>Open</TextButton>
                       <ActionsMenu onOpen={() => openDrawer(brand.id)} onEdit={() => {
                         setDrawerBrandId(brand.id);
@@ -927,6 +976,16 @@ export function AdminBrandsPage({ session }) {
         {selectedBrand ? (
           <>
             <section className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-5">
+              <div className="mb-5 flex items-center gap-3">
+                <BrandAvatar name={selectedBrand.brandName} logo={selectedBrand.logo} size="lg" />
+                <div>
+                  <h4 className="font-display text-xl uppercase text-brand-black">{selectedBrand.brandName}</h4>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <Pill tone="neutral">{selectedBrand.industry || "Other"}</Pill>
+                    <Pill tone={selectedBrand.status === "Active" ? "positive" : "neutral"}>{selectedBrand.status}</Pill>
+                  </div>
+                </div>
+              </div>
               <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Overview</p>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
