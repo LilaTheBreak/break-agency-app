@@ -26,9 +26,17 @@ export default function PendingUsersApproval() {
       setPendingUsers(response.data);
     } catch (err) {
       console.error("Error fetching pending users:", err);
-      console.error("Error response:", err.response?.data);
-      console.error("Error status:", err.response?.status);
-      setError(err.response?.data?.error || "Failed to load pending users");
+      if (err.response?.status === 403) {
+        // Permission denied - silent failure
+        setPendingUsers([]);
+        setError(null);
+      } else if (err.response?.status === 404) {
+        // Endpoint not found
+        setPendingUsers([]);
+        setError(null);
+      } else {
+        setError("Unable to load pending users");
+      }
     } finally {
       setLoading(false);
     }
@@ -99,7 +107,7 @@ export default function PendingUsersApproval() {
       <h2 className="text-xl font-bold mb-4">Approve New Users</h2>
       
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 text-gray-600 rounded">
           {error}
         </div>
       )}
