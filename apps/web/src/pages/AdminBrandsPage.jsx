@@ -574,6 +574,8 @@ export function AdminBrandsPage({ session }) {
   const [brands, setBrands] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [brandToDelete, setBrandToDelete] = useState(null);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichmentSuggestion, setEnrichmentSuggestion] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [campaigns, setCampaigns] = useState(() => readCrmCampaigns());
   const [events, setEvents] = useState(() => readCrmEvents());
@@ -1017,6 +1019,56 @@ export function AdminBrandsPage({ session }) {
       contracts: contractCount,
       outreach: outreachCount
     };
+  };
+
+  const enrichWebsite = async (websiteUrl) => {
+    if (!websiteUrl || enriching) return;
+    
+    // Don't enrich if logo is already manually entered
+    if (editorDraft.logo) {
+      console.log('[ENRICHMENT] Skipping - logo already set');
+      return;
+    }
+
+    setEnriching(true);
+    setEnrichmentSuggestion(null);
+
+    try {
+      // Try to fetch favicon/logo from the website
+      const url = websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`;
+      const domain = new URL(url).hostname;
+      
+      // Try multiple favicon sources
+      const faviconSources = [
+        `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+        `${url}/favicon.ico`,
+        `https://logo.clearbit.com/${domain}`
+      ];
+
+      // Test first source (Google favicons is most reliable)
+      const logoUrl = faviconSources[0];
+      
+      // Show suggestion (non-blocking, user can accept or ignore)
+      setEnrichmentSuggestion({ logo: logoUrl });
+      console.log('[ENRICHMENT] Suggested logo:', logoUrl);
+    } catch (error) {
+      console.warn('[ENRICHMENT] Failed to enrich website:', error);
+      // Silent failure - don't block user
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+  const applyEnrichmentSuggestion = () => {
+    if (!enrichmentSuggestion) return;
+    if (enrichmentSuggestion.logo && !editorDraft.logo) {
+      setEditorDraft(prev => ({ ...prev, logo: enrichmentSuggestion.logo }));
+    }
+    setEnrichmentSuggestion(null);
+  };
+
+  const dismissEnrichmentSuggestion = () => {
+    setEnrichmentSuggestion(null);
   };
 
   return (
@@ -1788,8 +1840,48 @@ export function AdminBrandsPage({ session }) {
               label="Website (optional)"
               value={editorDraft.website}
               onChange={(v) => setEditorDraft((prev) => ({ ...prev, website: v }))}
+              onBlur={() => {
+                const url = editorDraft.website.trim();
+                if (url && !editorDraft.logo) {
+                  enrichWebsite(url);
+                }
+              }}
               placeholder="https://…"
             />
+            {enrichmentSuggestion && (
+              <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <BrandAvatar name={editorDraft.brandName || "Brand"} logo={enrichmentSuggestion.logo} size="sm" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/70">Logo detected</p>
+                    <p className="mt-1 text-xs text-brand-black/60">We found a logo for this website. Use it?</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={applyEnrichmentSuggestion}
+                    className="rounded-full border border-brand-black/10 bg-brand-black px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-black/90"
+                  >
+                    Use this logo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissEnrichmentSuggestion}
+                    className="rounded-full border border-brand-black/20 px-3 py-1 text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
+            {enriching && (
+              <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-3">
+                <p className="text-xs text-brand-black/60">Looking for brand logo...</p>
+              </div>
+            )}
             <Field
               label="Logo URL (optional)"
               value={editorDraft.logo}
