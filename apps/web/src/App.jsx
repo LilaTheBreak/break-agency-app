@@ -72,6 +72,7 @@ import { OpportunitiesAdmin } from "./pages/admin/OpportunitiesAdmin.jsx";
 import { AdminDocumentsPage } from "./pages/AdminDocumentsPage.jsx";
 import AdminResourceHub from "./pages/AdminResourceHub.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
+import { ProfilePageNew } from "./pages/ProfilePageNew.jsx";
 import { CreatorPage } from "./pages/CreatorPage.jsx";
 import { LegalPrivacyPage } from "./pages/LegalPrivacy.jsx";
 import { ContactPage } from "./pages/Contact.jsx";
@@ -694,7 +695,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.SUPERADMIN, Roles.ADMIN, Roles.BRAND, Roles.CREATOR, Roles.EXCLUSIVE_TALENT, Roles.UGC, Roles.TALENT_MANAGER, Roles.AGENT, Roles.FOUNDER]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <ProfilePage session={session} />
+              <ProfilePageNew />
             </ProtectedRoute>
           }
         />
