@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { BrandChip } from "../components/BrandChip.jsx";
@@ -147,6 +148,116 @@ function BrandAvatar({ name, logo, size = "md" }) {
       </div>
     </div>
   );
+}
+
+function DeleteConfirmationModal({ open, onClose, onConfirm, brandName, hasLinkedObjects, linkedObjectsSummary }) {
+  const [confirmText, setConfirmText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (open) {
+      setConfirmText("");
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [open]);
+
+  const handleConfirm = async () => {
+    if (confirmText !== brandName) return;
+    setLoading(true);
+    try {
+      await onConfirm();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) return null;
+
+  const canDelete = confirmText === brandName && !hasLinkedObjects;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[10000]" role="dialog" aria-modal="true">
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className="absolute left-1/2 top-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-[0_35px_120px_rgba(0,0,0,0.3)]">
+        <div className="mb-6">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Delete Brand</p>
+          <h3 className="mt-2 font-display text-2xl uppercase text-brand-black">Confirm Deletion</h3>
+        </div>
+
+        {hasLinkedObjects ? (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+              <p className="text-sm font-semibold text-brand-red">Cannot delete brand with linked objects</p>
+              <p className="mt-2 text-xs text-brand-black/70">
+                This brand has linked CRM objects that must be removed first:
+              </p>
+              <ul className="mt-3 space-y-1 text-xs text-brand-black/70">
+                {linkedObjectsSummary.campaigns > 0 && (
+                  <li>• {linkedObjectsSummary.campaigns} campaign{linkedObjectsSummary.campaigns !== 1 ? 's' : ''}</li>
+                )}
+                {linkedObjectsSummary.deals > 0 && (
+                  <li>• {linkedObjectsSummary.deals} deal{linkedObjectsSummary.deals !== 1 ? 's' : ''}</li>
+                )}
+                {linkedObjectsSummary.events > 0 && (
+                  <li>• {linkedObjectsSummary.events} event{linkedObjectsSummary.events !== 1 ? 's' : ''}</li>
+                )}
+                {linkedObjectsSummary.contracts > 0 && (
+                  <li>• {linkedObjectsSummary.contracts} contract{linkedObjectsSummary.contracts !== 1 ? 's' : ''}</li>
+                )}
+                {linkedObjectsSummary.outreach > 0 && (
+                  <li>• {linkedObjectsSummary.outreach} outreach record{linkedObjectsSummary.outreach !== 1 ? 's' : ''}</li>
+                )}
+              </ul>
+            </div>
+            <div className="flex justify-end gap-2">
+              <TextButton onClick={onClose}>Close</TextButton>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+              <p className="text-sm font-semibold text-brand-red">This action cannot be undone</p>
+              <p className="mt-2 text-xs text-brand-black/70">
+                Deleting <span className="font-semibold">{brandName}</span> will permanently remove all brand data, contacts, and notes.
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-[0.35em] text-brand-black/60">
+                Type the brand name to confirm
+              </label>
+              <input
+                ref={inputRef}
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={brandName}
+                className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20"
+                disabled={loading}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <TextButton onClick={onClose} disabled={loading}>Cancel</TextButton>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={!canDelete || loading}
+                className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {loading ? "Deleting..." : "Delete Brand"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return createPortal(modalContent, document.body);
 }
 
 function Field({ label, value, onChange, placeholder }) {
@@ -324,7 +435,7 @@ function EmptyState({ onAdd }) {
   );
 }
 
-function ActionsMenu({ onEdit, onOpen }) {
+function ActionsMenu({ onEdit, onOpen, onDelete, isSuperadmin }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -358,6 +469,21 @@ function ActionsMenu({ onEdit, onOpen }) {
           >
             Edit brand
           </button>
+          {isSuperadmin && onDelete && (
+            <>
+              <div className="my-2 border-t border-brand-black/5" />
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onDelete();
+                }}
+                className="block w-full rounded-xl px-3 py-2 text-left text-brand-red hover:bg-brand-red/5"
+              >
+                Delete brand
+              </button>
+            </>
+          )}
         </div>
       ) : null}
     </div>
@@ -440,10 +566,14 @@ function deriveHint(brand) {
 
 export function AdminBrandsPage({ session }) {
   const navigate = useNavigate();
+  const { hasRole } = useAuth();
+  const isSuperadmin = hasRole("SUPERADMIN");
   const ownerDefault =
     session?.name?.split(" ")?.[0] || session?.email?.split("@")?.[0]?.split(".")?.[0] || "Admin";
 
   const [brands, setBrands] = useState([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [campaigns, setCampaigns] = useState(() => readCrmCampaigns());
   const [events, setEvents] = useState(() => readCrmEvents());
@@ -850,6 +980,45 @@ export function AdminBrandsPage({ session }) {
     }
   };
 
+  const openDeleteModal = (brand) => {
+    setBrandToDelete(brand);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteBrand = async () => {
+    if (!brandToDelete) return;
+    try {
+      setLoading(true);
+      await deleteBrand(brandToDelete.id);
+      await refreshData();
+      setDeleteModalOpen(false);
+      setBrandToDelete(null);
+      setDrawerBrandId("");
+    } catch (error) {
+      console.error('[BRAND DELETE] Failed to delete brand:', error);
+      alert('Failed to delete brand: ' + (error.message || 'Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getLinkedObjectsSummary = (brand) => {
+    if (!brand) return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
+    const campaignCount = (campaigns || []).filter(c => c.brandId === brand.id).length;
+    const dealCount = (deals || []).filter(d => d.brandId === brand.id).length;
+    const eventCount = (events || []).filter(e => e.brandId === brand.id).length;
+    const contractCount = (contracts || []).filter(c => c.brandId === brand.id).length;
+    const outreachCount = brand._count?.OutreachRecords || 0;
+    return {
+      total: campaignCount + dealCount + eventCount + contractCount + outreachCount,
+      campaigns: campaignCount,
+      deals: dealCount,
+      events: eventCount,
+      contracts: contractCount,
+      outreach: outreachCount
+    };
+  };
+
   return (
     <DashboardShell title="Brands" subtitle="Track brands as long-lived CRM entities — without login assumptions." role="admin" navLinks={ADMIN_NAV_LINKS}>
       <div className="space-y-6">
@@ -947,10 +1116,15 @@ export function AdminBrandsPage({ session }) {
                     </div>
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <TextButton onClick={() => openDrawer(brand.id)}>Open</TextButton>
-                      <ActionsMenu onOpen={() => openDrawer(brand.id)} onEdit={() => {
-                        setDrawerBrandId(brand.id);
-                        openEdit(brand);
-                      }} />
+                      <ActionsMenu
+                        onOpen={() => openDrawer(brand.id)}
+                        onEdit={() => {
+                          setDrawerBrandId(brand.id);
+                          openEdit(brand);
+                        }}
+                        onDelete={() => openDeleteModal(brand)}
+                        isSuperadmin={isSuperadmin}
+                      />
                     </div>
                   </div>
                 </article>
@@ -1763,6 +1937,18 @@ export function AdminBrandsPage({ session }) {
           </div>
         </div>
       </Drawer>
+
+      <DeleteConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setBrandToDelete(null);
+        }}
+        onConfirm={handleDeleteBrand}
+        brandName={brandToDelete?.brandName || ""}
+        hasLinkedObjects={getLinkedObjectsSummary(brandToDelete).total > 0}
+        linkedObjectsSummary={getLinkedObjectsSummary(brandToDelete)}
+      />
     </DashboardShell>
   );
 }

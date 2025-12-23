@@ -167,6 +167,42 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
 router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const user = (req as any).user;
+
+    // Superadmin-only check
+    if (user?.role !== "SUPERADMIN") {
+      return res.status(403).json({ error: "Only superadmins can delete brands" });
+    }
+
+    // Check for linked objects
+    const brand = await prisma.crmBrand.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            Contacts: true,
+            OutreachRecords: true,
+            Tasks: true,
+          },
+        },
+      },
+    });
+
+    if (!brand) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+
+    // Prevent deletion if brand has linked objects
+    if (brand._count.Contacts > 0 || brand._count.OutreachRecords > 0 || brand._count.Tasks > 0) {
+      return res.status(400).json({
+        error: "Cannot delete brand with linked objects",
+        linkedObjects: {
+          contacts: brand._count.Contacts,
+          outreach: brand._count.OutreachRecords,
+          tasks: brand._count.Tasks,
+        },
+      });
+    }
 
     await prisma.crmBrand.delete({ where: { id } });
 
