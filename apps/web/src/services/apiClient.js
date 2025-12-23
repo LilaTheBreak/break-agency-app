@@ -23,12 +23,35 @@ export async function apiFetch(path, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(target, {
-    ...options,
-    headers,
-    credentials: "include"
-  });
-  return response;
+  try {
+    const response = await fetch(target, {
+      ...options,
+      headers,
+      credentials: "include"
+    });
+
+    // Add helper method for safe JSON parsing
+    const originalJson = response.json.bind(response);
+    response.json = async function() {
+      const text = await this.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        // If response is HTML (auth redirect, error page), return safe error object
+        if (text.trim().startsWith('<!')) {
+          console.warn(`[API] Received HTML instead of JSON from ${path}. Possible auth redirect.`);
+          return { error: "Authentication required", _isHtmlResponse: true };
+        }
+        console.error(`[API] Invalid JSON from ${path}:`, text.substring(0, 100));
+        throw new Error(`Invalid JSON response from ${path}`);
+      }
+    };
+
+    return response;
+  } catch (error) {
+    console.error(`[API] Fetch error for ${path}:`, error);
+    throw error;
+  }
 }
 
 export { NORMALIZED_BASE as API_BASE };

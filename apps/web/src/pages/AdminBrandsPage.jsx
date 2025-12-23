@@ -28,7 +28,7 @@ import {
   addContactNote as addContactNoteAPI,
 } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase } from "../lib/crmMigration.js";
-import Button, { PrimaryButton, SecondaryButton, DangerButton } from "../components/Button.jsx";
+import Button, { PrimaryButton, SecondaryButton, DangerButton, TextButton } from "../components/Button.jsx";
 
 const BRAND_STATUSES = ["Prospect", "Active", "Past"];
 const BRAND_INDUSTRIES = [
