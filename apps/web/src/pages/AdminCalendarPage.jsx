@@ -25,6 +25,9 @@ const TYPE_FILTERS = [
 const DEFAULT_TYPE_ID = TYPE_FILTERS[0].id;
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// Meeting summaries - auto-generated from recordings (feature in development)
+const MEETING_SUMMARIES = [];
+
 function getCalendarMatrix(date = new Date()) {
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -729,25 +732,31 @@ export function CalendarBoard({
           </button>
         </div>
         <div className="mt-4 space-y-4">
-          {MEETING_SUMMARIES.map((summary) => (
-            <div key={summary.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 space-y-2">
-              <p className="font-semibold text-brand-black">{summary.title}</p>
-              <p className="text-sm text-brand-black/70">{summary.summary}</p>
-              <ul className="space-y-1 text-sm text-brand-black/80">
-                {summary.tasks.map((task) => (
-                  <li key={task}>• {task}</li>
-                ))}
-              </ul>
-              <div className="flex gap-2">
-                <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
-                  View transcript
-                </button>
-                <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
-                  Push tasks
-                </button>
+          {MEETING_SUMMARIES.length > 0 ? (
+            MEETING_SUMMARIES.map((summary) => (
+              <div key={summary.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 space-y-2">
+                <p className="font-semibold text-brand-black">{summary.title}</p>
+                <p className="text-sm text-brand-black/70">{summary.summary}</p>
+                <ul className="space-y-1 text-sm text-brand-black/80">
+                  {summary.tasks.map((task) => (
+                    <li key={task}>• {task}</li>
+                  ))}
+                </ul>
+                <div className="flex gap-2">
+                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
+                    View transcript
+                  </button>
+                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
+                    Push tasks
+                  </button>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/20 p-8 text-center">
+              <p className="text-sm text-brand-black/60">No meeting summaries yet. Upload a recording to generate auto-notes and tasks.</p>
             </div>
-          ))}
+          )}
         </div>
       </section>
       {isModalOpen && (
