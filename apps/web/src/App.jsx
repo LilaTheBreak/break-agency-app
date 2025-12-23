@@ -598,7 +598,14 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
     }
   }, [location.pathname]);
 
-  const showGateScreen = showGate && location.pathname === "/";
+  // AUTH LOADING GATE - Prevent any rendering until auth is resolved
+  if (authLoading) {
+    return null; // or return a neutral loading skeleton
+  }
+
+  const showGateScreen = showGate && location.pathname === "/" && !session;
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAuthenticatedRoute = session && (isAdminRoute || location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/account'));
 
   return (
     <>
@@ -639,7 +646,16 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         onSignOut={handleSignOut}
       />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route 
+          path="/" 
+          element={
+            !session ? (
+              <LandingPage />
+            ) : (
+              <Navigate to="/dashboard" replace />
+            )
+          } 
+        />
         <Route path="/resource-hub" element={<ResourceHubPage />} />
         <Route path="/legal" element={<LegalPrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
