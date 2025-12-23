@@ -167,21 +167,29 @@ function BrandOverviewSection({ session }) {
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Next steps</p>
           <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
-            {overview.nextSteps.map((item) => (
-              <li key={item}>• {item}</li>
-            ))}
+            {Array.isArray(overview.nextSteps) && overview.nextSteps.length > 0 ? (
+              overview.nextSteps.map((item) => (
+                <li key={item}>• {item}</li>
+              ))
+            ) : (
+              <li className="text-brand-black/40">No immediate steps required</li>
+            )}
           </ul>
         </div>
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Results summary</p>
           <div className="mt-3 grid gap-3 text-brand-black">
-            {overview.results.map((result) => (
-              <div key={result.label}>
-                <p className="text-sm uppercase tracking-[0.3em] text-brand-black/60">{result.label}</p>
-                <p className="font-display text-2xl uppercase">{result.value}</p>
-                <p className="text-xs text-brand-black/50">{result.context}</p>
-              </div>
-            ))}
+            {Array.isArray(overview.results) && overview.results.length > 0 ? (
+              overview.results.map((result) => (
+                <div key={result.label}>
+                  <p className="text-sm uppercase tracking-[0.3em] text-brand-black/60">{result.label}</p>
+                  <p className="font-display text-2xl uppercase">{result.value}</p>
+                  <p className="text-xs text-brand-black/50">{result.context}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-brand-black/40">Results will appear after campaign activity</p>
+            )}
           </div>
         </div>
       </div>
@@ -541,43 +549,48 @@ function BrandOpportunitiesSection({ session }) {
                 </button>
               </div>
               <div className="space-y-4">
-                {recommendedMatches.map((match) => {
-                  const isShortlisted = shortlistedNames.includes(match.creator.name);
-                  const isApproved = approvedNames.includes(match.creator.name);
-                  return (
-                    <article key={match.creator.name} className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-brand-black">{match.creator.name}</p>
-                          <p className="text-xs text-brand-black/60">{match.creator.style}</p>
+                {Array.isArray(recommendedMatches) && recommendedMatches.length > 0 ? (
+                  recommendedMatches.map((match) => {
+                    const isShortlisted = shortlistedNames.includes(match.creator.name);
+                    const isApproved = approvedNames.includes(match.creator.name);
+                    return (
+                      <article key={match.creator.name} className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-brand-black">{match.creator.name}</p>
+                            <p className="text-xs text-brand-black/60">{match.creator.style}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge tone="positive">{match.score}% match</Badge>
+                            {isApproved ? (
+                              <Badge tone="positive">Approved</Badge>
+                            ) : isShortlisted ? (
+                              <Badge tone="neutral">Shortlisted</Badge>
+                            ) : null}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge tone="positive">{match.score}% match</Badge>
-                          {isApproved ? (
-                            <Badge tone="positive">Approved</Badge>
-                          ) : isShortlisted ? (
-                            <Badge tone="neutral">Shortlisted</Badge>
-                          ) : null}
+                        <div className="grid gap-3 text-sm text-brand-black/70 md:grid-cols-3">
+                          <OpportunityFact label="Audience" value={match.creator.audience} />
+                          <OpportunityFact label="Demographics" value={match.creator.demographics} />
+                          <OpportunityFact label="Availability" value={match.creator.availability} />
+                          <OpportunityFact label="Pricing" value={match.creator.pricing} />
+                          <OpportunityFact label="Performance" value={match.creator.performance} />
+                          <OpportunityFact label="Affinity" value={match.creator.affinity} />
                         </div>
-                      </div>
-                      <div className="grid gap-3 text-sm text-brand-black/70 md:grid-cols-3">
-                        <OpportunityFact label="Audience" value={match.creator.audience} />
-                        <OpportunityFact label="Demographics" value={match.creator.demographics} />
-                        <OpportunityFact label="Availability" value={match.creator.availability} />
-                        <OpportunityFact label="Pricing" value={match.creator.pricing} />
-                        <OpportunityFact label="Performance" value={match.creator.performance} />
-                        <OpportunityFact label="Affinity" value={match.creator.affinity} />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {match.signals.map((signal) => (
-                          <span
-                            key={signal}
-                            className="rounded-full border border-brand-black/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.2em]"
-                          >
-                            {signal}
-                          </span>
-                        ))}
-                      </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {Array.isArray(match.signals) && match.signals.length > 0 ? (
+                            match.signals.map((signal) => (
+                              <span
+                                key={signal}
+                                className="rounded-full border border-brand-black/20 bg-white px-3 py-1 text-xs uppercase tracking-[0.2em]"
+                              >
+                                {signal}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-brand-black/60">No signals available</span>
+                          )}
+                        </div>
                       <div className="flex flex-wrap items-center gap-3">
                         <button
                           onClick={() => handleShortlist(match.creator.name)}
@@ -596,7 +609,12 @@ function BrandOpportunitiesSection({ session }) {
                       </div>
                     </article>
                   );
-                })}
+                })
+                ) : (
+                  <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-6 text-center">
+                    <p className="text-sm text-brand-black/60">No recommended matches available</p>
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -762,16 +780,22 @@ function BrandMessagesSection() {
         </div>
       </div>
       <div className="space-y-2">
-        {threads.map((thread) => (
-          <div
-            key={thread.subject}
-            className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-3 text-sm text-brand-black/80"
-          >
-            <p className="font-semibold text-brand-black">{thread.subject}</p>
-            <p className="text-xs text-brand-black/60">Contact: {thread.contact}</p>
-            <p className="text-xs text-brand-red">{thread.status}</p>
+        {Array.isArray(threads) && threads.length > 0 ? (
+          threads.map((thread) => (
+            <div
+              key={thread.subject}
+              className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-3 text-sm text-brand-black/80"
+            >
+              <p className="font-semibold text-brand-black">{thread.subject}</p>
+              <p className="text-xs text-brand-black/60">Contact: {thread.contact}</p>
+              <p className="text-xs text-brand-red">{thread.status}</p>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-3 text-center">
+            <p className="text-sm text-brand-black/60">No active threads</p>
           </div>
-        ))}
+        )}
       </div>
     </section>
   );
