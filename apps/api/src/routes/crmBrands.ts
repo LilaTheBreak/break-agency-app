@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import { randomUUID } from "crypto";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 
@@ -9,7 +10,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const brands = await prisma.crmBrand.findMany({
       include: {
-        Contacts: {
+        CrmBrandContact: {
           select: {
             id: true,
             firstName: true,
@@ -19,8 +20,8 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
         },
         _count: {
           select: {
-            Contacts: true,
-            OutreachRecords: true,
+            CrmBrandContact: true,
+            Outreach: true,
           },
         },
       },
@@ -30,7 +31,22 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       ],
     });
 
-    res.json({ brands });
+    // Defensive: ensure all optional fields are safe
+    const safeBrands = brands.map(brand => ({
+      ...brand,
+      website: brand.website ?? null,
+      logo: brand.logo ?? null,
+      lifecycleStage: brand.lifecycleStage ?? null,
+      relationshipStrength: brand.relationshipStrength ?? null,
+      primaryContactId: brand.primaryContactId ?? null,
+      owner: brand.owner ?? null,
+      internalNotes: brand.internalNotes ?? null,
+      lastActivityAt: brand.lastActivityAt ?? null,
+      lastActivityLabel: brand.lastActivityLabel ?? null,
+      activity: Array.isArray(brand.activity) ? brand.activity : [],
+    }));
+
+    res.json({ brands: safeBrands });
   } catch (error) {
     console.error("[CRM BRANDS] Error fetching brands:", error);
     res.status(500).json({ error: "Failed to fetch brands" });
@@ -45,20 +61,20 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
     const brand = await prisma.crmBrand.findUnique({
       where: { id },
       include: {
-        Contacts: {
+        CrmBrandContact: {
           orderBy: [
             { primaryContact: "desc" },
             { lastName: "asc" },
           ],
         },
-        OutreachRecords: {
+        Outreach: {
           orderBy: { createdAt: "desc" },
           take: 20,
         },
         _count: {
           select: {
-            Contacts: true,
-            OutreachRecords: true,
+            CrmBrandContact: true,
+            Outreach: true,
           },
         },
       },
@@ -68,7 +84,22 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Brand not found" });
     }
 
-    res.json({ brand });
+    // Defensive: ensure all optional fields are safe
+    const safeBrand = {
+      ...brand,
+      website: brand.website ?? null,
+      logo: brand.logo ?? null,
+      lifecycleStage: brand.lifecycleStage ?? null,
+      relationshipStrength: brand.relationshipStrength ?? null,
+      primaryContactId: brand.primaryContactId ?? null,
+      owner: brand.owner ?? null,
+      internalNotes: brand.internalNotes ?? null,
+      lastActivityAt: brand.lastActivityAt ?? null,
+      lastActivityLabel: brand.lastActivityLabel ?? null,
+      activity: Array.isArray(brand.activity) ? brand.activity : [],
+    };
+
+    res.json({ brand: safeBrand });
   } catch (error) {
     console.error("[CRM BRANDS] Error fetching brand:", error);
     res.status(500).json({ error: "Failed to fetch brand" });
@@ -98,6 +129,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     const now = new Date().toISOString();
     const brand = await prisma.crmBrand.create({
       data: {
+        id: randomUUID(),
         brandName: brandName.trim(),
         website: website?.trim() || null,
         logo: logo?.trim() || null,
@@ -111,6 +143,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
         lastActivityAt: now,
         lastActivityLabel: "Brand created",
         activity: [{ at: now, label: "Brand created" }],
+        updatedAt: now,
       },
     });
 
@@ -192,9 +225,9 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
       include: {
         _count: {
           select: {
-            Contacts: true,
-            OutreachRecords: true,
-            Tasks: true,
+            CrmBrandContact: true,
+            Outreach: true,
+            CrmTask: true,
           },
         },
       },
@@ -205,13 +238,13 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
     }
 
     // Prevent deletion if brand has linked objects
-    if (brand._count.Contacts > 0 || brand._count.OutreachRecords > 0 || brand._count.Tasks > 0) {
+    if (brand._count.CrmBrandContact > 0 || brand._count.Outreach > 0 || brand._count.CrmTask > 0) {
       return res.status(400).json({
         error: "Cannot delete brand with linked objects",
         linkedObjects: {
-          contacts: brand._count.Contacts,
-          outreach: brand._count.OutreachRecords,
-          tasks: brand._count.Tasks,
+          contacts: brand._count.CrmBrandContact,
+          outreach: brand._count.Outreach,
+          tasks: brand._count.CrmTask,
         },
       });
     }
@@ -242,19 +275,22 @@ router.post("/batch-import", requireAuth, async (req: Request, res: Response) =>
         try {
           await prisma.crmBrand.create({
             data: {
-              id: brand.id || undefined,
+              id: brand.id || randomUUID(),
               brandName: brand.brandName,
               website: brand.website || null,
+              logo: brand.logo || null,
               industry: brand.industry || "Other",
               status: brand.status || "Prospect",
+              lifecycleStage: brand.lifecycleStage || null,
+              relationshipStrength: brand.relationshipStrength || null,
+              primaryContactId: brand.primaryContactId || null,
               owner: brand.owner || null,
               internalNotes: brand.internalNotes || null,
-              linkedDealsCount: brand.linkedDealsCount || 0,
-              linkedTasksCount: brand.linkedTasksCount || 0,
-              lastActivityAt: brand.lastActivityAt || brand.createdAt,
+              activity: Array.isArray(brand.activity) ? brand.activity : [],
+              lastActivityAt: brand.lastActivityAt || brand.createdAt || new Date(),
               lastActivityLabel: brand.lastActivityLabel || "Brand created",
-              activity: brand.activity || [],
               createdAt: brand.createdAt || new Date(),
+              updatedAt: brand.updatedAt || new Date(),
             },
           });
           imported.brands++;
@@ -268,23 +304,19 @@ router.post("/batch-import", requireAuth, async (req: Request, res: Response) =>
     if (Array.isArray(contacts)) {
       for (const contact of contacts) {
         try {
-          await prisma.crmContact.create({
+          await prisma.crmBrandContact.create({
             data: {
-              id: contact.id || undefined,
-              brandId: contact.brandId,
-              firstName: contact.firstName,
-              lastName: contact.lastName,
-              role: contact.role || null,
+              id: contact.id || randomUUID(),
+              crmBrandId: contact.brandId || contact.crmBrandId,
+              firstName: contact.firstName || null,
+              lastName: contact.lastName || null,
               email: contact.email || null,
               phone: contact.phone || null,
-              linkedInUrl: contact.linkedInUrl || null,
-              relationshipStatus: contact.relationshipStatus || "New",
-              preferredContactMethod: contact.preferredContactMethod || null,
+              title: contact.title || null,
               primaryContact: contact.primaryContact || false,
-              owner: contact.owner || null,
-              lastContactedAt: contact.lastContactedAt || null,
-              notes: contact.notes || [],
+              notes: contact.notes || null,
               createdAt: contact.createdAt || new Date(),
+              updatedAt: contact.updatedAt || new Date(),
             },
           });
           imported.contacts++;
@@ -298,24 +330,40 @@ router.post("/batch-import", requireAuth, async (req: Request, res: Response) =>
     if (Array.isArray(outreach)) {
       for (const record of outreach) {
         try {
-          await prisma.outreachRecord.create({
+          // Skip if required fields are missing
+          if (!record.target || !record.createdBy) {
+            console.warn("[BATCH IMPORT] Skipping outreach record - missing required fields");
+            continue;
+          }
+
+          await prisma.outreach.create({
             data: {
-              id: record.id || undefined,
-              direction: record.direction,
-              channel: record.channel,
-              summary: record.summary,
-              fullNotes: record.fullNotes || null,
-              brandId: record.brandId,
-              contactId: record.contactId || null,
-              dealId: record.dealId || null,
-              campaignId: record.campaignId || null,
-              talentId: record.talentId || null,
-              outcome: record.outcome || "No reply yet",
-              followUpSuggested: record.followUpSuggested || false,
-              followUpBy: record.followUpBy || null,
-              visibility: record.visibility || "Internal",
+              id: record.id || randomUUID(),
+              target: record.target,
+              type: record.type || "Brand",
+              contact: record.contact || null,
+              contactEmail: record.contactEmail || null,
+              link: record.link || null,
+              owner: record.owner || null,
+              source: record.source || null,
+              stage: record.stage || "not-started",
+              status: record.status || "Not started",
+              summary: record.summary || null,
+              threadUrl: record.threadUrl || null,
+              gmailThreadId: record.gmailThreadId || null,
+              emailsSent: record.emailsSent || 0,
+              emailsReplies: record.emailsReplies || 0,
+              lastContact: record.lastContact || null,
+              nextFollowUp: record.nextFollowUp || null,
+              reminder: record.reminder || null,
+              opportunityRef: record.opportunityRef || null,
+              archived: record.archived || false,
+              linkedCreatorId: record.linkedCreatorId || null,
+              linkedBrandId: record.linkedBrandId || null,
+              linkedCrmBrandId: record.brandId || record.crmBrandId || record.linkedCrmBrandId || null,
+              createdBy: record.createdBy,
               createdAt: record.createdAt || new Date(),
-              createdBy: record.createdBy || "Admin",
+              updatedAt: record.updatedAt || new Date(),
             },
           });
           imported.outreach++;
