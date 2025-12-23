@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { useMessaging } from "../context/messaging.js";
+import { getRecentInbox } from "../services/inboxClient.js";
 
 const FILTERS = ["All", "Creators", "Brands", "Talent Managers", "External"];
 const ACCEPTED_ATTACHMENTS = ".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.mp4,.mov,.xlsx,.csv";
@@ -19,6 +20,9 @@ export function AdminMessagingPage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [selectedThreadId, setSelectedThreadId] = useState(null);
   const [composer, setComposer] = useState({ body: "", attachments: [] });
+  const [inboxEmails, setInboxEmails] = useState([]);
+  const [inboxLoading, setInboxLoading] = useState(false);
+  const [inboxError, setInboxError] = useState(null);
 
   const filteredThreads = useMemo(() => {
     if (activeFilter === "All") return threads;
@@ -44,6 +48,29 @@ export function AdminMessagingPage() {
       markThreadRead(selectedThread.id, currentUser);
     }
   }, [selectedThread, currentUser, markThreadRead]);
+
+  // Fetch inbox emails on mount
+  useEffect(() => {
+    const fetchInbox = async () => {
+      setInboxLoading(true);
+      setInboxError(null);
+      
+      const result = await getRecentInbox(10);
+      
+      if (result.success) {
+        setInboxEmails(result.data || []);
+      } else {
+        // Don't show error if Gmail not connected (expected state)
+        if (result.error !== "gmail_not_connected") {
+          setInboxError(result.error);
+        }
+      }
+      
+      setInboxLoading(false);
+    };
+    
+    fetchInbox();
+  }, []);
 
   const handleOpenThread = (threadId) => {
     setSelectedThreadId(threadId);
@@ -113,6 +140,7 @@ export function AdminMessagingPage() {
         </div>
       </div>
       <SystemAlerts alerts={alerts} />
+      <EmailInboxSection emails={inboxEmails} loading={inboxLoading} error={inboxError} />
       <section className="mt-4 space-y-3">
         {filteredThreads.length ? (
           filteredThreads.map((thread) => (
@@ -332,6 +360,86 @@ function SystemAlerts({ alerts }) {
           <p className="mt-2 text-[0.6rem] uppercase tracking-[0.35em] text-brand-black/50">{timeAgo(alert.timestamp)}</p>
         </div>
       ))}
+    </div>
+  );
+}
+
+function EmailInboxSection({ emails, loading, error }) {
+  if (error) {
+    return (
+      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="text-sm text-brand-black/60">Unable to load inbox. Please refresh or connect Gmail.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+            Email Inbox (Latest)
+          </p>
+          <p className="mt-1 text-xs text-brand-black/60">
+            Recent inbound emails from your connected Gmail account.
+          </p>
+        </div>
+        <button
+          disabled
+          className="rounded-full border border-brand-black/20 px-4 py-2 text-xs text-brand-black/40 cursor-not-allowed"
+        >
+          View all (Coming soon)
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {loading ? (
+          <>
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-20 rounded-2xl border border-brand-black/10 bg-brand-linen/20 animate-pulse"
+              />
+            ))}
+          </>
+        ) : emails.length === 0 ? (
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-6 text-center">
+            <p className="text-sm text-brand-black/60">No inbound emails yet.</p>
+          </div>
+        ) : (
+          emails.map((email) => <EmailRow key={email.id} email={email} />)
+        )}
+      </div>
+    </section>
+  );
+}
+
+function EmailRow({ email }) {
+  // Extract sender name from participants or sender field
+  const senderName = email.sender || email.participants?.[0] || "Unknown";
+  const subject = email.subject || "(No subject)";
+  const snippet = email.snippet || "";
+  const timestamp = email.lastMessageAt || email.receivedAt || Date.now();
+
+  return (
+    <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 hover:bg-brand-linen/60 transition-colors cursor-pointer">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-sm text-brand-black truncate">{senderName}</p>
+            {!email.isRead && (
+              <span className="flex-shrink-0 h-2 w-2 rounded-full bg-brand-red" title="Unread" />
+            )}
+          </div>
+          <p className="mt-1 text-sm text-brand-black/80 font-medium line-clamp-1">{subject}</p>
+          {snippet && (
+            <p className="mt-1 text-xs text-brand-black/60 line-clamp-2">{snippet}</p>
+          )}
+        </div>
+        <p className="flex-shrink-0 text-[0.6rem] uppercase tracking-[0.35em] text-brand-black/50 whitespace-nowrap">
+          {timeAgo(new Date(timestamp).getTime())}
+        </p>
+      </div>
     </div>
   );
 }
