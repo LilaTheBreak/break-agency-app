@@ -4,22 +4,25 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { EmptyStateWithHint } from "../components/CrmMetaRuleHelper.jsx";
 import { BrandChip } from "../components/BrandChip.jsx";
-import { DealChip } from "../components/DealChip.jsx";
-import { CampaignChip } from "../components/CampaignChip.jsx";
-import { EventChip } from "../components/EventChip.jsx";
-import { ContractChip } from "../components/ContractChip.jsx";
 import { Badge } from "../components/Badge.jsx";
+import { MentionInput } from "../components/MentionInput.jsx";
+import { MultiSelect } from "../components/MultiSelect.jsx";
 import { TASK_PRIORITIES, TASK_STATUSES } from "../lib/crmTasks.js";
-import { fetchCrmTasks, createCrmTask, updateCrmTask, deleteCrmTask } from "../services/crmTasksClient.js";
+import { 
+  fetchCrmTasks, 
+  createCrmTask, 
+  updateCrmTask, 
+  deleteCrmTask,
+  fetchTaskUsers,
+  fetchTaskTalents 
+} from "../services/crmTasksClient.js";
 import { readCrmDeals } from "../lib/crmDeals.js";
 import { readCrmCampaigns } from "../lib/crmCampaigns.js";
 import { readCrmEvents } from "../lib/crmEvents.js";
 import { readCrmContracts } from "../lib/crmContracts.js";
-import { listGmailMessages } from "../services/gmailClient.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const BRANDS_STORAGE_KEY = "break_admin_brands_v1";
-
-const STATUS_OPTIONS = ["All statuses", ...TASK_STATUSES];
 
 function safeRead(key, fallback) {
   try {
@@ -72,24 +75,17 @@ function PrimaryButton({ children, onClick, disabled }) {
 function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
   const modalRef = useRef(null);
 
-  // Handle ESC key to close modal
   useEffect(() => {
     if (!open) return;
-
     const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
-
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [open, onClose]);
 
-  // Trap focus inside modal
   useEffect(() => {
     if (!open) return;
-
     const modalElement = modalRef.current;
     if (!modalElement) return;
 
@@ -101,7 +97,6 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
 
     const handleTab = (e) => {
       if (e.key !== "Tab") return;
-
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
           lastElement?.focus();
@@ -117,13 +112,9 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
 
     modalElement.addEventListener("keydown", handleTab);
     firstElement?.focus();
-
-    return () => {
-      modalElement.removeEventListener("keydown", handleTab);
-    };
+    return () => modalElement.removeEventListener("keydown", handleTab);
   }, [open]);
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -144,17 +135,15 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
       
-      {/* Modal Content */}
       <div 
         ref={modalRef}
-        className="relative w-full max-w-[820px] max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-black/10 bg-brand-white shadow-[0_35px_120px_rgba(0,0,0,0.25)]"
+        className="relative w-full max-w-[920px] max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-black/10 bg-brand-white shadow-[0_35px_120px_rgba(0,0,0,0.25)]"
       >
         <div className="sticky top-0 z-10 bg-brand-white border-b border-brand-black/5 px-6 pt-6 pb-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -166,7 +155,7 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
           </div>
         </div>
         
-        <div className="px-6 py-4 space-y-4">
+        <div className="px-6 py-4 space-y-6">
           {children}
         </div>
         
@@ -179,7 +168,6 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
     </div>
   );
 
-  // Render modal via portal to document.body
   return createPortal(modalContent, document.body);
 }
 
@@ -219,21 +207,21 @@ function Field({ label, type = "text", value, onChange, placeholder }) {
 }
 
 export function AdminTasksPage() {
+  const { currentUser } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState("");
   const [formError, setFormError] = useState("");
-  const [suggested, setSuggested] = useState([]);
-  const [suggestedLoading, setSuggestedLoading] = useState(true);
-  const [suggestedError, setSuggestedError] = useState("");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All statuses");
   const [brandFilter, setBrandFilter] = useState("All brands");
-  const [ownerFilter, setOwnerFilter] = useState("All owners");
 
+  // Data sources
+  const [users, setUsers] = useState([]);
+  const [talents, setTalents] = useState([]);
   const brands = useMemo(() => safeRead(BRANDS_STORAGE_KEY, []), []);
   const deals = useMemo(() => readCrmDeals(), []);
   const campaigns = useMemo(() => readCrmCampaigns(), []);
@@ -241,13 +229,31 @@ export function AdminTasksPage() {
   const contracts = useMemo(() => readCrmContracts(), []);
 
   const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
-  const dealById = useMemo(() => new Map((deals || []).map((d) => [d.id, d])), [deals]);
-  const campaignById = useMemo(() => new Map((campaigns || []).map((c) => [c.id, c])), [campaigns]);
-  const eventById = useMemo(() => new Map((events || []).map((e) => [e.id, e])), [events]);
-  const contractById = useMemo(() => new Map((contracts || []).map((c) => [c.id, c])), [contracts]);
-
   const brandOptions = useMemo(() => ["All brands", ...(brands || []).map((b) => b.brandName || b.name)], [brands]);
-  const owners = useMemo(() => ["All owners", ...new Set((tasks || []).map((task) => task.owner).filter(Boolean))], [tasks]);
+
+  // Load users and talents for mentions and assignments
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const data = await fetchTaskUsers();
+        setUsers(data);
+      } catch (err) {
+        console.error("Failed to load users:", err);
+      }
+    };
+
+    const loadTalents = async () => {
+      try {
+        const data = await fetchTaskTalents();
+        setTalents(data);
+      } catch (err) {
+        console.error("Failed to load talents:", err);
+      }
+    };
+
+    loadUsers();
+    loadTalents();
+  }, []);
 
   // Load tasks from API
   useEffect(() => {
@@ -269,15 +275,19 @@ export function AdminTasksPage() {
 
   const [draft, setDraft] = useState({
     title: "",
+    description: "",
     status: TASK_STATUSES[0],
     priority: "Medium",
     dueDate: formatInputDate(),
-    owner: "Admin",
-    brandId: "",
-    dealId: "",
-    campaignId: "",
-    eventId: "",
-    contractId: ""
+    ownerId: "",
+    assignedUserIds: [],
+    mentions: [],
+    relatedBrands: [],
+    relatedCreators: [],
+    relatedDeals: [],
+    relatedCampaigns: [],
+    relatedEvents: [],
+    relatedContracts: []
   });
 
   const visibleTasks = useMemo(() => {
@@ -285,31 +295,42 @@ export function AdminTasksPage() {
       const matchesSearch =
         !search ||
         (task.title || "").toLowerCase().includes(search.toLowerCase()) ||
-        (task.owner || "").toLowerCase().includes(search.toLowerCase());
+        (task.description || "").toLowerCase().includes(search.toLowerCase());
+      
       const matchesStatus =
         statusFilter === "All statuses" || task.status.toLowerCase() === statusFilter.toLowerCase();
-      const brandName =
-        task.brandId ? brandById.get(task.brandId)?.brandName || brandById.get(task.brandId)?.name || "" : "";
-      const matchesBrand = brandFilter === "All brands" || brandName === brandFilter;
-      const matchesOwner = ownerFilter === "All owners" || (task.owner || "") === ownerFilter;
-      return matchesSearch && matchesStatus && matchesBrand && matchesOwner;
+      
+      const taskBrandNames = (task.relatedBrands || [])
+        .map(brandId => brandById.get(brandId))
+        .filter(Boolean)
+        .map(b => b.brandName || b.name);
+      
+      const matchesBrand = 
+        brandFilter === "All brands" || 
+        taskBrandNames.includes(brandFilter);
+
+      return matchesSearch && matchesStatus && matchesBrand;
     });
-  }, [tasks, search, statusFilter, brandFilter, ownerFilter, brandById]);
+  }, [tasks, search, statusFilter, brandFilter, brandById]);
 
   const openCreate = () => {
     setEditingId("");
     setFormError("");
     setDraft({
       title: "",
+      description: "",
       status: TASK_STATUSES[0],
       priority: "Medium",
       dueDate: formatInputDate(),
-      owner: "Admin",
-      brandId: "",
-      dealId: "",
-      campaignId: "",
-      eventId: "",
-      contractId: ""
+      ownerId: currentUser?.id || "",
+      assignedUserIds: [],
+      mentions: [],
+      relatedBrands: [],
+      relatedCreators: [],
+      relatedDeals: [],
+      relatedCampaigns: [],
+      relatedEvents: [],
+      relatedContracts: []
     });
     setCreateOpen(true);
   };
@@ -319,15 +340,19 @@ export function AdminTasksPage() {
     setFormError("");
     setDraft({
       title: task.title || "",
+      description: task.description || "",
       status: task.status || TASK_STATUSES[0],
       priority: task.priority || "Medium",
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : formatInputDate(),
-      owner: task.owner || "Admin",
-      brandId: task.brandId || "",
-      dealId: task.dealId || "",
-      campaignId: task.campaignId || "",
-      eventId: task.eventId || "",
-      contractId: task.contractId || ""
+      ownerId: task.ownerId || "",
+      assignedUserIds: task.assignedUserIds || [],
+      mentions: task.mentions || [],
+      relatedBrands: task.relatedBrands || [],
+      relatedCreators: task.relatedCreators || [],
+      relatedDeals: task.relatedDeals || [],
+      relatedCampaigns: task.relatedCampaigns || [],
+      relatedEvents: task.relatedEvents || [],
+      relatedContracts: task.relatedContracts || []
     });
     setCreateOpen(true);
   };
@@ -341,22 +366,26 @@ export function AdminTasksPage() {
         return;
       }
 
-      const hasContext = Boolean(draft.brandId || draft.dealId || draft.campaignId || draft.eventId || draft.contractId);
-      if (!hasContext && !confirm("Create a task with no CRM context link? This is allowed, but harder to track later.")) {
+      if (!draft.ownerId) {
+        setFormError("Primary owner is required.");
         return;
       }
 
       const taskData = {
-        title: draft.title,
+        title: draft.title.trim(),
+        description: draft.description || null,
         status: draft.status,
         priority: draft.priority,
         dueDate: draft.dueDate ? new Date(draft.dueDate).toISOString() : null,
-        owner: draft.owner || null,
-        brandId: draft.brandId || null,
-        dealId: draft.dealId || null,
-        campaignId: draft.campaignId || null,
-        eventId: draft.eventId || null,
-        contractId: draft.contractId || null
+        ownerId: draft.ownerId,
+        assignedUserIds: draft.assignedUserIds,
+        mentions: draft.mentions,
+        relatedBrands: draft.relatedBrands,
+        relatedCreators: draft.relatedCreators,
+        relatedDeals: draft.relatedDeals,
+        relatedCampaigns: draft.relatedCampaigns,
+        relatedEvents: draft.relatedEvents,
+        relatedContracts: draft.relatedContracts
       };
 
       if (editingId) {
@@ -365,7 +394,7 @@ export function AdminTasksPage() {
         await createCrmTask(taskData);
       }
 
-      // Reload tasks
+      // Refetch tasks
       const data = await fetchCrmTasks();
       setTasks(data);
       setCreateOpen(false);
@@ -377,7 +406,7 @@ export function AdminTasksPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Delete this task?")) return;
+    if (!confirm("Delete this task? This cannot be undone.")) return;
     
     try {
       await deleteCrmTask(id);
@@ -389,79 +418,14 @@ export function AdminTasksPage() {
     }
   };
 
-  useEffect(() => {
-    const loadSuggested = async () => {
-      try {
-        setSuggestedLoading(true);
-        setSuggestedError("");
-        const messages = await listGmailMessages();
-        const normalized = (messages || [])
-          .flatMap((msg) => {
-            const emails = msg.emails || msg.InboundEmail || [];
-            return emails.map((email, index) => {
-              const title =
-                email.aiRecommendedAction ||
-                email.subject ||
-                msg.subject ||
-                email.aiSummary ||
-                msg.snippet ||
-                "Follow up";
-              const summary = email.aiSummary || email.body || msg.snippet || "";
-              const receivedAt = email.receivedAt || email.date || msg.lastMessageAt;
-              const priority =
-                (email.aiUrgency && email.aiUrgency.toLowerCase() === "high") ? "High" : "Medium";
-              return {
-                id: `${msg.threadId || msg.id || "thread"}-${email.id || email.gmailId || index}`,
-                title,
-                summary,
-                from: email.fromEmail || (msg.participants ? msg.participants[0] : ""),
-                receivedAt,
-                priority,
-                status: email.aiCategory || "Suggested",
-                threadId: msg.threadId || email.threadId || null
-              };
-            });
-          })
-          .filter((item) => item.title && item.title.trim())
-          .slice(0, 10);
-        setSuggested(normalized);
-      } catch (error) {
-        console.error("Failed to load suggested tasks from Gmail:", error);
-        setSuggestedError(error.message || "Unable to load email suggestions. Connect Gmail and try again.");
-      } finally {
-        setSuggestedLoading(false);
-      }
-    };
-
-    loadSuggested();
-  }, []);
-
-  const convertSuggestionToTask = (suggestion) => {
-    setEditingId("");
-    setFormError("");
-    const due = suggestion.priority === "High"
-      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
-      : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-    setDraft((prev) => ({
-      ...prev,
-      title: suggestion.title,
-      owner: suggestion.from || prev.owner,
-      priority: suggestion.priority || "Medium",
-      status: TASK_STATUSES[0],
-      dueDate: formatInputDate(due),
-      brandId: "",
-      dealId: "",
-      campaignId: "",
-      eventId: "",
-      contractId: ""
-    }));
-    setCreateOpen(true);
-  };
+  // Permission check
+  const isSuperAdmin = currentUser?.role === "SUPERADMIN";
+  const isAdmin = currentUser?.role === "ADMIN" || isSuperAdmin;
 
   return (
     <DashboardShell
       title="Tasks"
-      subtitle="Search, filter, and dispatch tasks across the Break platform."
+      subtitle="Central operational hub for tracking work across Break platform."
       navLinks={ADMIN_NAV_LINKS}
     >
       <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 space-y-4">
@@ -485,12 +449,12 @@ export function AdminTasksPage() {
           </div>
         ) : (
           <>
-            <div className="grid gap-3 md:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-3">
               <input
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Global search"
+                placeholder="Search tasks..."
                 className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
               />
               <select
@@ -498,7 +462,7 @@ export function AdminTasksPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
               >
-                {STATUS_OPTIONS.map((option) => (
+                {["All statuses", ...TASK_STATUSES].map((option) => (
                   <option key={option}>{option}</option>
                 ))}
               </select>
@@ -511,146 +475,144 @@ export function AdminTasksPage() {
                   <option key={brand}>{brand}</option>
                 ))}
               </select>
-              <select
-                value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
-                className="rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-              >
-                {owners.map((owner) => (
-                  <option key={owner}>{owner}</option>
-                ))}
-              </select>
             </div>
-        <div className="overflow-x-auto">
-          <table className="mt-4 w-full text-left text-sm text-brand-black/80">
-            <thead>
-              <tr className="border-b border-brand-black/10 text-xs uppercase tracking-[0.3em] text-brand-red">
-                <th className="px-4 py-3">Task</th>
-                <th className="px-4 py-3">Context</th>
-                <th className="px-4 py-3">Owner</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Due date</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleTasks.map((task) => {
-                const deal = task.dealId ? dealById.get(task.dealId) : null;
-                const brand = task.brandId ? brandById.get(task.brandId) : deal?.brandId ? brandById.get(deal.brandId) : null;
-                const campaign = task.campaignId ? campaignById.get(task.campaignId) : null;
-                const event = task.eventId ? eventById.get(task.eventId) : null;
-                const contract = task.contractId ? contractById.get(task.contractId) : null;
-                return (
-                <tr key={task.id} className="border-b border-brand-black/5">
-                  <td className="px-4 py-3 font-semibold text-brand-black">{task.title}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {brand ? <BrandChip name={brand.brandName || brand.name} status={brand.status || "Active"} size="sm" /> : null}
-                      {deal ? <DealChip name={deal.dealName} status={deal.status} size="sm" /> : null}
-                      {campaign ? <CampaignChip name={campaign.campaignName} status={campaign.status} size="sm" /> : null}
-                      {event ? <EventChip name={event.eventName} status={event.status} size="sm" /> : null}
-                      {contract ? <ContractChip name={contract.contractName} status={contract.status} size="sm" /> : null}
-                      {!brand && !deal && !campaign && !event && !contract ? (
-                        <span className="text-xs uppercase tracking-[0.35em] text-brand-black/50">Unlinked</span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">{task.owner}</td>
-                  <td className="px-4 py-3">{task.status}</td>
-                  <td className="px-4 py-3">{task.dueDate ? new Date(task.dueDate).toLocaleString("en-GB") : "—"}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]"
-                        onClick={() => openEdit(task)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red"
-                        onClick={() => handleDelete(task.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-              })}
-            </tbody>
-          </table>
-          {visibleTasks.length === 0 && tasks.length === 0 ? (
-            <div className="px-4 py-6">
-              <EmptyStateWithHint
-                entity="tasks"
-                onCreate={openCreate}
-                onLearnMore={() => window.location.href = "/admin/crm-settings"}
-              />
+
+            <div className="overflow-x-auto">
+              <table className="mt-4 w-full text-left text-sm text-brand-black/80">
+                <thead>
+                  <tr className="border-b border-brand-black/10 text-xs uppercase tracking-[0.3em] text-brand-red">
+                    <th className="px-4 py-3">Task</th>
+                    <th className="px-4 py-3">Owner</th>
+                    <th className="px-4 py-3">Assigned</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Priority</th>
+                    <th className="px-4 py-3">Due date</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleTasks.map((task) => {
+                    const owner = users.find(u => u.id === task.ownerId);
+                    const assigned = (task.assignedUserIds || [])
+                      .map(id => users.find(u => u.id === id))
+                      .filter(Boolean);
+
+                    return (
+                      <tr key={task.id} className="border-b border-brand-black/5">
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-brand-black">{task.title}</p>
+                          {task.description && (
+                            <p className="text-xs text-brand-black/60 line-clamp-1 mt-0.5">
+                              {task.description.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1')}
+                            </p>
+                          )}
+                          {(task.relatedBrands?.length || task.relatedCreators?.length || task.relatedDeals?.length) ? (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(task.relatedBrands || []).slice(0, 2).map(brandId => {
+                                const brand = brandById.get(brandId);
+                                return brand ? (
+                                  <span key={brandId} className="text-[0.6rem] uppercase px-2 py-0.5 rounded-full bg-brand-linen text-brand-black/70">
+                                    {brand.brandName || brand.name}
+                                  </span>
+                                ) : null;
+                              })}
+                              {(task.relatedCreators?.length || 0) > 0 && (
+                                <span className="text-[0.6rem] uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                                  {task.relatedCreators.length} creator{task.relatedCreators.length !== 1 ? 's' : ''}
+                                </span>
+                              )}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {owner?.avatarUrl && (
+                              <img src={owner.avatarUrl} alt={owner.name} className="w-6 h-6 rounded-full" />
+                            )}
+                            <span className="text-sm">{owner?.name || owner?.email || "—"}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {assigned.length === 0 ? (
+                            <span className="text-brand-black/40">—</span>
+                          ) : (
+                            <div className="flex -space-x-2">
+                              {assigned.slice(0, 3).map(user => (
+                                <img 
+                                  key={user.id}
+                                  src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || user.email)}`}
+                                  alt={user.name || user.email}
+                                  title={user.name || user.email}
+                                  className="w-6 h-6 rounded-full border-2 border-white"
+                                />
+                              ))}
+                              {assigned.length > 3 && (
+                                <div className="w-6 h-6 rounded-full border-2 border-white bg-brand-black/5 flex items-center justify-center text-[0.6rem] font-semibold">
+                                  +{assigned.length - 3}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge tone={task.status === "Completed" ? "positive" : "neutral"}>
+                            {task.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge tone={task.priority === "High" ? "negative" : task.priority === "Medium" ? "neutral" : "positive"}>
+                            {task.priority}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          {task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB", { 
+                            day: "numeric", 
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          }) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
+                              onClick={() => openEdit(task)}
+                            >
+                              Edit
+                            </button>
+                            {isSuperAdmin && (
+                              <button
+                                className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50"
+                                onClick={() => handleDelete(task.id)}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              
+              {visibleTasks.length === 0 && tasks.length === 0 ? (
+                <div className="px-4 py-6">
+                  <EmptyStateWithHint
+                    entity="tasks"
+                    onCreate={openCreate}
+                    onLearnMore={() => window.location.href = "/admin/crm-settings"}
+                  />
+                </div>
+              ) : visibleTasks.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-brand-black/60">No tasks match your filters.</p>
+              ) : null}
             </div>
-          ) : visibleTasks.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-brand-black/60">No tasks match your filters.</p>
-          ) : null}
-        </div>
           </>
         )}
       </section>
 
-      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Suggested tasks</p>
-            <h2 className="font-display text-2xl uppercase text-brand-black">Pulled from synced emails</h2>
-            <p className="text-sm text-brand-black/60">Based on Gmail thread summaries and AI recommendations.</p>
-          </div>
-        </div>
-        {suggestedError ? <p className="text-sm text-brand-red">{suggestedError}</p> : null}
-        {suggestedLoading ? (
-          <p className="text-sm text-brand-black/60">Scanning synced inbox for actions…</p>
-        ) : suggested.length === 0 ? (
-          <p className="text-sm text-brand-black/60">No suggestions yet. Sync Gmail to see recommended tasks.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {suggested.map((item) => (
-              <article
-                key={item.id}
-                className="flex flex-col gap-2 rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">
-                      {item.from || "Email"} · {item.status}
-                    </p>
-                    <h4 className="font-semibold text-brand-black">{item.title}</h4>
-                    {item.summary ? <p className="text-sm text-brand-black/70 line-clamp-3">{item.summary}</p> : null}
-                  </div>
-                  <Badge tone={item.priority === "High" ? "positive" : "neutral"}>{item.priority}</Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-brand-black/50">
-                  <span>{item.receivedAt ? new Date(item.receivedAt).toLocaleString("en-GB") : "No timestamp"}</span>
-                  {item.threadId ? (
-                    <a
-                      href={`/admin/inbox#${item.threadId}`}
-                      className="text-brand-red underline underline-offset-4"
-                    >
-                      View thread
-                    </a>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="rounded-full border border-brand-black px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5"
-                    onClick={() => convertSuggestionToTask(item)}
-                  >
-                    Convert to task
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-
+      {/* Task Modal */}
       <ModalFrame
         open={createOpen}
         title={editingId ? "Edit task" : "Add task"}
@@ -673,60 +635,154 @@ export function AdminTasksPage() {
               Cancel
             </TextButton>
             <PrimaryButton onClick={saveTask}>
-              {editingId ? "Save task" : "Create task"}
+              {editingId ? "Save changes" : "Create task"}
             </PrimaryButton>
           </div>
         }
       >
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <p className="text-sm text-brand-black/80">Tasks are action. Notes are memory. Outreach is contact.</p>
-          <p className="mt-2 text-xs text-brand-black/60">
-            Optional: link to a deal/brand/campaign/event/contract to keep follow-through contextual.
-          </p>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Title" value={draft.title} onChange={(v) => setDraft((p) => ({ ...p, title: v }))} placeholder="e.g. Send contract v2 for review" />
-          <Field label="Owner" value={draft.owner} onChange={(v) => setDraft((p) => ({ ...p, owner: v }))} placeholder="Agent / admin" />
-          <Select label="Status" value={draft.status} onChange={(v) => setDraft((p) => ({ ...p, status: v }))} options={TASK_STATUSES} />
-          <Select label="Priority" value={draft.priority} onChange={(v) => setDraft((p) => ({ ...p, priority: v }))} options={TASK_PRIORITIES} />
-          <Field label="Due date" type="datetime-local" value={draft.dueDate} onChange={(v) => setDraft((p) => ({ ...p, dueDate: v }))} />
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <Select
-            label="Brand (optional)"
-            value={draft.brandId || ""}
-            onChange={(v) => setDraft((p) => ({ ...p, brandId: v, dealId: "" }))}
-            options={[{ value: "", label: "None" }, ...brands.map((b) => ({ value: b.id, label: b.brandName || b.name }))]}
+        {/* Section 1: Core Task */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-brand-black/10">
+            <span className="text-xs uppercase tracking-[0.35em] text-brand-red font-semibold">Core Task</span>
+          </div>
+          
+          <Field 
+            label="Title" 
+            value={draft.title} 
+            onChange={(v) => setDraft((p) => ({ ...p, title: v }))} 
+            placeholder="e.g. Send contract v2 for review" 
           />
+
+          <div>
+            <span className="block text-xs uppercase tracking-[0.35em] text-brand-black/60 mb-2">
+              Description (with @mentions)
+            </span>
+            <MentionInput
+              value={draft.description}
+              onChange={(v) => setDraft((p) => ({ ...p, description: v }))}
+              users={users}
+              onMentionsChange={(mentions) => setDraft((p) => ({ ...p, mentions }))}
+              placeholder="Describe the task... Type @ to mention users"
+              rows={4}
+            />
+          </div>
+        </div>
+
+        {/* Section 2: Ownership */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-brand-black/10">
+            <span className="text-xs uppercase tracking-[0.35em] text-brand-red font-semibold">Ownership</span>
+          </div>
+
           <Select
-            label="Deal (optional)"
-            value={draft.dealId || ""}
-            onChange={(v) => setDraft((p) => ({ ...p, dealId: v }))}
+            label="Primary Owner (required)"
+            value={draft.ownerId}
+            onChange={(v) => setDraft((p) => ({ ...p, ownerId: v }))}
             options={[
-              { value: "", label: draft.brandId ? "None" : "None (select brand to narrow deals)" },
-              ...(draft.brandId ? deals.filter((d) => d.brandId === draft.brandId) : deals).map((d) => ({ value: d.id, label: d.dealName }))
+              { value: "", label: "Select owner..." },
+              ...users.map(u => ({ value: u.id, label: `${u.name || u.email} (${u.role})` }))
             ]}
           />
-          <Select
-            label="Campaign (optional)"
-            value={draft.campaignId || ""}
-            onChange={(v) => setDraft((p) => ({ ...p, campaignId: v }))}
-            options={[{ value: "", label: "None" }, ...campaigns.map((c) => ({ value: c.id, label: c.campaignName }))]}
+
+          <MultiSelect
+            label="Assigned Users (multi-select)"
+            value={draft.assignedUserIds}
+            onChange={(v) => setDraft((p) => ({ ...p, assignedUserIds: v }))}
+            options={users.map(u => ({ id: u.id, name: `${u.name || u.email}` }))}
+            placeholder="Select users to assign..."
           />
-          <Select
-            label="Event (optional)"
-            value={draft.eventId || ""}
-            onChange={(v) => setDraft((p) => ({ ...p, eventId: v }))}
-            options={[{ value: "", label: "None" }, ...events.map((e) => ({ value: e.id, label: e.eventName }))]}
+        </div>
+
+        {/* Section 3: Status & Priority */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-brand-black/10">
+            <span className="text-xs uppercase tracking-[0.35em] text-brand-red font-semibold">Status & Priority</span>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <Select 
+              label="Status" 
+              value={draft.status} 
+              onChange={(v) => setDraft((p) => ({ ...p, status: v }))} 
+              options={TASK_STATUSES} 
+            />
+            <Select 
+              label="Priority" 
+              value={draft.priority} 
+              onChange={(v) => setDraft((p) => ({ ...p, priority: v }))} 
+              options={TASK_PRIORITIES} 
+            />
+          </div>
+
+          <Field 
+            label="Due date" 
+            type="datetime-local" 
+            value={draft.dueDate} 
+            onChange={(v) => setDraft((p) => ({ ...p, dueDate: v }))} 
           />
-          <Select
-            label="Contract (optional)"
-            value={draft.contractId || ""}
-            onChange={(v) => setDraft((p) => ({ ...p, contractId: v }))}
-            options={[{ value: "", label: "None" }, ...contracts.map((c) => ({ value: c.id, label: c.contractName }))]}
-          />
+        </div>
+
+        {/* Section 4: Relations */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-brand-black/10">
+            <span className="text-xs uppercase tracking-[0.35em] text-brand-red font-semibold">Relations</span>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <MultiSelect
+              label="Brands (multi)"
+              value={draft.relatedBrands}
+              onChange={(v) => setDraft((p) => ({ ...p, relatedBrands: v }))}
+              options={brands.map(b => ({ id: b.id, name: b.brandName || b.name }))}
+              placeholder="Link brands..."
+            />
+
+            <MultiSelect
+              label="Creators / Talent (multi)"
+              value={draft.relatedCreators}
+              onChange={(v) => setDraft((p) => ({ ...p, relatedCreators: v }))}
+              options={talents.map(t => ({ id: t.id, name: t.name }))}
+              placeholder="Link creators..."
+            />
+
+            <MultiSelect
+              label="Deals (multi)"
+              value={draft.relatedDeals}
+              onChange={(v) => setDraft((p) => ({ ...p, relatedDeals: v }))}
+              options={deals.map(d => ({ id: d.id, name: d.dealName || `Deal ${d.id.slice(0, 8)}` }))}
+              placeholder="Link deals..."
+            />
+
+            <MultiSelect
+              label="Campaigns (multi)"
+              value={draft.relatedCampaigns}
+              onChange={(v) => setDraft((p) => ({ ...p, relatedCampaigns: v }))}
+              options={campaigns.map(c => ({ id: c.id, name: c.campaignName }))}
+              placeholder="Link campaigns..."
+            />
+
+            <MultiSelect
+              label="Events (multi)"
+              value={draft.relatedEvents}
+              onChange={(v) => setDraft((p) => ({ ...p, relatedEvents: v }))}
+              options={events.map(e => ({ id: e.id, name: e.eventName }))}
+              placeholder="Link events..."
+            />
+
+            <MultiSelect
+              label="Contracts (multi)"
+              value={draft.relatedContracts}
+              onChange={(v) => setDraft((p) => ({ ...p, relatedContracts: v }))}
+              options={contracts.map(c => ({ id: c.id, name: c.contractName }))}
+              placeholder="Link contracts..."
+            />
+          </div>
+
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs text-brand-black/70">
+              💡 <strong>Tip:</strong> Link tasks to brands, creators, deals, campaigns, events, or contracts to keep work contextual and trackable.
+            </p>
+          </div>
         </div>
       </ModalFrame>
     </DashboardShell>

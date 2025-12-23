@@ -1,6 +1,34 @@
 import { apiFetch } from "./apiClient.js";
 
 /**
+ * Fetch all users for @mentions and assignments
+ */
+export async function fetchTaskUsers() {
+  const response = await apiFetch(`/api/crm-tasks/users`);
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Failed to fetch users" }));
+    throw new Error(error.error || "Failed to fetch users");
+  }
+  
+  return response.json();
+}
+
+/**
+ * Fetch all talents/creators for task relations
+ */
+export async function fetchTaskTalents() {
+  const response = await apiFetch(`/api/crm-tasks/talents`);
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Failed to fetch talents" }));
+    throw new Error(error.error || "Failed to fetch talents");
+  }
+  
+  return response.json();
+}
+
+/**
  * Fetch all CRM tasks with optional filters
  */
 export async function fetchCrmTasks(filters = {}) {

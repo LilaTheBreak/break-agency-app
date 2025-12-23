@@ -334,23 +334,35 @@ model CrmCampaign {
 }
 
 model CrmTask {
-  id          String       @id
-  title       String
-  status      String       @default("Pending")
-  priority    String       @default("Medium")
-  dueDate     DateTime?
-  owner       String?
-  brandId     String?
-  dealId      String?
-  campaignId  String?
-  eventId     String?
-  contractId  String?
-  createdBy   String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime
-  CrmBrand    CrmBrand?    @relation(fields: [brandId], references: [id])
-  CrmCampaign CrmCampaign? @relation(fields: [campaignId], references: [id])
-  User        User?        @relation(fields: [createdBy], references: [id])
+  id                String       @id
+  title             String
+  description       String?
+  status            String       @default("Pending")
+  priority          String       @default("Medium")
+  dueDate           DateTime?
+  owner             String?
+  ownerId           String?
+  assignedUserIds   String[]     @default([])
+  mentions          Json[]       @default([])
+  relatedBrands     String[]     @default([])
+  relatedCreators   String[]     @default([])
+  relatedUsers      String[]     @default([])
+  relatedDeals      String[]     @default([])
+  relatedCampaigns  String[]     @default([])
+  relatedEvents     String[]     @default([])
+  relatedContracts  String[]     @default([])
+  brandId           String?
+  dealId            String?
+  campaignId        String?
+  eventId           String?
+  contractId        String?
+  createdBy         String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime
+  CrmBrand          CrmBrand?    @relation(fields: [brandId], references: [id])
+  CrmCampaign       CrmCampaign? @relation(fields: [campaignId], references: [id])
+  Owner             User?        @relation("TaskOwner", fields: [ownerId], references: [id])
+  CreatedByUser     User?        @relation("TaskCreatedBy", fields: [createdBy], references: [id])
 
   @@index([brandId])
   @@index([campaignId])
@@ -360,6 +372,7 @@ model CrmTask {
   @@index([dueDate])
   @@index([eventId])
   @@index([owner])
+  @@index([ownerId])
   @@index([priority])
   @@index([status])
 }
@@ -1171,7 +1184,8 @@ model User {
   BrandCampaign                           BrandCampaign[]
   CreatorEvent                            CreatorEvent[]
   CreatorTask                             CreatorTask[]
-  CrmTask                                 CrmTask[]
+  CrmTasksOwned                           CrmTask[]                @relation("TaskOwner")
+  CrmTasksCreated                         CrmTask[]                @relation("TaskCreatedBy")
   Deal                                    Deal[]
   DealTimeline                            DealTimeline[]
   EmailFeedback                           EmailFeedback[]

@@ -8,6 +8,67 @@ const router = Router();
 router.use(requireAuth);
 
 /**
+ * GET /api/crm-tasks/users
+ * Get all users for @mentions and assignments
+ */
+router.get("/users", async (req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        onboarding_status: {
+          not: "archived"
+        }
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        role: true
+      },
+      orderBy: {
+        name: "asc"
+      }
+    });
+
+    return res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+/**
+ * GET /api/crm-tasks/talents
+ * Get all talents/creators for task relations
+ */
+router.get("/talents", async (req: Request, res: Response) => {
+  try {
+    const talents = await prisma.talent.findMany({
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        User: {
+          select: {
+            email: true,
+            avatarUrl: true
+          }
+        }
+      },
+      orderBy: {
+        name: "asc"
+      }
+    });
+
+    return res.json(talents);
+  } catch (error) {
+    console.error("Error fetching talents:", error);
+    return res.status(500).json({ error: "Failed to fetch talents" });
+  }
+});
+
+/**
  * GET /api/crm-tasks
  * List all CRM tasks with optional filters
  */
@@ -29,19 +90,26 @@ router.get("/", async (req: Request, res: Response) => {
         { createdAt: "desc" }
       ],
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true
           }
         },
-        Campaign: {
+        CrmCampaign: {
           select: {
             id: true,
             campaignName: true
           }
         },
-        User: {
+        Owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        },
+        CreatedByUser: {
           select: {
             id: true,
             email: true,
@@ -69,19 +137,26 @@ router.get("/:id", async (req: Request, res: Response) => {
     const task = await prisma.crmTask.findUnique({
       where: { id },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true
           }
         },
-        Campaign: {
+        CrmCampaign: {
           select: {
             id: true,
             campaignName: true
           }
         },
-        User: {
+        Owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        },
+        CreatedByUser: {
           select: {
             id: true,
             email: true,
@@ -110,10 +185,21 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const {
       title,
+      description,
       status,
       priority,
       dueDate,
       owner,
+      ownerId,
+      assignedUserIds,
+      mentions,
+      relatedBrands,
+      relatedCreators,
+      relatedUsers,
+      relatedDeals,
+      relatedCampaigns,
+      relatedEvents,
+      relatedContracts,
       brandId,
       dealId,
       campaignId,
@@ -128,10 +214,21 @@ router.post("/", async (req: Request, res: Response) => {
     const task = await prisma.crmTask.create({
       data: {
         title: title.trim(),
+        description: description || null,
         status: status || "Pending",
         priority: priority || "Medium",
         dueDate: dueDate ? new Date(dueDate) : null,
         owner: owner || null,
+        ownerId: ownerId || req.user?.id || null,
+        assignedUserIds: assignedUserIds || [],
+        mentions: mentions || [],
+        relatedBrands: relatedBrands || [],
+        relatedCreators: relatedCreators || [],
+        relatedUsers: relatedUsers || [],
+        relatedDeals: relatedDeals || [],
+        relatedCampaigns: relatedCampaigns || [],
+        relatedEvents: relatedEvents || [],
+        relatedContracts: relatedContracts || [],
         brandId: brandId || null,
         dealId: dealId || null,
         campaignId: campaignId || null,
@@ -140,19 +237,26 @@ router.post("/", async (req: Request, res: Response) => {
         createdBy: req.user?.id || null
       },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true
           }
         },
-        Campaign: {
+        CrmCampaign: {
           select: {
             id: true,
             campaignName: true
           }
         },
-        User: {
+        Owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        },
+        CreatedByUser: {
           select: {
             id: true,
             email: true,
@@ -178,10 +282,21 @@ router.patch("/:id", async (req: Request, res: Response) => {
     const { id } = req.params;
     const {
       title,
+      description,
       status,
       priority,
       dueDate,
       owner,
+      ownerId,
+      assignedUserIds,
+      mentions,
+      relatedBrands,
+      relatedCreators,
+      relatedUsers,
+      relatedDeals,
+      relatedCampaigns,
+      relatedEvents,
+      relatedContracts,
       brandId,
       dealId,
       campaignId,
@@ -201,10 +316,21 @@ router.patch("/:id", async (req: Request, res: Response) => {
       }
       updateData.title = title.trim();
     }
+    if (description !== undefined) updateData.description = description || null;
     if (status !== undefined) updateData.status = status;
     if (priority !== undefined) updateData.priority = priority;
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (owner !== undefined) updateData.owner = owner || null;
+    if (ownerId !== undefined) updateData.ownerId = ownerId || null;
+    if (assignedUserIds !== undefined) updateData.assignedUserIds = assignedUserIds;
+    if (mentions !== undefined) updateData.mentions = mentions;
+    if (relatedBrands !== undefined) updateData.relatedBrands = relatedBrands;
+    if (relatedCreators !== undefined) updateData.relatedCreators = relatedCreators;
+    if (relatedUsers !== undefined) updateData.relatedUsers = relatedUsers;
+    if (relatedDeals !== undefined) updateData.relatedDeals = relatedDeals;
+    if (relatedCampaigns !== undefined) updateData.relatedCampaigns = relatedCampaigns;
+    if (relatedEvents !== undefined) updateData.relatedEvents = relatedEvents;
+    if (relatedContracts !== undefined) updateData.relatedContracts = relatedContracts;
     if (brandId !== undefined) updateData.brandId = brandId || null;
     if (dealId !== undefined) updateData.dealId = dealId || null;
     if (campaignId !== undefined) updateData.campaignId = campaignId || null;
@@ -215,19 +341,26 @@ router.patch("/:id", async (req: Request, res: Response) => {
       where: { id },
       data: updateData,
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true
           }
         },
-        Campaign: {
+        CrmCampaign: {
           select: {
             id: true,
             campaignName: true
           }
         },
-        User: {
+        Owner: {
+          select: {
+            id: true,
+            email: true,
+            name: true
+          }
+        },
+        CreatedByUser: {
           select: {
             id: true,
             email: true,
