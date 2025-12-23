@@ -2,8 +2,19 @@ import { apiFetch } from "./apiClient.js";
 
 export async function getCalendarEvents() {
   const response = await apiFetch("/api/calendar/events");
-  if (!response.ok) throw new Error("Failed to fetch calendar events");
-  return response.json();
+  
+  // Return response object with status for explicit handling
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Failed to fetch calendar events" }));
+    return {
+      success: false,
+      status: response.status,
+      error: error.error || "Failed to fetch calendar events",
+    };
+  }
+  
+  const data = await response.json();
+  return { ...data, status: response.status };
 }
 
 export async function createCalendarEvent(payload) {

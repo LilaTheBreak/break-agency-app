@@ -100,6 +100,27 @@ export function CalendarBoard({
     try {
       setLoading(true);
       const response = await getCalendarEvents();
+      
+      // Handle different response statuses
+      if (response.status === 403) {
+        // Expected: User doesn't have calendar access
+        setEvents([]);
+        return;
+      }
+      
+      if (response.status === 404) {
+        // Calendar not available yet
+        setEvents([]);
+        return;
+      }
+      
+      if (!response.success) {
+        // Unexpected error (500, etc.) - log it
+        console.error("Calendar temporarily unavailable:", response.error);
+        setEvents([]);
+        return;
+      }
+      
       if (response.success && response.data?.events) {
         // Transform API events to match component format
         const transformedEvents = response.data.events.map(event => ({
@@ -125,7 +146,9 @@ export function CalendarBoard({
         }
       }
     } catch (error) {
-      console.error("Failed to load calendar events:", error);
+      // Catch any unexpected errors (network issues, etc.)
+      console.error("Unexpected error loading calendar:", error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
