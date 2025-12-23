@@ -368,7 +368,16 @@ function EmailInboxSection({ emails, loading, error }) {
   if (error) {
     return (
       <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <p className="text-sm text-brand-black/60">Unable to load inbox. Please refresh or connect Gmail.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+              Email Inbox
+            </p>
+            <p className="mt-1 text-xs text-brand-black/60">
+              Gmail integration unavailable. Connect your account to view emails.
+            </p>
+          </div>
+        </div>
       </section>
     );
   }

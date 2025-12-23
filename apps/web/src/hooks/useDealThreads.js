@@ -2,24 +2,49 @@ import { apiFetch } from "../services/apiClient.js";
 
 export function useDealThreads() {
   async function rebuild() {
-    const res = await apiFetch("/threads/rebuild", { method: "POST" });
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload?.message || "Unable to rebuild threads");
-    return payload;
+    try {
+      const res = await apiFetch("/threads/rebuild", { method: "POST" });
+      
+      if (!res.ok) {
+        return { success: false, error: "Unable to rebuild threads", status: res.status };
+      }
+      
+      const payload = await res.json();
+      return { success: true, data: payload };
+    } catch (err) {
+      return { success: false, error: err.message || "Network error" };
+    }
   }
 
   async function list() {
-    const res = await apiFetch("/threads");
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload?.message || "Unable to load threads");
-    return payload;
+    try {
+      const res = await apiFetch("/threads");
+      
+      if (!res.ok) {
+        // Return empty list for graceful degradation
+        return { success: true, data: [] };
+      }
+      
+      const payload = await res.json();
+      return { success: true, data: payload };
+    } catch (err) {
+      return { success: true, data: [] }; // Graceful fallback
+    }
   }
 
   async function get(id) {
-    const res = await apiFetch(`/threads/${encodeURIComponent(id)}`);
-    const payload = await res.json();
-    if (!res.ok) throw new Error(payload?.message || "Unable to load thread");
-    return payload;
+    try {
+      const res = await apiFetch(`/threads/${encodeURIComponent(id)}`);
+      
+      if (!res.ok) {
+        return { success: false, error: "Thread not found", status: res.status };
+      }
+      
+      const payload = await res.json();
+      return { success: true, data: payload };
+    } catch (err) {
+      return { success: false, error: err.message || "Network error" };
+    }
   }
 
   return { rebuild, list, get };

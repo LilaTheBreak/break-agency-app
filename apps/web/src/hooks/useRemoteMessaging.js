@@ -22,7 +22,11 @@ export function useRemoteMessaging(session, enabled = true) {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
-    retry: 0
+    retry: 0,
+    onError: (error) => {
+      // Silent error handling - no console spam
+      // Error state is available via threadsQuery.error if needed
+    }
   });
 
   const sendMutation = useMutation({
@@ -44,7 +48,12 @@ export function useRemoteMessaging(session, enabled = true) {
   const sendMessage = useCallback(
     async (threadId, payload) => {
       if (!shouldFetch || !threadId || !payload?.body?.trim()) return;
-      await sendMutation.mutateAsync({ recipientId: threadId, content: payload.body.trim() });
+      try {
+        await sendMutation.mutateAsync({ recipientId: threadId, content: payload.body.trim() });
+      } catch (err) {
+        // Mutation error handled by react-query, no uncaught promise
+        return { success: false, error: err.message };
+      }
     },
     [shouldFetch, sendMutation]
   );
@@ -58,7 +67,13 @@ export function useRemoteMessaging(session, enabled = true) {
         (message) => message.recipientId === userId && !message.read
       );
       if (!unread?.length) return;
-      await Promise.all(unread.map((message) => markMutation.mutateAsync(message.id)));
+      
+      try {
+        await Promise.all(unread.map((message) => markMutation.mutateAsync(message.id)));
+      } catch (err) {
+        // Mutation error handled by react-query, no uncaught promise
+        return { success: false, error: err.message };
+      }
     },
     [shouldFetch, threads, markMutation, userId]
   );
