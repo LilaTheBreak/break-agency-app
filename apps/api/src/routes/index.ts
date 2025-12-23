@@ -20,6 +20,7 @@ import aiSocialInsightsRouter from "./aiSocialInsights.js";
 import aiDealExtractorRouter from "./aiDealExtractor.js";
 import documentExtractionRouter from "./documentExtraction.js";
 import campaignsRouter from "./campaigns.js";
+import deckRouter from "./deck.js";
 
 // User management & onboarding
 import authRouter from "./auth.js";
@@ -101,6 +102,7 @@ router.use(aiSocialInsightsRouter);
 router.use("/ai", aiDealExtractorRouter);
 router.use(documentExtractionRouter);
 router.use(campaignsRouter);
+router.use("/deck", deckRouter);
 router.use("/admin", adminUsersRouter);
 
 /* -------------------------------------------------------

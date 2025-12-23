@@ -4,6 +4,7 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { Badge } from "../components/Badge.jsx";
 import { OutreachRecordsPanel } from "../components/OutreachRecordsPanel.jsx";
 import { CampaignChip } from "../components/CampaignChip.jsx";
+import DeckDrawer from "../components/DeckDrawer.jsx";
 import { linkDealToCampaign, readCrmCampaigns, unlinkDealFromCampaign } from "../lib/crmCampaigns.js";
 import {
   fetchOutreachRecords,
@@ -282,6 +283,7 @@ export function AdminOutreachPage({ session }) {
   });
 
   const [drawer, setDrawer] = useState({ open: false, entityType: "outreach", entityId: "" });
+  const [deckDrawerOpen, setDeckDrawerOpen] = useState(false);
   const [taskEditor, setTaskEditor] = useState({ open: false, task: null });
   const [noteEditor, setNoteEditor] = useState({ open: false, note: null, body: "" });
   
@@ -1307,6 +1309,13 @@ export function AdminOutreachPage({ session }) {
             <p className="text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">
               Linked back to originating outreach
             </p>
+            <button
+              type="button"
+              onClick={() => setDeckDrawerOpen(true)}
+              className="rounded-full border border-brand-red px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red hover:text-brand-white transition-colors"
+            >
+              Create Deck
+            </button>
             <button
               type="button"
               onClick={openNewOpportunity}
@@ -3267,6 +3276,16 @@ function RecordDrawer({
           </div>
         </div>
       </aside>
+
+      {/* Deck Drawer */}
+      <DeckDrawer
+        open={deckDrawerOpen}
+        onClose={() => setDeckDrawerOpen(false)}
+        records={records}
+        opportunities={opportunities}
+        deals={deals}
+        campaigns={crmCampaigns}
+      />
     </div>
   );
 }
