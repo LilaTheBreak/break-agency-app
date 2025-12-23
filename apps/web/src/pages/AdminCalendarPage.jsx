@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { Badge } from "../components/Badge.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { 
   getCalendarEvents, 
   createCalendarEvent, 
@@ -57,6 +58,7 @@ export function CalendarBoard({
   headingTitle = "Calendar & Meetings",
   headingSubtitle = "Sync calendars, respond to invites, and review meeting actions."
 }) {
+  const { user, hasRole } = useAuth();
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
@@ -64,6 +66,7 @@ export function CalendarBoard({
   });
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(true); // Track if user has calendar access
   const [syncing, setSyncing] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState({
     google: false,
@@ -99,11 +102,17 @@ export function CalendarBoard({
   const loadEvents = async () => {
     try {
       setLoading(true);
+      
+      // Role-aware gating: Check if user has calendar access
+      // For now, allow all authenticated users (backend will enforce permissions)
+      // If specific roles are required, add: if (!hasRole('ADMIN', 'SUPERADMIN', 'CREATOR')) { ... }
+      
       const response = await getCalendarEvents();
       
       // Handle different response statuses
       if (response.status === 403) {
-        // Expected: User doesn't have calendar access
+        // Expected: User doesn't have calendar access for their role
+        setHasAccess(false);
         setEvents([]);
         return;
       }
@@ -120,6 +129,9 @@ export function CalendarBoard({
         setEvents([]);
         return;
       }
+      
+      // Success: user has access
+      setHasAccess(true);
       
       if (response.success && response.data?.events) {
         // Transform API events to match component format
@@ -436,6 +448,17 @@ export function CalendarBoard({
 
   return (
     <>
+      {/* Show restricted access message if user doesn't have permission */}
+      {!loading && !hasAccess && (
+        <div className="mb-6 rounded-3xl border border-brand-black/10 bg-brand-linen/30 p-8 text-center">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-2">Calendar Access</p>
+          <h3 className="font-display text-xl uppercase mb-2">Calendar events are not available for your role yet</h3>
+          <p className="text-sm text-brand-black/60">
+            Your current role ({user?.role || 'Unknown'}) does not have access to calendar events.
+          </p>
+        </div>
+      )}
+
       <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
