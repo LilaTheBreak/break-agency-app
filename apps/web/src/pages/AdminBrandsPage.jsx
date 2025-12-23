@@ -28,6 +28,7 @@ import {
   addContactNote as addContactNoteAPI,
 } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase } from "../lib/crmMigration.js";
+import Button, { PrimaryButton, SecondaryButton, DangerButton } from "../components/Button.jsx";
 
 const BRAND_STATUSES = ["Prospect", "Active", "Past"];
 const BRAND_INDUSTRIES = [
@@ -95,29 +96,7 @@ function Pill({ tone = "neutral", children }) {
   );
 }
 
-function TextButton({ children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
-    >
-      {children}
-    </button>
-  );
-}
-
-function PrimaryButton({ children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
-    >
-      {children}
-    </button>
-  );
-}
+// Removed local TextButton and PrimaryButton - using imported components from Button.jsx
 
 function BrandAvatar({ name, logo, size = "md" }) {
   const sizeClasses = {

@@ -29,7 +29,7 @@ export default function DeliverablesList() {
             </div>
             <button
               onClick={() => handleUpdate(d.id, "submitted")}
-              className="text-xs bg-black text-white px-2 py-1 rounded"
+              className="rounded-full bg-brand-black px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-white hover:bg-brand-black/90"
             >
               Mark Submitted
             </button>

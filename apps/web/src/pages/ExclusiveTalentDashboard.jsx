@@ -238,7 +238,7 @@ export function ExclusiveSocialsPage() {
                   type="button"
                   onClick={() => setPlatformFilter(platform)}
                   className={`rounded-full border px-3 py-1 ${
-                    platformFilter === platform ? "border-brand-red bg-brand-red text-brand-white" : "border-brand-black/20"
+                    platformFilter === platform ? "border-brand-red bg-brand-red text-brand-white" : "border-brand-black/20 text-brand-black hover:bg-brand-black/5"
                   }`}
                 >
                   {platform}

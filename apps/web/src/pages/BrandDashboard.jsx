@@ -594,14 +594,14 @@ function BrandOpportunitiesSection({ session }) {
                       <div className="flex flex-wrap items-center gap-3">
                         <button
                           onClick={() => handleShortlist(match.creator.name)}
-                          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
                         >
                           {isShortlisted ? "Shortlisted" : "Shortlist"}
                         </button>
                         <button
                           onClick={() => handleApprove(match.creator.name)}
                           className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em] ${
-                            isApproved ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black"
+                            isApproved ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black text-brand-black hover:bg-brand-black/5"
                           }`}
                         >
                           {isApproved ? "Approved" : "Approve"}
