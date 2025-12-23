@@ -26,8 +26,8 @@ import {
   formatCreatorDate,
   getActionSignal,
 } from "../utils/exclusiveOverviewHelpers.js";
-import { useCrmOnboarding } from "../hooks/useCrmOnboarding.js";
-import { OnboardingSnapshot } from "../components/OnboardingSnapshot.jsx";
+import { TopPerformingPosts } from "../components/TopPerformingPosts.jsx";
+import { GoalsProgressSummary } from "../components/GoalsProgressSummary.jsx";
 
 /**
  * Exclusive Talent Overview Page
@@ -53,7 +53,6 @@ export function ExclusiveOverviewEnhanced({ session, basePath: basePathProp }) {
   const { acceptEvent, declineEvent, processing } = useEventActions();
   const wellness = useWellnessCheckin();
   const aiAssistant = useAIAssistant();
-  const onboarding = useCrmOnboarding(session?.email);
 
   // First-time user flow
   useEffect(() => {
@@ -208,7 +207,11 @@ export function ExclusiveOverviewEnhanced({ session, basePath: basePathProp }) {
         )}
       </section>
 
-      <OnboardingSnapshot data={onboarding} role={session?.role || "EXCLUSIVE_TALENT"} heading="Onboarding → CRM" />
+      {/* Top Performing Posts - Replaces Onboarding → CRM */}
+      <TopPerformingPosts session={session} />
+
+      {/* Goals Progress Summary */}
+      <GoalsProgressSummary session={session} basePath={basePath} />
 
       {/* Wellness Check-in (Opt-in, weekly) */}
       {wellness.shouldShow && !loading && (

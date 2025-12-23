@@ -10,7 +10,6 @@ import { CalendarBoard } from "./AdminCalendarPage.jsx";
 import { ExclusiveOverviewEnhanced } from "./ExclusiveOverviewEnhanced.jsx";
 import { apiFetch } from "../services/apiClient.js";
 import { useRevenue, useMetrics, useSocials, useInsights, useGrowth, usePerformance } from "../hooks/useAnalytics.js";
-import { useCrmOnboarding } from "../hooks/useCrmOnboarding.js";
 import { CrmContactPanel } from "../components/CrmContactPanel.jsx";
 import { getContact } from "../lib/crmContacts.js";
 import { LineChart as RechartsLineChart, BarChart as RechartsBarChart, PieChart as RechartsPieChart } from "../components/charts/index.js";
@@ -141,7 +140,6 @@ export default function ExclusiveTalentDashboardLayout({ basePath = "/admin/view
 
 export function ExclusiveOverviewPage() {
   const { session, basePath } = useOutletContext() || {};
-  const onboarding = useCrmOnboarding(session?.email);
   const contact = getContact(session?.email);
   // Use the new enhanced overview with full usability features
   return (
