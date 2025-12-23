@@ -9,6 +9,24 @@ import { requireAuth } from "../middleware/auth.js";
 const router = Router();
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
 
+// GET /api/gmail/auth/status - Check if Gmail is connected
+router.get("/status", requireAuth, async (req, res) => {
+  try {
+    const token = await prisma.gmailToken.findUnique({
+      where: { userId: req.user!.id },
+      select: { refreshToken: true, expiryDate: true }
+    });
+    
+    res.json({
+      connected: !!token?.refreshToken,
+      expiresAt: token?.expiryDate || null
+    });
+  } catch (error) {
+    console.error("[GMAIL AUTH STATUS]", error);
+    res.json({ connected: false });
+  }
+});
+
 router.get("/gmail/auth/url", requireAuth, (req, res) => {
   const url = getGmailAuthUrl(req.user!.id);
   res.json({ url });

@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { useMessaging } from "../context/messaging.js";
-import { getRecentInbox } from "../services/inboxClient.js";
+import { getRecentInbox, getGmailStatus, syncGmailInbox } from "../services/inboxClient.js";
+import { useGmailAuth } from "../hooks/useGmailAuth.js";
 
 const FILTERS = ["All", "Creators", "Brands", "Talent Managers", "External"];
 const ACCEPTED_ATTACHMENTS = ".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.mp4,.mov,.xlsx,.csv";
@@ -23,6 +24,9 @@ export function AdminMessagingPage() {
   const [inboxEmails, setInboxEmails] = useState([]);
   const [inboxLoading, setInboxLoading] = useState(false);
   const [inboxError, setInboxError] = useState(null);
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const { connectGmail } = useGmailAuth();
 
   const filteredThreads = useMemo(() => {
     if (activeFilter === "All") return threads;
@@ -49,16 +53,30 @@ export function AdminMessagingPage() {
     }
   }, [selectedThread, currentUser, markThreadRead]);
 
-  // Fetch inbox emails on mount
+  // Check Gmail connection status on mount
   useEffect(() => {
+    const checkStatus = async () => {
+      const status = await getGmailStatus();
+      setGmailConnected(status.connected);
+    };
+    checkStatus();
+  }, []);
+
+  // Fetch inbox emails on mount (if connected)
+  useEffect(() => {
+    if (!gmailConnected) return;
+    
     const fetchInbox = async () => {
       setInboxLoading(true);
       setInboxError(null);
       
-      const result = await getRecentInbox(10);
+      const result = await getRecentInbox(10, true);
       
       if (result.success) {
         setInboxEmails(result.data || []);
+        if (result.needsSync) {
+          setInboxError(result.message || "Syncing inbox...");
+        }
       } else {
         // Don't show error if Gmail not connected (expected state)
         if (result.error !== "gmail_not_connected") {
@@ -70,7 +88,24 @@ export function AdminMessagingPage() {
     };
     
     fetchInbox();
-  }, []);
+  }, [gmailConnected]);
+
+  const handleSyncGmail = async () => {
+    setSyncing(true);
+    setInboxError(null);
+    const result = await syncGmailInbox();
+    setSyncing(false);
+    
+    if (result.success) {
+      // Refresh inbox after sync
+      const inboxResult = await getRecentInbox(10, false);
+      if (inboxResult.success) {
+        setInboxEmails(inboxResult.data || []);
+      }
+    } else {
+      setInboxError(result.message || "Sync failed");
+    }
+  };
 
   const handleOpenThread = (threadId) => {
     setSelectedThreadId(threadId);
@@ -140,7 +175,15 @@ export function AdminMessagingPage() {
         </div>
       </div>
       <SystemAlerts alerts={alerts} />
-      <EmailInboxSection emails={inboxEmails} loading={inboxLoading} error={inboxError} />
+      <EmailInboxSection 
+        emails={inboxEmails} 
+        loading={inboxLoading} 
+        error={inboxError}
+        gmailConnected={gmailConnected}
+        syncing={syncing}
+        onConnect={connectGmail}
+        onSync={handleSyncGmail}
+      />
       <section className="mt-4 space-y-3">
         {filteredThreads.length ? (
           filteredThreads.map((thread) => (
@@ -364,8 +407,9 @@ function SystemAlerts({ alerts }) {
   );
 }
 
-function EmailInboxSection({ emails, loading, error }) {
-  if (error) {
+function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, onConnect, onSync }) {
+  // Gmail not connected state
+  if (!gmailConnected) {
     return (
       <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
         <div className="flex items-center justify-between">
@@ -374,9 +418,40 @@ function EmailInboxSection({ emails, loading, error }) {
               Email Inbox
             </p>
             <p className="mt-1 text-xs text-brand-black/60">
-              Gmail integration unavailable. Connect your account to view emails.
+              Connect Gmail to view and manage emails directly in Break.
             </p>
           </div>
+          <button
+            onClick={onConnect}
+            className="rounded-full border border-brand-black bg-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-white hover:bg-brand-black/90 transition-colors"
+          >
+            Connect Gmail
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state (but Gmail is connected)
+  if (error && !error.includes("Syncing")) {
+    return (
+      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+              Email Inbox
+            </p>
+            <p className="mt-1 text-xs text-brand-red/70">
+              {error || "Unable to load inbox"}
+            </p>
+          </div>
+          <button
+            onClick={onSync}
+            disabled={syncing}
+            className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {syncing ? "Syncing..." : "Retry"}
+          </button>
         </div>
       </section>
     );
@@ -390,14 +465,15 @@ function EmailInboxSection({ emails, loading, error }) {
             Email Inbox (Latest)
           </p>
           <p className="mt-1 text-xs text-brand-black/60">
-            Recent inbound emails from your connected Gmail account.
+            {error && error.includes("Syncing") ? error : "Recent inbound emails from your connected Gmail account."}
           </p>
         </div>
         <button
-          disabled
-          className="rounded-full border border-brand-black/20 px-4 py-2 text-xs text-brand-black/40 cursor-not-allowed"
+          onClick={onSync}
+          disabled={syncing || loading}
+          className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          View all (Coming soon)
+          {syncing ? "Syncing..." : "Sync Gmail"}
         </button>
       </div>
 

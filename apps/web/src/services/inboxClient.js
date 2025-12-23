@@ -19,25 +19,81 @@ export const getAwaitingReply = async () => {
 };
 
 /**
- * Fetch recent inbox messages
- * @param {number} limit - Number of messages to fetch (default: 10)
- * @returns {Promise<{success: boolean, data?: Array, status?: number, error?: string}>}
+ * Check Gmail connection status
+ * @returns {Promise<{connected: boolean}>}
  */
-export const getRecentInbox = async (limit = 10) => {
+export const getGmailStatus = async () => {
   try {
+    const response = await apiFetch("/api/gmail/auth/status");
+    if (!response.ok) {
+      return { connected: false };
+    }
+    return response.json();
+  } catch (error) {
+    return { connected: false };
+  }
+};
+
+/**
+ * Trigger Gmail inbox sync
+ * @returns {Promise<{success: boolean, message?: string}>}
+ */
+export const syncGmailInbox = async () => {
+  try {
+    const response = await apiFetch("/api/gmail/inbox/sync", { method: "POST" });
+    if (!response.ok) {
+      return { success: false, message: "Sync failed" };
+    }
+    const data = await response.json();
+    return { success: true, ...data };
+  } catch (error) {
+    return { success: false, message: error.message || "Network error" };
+  }
+};
+
+/**
+ * Fetch recent inbox messages with auto-sync support
+ * @param {number} limit - Number of messages to fetch (default: 10)
+ * @param {boolean} autoSync - Auto-trigger sync if inbox is empty (default: true)
+ * @returns {Promise<{success: boolean, data?: Array, status?: number, error?: string, needsSync?: boolean}>}
+ */
+export const getRecentInbox = async (limit = 10, autoSync = true) => {
+  try {
+    // First check if Gmail is connected
+    const status = await getGmailStatus();
+    if (!status.connected) {
+      return {
+        success: false,
+        status: 404,
+        error: "gmail_not_connected",
+        needsSync: false
+      };
+    }
+
+    // Fetch inbox
     const response = await apiFetch(`/api/gmail/inbox?limit=${limit}&page=1`);
     
     if (!response.ok) {
       return {
         success: false,
         status: response.status,
-        error: response.status === 404 
-          ? "gmail_not_connected" 
-          : "Failed to fetch inbox"
+        error: "Failed to fetch inbox"
       };
     }
     
     const data = await response.json();
+    
+    // If inbox is empty and autoSync is true, trigger sync
+    if (autoSync && Array.isArray(data) && data.length === 0) {
+      await syncGmailInbox();
+      return {
+        success: true,
+        data: [],
+        needsSync: true,
+        message: "Syncing your Gmail inbox... Refresh in a moment."
+      };
+    }
+    
     return { success: true, data };
   } catch (error) {
     console.error("getRecentInbox error:", error);
