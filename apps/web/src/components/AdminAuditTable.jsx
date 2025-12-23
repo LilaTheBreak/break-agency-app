@@ -14,7 +14,8 @@ export function AdminAuditTable() {
         <button
           type="button"
           onClick={reload}
-          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+          disabled={loading}
+          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] disabled:opacity-50"
         >
           Refresh
         </button>
@@ -22,7 +23,9 @@ export function AdminAuditTable() {
       {loading ? (
         <p className="mt-4 text-sm text-brand-black/60">Loading entries…</p>
       ) : error ? (
-        <p className="mt-4 text-sm text-brand-red">{error}</p>
+        <p className="mt-4 text-sm text-brand-black/60">{error || "No audit logs available yet"}</p>
+      ) : logs.length === 0 ? (
+        <p className="mt-4 text-sm text-brand-black/60">No audit logs yet</p>
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-left text-sm text-brand-black/80">

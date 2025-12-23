@@ -47,9 +47,13 @@ function AdminCampaignsPanel({ session }) {
           <h3 className="font-display text-3xl uppercase">Campaign performance</h3>
         </div>
       </div>
-      {error ? <p className="text-sm text-brand-red">{error}</p> : null}
-      {loading && !campaigns.length ? (
-        <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+      {error ? (
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">Unable to load campaign data</p>
+          <p className="mt-2 text-xs text-brand-black/40">This feature is currently unavailable</p>
+        </div>
+      ) : loading && !campaigns.length ? (
+        <p className="mt-4 text-sm text-brand-black/60">Loading campaigns…</p>
       ) : campaigns.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
           <p className="text-sm text-brand-black/60">No campaigns yet</p>

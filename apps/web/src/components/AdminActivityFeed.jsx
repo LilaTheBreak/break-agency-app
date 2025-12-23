@@ -1,25 +1,43 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { getRecentActivity } from "../services/dashboardClient.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export function AdminActivityFeed() {
+  const { hasRole } = useAuth();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     async function loadActivity() {
+      // Check role before making API call
+      if (!hasRole("ADMIN", "SUPERADMIN")) {
+        setActivities([]);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+
       setLoading(true);
+      setError(null);
       try {
         const data = await getRecentActivity(7);
         setActivities(data);
       } catch (err) {
-        setError(err.message || "Failed to load activity");
+        console.error("Activity feed error:", err);
+        // Silent failure for permission errors
+        if (err.message?.includes("403") || err.message?.includes("Forbidden")) {
+          setActivities([]);
+          setError(null);
+        } else {
+          setError("Unable to load recent activity");
+        }
       } finally {
         setLoading(false);
       }
     }
     loadActivity();
-  }, []);
+  }, [hasRole]);
 
   const grouped = useMemo(() => {
     const groups = new Map();
@@ -43,7 +61,7 @@ export function AdminActivityFeed() {
         </span>
       </div>
       {error ? (
-        <p className="mt-4 text-sm text-brand-red">{error}</p>
+        <p className="mt-4 text-sm text-brand-black/60">{error}</p>
       ) : (
         <div className="mt-4 space-y-5">
           {loading && !activities.length ? (
@@ -73,7 +91,7 @@ export function AdminActivityFeed() {
               </div>
             ))
           ) : (
-            <p className="text-sm text-brand-black/60">No admin activity yet.</p>
+            <p className="text-sm text-brand-black/60">No recent activity</p>
           )}
         </div>
       )}

@@ -3,6 +3,7 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const ENTITY_OPTIONS = [
   { label: "All entity types", value: "" },
@@ -17,6 +18,7 @@ const ENTITY_OPTIONS = [
 const PAGE_LIMIT = 25;
 
 export function AdminActivityPage() {
+  const { hasRole } = useAuth();
   const [filters, setFilters] = useState({ userId: "", entityType: "", date: "" });
   const [formState, setFormState] = useState(filters);
   const [logs, setLogs] = useState([]);
@@ -31,6 +33,14 @@ export function AdminActivityPage() {
   });
 
   const fetchLogs = useCallback(async () => {
+    // Check role before making API call
+    if (!hasRole("ADMIN", "SUPERADMIN")) {
+      setLogs([]);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -42,6 +52,11 @@ export function AdminActivityPage() {
       if (trimmedUser) params.set("userId", trimmedUser);
       if (filters.entityType) params.set("entityType", filters.entityType);
       const response = await apiFetch(`/audit?${params.toString()}`);
+      if (response.status === 403) {
+        setLogs([]);
+        setError("");
+        return;
+      }
       if (!response.ok) throw new Error("Unable to load audit logs");
       const payload = await response.json();
       setLogs(payload.logs ?? []);
@@ -54,11 +69,12 @@ export function AdminActivityPage() {
         }
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load audit logs");
+      console.error("Audit logs error:", err);
+      setError("Unable to load audit logs");
     } finally {
       setLoading(false);
     }
-  }, [filters.entityType, filters.userId, page]);
+  }, [filters.entityType, filters.userId, page, hasRole]);
 
   useEffect(() => {
     fetchLogs();

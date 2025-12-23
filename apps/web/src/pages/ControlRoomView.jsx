@@ -50,12 +50,23 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
           if (metric.apiEndpoint) {
             try {
               const res = await apiFetch(metric.apiEndpoint);
+              if (res.status === 403) {
+                // Permission denied - show as unavailable
+                return { ...metric, value: "—" };
+              }
+              if (res.status === 404) {
+                // Endpoint not implemented yet
+                return { ...metric, value: "—" };
+              }
               if (res.ok) {
                 const data = await res.json();
                 return { ...metric, value: String(data.count || 0) };
               }
+              // Other errors - show as unavailable
+              return { ...metric, value: "—" };
             } catch (err) {
               console.error(`Failed to load metric ${metric.label}:`, err);
+              return { ...metric, value: "—" };
             }
           }
           return metric;

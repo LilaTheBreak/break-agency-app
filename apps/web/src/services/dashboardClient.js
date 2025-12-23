@@ -15,7 +15,14 @@ export async function getDashboardStats() {
  */
 export async function getRecentActivity(limit = 5) {
   const response = await apiFetch(`/api/activity?limit=${limit}`);
-  if (!response.ok) throw new Error("Failed to fetch recent activity");
+  if (response.status === 403) {
+    return [];
+  }
+  if (!response.ok) {
+    const error = new Error("Failed to fetch recent activity");
+    error.status = response.status;
+    throw error;
+  }
   return response.json();
 }
 
@@ -25,7 +32,17 @@ export async function getRecentActivity(limit = 5) {
  */
 export async function getPendingApprovals(limit = 4) {
   const response = await apiFetch(`/api/approvals?status=pending&limit=${limit}`);
-  if (!response.ok) throw new Error("Failed to fetch pending approvals");
+  if (response.status === 403) {
+    return [];
+  }
+  if (response.status === 404) {
+    return [];
+  }
+  if (!response.ok) {
+    const error = new Error("Failed to fetch pending approvals");
+    error.status = response.status;
+    throw error;
+  }
   return response.json();
 }
 
