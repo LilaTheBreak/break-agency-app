@@ -28,18 +28,35 @@ export default function AdminUserApprovals() {
   const fetchPendingUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await fetch(`${API_BASE}/api/admin/users/pending`, {
         credentials: 'include'
       });
       
+      // Handle permission errors
+      if (response.status === 403) {
+        setError("You don't have permission to view pending users");
+        setPendingUsers([]);
+        return;
+      }
+      
+      // Handle not found
+      if (response.status === 404) {
+        setError("Pending users not available yet");
+        setPendingUsers([]);
+        return;
+      }
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch pending users');
+        throw new Error('Unable to load pending users');
       }
 
       const data = await response.json();
-      setPendingUsers(data.users || []);
+      // Ensure users is always an array
+      setPendingUsers(Array.isArray(data.users) ? data.users : Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Unable to load pending users");
+      setPendingUsers([]);
       console.error('[FETCH PENDING USERS]', err);
     } finally {
       setLoading(false);
@@ -191,7 +208,7 @@ export default function AdminUserApprovals() {
         {!loading && !error && pendingUsers.length > 0 && (
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <ul className="divide-y divide-gray-200">
-              {pendingUsers.map((pendingUser) => {
+              {Array.isArray(pendingUsers) && pendingUsers.map((pendingUser) => {
                 const responses = parseResponses(pendingUser.onboarding_responses);
                 
                 return (

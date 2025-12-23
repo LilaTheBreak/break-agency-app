@@ -28,11 +28,23 @@ export function AdminUsersPage() {
     async function fetchData() {
       try {
         setLoading(true);
+        setError(null);
         // Fetch more users for a user management page
         const data = await getRecentUsers(25);
-        setUsers(data);
+        // Ensure data is always an array
+        setUsers(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError(err.message || "Could not load users");
+        console.error("Error fetching users:", err);
+        // Set empty array on error to prevent crashes
+        setUsers([]);
+        // Set user-friendly error message
+        if (err.message?.includes("403")) {
+          setError("You don't have permission to view users");
+        } else if (err.message?.includes("404")) {
+          setError("Users not available yet");
+        } else {
+          setError("Unable to load users");
+        }
       } finally {
         setLoading(false);
       }
@@ -62,7 +74,8 @@ export function AdminUsersPage() {
         });
         if (!response.ok) throw new Error("Failed to create user");
         const user = await response.json();
-        setUsers((prev) => [user, ...prev]);
+        // Ensure prev is always an array
+        setUsers((prev) => [user, ...(Array.isArray(prev) ? prev : [])]);
       } catch (error) {
         alert(error.message || "Unable to create user");
       }
@@ -88,7 +101,8 @@ export function AdminUsersPage() {
       if (!response.ok) {
         throw new Error("Failed to delete user");
       }
-      setUsers((prev) => prev.filter((user) => user.email !== email));
+      // Ensure prev is always an array
+      setUsers((prev) => (Array.isArray(prev) ? prev.filter((user) => user.email !== email) : []));
     } catch (error) {
       alert(error.message || "Unable to delete user");
     }
@@ -120,14 +134,15 @@ export function AdminUsersPage() {
           </thead>
           <tbody>
             {loading && <tr><td colSpan="4" className="p-4 text-center text-brand-black/60">Loading users...</td></tr>}
-            {error && <tr><td colSpan="4" className="p-4 text-center text-brand-red">{error}</td></tr>}
-            {!loading && !error && users.map((user) => (
+            {error && <tr><td colSpan="4" className="p-4 text-center text-brand-black/60">{error}</td></tr>}
+            {!loading && !error && users.length === 0 && <tr><td colSpan="4" className="p-4 text-center text-brand-black/60">No users found</td></tr>}
+            {!loading && !error && Array.isArray(users) && users.map((user) => (
                 <tr key={user.id} className="border-b border-brand-black/5">
-                  <td className="px-4 py-3">{user.email}</td>
+                  <td className="px-4 py-3">{user.email || "—"}</td>
                   <td className="px-4 py-3 capitalize">
-                    {user.roles.map(r => r.role.name).join(', ')}
+                    {Array.isArray(user.roles) && user.roles.length > 0 ? user.roles.map(r => r?.role?.name || "Unknown").join(", ") : "—"}
                   </td>
-                  <td className="px-4 py-3">{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
                       <Link

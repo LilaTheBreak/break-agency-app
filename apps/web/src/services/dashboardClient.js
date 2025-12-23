@@ -70,6 +70,22 @@ export async function getRevenueBreakdown() {
  */
 export async function getRecentUsers(limit = 5) {
   const response = await apiFetch(`/api/users?sort=createdAt:desc&limit=${limit}`);
-  if (!response.ok) throw new Error("Failed to fetch recent users");
-  return response.json();
+  
+  // Handle permission errors
+  if (response.status === 403) {
+    throw new Error("403: You don't have permission to view users");
+  }
+  
+  // Handle not found
+  if (response.status === 404) {
+    throw new Error("404: Users endpoint not available");
+  }
+  
+  if (!response.ok) {
+    throw new Error("Failed to fetch recent users");
+  }
+  
+  const data = await response.json();
+  // Always return an array
+  return Array.isArray(data) ? data : [];
 }

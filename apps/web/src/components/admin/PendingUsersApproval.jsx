@@ -23,7 +23,8 @@ export default function PendingUsersApproval() {
         withCredentials: true
       });
       console.log("Pending users response:", response.data);
-      setPendingUsers(response.data);
+      // Ensure data is always an array
+      setPendingUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
       console.error("Error fetching pending users:", err);
       if (err.response?.status === 403) {
@@ -57,8 +58,8 @@ export default function PendingUsersApproval() {
       setSuccessMessage(`User ${userEmail} approved successfully`);
       setTimeout(() => setSuccessMessage(null), 3000);
       
-      // Remove from list
-      setPendingUsers(prev => prev.filter(u => u.id !== userId));
+      // Remove from list - ensure prev is always an array
+      setPendingUsers(prev => (Array.isArray(prev) ? prev.filter(u => u.id !== userId) : []));
     } catch (err) {
       console.error("Error approving user:", err);
       setError("Failed to approve user");
@@ -83,8 +84,8 @@ export default function PendingUsersApproval() {
       setSuccessMessage(`User ${userEmail} rejected`);
       setTimeout(() => setSuccessMessage(null), 3000);
       
-      // Remove from list
-      setPendingUsers(prev => prev.filter(u => u.id !== userId));
+      // Remove from list - ensure prev is always an array
+      setPendingUsers(prev => (Array.isArray(prev) ? prev.filter(u => u.id !== userId) : []));
     } catch (err) {
       console.error("Error rejecting user:", err);
       setError("Failed to reject user");
@@ -143,7 +144,7 @@ export default function PendingUsersApproval() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {pendingUsers.map((user) => (
+              {Array.isArray(pendingUsers) && pendingUsers.map((user) => (
                 <tr key={user.id}>
                   <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {user.name || "—"}
