@@ -90,11 +90,24 @@ router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => 
 router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Response) => {
   const requester = req.user!;
   let targetId = req.params.userId;
+  
+  console.log("[CAMPAIGNS] Request details:", {
+    targetId,
+    requesterId: requester.id,
+    requesterEmail: requester.email,
+    requesterRole: requester.role,
+    allUser: req.user
+  });
+  
   if (targetId === "me") targetId = requester.id;
   if (targetId === "all" && !isAdmin(requester)) {
+    console.log("[CAMPAIGNS] Non-admin user requested 'all' - returning empty array");
     // Return empty array instead of 403 - allow graceful degradation
     return res.status(200).json({ campaigns: [] });
   }
+  
+  console.log("[CAMPAIGNS] Admin check passed, fetching campaigns for targetId:", targetId);
+  
   const whereClause =
     targetId === "all"
       ? {}
@@ -108,6 +121,9 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
       orderBy: { createdAt: "desc" },
       take: 25
     });
+    
+    console.log("[CAMPAIGNS] Found", campaigns.length, "campaigns");
+    
     const formatted = campaigns.map((campaign) => formatCampaign(campaign));
     res.json({ campaigns: formatted });
   } catch (error) {
