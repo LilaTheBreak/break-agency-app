@@ -228,10 +228,14 @@ export function AdminCampaignsPage({ session }) {
           fetchCampaigns(),
           fetchBrands(),
         ]);
-        setCampaigns(campaignsData);
-        setBrands(brandsData);
+        // Defensive: Handle different response shapes
+        setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
+        setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
       } catch (error) {
         console.error("Failed to load data:", error);
+        // Ensure arrays are set even on error
+        setCampaigns([]);
+        setBrands([]);
       } finally {
         setLoading(false);
       }
@@ -242,9 +246,11 @@ export function AdminCampaignsPage({ session }) {
   const refreshData = async () => {
     try {
       const campaignsData = await fetchCampaigns();
-      setCampaigns(campaignsData);
+      // Defensive: Handle different response shapes
+      setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
     } catch (error) {
       console.error("Failed to refresh campaigns:", error);
+      setCampaigns([]); // Ensure campaigns is always an array on error
     }
   };
 
@@ -266,7 +272,10 @@ export function AdminCampaignsPage({ session }) {
 
   const brandById = useMemo(() => {
     const map = new Map();
-    brands.forEach((b) => map.set(b.id, b));
+    // Defensive: Ensure brands is an array before iterating
+    if (Array.isArray(brands)) {
+      brands.forEach((b) => map.set(b.id, b));
+    }
     return map;
   }, [brands]);
 
@@ -297,7 +306,9 @@ export function AdminCampaignsPage({ session }) {
 
   const visibleCampaigns = useMemo(() => {
     const needle = (searchParams.get("q") || "").trim().toLowerCase();
-    const list = [...campaigns].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    // Defensive: Ensure campaigns is an array
+    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    const list = [...safeCampaigns].sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
     if (!needle) return list;
     return list.filter((campaign) => {
       const brandName = brandById.get(campaign.brandId)?.brandName || "";
@@ -309,7 +320,10 @@ export function AdminCampaignsPage({ session }) {
     });
   }, [campaigns, searchParams, brandById]);
 
-  const selectedCampaign = useMemo(() => campaigns.find((c) => c.id === drawerId) || null, [campaigns, drawerId]);
+  const selectedCampaign = useMemo(() => {
+    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    return safeCampaigns.find((c) => c.id === drawerId) || null;
+  }, [campaigns, drawerId]);
   const campaignDeals = useMemo(() => {
     if (!selectedCampaign) return [];
     return (deals || [])
