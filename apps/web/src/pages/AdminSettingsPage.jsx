@@ -71,7 +71,9 @@ export function AdminSettingsPage() {
             {[
               { name: "Slack", status: "Connected to #ops-control-room" },
               { name: "Notion", status: "Connected to Runbooks workspace" },
-              { name: "Google Drive", status: "Not connected" }
+              { name: "Google Drive", status: "Not connected" },
+              { name: "Gmail", status: "Not connected" },
+              { name: "Google Calendar", status: "Not connected" }
             ].map((integration) => (
               <div key={integration.name} className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
                 <div className="flex items-center justify-between">
