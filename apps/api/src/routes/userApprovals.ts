@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { requireAuth } from "../middleware/auth.js";
+import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -8,7 +9,7 @@ const prisma = new PrismaClient();
 // Middleware to check if user is admin
 const requireAdmin = (req: Request, res: Response, next: any) => {
   const user = (req as any).user;
-  if (!user || (user.role !== "ADMIN" && user.role !== "SUPERADMIN")) {
+  if (!user || !checkIsAdmin(user)) {
     return res.status(403).json({ error: "Admin access required" });
   }
   next();

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { requestUploadUrl, confirmUpload, listUserFiles, getDownloadUrl } from "../services/fileService.js";
 import { sendSlackAlert } from "../integrations/slack/slackClient.js";
+import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 
 const uploadUrlSchema = z.object({
   filename: z.string().min(1),
@@ -49,8 +50,8 @@ export async function handleListFiles(req: Request, res: Response, next: NextFun
     }
     const targetUser = typeof req.query.userId === "string" ? req.query.userId : req.user.id;
     const folder = typeof req.query.folder === "string" ? req.query.folder : undefined;
-    const isAdmin = req.user.roles?.some((role) => role.toLowerCase() === "admin");
-    if (targetUser !== req.user.id && !isAdmin) {
+    const userIsAdmin = checkIsAdmin(req.user);
+    if (targetUser !== req.user.id && !userIsAdmin) {
       return res.status(403).json({ error: true, message: "Forbidden" });
     }
     const files = await listUserFiles(targetUser, folder);
@@ -65,9 +66,9 @@ export async function handleDownloadUrl(req: Request, res: Response, next: NextF
     if (!req.user?.id) {
       return res.status(401).json({ error: true, message: "Authentication required" });
     }
-    const isAdmin = req.user.roles?.some((role) => role.toLowerCase() === "admin") || false;
+    const userIsAdmin = checkIsAdmin(req.user!);
     const fileId = req.params.id;
-    const file = await getDownloadUrl(fileId, req.user.id, isAdmin);
+    const file = await getDownloadUrl(fileId, req.user.id, userIsAdmin);
     res.json({ url: file.url });
   } catch (error) {
     next(error);
