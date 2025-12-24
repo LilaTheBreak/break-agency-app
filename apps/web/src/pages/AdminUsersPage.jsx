@@ -270,20 +270,20 @@ export function AdminUsersPage() {
         )}
       </div>
 
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white">
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white overflow-hidden">
         <table className="w-full text-left text-sm text-brand-black/80">
           <thead>
             <tr>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red">Email</th>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red">Roles</th>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red">Joined</th>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red">Status</th>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-right">
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[35%]">Email</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[20%]">Roles</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[15%]">Joined</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[12%]">Status</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-right w-[18%]">
                 {!showArchived && (
                   <button
                     type="button"
                     onClick={handleAdd}
-                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+                    className="rounded-full border border-brand-black px-4 py-1.5 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
                   >
                     Add user
                   </button>
@@ -307,29 +307,29 @@ export function AdminUsersPage() {
               
               return (
                 <tr key={user.id} className="border-b border-brand-black/5 hover:bg-brand-linen/30 transition-colors">
-                  <td className="px-4 py-3">{user.email || "—"}</td>
+                  <td className="px-4 py-3 truncate">{user.email || "—"}</td>
                   <td className="px-4 py-3 capitalize">
                     {Array.isArray(user.roles) && user.roles.length > 0 
                       ? user.roles.map(r => r?.role?.name || "Unknown").join(", ")
                       : user.role || "—"}
                   </td>
-                  <td className="px-4 py-3">{user.createdAt || user.created_at ? new Date(user.createdAt || user.created_at).toLocaleDateString() : "—"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">{user.createdAt || user.created_at ? new Date(user.createdAt || user.created_at).toLocaleDateString() : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${statusColor}`} />
-                      <span className="text-xs capitalize">{userStatus}</span>
+                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${statusColor}`} />
+                      <span className="text-xs capitalize whitespace-nowrap">{userStatus}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end items-center gap-2">
                       <Link
                         to={`/admin/users/${encodeURIComponent(user.email)}`}
-                        className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+                        className="inline-flex items-center justify-center rounded-full border border-brand-black px-3 py-1.5 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors whitespace-nowrap"
                       >
                         View
                       </Link>
                       <button
-                        className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+                        className="inline-flex items-center justify-center rounded-full border border-brand-black px-3 py-1.5 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors whitespace-nowrap"
                         onClick={() => {
                           setEditingUser(user);
                           setDrawerOpen(true);
@@ -339,7 +339,7 @@ export function AdminUsersPage() {
                       </button>
                       {isSuperAdmin && !showArchived && (
                         <button
-                          className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50 transition-colors"
+                          className="inline-flex items-center justify-center rounded-full border border-brand-red px-3 py-1.5 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50 transition-colors whitespace-nowrap"
                           onClick={() => handleDelete(user.email)}
                         >
                           Delete
