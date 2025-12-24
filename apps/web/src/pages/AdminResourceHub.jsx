@@ -27,6 +27,9 @@ export default function AdminResourceHub() {
     longDescription: "",
     resourceType: "GUIDE",
     uploadUrl: "",
+    uploadFilename: "",
+    uploadFileType: "",
+    uploadFileSize: null,
     externalUrl: "",
     thumbnailUrl: "",
     status: "DRAFT",
@@ -166,10 +169,22 @@ export default function AdminResourceHub() {
       }
 
       const data = await response.json();
-      setFormData((prev) => ({
-        ...prev,
-        [fieldName]: data.url,
-      }));
+      
+      // Store file URL and metadata
+      if (fieldName === "uploadUrl") {
+        setFormData((prev) => ({
+          ...prev,
+          uploadUrl: data.url,
+          uploadFilename: data.filename,
+          uploadFileType: data.type,
+          uploadFileSize: data.size,
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          [fieldName]: data.url,
+        }));
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -189,6 +204,9 @@ export default function AdminResourceHub() {
       longDescription: resource.longDescription || "",
       resourceType: resource.resourceType || "GUIDE",
       uploadUrl: resource.uploadUrl || "",
+      uploadFilename: resource.uploadFilename || "",
+      uploadFileType: resource.uploadFileType || "",
+      uploadFileSize: resource.uploadFileSize || null,
       externalUrl: resource.externalUrl || "",
       thumbnailUrl: resource.thumbnailUrl || "",
       status: resource.status || "DRAFT",
@@ -212,6 +230,9 @@ export default function AdminResourceHub() {
       longDescription: "",
       resourceType: "GUIDE",
       uploadUrl: "",
+      uploadFilename: "",
+      uploadFileType: "",
+      uploadFileSize: null,
       externalUrl: "",
       thumbnailUrl: "",
       status: "DRAFT",
@@ -224,6 +245,34 @@ export default function AdminResourceHub() {
       rsvpEnabled: false,
       rsvpOpen: true,
     });
+  };
+
+  const handleRemoveFile = () => {
+    setFormData((prev) => ({
+      ...prev,
+      uploadUrl: "",
+      uploadFilename: "",
+      uploadFileType: "",
+      uploadFileSize: null,
+    }));
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (type) => {
+    if (!type) return "📄";
+    if (type.includes("pdf")) return "📕";
+    if (type.includes("word") || type.includes("document")) return "📘";
+    if (type.includes("powerpoint") || type.includes("presentation")) return "📙";
+    if (type.includes("excel") || type.includes("spreadsheet")) return "📗";
+    if (type.includes("image")) return "🖼️";
+    if (type.includes("zip")) return "📦";
+    return "📄";
   };
 
   const handleAudienceToggle = (role) => {
@@ -351,36 +400,62 @@ export default function AdminResourceHub() {
                   </select>
                 </div>
 
-                {/* Upload URL */}
+                {/* Upload File */}
                 <div>
                   <label className="block text-sm font-semibold mb-2">
-                    Upload File (PDF/Document)
+                    Upload File
                   </label>
                   <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleFileUpload(file, "uploadUrl");
-                      }}
-                      className="w-full px-4 py-2 border border-brand-black/20 rounded-lg text-sm"
-                      disabled={uploadingFile}
-                    />
-                    {uploadingFile && (
-                      <p className="text-xs text-brand-red">Uploading...</p>
-                    )}
-                    {formData.uploadUrl && !uploadingFile && (
-                      <div className="flex items-center gap-2 text-xs text-green-600">
-                        <span>✓ File uploaded</span>
-                        <a
-                          href={formData.uploadUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline"
-                        >
-                          View
-                        </a>
+                    {formData.uploadUrl ? (
+                      <div className="border-2 border-brand-black/20 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">{getFileIcon(formData.uploadFileType)}</span>
+                            <div className="text-left">
+                              <p className="font-semibold text-sm">{formData.uploadFilename || "Uploaded file"}</p>
+                              <p className="text-xs text-brand-black/60">{formatFileSize(formData.uploadFileSize)}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveFile}
+                            className="text-brand-red hover:underline text-sm font-semibold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div className="mt-2 text-xs">
+                          <a
+                            href={formData.uploadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-red underline"
+                          >
+                            View file
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-brand-black/20 rounded-lg p-6 text-center hover:border-brand-red/50 transition-colors">
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold">Upload a file users can download</p>
+                          <p className="text-xs text-brand-black/60">
+                            PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, images, ZIP (max 50MB)
+                          </p>
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFileUpload(file, "uploadUrl");
+                            }}
+                            className="w-full px-4 py-2 border border-brand-black/20 rounded-lg text-sm mt-2"
+                            disabled={uploadingFile}
+                          />
+                          {uploadingFile && (
+                            <p className="text-xs text-brand-red mt-2">Uploading file...</p>
+                          )}
+                        </div>
                       </div>
                     )}
                     <p className="text-xs text-brand-black/60">Or enter URL manually:</p>

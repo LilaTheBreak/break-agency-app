@@ -16,7 +16,7 @@ export function OnboardingSnapshot({ data, role, heading = "Onboarding summary" 
         <p className="mt-2 text-sm text-brand-black/70">No onboarding data captured yet.</p>
         <Link
           to="/onboarding"
-          className="mt-3 inline-flex rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
+          className="mt-3 inline-flex rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
         >
           Complete onboarding
         </Link>

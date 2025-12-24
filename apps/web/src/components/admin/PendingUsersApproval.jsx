@@ -94,94 +94,82 @@ export default function PendingUsersApproval() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-bold mb-4">Approve New Users</h2>
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 className="text-xl font-bold mb-4">Approve New Users</h2>
-      
-      {error && (
-        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 text-gray-600 rounded">
-          {error}
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Admin</p>
+          <h3 className="font-display text-3xl uppercase">Approve new users</h3>
+          <p className="mt-1 text-sm text-brand-black/60">Review and approve newly registered users</p>
         </div>
-      )}
-      
-      {successMessage && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded">
-          {successMessage}
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-sm text-brand-black/80">{error}</p>
         </div>
       )}
 
-      {pendingUsers.length === 0 ? (
-        <p className="text-gray-500">No pending user approvals</p>
+      {successMessage && (
+        <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-sm font-semibold text-brand-black">{successMessage}</p>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">Loading pending approvals...</p>
+        </div>
+      ) : pendingUsers.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm text-brand-black/60">No pending user approvals</p>
+          <p className="mt-2 text-xs text-brand-black/40">New sign-ups will appear here when awaiting review</p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Applied
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {Array.isArray(pendingUsers) && pendingUsers.map((user) => (
-                <tr key={user.id}>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {user.name || "—"}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {user.email}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        <div className="mt-6 space-y-3">
+          {Array.isArray(pendingUsers) && pendingUsers.map((user) => (
+            <div
+              key={user.id}
+              className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <p className="font-semibold text-brand-black">{user.name || "—"}</p>
+                    <span className="inline-flex items-center rounded-full border border-brand-black/20 bg-brand-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/80">
                       {user.role}
                     </span>
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button
-                      onClick={() => handleApprove(user.id, user.email)}
-                      disabled={processingId === user.id}
-                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {processingId === user.id ? "Processing..." : "Approve"}
-                    </button>
-                    <button
-                      onClick={() => handleReject(user.id, user.email)}
-                      disabled={processingId === user.id}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {processingId === user.id ? "Processing..." : "Reject"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <p className="mt-1 text-sm text-brand-black/60">{user.email}</p>
+                  <p className="mt-1 text-xs text-brand-black/40">
+                    Applied {new Date(user.createdAt).toLocaleDateString(undefined, { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => handleApprove(user.id, user.email)}
+                    disabled={processingId === user.id}
+                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-brand-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processingId === user.id ? "Processing..." : "Approve"}
+                  </button>
+                  <button
+                    onClick={() => handleReject(user.id, user.email)}
+                    disabled={processingId === user.id}
+                    className="rounded-full border border-brand-black/20 bg-brand-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black transition hover:bg-brand-linen/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {processingId === user.id ? "Processing..." : "Reject"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

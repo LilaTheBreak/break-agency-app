@@ -408,7 +408,7 @@ export function SupportPage() {
           <button
             type="button"
             onClick={handleSubmitQuestion}
-            className="rounded-full bg-brand-black px-5 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.3em] text-brand-white transition hover:-translate-y-0.5"
+            className="rounded-full bg-brand-red px-5 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.3em] text-white transition hover:-translate-y-0.5"
           >
             Send async update
           </button>

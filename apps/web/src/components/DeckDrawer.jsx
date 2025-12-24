@@ -199,7 +199,7 @@ export default function DeckDrawer({
               type="button"
               onClick={handleGeneratePDF}
               disabled={generatingPDF || !selectedBrand}
-              className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:opacity-50"
+              className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50"
             >
               {generatingPDF ? "Generating..." : "Generate PDF"}
             </button>
@@ -282,7 +282,7 @@ export default function DeckDrawer({
                           onClick={() => toggleCreator(creator)}
                           className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                             selectedCreators.includes(creator)
-                              ? "bg-brand-black text-brand-white"
+                              ? "bg-brand-red text-white"
                               : "bg-brand-linen text-brand-black"
                           }`}
                         >

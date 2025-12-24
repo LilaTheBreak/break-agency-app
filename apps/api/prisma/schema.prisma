@@ -962,6 +962,9 @@ model Resource {
   longDescription  String?
   resourceType     ResourceType
   uploadUrl        String?
+  uploadFilename   String?
+  uploadFileType   String?
+  uploadFileSize   Int?
   externalUrl      String?
   thumbnailUrl     String?
   status           ResourceStatus     @default(DRAFT)

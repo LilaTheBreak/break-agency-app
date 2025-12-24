@@ -321,7 +321,7 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
                     <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">{opp.apply}</p>
                     <button
                       className={`mt-auto rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] ${
-                        opp.tone === "caution" ? "border border-brand-red text-brand-red" : "bg-brand-black text-brand-white"
+                        opp.tone === "caution" ? "border border-brand-red text-brand-red" : "bg-brand-red text-white"
                       }`}
                     >
                       Apply via board

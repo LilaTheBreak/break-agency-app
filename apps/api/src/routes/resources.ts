@@ -12,10 +12,10 @@ const prisma = new PrismaClient();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit for documents
   },
   fileFilter: (req, file, cb) => {
-    // Accept images and PDFs
+    // Accept images, PDFs, Office documents, and ZIP files
     const allowedMimes = [
       "image/jpeg",
       "image/jpg",
@@ -23,11 +23,19 @@ const upload = multer({
       "image/gif",
       "image/webp",
       "application/pdf",
+      "application/msword", // .doc
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      "application/vnd.ms-powerpoint", // .ppt
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
+      "application/vnd.ms-excel", // .xls
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+      "application/zip",
+      "application/x-zip-compressed",
     ];
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Invalid file type. Only images and PDFs are allowed."));
+      cb(new Error("Invalid file type. Allowed: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, images, ZIP."));
     }
   },
 });
@@ -66,6 +74,8 @@ router.post(
         url: savedFile.url,
         fileId: savedFile.id,
         filename: savedFile.filename,
+        type: savedFile.type,
+        size: savedFile.size,
       });
     } catch (error: any) {
       console.error("Error uploading file:", error);
@@ -263,12 +273,8 @@ router.post("/", requireAuth, requireAdmin, async (req: Request, res: Response) 
       });
     }
 
-    // Ensure either uploadUrl or externalUrl is provided
-    if (!uploadUrl && !externalUrl) {
-      return res.status(400).json({
-        error: "Either uploadUrl or externalUrl must be provided",
-      });
-    }
+    // Note: uploadUrl and externalUrl are both optional
+    // Resources can be created without files (e.g., event registrations)
 
     const resource = await prisma.resource.create({
       data: {
@@ -277,6 +283,9 @@ router.post("/", requireAuth, requireAdmin, async (req: Request, res: Response) 
         longDescription,
         resourceType,
         uploadUrl,
+        uploadFilename,
+        uploadFileType,
+        uploadFileSize,
         externalUrl,
         thumbnailUrl,
         status: status || "DRAFT",
@@ -318,6 +327,9 @@ router.put("/:id", requireAuth, requireAdmin, async (req: Request, res: Response
       longDescription,
       resourceType,
       uploadUrl,
+      uploadFilename,
+      uploadFileType,
+      uploadFileSize,
       externalUrl,
       thumbnailUrl,
       status,
@@ -346,6 +358,9 @@ router.put("/:id", requireAuth, requireAdmin, async (req: Request, res: Response
     if (longDescription !== undefined) updateData.longDescription = longDescription;
     if (resourceType !== undefined) updateData.resourceType = resourceType;
     if (uploadUrl !== undefined) updateData.uploadUrl = uploadUrl;
+    if (uploadFilename !== undefined) updateData.uploadFilename = uploadFilename;
+    if (uploadFileType !== undefined) updateData.uploadFileType = uploadFileType;
+    if (uploadFileSize !== undefined) updateData.uploadFileSize = uploadFileSize;
     if (externalUrl !== undefined) updateData.externalUrl = externalUrl;
     if (thumbnailUrl !== undefined) updateData.thumbnailUrl = thumbnailUrl;
     if (status !== undefined) updateData.status = status;

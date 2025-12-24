@@ -408,7 +408,7 @@ export function ProfilePage({ variant = "default" }) {
             <button
               type="submit"
               disabled={loading || saving}
-              className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white disabled:opacity-60"
+              className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save profile"}
             </button>

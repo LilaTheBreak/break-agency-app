@@ -33,7 +33,7 @@ const Composer = forwardRef(function Composer({ onSend }, ref) {
         <button
           type="button"
           onClick={handleSend}
-          className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white transition hover:bg-brand-red"
+          className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-brand-red"
         >
           Send
         </button>

@@ -445,7 +445,7 @@ export function AdminQueuesPage() {
                   </button>
                   <button
                     type="submit"
-                    className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
+                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
                   >
                     {activeTask ? "Save changes" : "Add task"}
                   </button>

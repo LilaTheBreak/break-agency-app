@@ -12,7 +12,7 @@ export function DealNoteComposer({ onSubmit }) {
         onChange={(e) => setValue(e.target.value)}
       />
       <button
-        className="rounded-lg bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+        className="rounded-lg bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
         onClick={() => {
           if (value.trim()) {
             onSubmit?.(value);

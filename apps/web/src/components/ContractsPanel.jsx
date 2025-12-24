@@ -599,7 +599,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+                  className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
                 >
                   Create
                 </button>

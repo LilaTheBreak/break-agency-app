@@ -247,7 +247,7 @@ export function AdminUsersPage() {
           onClick={() => setShowArchived(false)}
           className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition-colors ${
             !showArchived
-              ? "bg-brand-black text-brand-white"
+              ? "bg-brand-red text-white"
               : "border border-brand-black/30 text-brand-black/70 hover:border-brand-black/50"
           }`}
         >
@@ -257,7 +257,7 @@ export function AdminUsersPage() {
           onClick={() => setShowArchived(true)}
           className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition-colors ${
             showArchived
-              ? "bg-brand-black text-brand-white"
+              ? "bg-brand-red text-white"
               : "border border-brand-black/30 text-brand-black/70 hover:border-brand-black/50"
           }`}
         >
@@ -411,7 +411,7 @@ export function AdminUsersPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-black/90 transition-colors"
+                  className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 transition-colors"
                 >
                   Create User
                 </button>

@@ -93,7 +93,7 @@ export function GoalsProgressSummary({ session, basePath = "/exclusive" }) {
         </p>
         <Link
           to={`${basePath}/goals`}
-          className="mt-4 inline-flex rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-black/90 transition-colors"
+          className="mt-4 inline-flex rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 transition-colors"
         >
           Set your goals
         </Link>

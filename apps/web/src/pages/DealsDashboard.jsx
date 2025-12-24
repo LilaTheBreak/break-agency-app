@@ -99,7 +99,7 @@ export default function DealsDashboard() {
                   <p className="text-sm text-brand-black/80">Deliverables: {Array.isArray(draft.deliverables) ? draft.deliverables.join(", ") : JSON.stringify(draft.deliverables)}</p>
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  <button className="rounded-full bg-brand-black px-3 py-1 font-semibold uppercase tracking-[0.25em] text-brand-white" type="button">
+                  <button className="rounded-full bg-brand-red px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-white hover:bg-brand-red/90" type="button">
                     Convert to Deal
                   </button>
                   <button className="rounded-full border border-brand-black px-3 py-1 font-semibold uppercase tracking-[0.25em] text-brand-black" type="button">

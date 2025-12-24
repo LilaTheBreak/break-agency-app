@@ -62,7 +62,7 @@ function PrimaryButton({ children, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+      className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
     >
       {children}
     </button>

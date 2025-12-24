@@ -486,7 +486,7 @@ function ApprovalHoldOverlay({ platforms, onLogout }) {
           </button>
           <Link
             to="/"
-            className="rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white transition hover:-translate-y-0.5 hover:bg-brand-red"
+            className="rounded-full bg-brand-red px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white transition hover:-translate-y-0.5 hover:bg-brand-red/90"
           >
             Back to home
           </Link>

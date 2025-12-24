@@ -333,7 +333,7 @@ export function ExclusiveGoalsOnboardingPage() {
           <button
             type="button"
             onClick={saveAndExit}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
           >
             Save & continue
           </button>
@@ -536,7 +536,7 @@ export function ExclusiveGoalsOnboardingPage() {
                 <button
                   type="button"
                   onClick={saveAndExit}
-                  className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+                  className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
                 >
                   Save & continue
                 </button>
@@ -566,7 +566,7 @@ export function ExclusiveGoalsOnboardingPage() {
           type="button"
           onClick={nextStage}
           disabled={stageIndex === stages.length - 1}
-          className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:opacity-40"
+          className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-40"
         >
           Next
         </button>
@@ -642,7 +642,7 @@ function CardGrid({ items, selectedIds, onToggle, showDetailsOnSelect = false })
               <span
                 className={`h-9 w-9 shrink-0 rounded-full border text-center text-[0.65rem] font-semibold uppercase tracking-[0.25em] leading-9 ${
                   isSelected
-                    ? "border-brand-black bg-brand-black text-brand-white"
+                    ? "border-brand-red bg-brand-red text-white"
                     : "border-brand-black/20 bg-brand-white text-brand-black/60"
                 }`}
               >

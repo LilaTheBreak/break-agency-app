@@ -230,7 +230,7 @@ export function EventCard({ event, onAccept, onDecline, processing }) {
               <button
                 onClick={handleAccept}
                 disabled={isProcessing}
-                className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:opacity-50"
+                className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50"
               >
                 {isProcessing ? "Processing..." : "Accept"}
               </button>
@@ -379,7 +379,7 @@ export function WellnessCheckin({ onSubmit, onSnooze }) {
                 onClick={() => setEnergy(level)}
                 className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.3em] ${
                   energy === level
-                    ? "border-brand-black bg-brand-black text-brand-white"
+                    ? "border-brand-red bg-brand-red text-white"
                     : "border-brand-black/20"
                 }`}
               >
@@ -400,7 +400,7 @@ export function WellnessCheckin({ onSubmit, onSnooze }) {
                 onClick={() => setWorkload(level)}
                 className={`rounded-full border px-4 py-2 text-xs uppercase tracking-[0.3em] ${
                   workload === level
-                    ? "border-brand-black bg-brand-black text-brand-white"
+                    ? "border-brand-red bg-brand-red text-white"
                     : "border-brand-black/20"
                 }`}
               >
@@ -415,7 +415,7 @@ export function WellnessCheckin({ onSubmit, onSnooze }) {
         <button
           onClick={handleSubmit}
           disabled={!energy || !workload}
-          className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:opacity-50"
+          className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50"
         >
           Submit
         </button>

@@ -604,7 +604,7 @@ function BrandOpportunitiesSection({ session }) {
                         <button
                           onClick={() => handleApprove(match.creator.name)}
                           className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em] ${
-                            isApproved ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black text-brand-black hover:bg-brand-black/5"
+                            isApproved ? "border-brand-red bg-brand-red text-white" : "border-brand-black/20 text-brand-black hover:bg-brand-black/5"
                           }`}
                         >
                           {isApproved ? "Approved" : "Approve"}
@@ -669,7 +669,7 @@ function BrandFinancialSection() {
               key={profile}
               onClick={() => setActiveProfile(profile)}
               className={`rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-[0.25em] ${
-                activeProfile === profile ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black/30"
+                activeProfile === profile ? "border-brand-red bg-brand-red text-white" : "border-brand-black/30"
               }`}
             >
               {profile}

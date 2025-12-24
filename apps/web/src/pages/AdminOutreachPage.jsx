@@ -29,10 +29,10 @@ const OUTREACH_STAGES = [
 function IconBubble({ children, tone = "neutral" }) {
   const toneClass =
     tone === "positive"
-      ? "bg-brand-red text-brand-white"
+      ? "bg-brand-red text-white"
       : tone === "muted"
         ? "bg-brand-black/5 text-brand-black"
-        : "bg-brand-black text-brand-white";
+        : "bg-brand-red text-white";
   return (
     <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[0.8rem] ${toneClass}`} aria-hidden>
       {children}
@@ -1024,7 +1024,7 @@ export function AdminOutreachPage({ session }) {
               onClick={() => setActiveView("pipeline")}
               className={[
                 "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]",
-                activeView === "pipeline" ? "bg-brand-black text-brand-white" : "text-brand-black/70 hover:bg-brand-black/5"
+                activeView === "pipeline" ? "bg-brand-red text-white" : "text-brand-black/70 hover:bg-brand-black/5"
               ].join(" ")}
             >
               Pipeline
@@ -1034,7 +1034,7 @@ export function AdminOutreachPage({ session }) {
               onClick={() => setActiveView("records")}
               className={[
                 "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]",
-                activeView === "records" ? "bg-brand-black text-brand-white" : "text-brand-black/70 hover:bg-brand-black/5"
+                activeView === "records" ? "bg-brand-red text-white" : "text-brand-black/70 hover:bg-brand-black/5"
               ].join(" ")}
             >
               Records
@@ -1078,7 +1078,7 @@ export function AdminOutreachPage({ session }) {
           <button
             type="button"
             onClick={openNewOutreach}
-            className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
+            className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
           >
             New Outreach
           </button>
@@ -1137,7 +1137,7 @@ export function AdminOutreachPage({ session }) {
             <button
               type="button"
               onClick={openNewOutreach}
-              className="mt-4 rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
+              className="mt-4 rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
             >
               New Outreach
             </button>
@@ -1260,8 +1260,7 @@ export function AdminOutreachPage({ session }) {
                         </button>
                         <button
                           type="button"
-                          className="rounded-full border border-brand-black px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-brand-white transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.12)]"
-                          style={{ backgroundColor: "#0f0f10" }}
+                          className="rounded-full bg-brand-red px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-white transition hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(167,15,12,0.25)]"
                           onClick={() => openConvertToDeal({ outreachId: record.id, opportunityId: record.opportunityRef || "" })}
                         >
                           Convert → Deal
@@ -1380,8 +1379,7 @@ export function AdminOutreachPage({ session }) {
                   </select>
                   <button
                     type="button"
-                    className="rounded-full border border-brand-black px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-brand-white"
-                    style={{ backgroundColor: "#0f0f10" }}
+                    className="rounded-full bg-brand-red px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-white"
                     onClick={() => openConvertToDeal({ outreachId: opp.outreachId, opportunityId: opp.id })}
                   >
                     Convert → Deal
@@ -2142,7 +2140,7 @@ function OutreachModal({ editing, form, setForm, onClose, onSave }) {
           <button
             type="button"
             onClick={onSave}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
           >
             Save
           </button>
@@ -2349,7 +2347,7 @@ function OpportunityModal({ editing, form, setForm, outreachOptions, onClose, on
           <button
             type="button"
             onClick={onSave}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
           >
             Save
           </button>
@@ -2478,7 +2476,7 @@ function DealModal({ form, setForm, outreachOptions, opportunityOptions, campaig
           <button
             type="button"
             onClick={onSave}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
           >
             Create deal
           </button>
@@ -2625,7 +2623,7 @@ function TaskEditModal({ task, setTask, onClose, onSave }) {
           <button
             type="button"
             onClick={onSave}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
           >
             Save
           </button>
@@ -2706,7 +2704,7 @@ function NoteEditModal({ body, setBody, onClose, onSave }) {
           <button
             type="button"
             onClick={onSave}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
           >
             Save
           </button>
@@ -2857,7 +2855,7 @@ function RecordDrawer({
           </button>
           <button
             type="button"
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
             onClick={() => onConvertToDeal({ outreachId: entityId, opportunityId: outreach?.opportunityRef || "" })}
           >
             Convert → Deal
@@ -2895,7 +2893,7 @@ function RecordDrawer({
           </button>
           <button
             type="button"
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
             onClick={() => onConvertToDeal({ outreachId: opportunity?.outreachId, opportunityId: entityId })}
           >
             Convert → Deal

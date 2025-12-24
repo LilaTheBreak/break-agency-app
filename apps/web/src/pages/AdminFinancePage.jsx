@@ -1337,7 +1337,7 @@ export function AdminFinancePage() {
               type="button"
               onClick={() => setAnalyticsTab(tab.id)}
               className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] ${
-                analyticsTab === tab.id ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black/20 text-brand-black hover:bg-brand-black/5"
+                analyticsTab === tab.id ? "border-brand-red bg-brand-red text-white" : "border-brand-black/20 text-brand-black hover:bg-brand-black/5"
               }`}
             >
               {tab.label}
@@ -1410,7 +1410,7 @@ export function AdminFinancePage() {
                       setXero({ connected: true, lastSyncAt: null });
                       showToast("Xero connected");
                     }}
-                    className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+                    className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
                   >
                     Connect Xero
                   </button>
@@ -1893,7 +1893,7 @@ function InvoiceModal({ mode, invoice, onClose, onSave }) {
           <button type="button" onClick={onClose} className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em]">
             Cancel
           </button>
-          <button type="button" onClick={() => onSave(form)} className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white">
+          <button type="button" onClick={() => onSave(form)} className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white">
             Save
           </button>
         </div>
@@ -1958,7 +1958,7 @@ function PayoutModal({ mode, payout, onClose, onSave }) {
           <button type="button" onClick={onClose} className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em]">
             Cancel
           </button>
-          <button type="button" onClick={() => onSave(form)} className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white">
+          <button type="button" onClick={() => onSave(form)} className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white">
             Save
           </button>
         </div>
@@ -2026,7 +2026,7 @@ function DocumentUploadModal({ payload, invoices, payouts, cashIn, onClose, onUp
           <button
             type="button"
             onClick={() => onUpload({ files, label, linkedType, linkedId })}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
             disabled={files.length === 0}
           >
             Upload
@@ -2131,7 +2131,7 @@ function DocumentRelinkModal({ doc, invoices, payouts, cashIn, onClose, onSave }
           <button
             type="button"
             onClick={() => (doc ? onSave({ docId: doc.id, linkedType, linkedId: linkedType === "none" ? null : linkedId }) : null)}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
             disabled={!doc}
           >
             Save

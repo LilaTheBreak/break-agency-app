@@ -209,7 +209,7 @@ export default function Inbox() {
               onClick={() => setChannelFilter(ch.id)}
               className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] transition ${
                 channelFilter === ch.id
-                  ? "border-brand-black bg-brand-black text-brand-white"
+                  ? "border-brand-red bg-brand-red text-white"
                   : "border-brand-black/20 bg-white text-brand-black hover:bg-brand-red/10"
               }`}
             >

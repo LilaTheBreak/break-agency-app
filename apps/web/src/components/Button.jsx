@@ -38,10 +38,15 @@ export default function Button({
   }
 
   // ✅ EXPLICIT VARIANTS: No implicit styling
+  // PRIMARY = brand-red (main CTA)
+  // SECONDARY = outlined black (secondary actions)
+  // DANGER = red (destructive actions)
+  // GHOST = transparent with border (tertiary actions)
+  // TEXT = text-only (minimal actions)
   const variantClasses = {
-    primary: "bg-brand-black text-brand-white hover:bg-brand-black/90",
-    secondary: "bg-brand-white text-brand-black border border-brand-black hover:bg-brand-black/5",
-    danger: "bg-brand-red text-brand-white hover:bg-brand-red/90",
+    primary: "bg-brand-red text-white hover:bg-brand-red/90",
+    secondary: "bg-transparent text-brand-black border border-brand-black/20 hover:bg-brand-black/5",
+    danger: "bg-brand-red text-white hover:bg-brand-red/90",
     ghost: "bg-transparent text-brand-black border border-brand-black/20 hover:bg-brand-black/5",
     text: "bg-transparent text-brand-black hover:bg-brand-black/5"
   };

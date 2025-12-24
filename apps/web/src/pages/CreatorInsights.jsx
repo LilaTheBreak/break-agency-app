@@ -17,7 +17,7 @@ export default function CreatorInsightsPage({ userId }) {
       <h1 className="text-2xl font-bold">Creator Performance Insights</h1>
 
       <button
-        className="rounded-xl bg-brand-black px-4 py-2 text-white"
+        className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-brand-red/90"
         onClick={() => generateInsights(userId).then((r) => setInsights((prev) => [r, ...prev]))}
       >
         Generate Latest Insight

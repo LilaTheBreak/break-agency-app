@@ -77,7 +77,7 @@ function PrimaryButton({ children, onClick, disabled }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:cursor-not-allowed disabled:opacity-60"
+      className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -544,7 +544,7 @@ export function AdminDocumentsPage({ session }) {
               }
               className={[
                 "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] border",
-                view === "active" ? "bg-brand-black text-brand-white border-brand-black" : "border-brand-black/20 text-brand-black/70 hover:bg-brand-black/5"
+                view === "active" ? "bg-brand-red text-white border-brand-red" : "border-brand-black/20 text-brand-black/70 hover:bg-brand-black/5"
               ].join(" ")}
             >
               Active
@@ -560,7 +560,7 @@ export function AdminDocumentsPage({ session }) {
               }
               className={[
                 "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] border",
-                view === "expiring" ? "bg-brand-black text-brand-white border-brand-black" : "border-brand-black/20 text-brand-black/70 hover:bg-brand-black/5"
+                view === "expiring" ? "bg-brand-red text-white border-brand-red" : "border-brand-black/20 text-brand-black/70 hover:bg-brand-black/5"
               ].join(" ")}
             >
               Expiring soon

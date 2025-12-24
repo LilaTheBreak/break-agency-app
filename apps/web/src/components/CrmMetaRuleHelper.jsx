@@ -301,7 +301,7 @@ export function EmptyStateWithHint({ entity, onCreate, onLearnMore }) {
         <button
           type="button"
           onClick={onCreate}
-          className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+          className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
         >
           Create {entity.slice(0, -1)}
         </button>

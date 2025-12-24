@@ -235,7 +235,7 @@ function NameCaptureModal({ value, onChange, onClose, onSubmit }) {
                 if (!value.trim()) return;
                 onSubmit();
               }}
-              className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white transition hover:bg-brand-red"
+              className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white transition hover:bg-brand-red/90"
             >
               Next
             </button>

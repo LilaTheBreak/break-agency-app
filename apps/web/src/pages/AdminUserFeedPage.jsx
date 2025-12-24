@@ -117,7 +117,7 @@ export function AdminUserFeedPage() {
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
             to={profile.personaRoute}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
           >
             Open {profile.personaLabel}
           </Link>
@@ -249,7 +249,7 @@ export function AdminUserFeedPage() {
             )}
             <button
               type="submit"
-              className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+              className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
             >
               Save
             </button>

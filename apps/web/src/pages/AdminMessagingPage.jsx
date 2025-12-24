@@ -158,7 +158,7 @@ export function AdminMessagingPage() {
               type="button"
               onClick={() => setActiveFilter(filter)}
               className={`rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] ${
-                activeFilter === filter ? "border-brand-black bg-brand-black text-brand-white" : "border-brand-black/30"
+                activeFilter === filter ? "border-brand-red bg-brand-red text-white" : "border-brand-black/30"
               }`}
             >
               {filter}
@@ -348,7 +348,7 @@ function ThreadModal({
             <button
               type="button"
               onClick={onSend}
-              className="rounded-full bg-brand-black px-5 py-2 text-xs uppercase tracking-[0.35em] text-brand-white hover:bg-brand-black/90"
+              className="rounded-full bg-brand-red px-5 py-2 text-xs uppercase tracking-[0.35em] text-white hover:bg-brand-red/90"
             >
               Send message
             </button>
@@ -423,7 +423,7 @@ function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, on
           </div>
           <button
             onClick={onConnect}
-            className="rounded-full border border-brand-black bg-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-white hover:bg-brand-black/90 transition-colors"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 transition-colors"
           >
             Connect Gmail
           </button>

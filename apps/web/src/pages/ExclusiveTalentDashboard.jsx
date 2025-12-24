@@ -1551,7 +1551,7 @@ function PulseOptions({ value, setValue, options }) {
           className={[
             "rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] transition",
             value === option
-              ? "border-brand-black bg-brand-black text-brand-white"
+              ? "border-brand-red bg-brand-red text-white"
               : "border-brand-black/20 bg-brand-white text-brand-black hover:bg-brand-black/5"
           ].join(" ")}
         >
@@ -1681,7 +1681,7 @@ function EditModal({ title, children, onClose, onSave, saveLabel = "Save" }) {
           <button
             type="button"
             onClick={onSave}
-            className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+            className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
           >
             {saveLabel}
           </button>
@@ -1731,7 +1731,7 @@ function Toggle({ label, description, checked, onChange }) {
         type="button"
         onClick={() => onChange(!checked)}
         className={`h-10 w-16 rounded-full border p-1 transition ${
-          checked ? "border-brand-black bg-brand-black" : "border-brand-black/20 bg-brand-white"
+          checked ? "border-brand-red bg-brand-red" : "border-brand-black/20 bg-brand-white"
         }`}
         aria-pressed={checked}
       >
@@ -2969,7 +2969,7 @@ function ExclusiveFinancials() {
               </button>
               <button
                 type="submit"
-                className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white"
+                className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white"
               >
                 Save
               </button>

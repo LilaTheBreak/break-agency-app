@@ -65,7 +65,7 @@ function PrimaryButton({ children, onClick, disabled }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-black/90 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-brand-black"
+      className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-brand-red"
     >
       {children}
     </button>

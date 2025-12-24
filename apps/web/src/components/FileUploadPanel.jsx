@@ -243,7 +243,7 @@ export function FileUploadPanel({ session, folder, title, description, userId, o
                     type="button"
                     disabled={!canAddToDeal}
                     onClick={() => activeFile && insightsData && canAddToDeal && onAddToDeal(activeFile, insightsData)}
-                    className="rounded-full border border-brand-black bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:opacity-50"
+                    className="rounded-full border border-brand-black bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50"
                   >
                     Add to Deal
                   </button>

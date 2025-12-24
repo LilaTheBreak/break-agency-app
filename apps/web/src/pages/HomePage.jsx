@@ -106,7 +106,7 @@ export function HomePage({ onRequestSignIn }) {
             <button
               type="button"
               onClick={onRequestSignIn}
-              className="w-full rounded-2xl bg-brand-red px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-black hover:bg-brand-red/90"
+              className="w-full rounded-2xl bg-brand-red px-4 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90"
             >
               Launch console
             </button>

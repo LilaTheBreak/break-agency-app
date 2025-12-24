@@ -15,7 +15,7 @@ export default function CategoryFilterBar({ value, onChange }) {
             onClick={() => onChange?.(id)}
             className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] transition ${
               selected
-                ? "bg-brand-black text-brand-white border-brand-black"
+                ? "bg-brand-red text-white border-brand-red"
                 : "bg-white text-brand-black border-brand-black/20"
             }`}
           >

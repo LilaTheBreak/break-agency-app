@@ -53,7 +53,7 @@ export default function DealExtractorPanel({ sourceText = "" }) {
           <h3 className="text-lg font-semibold text-brand-black">Extract deal terms</h3>
         </div>
         <button
-          className="rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white disabled:opacity-50"
+          className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50"
           disabled={loading || !text.trim()}
           onClick={handleRun}
         >

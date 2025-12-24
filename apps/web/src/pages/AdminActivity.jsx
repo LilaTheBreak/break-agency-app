@@ -184,7 +184,7 @@ export function AdminActivityPage() {
           <div className="mt-6 flex flex-wrap gap-2">
             <button
               type="submit"
-              className="flex-1 rounded-full bg-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white"
+              className="flex-1 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
             >
               Apply
             </button>
