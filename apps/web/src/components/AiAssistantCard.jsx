@@ -133,7 +133,7 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
             setError("");
             setShowSuggestions(true);
           }}
-          className="rounded-full border border-brand-black/30 px-4 py-1 text-xs uppercase tracking-[0.3em]"
+          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black hover:text-white transition-colors"
         >
           Reset
         </button>

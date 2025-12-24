@@ -3,6 +3,7 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { ContactAutocomplete } from "../components/ContactAutocomplete.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
+import { apiFetch } from "../services/apiClient.js";
 
 const createId = () => {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -39,11 +40,25 @@ export function AdminQueuesPage() {
   const fetchQueueItems = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/queues/all");
-      const data = await response.json();
-      setQueueItems(data.items || []);
+      const response = await apiFetch("/api/queues/all");
+      
+      if (!response.ok) {
+        console.warn("Queue fetch returned status:", response.status);
+        setQueueItems([]);
+        return;
+      }
+      
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await response.json();
+        setQueueItems(data.items || []);
+      } else {
+        console.warn("Queue endpoint returned non-JSON response");
+        setQueueItems([]);
+      }
     } catch (error) {
       console.error("Failed to fetch queue items:", error);
+      setQueueItems([]);
     } finally {
       setLoading(false);
     }
@@ -52,7 +67,7 @@ export function AdminQueuesPage() {
   const handleMarkComplete = async (item) => {
     try {
       setDispatchingId(item.id);
-      const response = await fetch(`/api/queues/${item.id}/complete`, {
+      const response = await apiFetch(`/api/queues/${item.id}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: item.type })
@@ -61,6 +76,8 @@ export function AdminQueuesPage() {
       if (response.ok) {
         // Remove from list
         setQueueItems(prev => prev.filter(q => q.id !== item.id));
+      } else {
+        console.warn("Failed to mark item complete:", response.status);
       }
     } catch (error) {
       console.error("Failed to complete item:", error);
@@ -74,7 +91,7 @@ export function AdminQueuesPage() {
 
     try {
       setDispatchingId(item.id);
-      const response = await fetch(`/api/queues/${item.id}/delete`, {
+      const response = await apiFetch(`/api/queues/${item.id}/delete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: item.type, reason: "Rejected from queue" })
@@ -83,6 +100,8 @@ export function AdminQueuesPage() {
       if (response.ok) {
         // Remove from list
         setQueueItems(prev => prev.filter(q => q.id !== item.id));
+      } else {
+        console.warn("Failed to delete item:", response.status);
       }
     } catch (error) {
       console.error("Failed to delete item:", error);

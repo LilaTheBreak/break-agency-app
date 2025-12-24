@@ -697,7 +697,7 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
                 <button 
                   onClick={handleDispatchUpdate}
                   disabled={isDispatchLoading}
-                  className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] transition hover:bg-brand-black hover:text-brand-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black transition hover:bg-brand-black hover:text-brand-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isDispatchLoading ? "Creating draft..." : queue.cta}
                 </button>
