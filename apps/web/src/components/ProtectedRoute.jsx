@@ -29,9 +29,9 @@ export function ProtectedRoute({ allowed = [], children }) {
     );
   }
 
-  // Check if user needs onboarding approval (skip for admins)
+  // Check if user needs onboarding approval (skip for admins/superadmins)
   const userRole = user.role;
-  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPERADMIN';
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPERADMIN' || userRole === 'SUPER_ADMIN';
   const needsOnboarding = shouldRouteToOnboarding(user);
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
 
@@ -41,7 +41,9 @@ export function ProtectedRoute({ allowed = [], children }) {
   }
 
   // Check if user's role is in the allowed list
-  const canAccess = !allowed?.length || allowed.includes(userRole);
+  // CRITICAL: SUPERADMIN always has access
+  const isSuperAdmin = userRole === 'SUPERADMIN' || userRole === 'SUPER_ADMIN';
+  const canAccess = isSuperAdmin || !allowed?.length || allowed.includes(userRole);
   
   if (!canAccess) {
     return <NoAccessCard description="This module is restricted. Contact operations if you believe this is an error." />;

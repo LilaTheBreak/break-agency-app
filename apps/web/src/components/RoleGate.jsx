@@ -20,7 +20,9 @@ export function RoleGate({ allowed = [], description, children }) {
   }
   if (!allowed?.length) return children;
   const userRole = user.role;
-  const canAccess = allowed.includes(userRole);
+  // CRITICAL: SUPERADMIN always has access
+  const isSuperAdmin = userRole === 'SUPERADMIN' || userRole === 'SUPER_ADMIN';
+  const canAccess = isSuperAdmin || allowed.includes(userRole);
   if (!canAccess) {
     return <NoAccessCard description={description || "You do not have access to this module."} />;
   }

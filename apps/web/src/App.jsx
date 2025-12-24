@@ -742,7 +742,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <CreatorDashboard session={session} />
@@ -754,7 +754,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.BRAND, Roles.ADMIN]}
+              allowed={[Roles.BRAND, Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <BrandDashboardLayout basePath="/brand/dashboard" session={session} />
@@ -768,7 +768,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="opportunities"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.AGENT, Roles.BRAND]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT, Roles.BRAND]}>
                 <BrandOpportunitiesPage />
               </RoleGate>
             }
@@ -776,7 +776,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="contracts"
             element={
-              <RoleGate session={session} allowed={[Roles.BRAND, Roles.ADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.BRAND, Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
                 <BrandContractsPage />
               </RoleGate>
             }
