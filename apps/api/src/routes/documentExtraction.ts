@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { extractDocumentText } from "../services/documentExtraction.js";
+import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 
@@ -10,7 +11,7 @@ router.get("/documents/:id/text", requireAuth, async (req, res, next) => {
     if (!fileId) {
       return res.status(400).json({ success: false, message: "File id is required" });
     }
-    const isAdmin = req.user?.roles?.some((role) => role.toLowerCase() === "admin") || false;
+    const isAdmin = checkIsAdmin(req.user!);
     const result = await extractDocumentText({ fileId, userId: req.user!.id, isAdmin });
     res.json({ success: true, text: result.text });
   } catch (error) {

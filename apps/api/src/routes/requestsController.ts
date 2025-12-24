@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { asyncHandler } from '../../middleware/asyncHandler.js';
 import { isPremiumBrand } from '../../services/brandAccessService.js';
+import { isAdmin as checkIsAdmin, isSuperAdmin } from '../../lib/roleHelpers.js';
 
 const prisma = new PrismaClient();
 const BRAND_FREE_REQUEST_LIMIT = 3;
@@ -65,7 +66,7 @@ export const getUgcRequest = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Visibility logic
-  if (user.id !== request.brandId && user.id !== request.creatorId && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+  if (user.id !== request.brandId && user.id !== request.creatorId && !checkIsAdmin(user)) {
     res.status(403);
     throw new Error('You do not have permission to view this request.');
   }

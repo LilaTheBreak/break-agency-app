@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { getDownloadUrl } from "../services/fileService.js";
 import { cleanText, detectFileType, extractText, splitIntoChunks } from "../lib/fileExtract.js";
 import { generateFileInsights, InvalidAiResponseError } from "../services/aiFileInsightsService.js";
+import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 
@@ -18,10 +19,10 @@ router.post("/ai/file-insights", requireAuth, async (req: Request, res: Response
   }
 
   const currentUser = req.user!;
-  const isAdmin = currentUser.roles?.some((role) => role.toLowerCase() === "admin") || false;
+  const userIsAdmin = checkIsAdmin(currentUser);
 
   try {
-    const file = await getDownloadUrl(parsed.data.fileId, currentUser.id, isAdmin);
+    const file = await getDownloadUrl(parsed.data.fileId, currentUser.id, userIsAdmin);
 
     const download = await fetch(file.url);
     if (!download.ok) {

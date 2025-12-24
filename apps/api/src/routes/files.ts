@@ -7,6 +7,7 @@ import {
   listUserFiles,
   getDownloadUrl
 } from "../services/fileService.js";
+import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 // import slackClient from "../integrations/slack/slackClient.js";
 
 const router = Router();
@@ -16,8 +17,8 @@ router.get("/", requireUser, async (req, res, next) => {
     const currentUser = req.user!;
     const folder = typeof req.query.folder === "string" ? req.query.folder : undefined;
     const targetUser = typeof req.query.userId === "string" ? req.query.userId : currentUser.id;
-    const isAdmin = currentUser.roles?.some((role) => role.toLowerCase() === "admin") || false;
-    if (targetUser !== currentUser.id && !isAdmin) {
+    const userIsAdmin = checkIsAdmin(currentUser);
+    if (targetUser !== currentUser.id && !userIsAdmin) {
       return res.status(403).json({ error: true, message: "Forbidden" });
     }
     const files = await listUserFiles(targetUser, folder);
@@ -99,8 +100,8 @@ router.post("/confirm", requireUser, async (req, res, next) => {
 router.get("/:id/download", requireUser, async (req, res, next) => {
   try {
     const currentUser = req.user!;
-    const isAdmin = currentUser.roles?.some((role) => role.toLowerCase() === "admin") || false;
-    const file = await getDownloadUrl(req.params.id, currentUser.id, isAdmin);
+    const userIsAdmin = checkIsAdmin(currentUser);
+    const file = await getDownloadUrl(req.params.id, currentUser.id, userIsAdmin);
     res.json({ url: file.url });
   } catch (err) {
     next(err);
@@ -113,8 +114,8 @@ router.delete("/:id", requireUser, async (req, res) => {
   if (!file) {
     return res.status(404).json({ error: true, message: "File not found" });
   }
-  const isAdmin = currentUser.roles?.some((role) => role.toLowerCase() === "admin") || false;
-  if (file.userId !== currentUser.id && !isAdmin) {
+  const userIsAdmin = checkIsAdmin(currentUser);
+  if (file.userId !== currentUser.id && !userIsAdmin) {
     return res.status(403).json({ error: true, message: "Forbidden" });
   }
   await deleteObject(file.key).catch(() => null);

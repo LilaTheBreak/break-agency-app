@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { isAdmin as checkIsAdmin } from '../lib/roleHelpers.js';
 
 /**
  * Middleware to check if a user's onboarding has been approved.
@@ -11,7 +12,7 @@ export const checkOnboardingApproved = (req: Request, res: Response, next: NextF
   }
 
   // Admins and Super Admins can bypass this check
-  if (req.user.role === 'ADMIN' || req.user.role === 'SUPER_ADMIN') {
+  if (checkIsAdmin(req.user)) {
     return next();
   }
 

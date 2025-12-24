@@ -22,57 +22,119 @@ export function normalizeRole(role: string | undefined | null): string {
  * SUPERADMIN must bypass ALL permission checks throughout the application
  * 
  * Handles multiple variations: SUPERADMIN, SUPER_ADMIN, superadmin, etc.
+ * Handles both single role field and legacy roles array
  * 
  * @param user - The session user or user-like object
  * @returns true if user is superadmin, false otherwise
  */
 export function isSuperAdmin(user: any): boolean {
-  if (!user?.role) return false;
-  const normalized = normalizeRole(user.role);
-  return normalized === "SUPERADMIN" || normalized === "SUPER_ADMIN";
+  // Handle single role field (current pattern)
+  if (user?.role) {
+    const normalized = normalizeRole(user.role);
+    if (normalized === "SUPERADMIN" || normalized === "SUPER_ADMIN") return true;
+  }
+  
+  // Handle legacy roles array
+  if (user?.roles && Array.isArray(user.roles)) {
+    return user.roles.some((role: string) => {
+      const normalized = normalizeRole(role);
+      return normalized === "SUPERADMIN" || normalized === "SUPER_ADMIN";
+    });
+  }
+  
+  return false;
 }
 
 /**
  * Check if user is an ADMIN or SUPERADMIN
+ * Handles both single role field and legacy roles array
+ * 
  * @param user - The session user or user-like object
  * @returns true if user is admin or superadmin
  */
 export function isAdmin(user: any): boolean {
   if (isSuperAdmin(user)) return true;
-  if (!user?.role) return false;
-  const normalized = normalizeRole(user.role);
-  return normalized === "ADMIN" || normalized === "AGENCY_ADMIN";
+  
+  // Handle single role field (current pattern)
+  if (user?.role) {
+    const normalized = normalizeRole(user.role);
+    if (normalized === "ADMIN" || normalized === "AGENCY_ADMIN") return true;
+  }
+  
+  // Handle legacy roles array
+  if (user?.roles && Array.isArray(user.roles)) {
+    return user.roles.some((role: string) => {
+      const normalized = normalizeRole(role);
+      return normalized === "ADMIN" || normalized === "AGENCY_ADMIN";
+    });
+  }
+  
+  return false;
 }
 
 /**
  * Check if user is a manager-level role (can manage campaigns, etc.)
  * Manager roles: ADMIN, SUPERADMIN, AGENT, BRAND
+ * Handles both single role field and legacy roles array
  * 
  * @param user - The session user or user-like object
  * @returns true if user has manager-level permissions
  */
 export function isManager(user: any): boolean {
   if (isSuperAdmin(user)) return true;
-  if (!user?.role) return false;
-  const normalized = normalizeRole(user.role);
-  return ["ADMIN", "AGENCY_ADMIN", "AGENT", "BRAND"].includes(normalized);
+  
+  const managerRoles = ["ADMIN", "AGENCY_ADMIN", "AGENT", "BRAND"];
+  
+  // Handle single role field (current pattern)
+  if (user?.role) {
+    const normalized = normalizeRole(user.role);
+    if (managerRoles.includes(normalized)) return true;
+  }
+  
+  // Handle legacy roles array
+  if (user?.roles && Array.isArray(user.roles)) {
+    return user.roles.some((role: string) => {
+      const normalized = normalizeRole(role);
+      return managerRoles.includes(normalized);
+    });
+  }
+  
+  return false;
 }
 
 /**
  * Check if user is a creator/talent
+ * Handles both single role field and legacy roles array
+ * 
  * @param user - The session user or user-like object
  * @returns true if user is creator or talent
  */
 export function isCreator(user: any): boolean {
   if (isSuperAdmin(user)) return true; // Superadmin can act as any role
-  if (!user?.role) return false;
-  const normalized = normalizeRole(user.role);
-  return ["CREATOR", "TALENT", "EXCLUSIVE_TALENT", "UGC"].includes(normalized);
+  
+  const creatorRoles = ["CREATOR", "TALENT", "EXCLUSIVE_TALENT", "UGC"];
+  
+  // Handle single role field (current pattern)
+  if (user?.role) {
+    const normalized = normalizeRole(user.role);
+    if (creatorRoles.includes(normalized)) return true;
+  }
+  
+  // Handle legacy roles array
+  if (user?.roles && Array.isArray(user.roles)) {
+    return user.roles.some((role: string) => {
+      const normalized = normalizeRole(role);
+      return creatorRoles.includes(normalized);
+    });
+  }
+  
+  return false;
 }
 
 /**
  * Check if user has one of the specified roles
  * SUPERADMIN always passes this check
+ * Handles both single role field and legacy roles array
  * 
  * @param user - The session user or user-like object
  * @param allowedRoles - Array of allowed role strings
@@ -80,12 +142,24 @@ export function isCreator(user: any): boolean {
  */
 export function hasRole(user: any, allowedRoles: string[]): boolean {
   if (isSuperAdmin(user)) return true;
-  if (!user?.role) return false;
   
-  const userRole = normalizeRole(user.role);
   const normalizedAllowed = allowedRoles.map(r => normalizeRole(r));
   
-  return normalizedAllowed.includes(userRole);
+  // Handle single role field (current pattern)
+  if (user?.role) {
+    const userRole = normalizeRole(user.role);
+    if (normalizedAllowed.includes(userRole)) return true;
+  }
+  
+  // Handle legacy roles array
+  if (user?.roles && Array.isArray(user.roles)) {
+    return user.roles.some((role: string) => {
+      const userRole = normalizeRole(role);
+      return normalizedAllowed.includes(userRole);
+    });
+  }
+  
+  return false;
 }
 
 /**

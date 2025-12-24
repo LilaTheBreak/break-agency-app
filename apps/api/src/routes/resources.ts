@@ -174,7 +174,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     // Check access permissions
     const isUserAdmin = user && isAdmin(user);
     
-    if (!isAdmin) {
+    if (!isUserAdmin) {
       // Non-admins can only see published resources
       if (resource.status !== "PUBLISHED") {
         return res.status(404).json({ error: "Resource not found" });

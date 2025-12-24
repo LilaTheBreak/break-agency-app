@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { generateSocialInsights, InvalidSocialAiResponseError } from "../services/aiSocialInsightsService.js";
+import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 
@@ -14,8 +15,8 @@ router.post("/ai/social-insights/:userId", requireAuth, async (req: Request, res
   }
   const targetUserId = parsedParams.data.userId;
   const currentUser = req.user!;
-  const isAdmin = currentUser.roles?.some((role) => role.toLowerCase() === "admin") || false;
-  if (currentUser.id !== targetUserId && !isAdmin) {
+  const userIsAdmin = checkIsAdmin(currentUser);
+  if (currentUser.id !== targetUserId && !userIsAdmin) {
     return res.status(403).json({ success: false, message: "Forbidden" });
   }
 
