@@ -32,6 +32,8 @@ import gmailAuthRouter from "./routes/gmailAuth.js";
 import gmailAnalysisRouter from "./routes/gmailAnalysis.js";
 import gmailInboxRouter from "./routes/gmailInbox.js";
 import gmailMessagesRouter from "./routes/gmailMessages.js";
+import gmailWebhookRouter from "./routes/gmailWebhook.js";
+import cronRouter from "./routes/cron.js";
 import inboxAwaitingRouter from "./routes/inboxAwaitingReply.js";
 import inboxPriorityRouter from "./routes/inboxPriority.js";
 import inboxTrackingRouter from "./routes/inboxTracking.js";
@@ -232,8 +234,14 @@ app.use("/api/inbox/unified", unifiedInboxRouter);
 app.use("/api/gmail/auth", gmailAuthRouter);
 app.use("/api/gmail/analysis", gmailAnalysisRouter);
 app.use("/api/gmail/inbox", gmailInboxRouter);
+app.use("/api/gmail/webhook", gmailWebhookRouter);
 app.use("/api", gmailMessagesRouter);
 app.use("/api/email-opportunities", emailOpportunitiesRouter);
+
+// ------------------------------------------------------
+// CRON JOBS
+// ------------------------------------------------------
+app.use("/api/cron", cronRouter);
 
 // ------------------------------------------------------
 // NOTIFICATIONS & CALENDAR

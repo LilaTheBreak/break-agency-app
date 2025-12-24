@@ -27,12 +27,12 @@ router.get("/status", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/gmail/auth/url", requireAuth, (req, res) => {
+router.get("/url", requireAuth, (req, res) => {
   const url = getGmailAuthUrl(req.user!.id);
   res.json({ url });
 });
 
-router.get("/gmail/auth/callback", async (req, res) => {
+router.get("/callback", async (req, res) => {
   const code = typeof req.query.code === "string" ? req.query.code : null;
   const state = typeof req.query.state === "string" ? req.query.state : null;
   

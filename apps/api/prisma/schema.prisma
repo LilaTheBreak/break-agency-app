@@ -600,16 +600,19 @@ model FinanceReconciliation {
 }
 
 model GmailToken {
-  userId       String    @id
-  accessToken  String
-  refreshToken String
-  expiryDate   DateTime?
-  scope        String?
-  tokenType    String?
-  idToken      String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String    @id
+  accessToken       String
+  refreshToken      String
+  expiryDate        DateTime?
+  scope             String?
+  tokenType         String?
+  idToken           String?
+  lastSyncedAt      DateTime?
+  webhookHistoryId  String?
+  webhookExpiration DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model InboundEmail {
