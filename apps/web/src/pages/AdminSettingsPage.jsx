@@ -1,8 +1,78 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
+import { apiFetch } from "../lib/apiClient.js";
 
 export function AdminSettingsPage() {
+  const [integrationStatuses, setIntegrationStatuses] = useState({
+    Gmail: false,
+    "Google Calendar": false,
+    Slack: false,
+    Notion: false,
+    "Google Drive": false
+  });
+  const [loading, setLoading] = useState({});
+
+  useEffect(() => {
+    // Check Gmail connection status
+    apiFetch("/api/gmail/auth/status").then((data) => {
+      if (data && data.connected) {
+        setIntegrationStatuses((prev) => ({ ...prev, Gmail: true }));
+      }
+    });
+  }, []);
+
+  const handleConnect = async (serviceName) => {
+    setLoading((prev) => ({ ...prev, [serviceName]: true }));
+    
+    try {
+      if (serviceName === "Gmail") {
+        const data = await apiFetch("/api/gmail/auth/url");
+        if (data && data.url) {
+          window.location.href = data.url;
+        }
+      } else if (serviceName === "Google Calendar") {
+        // Google Calendar uses the same OAuth flow as login with calendar scopes
+        const data = await apiFetch("/api/auth/google/url");
+        if (data && data.url) {
+          window.location.href = data.url;
+        }
+      } else if (serviceName === "Slack") {
+        alert("Slack integration coming soon");
+      } else if (serviceName === "Notion") {
+        alert("Notion integration coming soon");
+      } else if (serviceName === "Google Drive") {
+        alert("Google Drive integration coming soon");
+      }
+    } catch (error) {
+      console.error(`Failed to connect ${serviceName}:`, error);
+      alert(`Failed to connect ${serviceName}. Please try again.`);
+    } finally {
+      setLoading((prev) => ({ ...prev, [serviceName]: false }));
+    }
+  };
+
+  const handleDisconnect = async (serviceName) => {
+    if (!confirm(`Are you sure you want to disconnect ${serviceName}?`)) {
+      return;
+    }
+
+    setLoading((prev) => ({ ...prev, [serviceName]: true }));
+    
+    try {
+      if (serviceName === "Gmail") {
+        await apiFetch("/api/gmail/auth/disconnect", { method: "POST" });
+        setIntegrationStatuses((prev) => ({ ...prev, Gmail: false }));
+      }
+      // Add disconnect logic for other services as needed
+    } catch (error) {
+      console.error(`Failed to disconnect ${serviceName}:`, error);
+      alert(`Failed to disconnect ${serviceName}. Please try again.`);
+    } finally {
+      setLoading((prev) => ({ ...prev, [serviceName]: false }));
+    }
+  };
+
   return (
     <DashboardShell
       title="Settings"
@@ -69,22 +139,34 @@ export function AdminSettingsPage() {
           </p>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             {[
-              { name: "Slack", status: "Connected to #ops-control-room" },
-              { name: "Notion", status: "Connected to Runbooks workspace" },
-              { name: "Google Drive", status: "Not connected" },
-              { name: "Gmail", status: "Not connected" },
-              { name: "Google Calendar", status: "Not connected" }
-            ].map((integration) => (
-              <div key={integration.name} className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-brand-black">{integration.name}</span>
-                  <button className="rounded-xl border border-brand-black/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5">
-                    {integration.status === "Not connected" ? "Connect" : "Disconnect"}
-                  </button>
+              { name: "Slack", defaultStatus: "Connected to #ops-control-room" },
+              { name: "Notion", defaultStatus: "Connected to Runbooks workspace" },
+              { name: "Google Drive", defaultStatus: "Not connected" },
+              { name: "Gmail", defaultStatus: "Not connected" },
+              { name: "Google Calendar", defaultStatus: "Not connected" }
+            ].map((integration) => {
+              const isConnected = integrationStatuses[integration.name];
+              const isLoading = loading[integration.name];
+              const displayStatus = isConnected 
+                ? integration.defaultStatus.replace("Not connected", "Connected")
+                : integration.defaultStatus;
+
+              return (
+                <div key={integration.name} className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-brand-black">{integration.name}</span>
+                    <button 
+                      onClick={() => isConnected ? handleDisconnect(integration.name) : handleConnect(integration.name)}
+                      disabled={isLoading}
+                      className="rounded-xl border border-brand-black/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? "..." : (isConnected ? "Disconnect" : "Connect")}
+                    </button>
+                  </div>
+                  <p className="text-xs text-brand-black/60">{displayStatus}</p>
                 </div>
-                <p className="text-xs text-brand-black/60">{integration.status}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <label className="block space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">

@@ -186,4 +186,25 @@ router.post("/draft-queue", async (req, res) => {
   }
 });
 
+// POST /api/gmail/auth/disconnect - Disconnect Gmail integration
+router.post("/disconnect", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user!.id;
+    
+    await prisma.gmailToken.delete({
+      where: { userId }
+    });
+    
+    console.log(`[GMAIL AUTH] Successfully disconnected Gmail for user ${userId}`);
+    res.json({ success: true, message: "Gmail disconnected successfully" });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      // Record not found
+      return res.json({ success: true, message: "Gmail was not connected" });
+    }
+    console.error("[GMAIL AUTH DISCONNECT]", error);
+    res.status(500).json({ error: "Failed to disconnect Gmail" });
+  }
+});
+
 export default router;
