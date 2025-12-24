@@ -283,7 +283,7 @@ export function AdminQueuesPage() {
           <button
             type="button"
             onClick={() => openModal(null)}
-            className="mt-3 rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em]"
+            className="mt-3 rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black hover:text-white transition-colors"
           >
             + New task
           </button>
@@ -458,13 +458,13 @@ export function AdminQueuesPage() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em]"
+                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black hover:text-white transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
+                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 transition-colors"
                   >
                     {activeTask ? "Save changes" : "Add task"}
                   </button>
