@@ -64,44 +64,84 @@ export function AdminApprovalsPage({ session }) {
         try {
           const contentRes = await apiFetch("/api/queues?status=pending");
           if (contentRes.ok) {
-            const contentData = await contentRes.json();
-            setContentCount(Array.isArray(contentData) ? contentData.length : 0);
+            const contentType = contentRes.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const contentData = await contentRes.json();
+              setContentCount(Array.isArray(contentData) ? contentData.length : 0);
+            } else {
+              console.warn("Content queue returned non-JSON response");
+              setContentCount(0);
+            }
+          } else {
+            console.warn("Content queue returned status:", contentRes.status);
+            setContentCount(0);
           }
         } catch (err) {
           console.error("Could not fetch content count:", err);
+          setContentCount(0);
         }
 
         // Fetch invoice count (unpaid/pending)
         try {
-          const invoiceRes = await apiFetch("/api/finance/invoices?status=Due");
+          const invoiceRes = await apiFetch("/api/admin/finance/invoices?status=Due");
           if (invoiceRes.ok) {
-            const invoiceData = await invoiceRes.json();
-            setInvoiceCount(Array.isArray(invoiceData) ? invoiceData.length : 0);
+            const contentType = invoiceRes.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const invoiceData = await invoiceRes.json();
+              setInvoiceCount(Array.isArray(invoiceData) ? invoiceData.length : 0);
+            } else {
+              console.warn("Invoice endpoint returned non-JSON response");
+              setInvoiceCount(0);
+            }
+          } else {
+            console.warn("Invoice endpoint returned status:", invoiceRes.status);
+            setInvoiceCount(0);
           }
         } catch (err) {
           console.error("Could not fetch invoice count:", err);
+          setInvoiceCount(0);
         }
 
         // Fetch contract count (unsigned)
         try {
           const contractRes = await apiFetch("/api/contracts?status=pending");
           if (contractRes.ok) {
-            const contractData = await contractRes.json();
-            setContractCount(Array.isArray(contractData) ? contractData.length : 0);
+            const contentType = contractRes.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const contractData = await contractRes.json();
+              setContractCount(Array.isArray(contractData) ? contractData.length : 0);
+            } else {
+              console.warn("Contract endpoint returned non-JSON response");
+              setContractCount(0);
+            }
+          } else {
+            console.warn("Contract endpoint returned status:", contractRes.status);
+            setContractCount(0);
           }
         } catch (err) {
           console.error("Could not fetch contract count:", err);
+          setContractCount(0);
         }
 
         // Fetch brief count (draft/review)
         try {
           const briefRes = await apiFetch("/api/briefs?status=draft");
           if (briefRes.ok) {
-            const briefData = await briefRes.json();
-            setBriefCount(Array.isArray(briefData) ? briefData.length : 0);
+            const contentType = briefRes.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const briefData = await briefRes.json();
+              setBriefCount(Array.isArray(briefData) ? briefData.length : 0);
+            } else {
+              console.warn("Brief endpoint returned non-JSON response");
+              setBriefCount(0);
+            }
+          } else {
+            console.warn("Brief endpoint returned status:", briefRes.status);
+            setBriefCount(0);
           }
         } catch (err) {
           console.error("Could not fetch brief count:", err);
+          setBriefCount(0);
         }
       } catch (err) {
         console.error("Error fetching approval counts:", err);

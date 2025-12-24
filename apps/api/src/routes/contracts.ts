@@ -9,6 +9,9 @@ router.use(requireAuth);
 
 // --- CRUD Endpoints ---
 
+// GET /api/contracts - List all contracts with optional filters
+router.get("/", contractController.listContracts);
+
 // POST /api/contracts - Create a new contract
 router.post("/", contractController.createContract);
 

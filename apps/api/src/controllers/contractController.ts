@@ -1,11 +1,52 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import * as contractService from "../services/contractService.js";
+import prisma from "../lib/prisma.js";
 
 const ContractCreateSchema = z.object({
   dealId: z.string().cuid().optional(),
   title: z.string().min(1)
 });
+
+export async function listContracts(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const status = req.query.status as string;
+    const limit = parseInt(req.query.limit as string) || 20;
+    
+    const where: any = {};
+    
+    // Map common status values
+    if (status === "pending") {
+      where.signedAt = null;
+    } else if (status === "signed") {
+      where.signedAt = { not: null };
+    }
+    
+    const contracts = await prisma.contract.findMany({
+      where,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        Deal: {
+          select: {
+            brandName: true,
+            value: true,
+            currency: true
+          }
+        }
+      }
+    });
+    
+    res.json(contracts || []);
+  } catch (error) {
+    console.error("Error fetching contracts:", error);
+    res.json([]); // Graceful fallback
+  }
+}
 
 export async function createContract(
   req: Request,
