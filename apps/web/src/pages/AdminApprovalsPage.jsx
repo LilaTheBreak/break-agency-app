@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { Badge } from "../components/Badge.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { ContactAutocomplete } from "../components/ContactAutocomplete.jsx";
 import { FileUploadPanel } from "../components/FileUploadPanel.jsx";
+import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
 import { getPendingApprovals } from "../services/dashboardClient.js";
+import { apiFetch } from "../services/apiClient.js";
 
 const CONTACT_BOOK = [
   "brand@notion.com",
@@ -15,55 +18,134 @@ const CONTACT_BOOK = [
   "lila@thebreakco.com"
 ];
 
-const APPROVAL_SECTIONS = [
-  {
-    title: "Content approvals",
-    description: "Stills, cuts, and copy waiting for brand sign-off.",
-    metrics: ["6 pending assets", "2 escalations", "Avg. SLA: 14h"],
-    cta: "Open content queue"
-  },
-  {
-    title: "Invoice approvals",
-    description: "Invoices, payouts, and reconciliations needing finance review.",
-    metrics: ["4 in finance", "£82K total", "1 overdue"],
-    cta: "Review invoices"
-  },
-  {
-    title: "Contract approvals",
-    description: "Signed agreements, NDAs, and compliance docs tied to deals.",
-    metrics: ["3 awaiting countersign", "1 legal hold", "Latest: 18h ago"],
-    cta: "Go to contracts"
-  },
-  {
-    title: "Campaign & brief approvals",
-    description: "Briefs, scopes, and creative direction that need a go/no-go.",
-    metrics: ["5 briefs in draft", "Next launch: Friday", "2 needing budget"],
-    cta: "Review briefs"
-  }
-];
+const createId = () => `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 export function AdminApprovalsPage({ session }) {
+  const navigate = useNavigate();
   const [approvals, setApprovals] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [activeApproval, setActiveApproval] = useState(null);
   const [formState, setFormState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Real approval counts from backend
+  const [contentCount, setContentCount] = useState(0);
+  const [invoiceCount, setInvoiceCount] = useState(0);
+  const [contractCount, setContractCount] = useState(0);
+  const [briefCount, setBriefCount] = useState(0);
+  const [loadingCounts, setLoadingCounts] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true);
+        setError(null);
         const data = await getPendingApprovals();
-        setApprovals(data);
+        setApprovals(Array.isArray(data) ? data : []);
       } catch (err) {
+        console.error("Error fetching approvals:", err);
         setError(err.message || "Could not load approvals");
+        setApprovals([]);
       } finally {
         setLoading(false);
       }
     }
     fetchData();
   }, []);
+
+  // Fetch real approval counts from various endpoints
+  useEffect(() => {
+    async function fetchCounts() {
+      try {
+        setLoadingCounts(true);
+        
+        // Fetch content queue count
+        try {
+          const contentRes = await apiFetch("/api/queues?status=pending");
+          if (contentRes.ok) {
+            const contentData = await contentRes.json();
+            setContentCount(Array.isArray(contentData) ? contentData.length : 0);
+          }
+        } catch (err) {
+          console.error("Could not fetch content count:", err);
+        }
+
+        // Fetch invoice count (unpaid/pending)
+        try {
+          const invoiceRes = await apiFetch("/api/finance/invoices?status=Due");
+          if (invoiceRes.ok) {
+            const invoiceData = await invoiceRes.json();
+            setInvoiceCount(Array.isArray(invoiceData) ? invoiceData.length : 0);
+          }
+        } catch (err) {
+          console.error("Could not fetch invoice count:", err);
+        }
+
+        // Fetch contract count (unsigned)
+        try {
+          const contractRes = await apiFetch("/api/contracts?status=pending");
+          if (contractRes.ok) {
+            const contractData = await contractRes.json();
+            setContractCount(Array.isArray(contractData) ? contractData.length : 0);
+          }
+        } catch (err) {
+          console.error("Could not fetch contract count:", err);
+        }
+
+        // Fetch brief count (draft/review)
+        try {
+          const briefRes = await apiFetch("/api/briefs?status=draft");
+          if (briefRes.ok) {
+            const briefData = await briefRes.json();
+            setBriefCount(Array.isArray(briefData) ? briefData.length : 0);
+          }
+        } catch (err) {
+          console.error("Could not fetch brief count:", err);
+        }
+      } catch (err) {
+        console.error("Error fetching approval counts:", err);
+      } finally {
+        setLoadingCounts(false);
+      }
+    }
+    fetchCounts();
+  }, []);
+
+  const APPROVAL_SECTIONS = [
+    {
+      title: "Content approvals",
+      description: "Stills, cuts, and copy waiting for brand sign-off.",
+      count: contentCount,
+      cta: "Open content queue",
+      action: () => navigate("/admin/queues"),
+      enabled: true
+    },
+    {
+      title: "Invoice approvals",
+      description: "Invoices, payouts, and reconciliations needing finance review.",
+      count: invoiceCount,
+      cta: "Review invoices",
+      action: () => navigate("/admin/finance"),
+      enabled: true
+    },
+    {
+      title: "Contract approvals",
+      description: "Signed agreements, NDAs, and compliance docs tied to deals.",
+      count: contractCount,
+      cta: "Go to contracts",
+      action: () => navigate("/admin/documents"),
+      enabled: true
+    },
+    {
+      title: "Campaign & brief approvals",
+      description: "Briefs, scopes, and creative direction that need a go/no-go.",
+      count: briefCount,
+      cta: "Review briefs",
+      action: () => navigate("/admin/campaigns"),
+      enabled: true
+    }
+  ];
 
   const openModal = (approval) => {
     const payload =
@@ -112,21 +194,44 @@ export function AdminApprovalsPage({ session }) {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setApprovals((prev) => {
-      const exists = prev.some((item) => item.id === formState.id);
-      if (exists) {
-        return prev.map((item) => (item.id === formState.id ? formState : item));
-      }
-      return [formState, ...prev];
-    });
-    closeModal();
+    
+    try {
+      // Optimistically update UI
+      setApprovals((prev) => {
+        const exists = prev.some((item) => item.id === formState.id);
+        if (exists) {
+          return prev.map((item) => (item.id === formState.id ? formState : item));
+        }
+        return [formState, ...prev];
+      });
+      closeModal();
+
+      // TODO: Send to backend when endpoint exists
+      // await apiFetch("/api/approvals", {
+      //   method: activeApproval ? "PATCH" : "POST",
+      //   body: JSON.stringify(formState)
+      // });
+    } catch (err) {
+      console.error("Error saving approval:", err);
+      alert("Failed to save approval. Please try again.");
+    }
   };
 
-  const handleDelete = (id) => {
-    setApprovals((prev) => prev.filter((item) => item.id !== id));
-    closeModal();
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this approval entry? This cannot be undone.")) return;
+    
+    try {
+      setApprovals((prev) => prev.filter((item) => item.id !== id));
+      closeModal();
+
+      // TODO: Send to backend when endpoint exists
+      // await apiFetch(`/api/approvals/${id}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("Error deleting approval:", err);
+      alert("Failed to delete approval. Please try again.");
+    }
   };
 
   return (
@@ -141,6 +246,7 @@ export function AdminApprovalsPage({ session }) {
         title="Contract attachments"
         description="Store signed contracts, NDAs, and compliance docs tied to approvals."
       />
+      
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         {APPROVAL_SECTIONS.map((section) => (
           <div
@@ -152,35 +258,77 @@ export function AdminApprovalsPage({ session }) {
                 {section.title}
               </p>
               <p className="text-sm text-brand-black/70">{section.description}</p>
-              <ul className="mt-2 space-y-1 text-sm text-brand-black/70">
-                {section.metrics.map((metric) => (
-                  <li key={metric}>• {metric}</li>
-                ))}
-              </ul>
+              
+              {loadingCounts ? (
+                <p className="mt-3 text-sm text-brand-black/50">Loading...</p>
+              ) : section.count === 0 ? (
+                <p className="mt-3 text-sm text-brand-black/50">No approvals pending</p>
+              ) : (
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-red/10 text-sm font-semibold text-brand-red">
+                    {section.count}
+                  </span>
+                  <span className="text-sm text-brand-black/70">
+                    {section.count === 1 ? "item pending" : "items pending"}
+                  </span>
+                </div>
+              )}
             </div>
+            
             <div className="mt-4 flex flex-wrap gap-2">
-              <button className="rounded-full border border-brand-black px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5">
+              <button
+                onClick={section.action}
+                disabled={!section.enabled}
+                className="rounded-full border border-brand-black px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
                 {section.cta}
-              </button>
-              <button className="rounded-full border border-brand-black/20 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5">
-                Assign owner
               </button>
             </div>
           </div>
         ))}
       </section>
-      <div className="mb-4 flex justify-end">
+
+      <div className="mt-6 mb-4 flex items-center justify-between">
+        <h2 className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+          All approval requests
+        </h2>
         <button
           type="button"
           onClick={() => openModal(null)}
-          className="rounded-full border border-brand-black px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em]"
+          className="rounded-full border border-brand-black px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] hover:bg-brand-black hover:text-white transition-colors"
         >
           + New approval
         </button>
       </div>
-      {loading && <p className="text-sm text-brand-black/60">Loading approvals...</p>}
-      {error && <p className="text-sm text-brand-red">{error}</p>}
-      {!loading && !error && (
+
+      {loading && (
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-8 text-center">
+          <p className="text-sm text-brand-black/60">Loading approvals...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="rounded-3xl border border-brand-red/20 bg-brand-red/5 p-6 text-center">
+          <p className="text-sm text-brand-red">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red hover:text-white transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      
+      {!loading && !error && approvals.length === 0 && (
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-8 text-center">
+          <p className="text-sm text-brand-black/70">No approval requests yet.</p>
+          <p className="mt-1 text-xs text-brand-black/50">
+            Create a new approval or wait for pending items to appear from other workflows.
+          </p>
+        </div>
+      )}
+      
+      {!loading && !error && approvals.length > 0 && (
         <section className="space-y-3">
           {approvals.map((approval) => (
             <article
@@ -189,12 +337,16 @@ export function AdminApprovalsPage({ session }) {
               onClick={() => openModal(approval)}
             >
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
-                {approval.type}
+                {approval.type || "General"}
               </p>
               <h3 className="mt-2 font-display text-2xl uppercase">{approval.title || "Untitled"}</h3>
-              <p className="text-sm text-brand-black/70">Submitted by {approval.requestor?.name || "System"}</p>
+              <p className="text-sm text-brand-black/70">
+                Submitted by {approval.requestor?.name || approval.submittedBy || "System"}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Badge>{approval.status}</Badge>
+                <Badge tone={approval.status === "Approved" ? "positive" : "neutral"}>
+                  {approval.status || "Pending"}
+                </Badge>
                 {approval.owner ? <Badge tone="positive">{approval.owner}</Badge> : null}
               </div>
             </article>
@@ -217,7 +369,7 @@ export function AdminApprovalsPage({ session }) {
               <button
                 type="button"
                 onClick={closeModal}
-                className="text-xs uppercase tracking-[0.35em] text-brand-black/60"
+                className="text-xs uppercase tracking-[0.35em] text-brand-black/60 hover:text-brand-black"
               >
                 Close
               </button>
@@ -241,7 +393,7 @@ export function AdminApprovalsPage({ session }) {
                     onChange={handleChange("type")}
                     className="mt-1 w-full rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
                   >
-                    {["Contract", "Brief", "Finance", "Support"].map((option) => (
+                    {["Contract", "Brief", "Finance", "Content", "Support"].map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
@@ -277,7 +429,7 @@ export function AdminApprovalsPage({ session }) {
                   onChange={handleChange("status")}
                   className="mt-1 w-full rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
                 >
-                  {["Needs approval", "Legal review", "Ready for payout", "In progress"].map((item) => (
+                  {["Needs approval", "Approved", "Rejected", "In review", "Escalated"].map((item) => (
                     <option key={item} value={item}>
                       {item}
                     </option>
@@ -307,7 +459,7 @@ export function AdminApprovalsPage({ session }) {
                   <button
                     type="button"
                     onClick={handleAttachmentAdd}
-                    className="text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/70"
+                    className="text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/70 hover:text-brand-black"
                   >
                     + Add attachment
                   </button>
@@ -320,7 +472,7 @@ export function AdminApprovalsPage({ session }) {
                         <button
                           type="button"
                           onClick={() => handleAttachmentRemove(item)}
-                          className="text-xs uppercase tracking-[0.3em] text-brand-black/50"
+                          className="text-xs uppercase tracking-[0.3em] text-brand-black/50 hover:text-brand-red"
                         >
                           Remove
                         </button>
@@ -343,7 +495,7 @@ export function AdminApprovalsPage({ session }) {
                   <button
                     type="button"
                     onClick={() => handleDelete(formState.id)}
-                    className="rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-red"
+                    className="rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red hover:text-white transition-colors"
                   >
                     Delete entry
                   </button>
@@ -354,13 +506,13 @@ export function AdminApprovalsPage({ session }) {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em]"
+                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] hover:bg-brand-black hover:text-white transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
+                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 transition-colors"
                   >
                     {activeApproval ? "Save changes" : "Add approval"}
                   </button>
