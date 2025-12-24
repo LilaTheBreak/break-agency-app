@@ -67,25 +67,9 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: 
 });
 
 /**
- * GET /campaigns/:id
- * Fetches a single campaign by its ID.
- */
-router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => {
-  try {
-    const campaign = await fetchCampaign(req.params.id, req.user!.id);
-    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
-    if (!canAccessCampaign(campaign, req.user!.id, req.user!.role)) {
-      return res.status(403).json({ error: "Insufficient permissions" });
-    }
-    res.json({ campaign });
-  } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Unable to load campaign" });
-  }
-});
-
-/**
  * GET /campaigns/user/:userId
  * Fetches campaigns associated with a specific user (or all for admins).
+ * NOTE: This MUST come BEFORE /campaigns/:id to avoid "user" being treated as an ID
  */
 router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Response) => {
   const requester = req.user!;
@@ -130,6 +114,24 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     console.error("Campaigns fetch error:", error);
     // Return empty array on error - don't crash dashboard
     res.status(200).json({ campaigns: [] });
+  }
+});
+
+/**
+ * GET /campaigns/:id
+ * Fetches a single campaign by its ID.
+ * NOTE: This MUST come AFTER /campaigns/user/:userId to avoid route conflicts
+ */
+router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => {
+  try {
+    const campaign = await fetchCampaign(req.params.id, req.user!.id);
+    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+    if (!canAccessCampaign(campaign, req.user!.id, req.user!.role)) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+    res.json({ campaign });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Unable to load campaign" });
   }
 });
 
