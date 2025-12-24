@@ -290,9 +290,12 @@ function BrandCampaignSection({ session }) {
   useEffect(() => {
     setNotes((prev) => {
       const next = {};
-      campaigns.forEach((campaign) => {
-        next[campaign.id] = prev[campaign.id] ?? campaign.metadata?.notes ?? "";
-      });
+      // Defensive: Ensure campaigns is an array before iterating
+      if (Array.isArray(campaigns)) {
+        campaigns.forEach((campaign) => {
+          next[campaign.id] = prev[campaign.id] ?? campaign.metadata?.notes ?? "";
+        });
+      }
       return next;
     });
   }, [campaigns]);
