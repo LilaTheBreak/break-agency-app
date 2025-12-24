@@ -2183,6 +2183,7 @@ function FinanceDrawer({
   onMarkCashInReceived,
   onAttachDoc
 }) {
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
   const record = (() => {
     if (entity.type === "invoice") return invoices.find((i) => i.id === entity.id) || null;
     if (entity.type === "payout") return payouts.find((p) => p.id === entity.id) || null;
@@ -2222,7 +2223,9 @@ function FinanceDrawer({
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-brand-black/30" onClick={onClose} />
-      <aside className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto border-l border-brand-black/10 bg-brand-white p-6 text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.35)]">
+      <aside className={`absolute right-0 top-0 h-full overflow-y-auto border-l border-brand-black/10 bg-brand-white p-6 text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.35)] transition-all duration-300 ${
+        isFullscreen ? "w-full" : "w-full max-w-xl"
+      }`}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Breadcrumbs</p>
@@ -2237,9 +2240,27 @@ function FinanceDrawer({
               ))}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]">
-            Close
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="rounded-full border border-brand-black/20 px-3 py-1.5 text-xs uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5 transition-colors"
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              )}
+            </button>
+            <button type="button" onClick={onClose} className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]">
+              Close
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">

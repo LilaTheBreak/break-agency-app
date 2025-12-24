@@ -311,6 +311,7 @@ function TextArea({ label, value, onChange, placeholder, rows = 5 }) {
 
 function Drawer({ open, title, onClose, children, actions }) {
   const drawerRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Handle ESC key to close drawer
   useEffect(() => {
@@ -394,7 +395,9 @@ function Drawer({ open, title, onClose, children, actions }) {
       {/* Drawer Panel */}
       <aside
         ref={drawerRef}
-        className="absolute right-0 top-0 flex h-full w-full max-w-[480px] flex-col border-l border-brand-black/10 bg-brand-white shadow-[0_35px_120px_rgba(0,0,0,0.25)]"
+        className={`absolute right-0 top-0 flex h-full flex-col border-l border-brand-black/10 bg-brand-white shadow-[0_35px_120px_rgba(0,0,0,0.25)] transition-all duration-300 ${
+          isFullscreen ? "w-full" : "w-full max-w-[480px]"
+        }`}
       >
         {/* Sticky Header */}
         <div className="sticky top-0 z-10 border-b border-brand-black/5 bg-brand-white px-6 pb-4 pt-6">
@@ -404,6 +407,22 @@ function Drawer({ open, title, onClose, children, actions }) {
               <h3 id="drawer-title" className="font-display text-2xl uppercase text-brand-black">{title}</h3>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="rounded-full border border-brand-black/20 px-3 py-1.5 text-xs uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5 transition-colors"
+                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+              >
+                {isFullscreen ? (
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                )}
+              </button>
               {actions}
               <TextButton onClick={onClose}>Close</TextButton>
             </div>
