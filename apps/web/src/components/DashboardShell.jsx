@@ -194,9 +194,6 @@ export function DashboardShell({
               </h1>
               <p className="text-base text-brand-black/70">{subtitle}</p>
             </div>
-            <div className="flex items-start gap-2">
-              <NotificationBell />
-            </div>
           </div>
         </div>
         <div
