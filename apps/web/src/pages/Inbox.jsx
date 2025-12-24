@@ -261,7 +261,7 @@ export default function Inbox() {
               type="button"
               onClick={handleRebuildThreads}
               disabled={threadsLoading}
-              className="rounded-full border border-brand-black bg-brand-black px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-white disabled:opacity-50"
+              className="rounded-full border border-brand-black bg-transparent px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black hover:bg-brand-black/5 disabled:opacity-50"
             >
               Rebuild
             </button>
