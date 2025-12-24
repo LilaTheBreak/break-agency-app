@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../utils/prismaClient.js";
+import { isSuperAdmin, isCreator } from "../lib/roleHelpers.js";
 
 /**
  * Middleware to ensure user is authenticated and has creator role
+ * CRITICAL: SUPERADMIN bypasses this check
  */
 export async function requireCreator(req: Request, res: Response, next: NextFunction) {
   try {
@@ -12,8 +14,13 @@ export async function requireCreator(req: Request, res: Response, next: NextFunc
       return res.status(401).json({ error: "Authentication required" });
     }
 
+    // CRITICAL: Superadmin bypasses ALL permission checks
+    if (isSuperAdmin(user)) {
+      return next();
+    }
+
     // Check if user has creator role or is talent
-    if (user.role !== "CREATOR" && user.role !== "TALENT") {
+    if (!isCreator(user)) {
       return res.status(403).json({ 
         error: "Access denied. Creator account required." 
       });
@@ -68,11 +75,18 @@ export async function attachCreatorProfile(req: Request, res: Response, next: Ne
 /**
  * Middleware to ensure creator can only access their own data
  * Use on routes with :creatorId param
+ * CRITICAL: SUPERADMIN bypasses this check
  */
 export async function requireOwnCreatorData(req: Request, res: Response, next: NextFunction) {
   try {
+    const user = (req as any).user;
     const creator = (req as any).creator;
     const requestedCreatorId = req.params.creatorId || req.query.creatorId;
+
+    // CRITICAL: Superadmin can access all creator data
+    if (isSuperAdmin(user)) {
+      return next();
+    }
 
     if (!creator) {
       return res.status(401).json({ error: "Creator profile required" });

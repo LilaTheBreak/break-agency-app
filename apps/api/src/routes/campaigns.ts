@@ -3,6 +3,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import prisma from "../lib/prisma.js";
 import { SessionUser } from "../lib/session.js"; // Import SessionUser type
 import { z } from "zod";
+import { isSuperAdmin, isAdmin, isManager } from "../lib/roleHelpers.js";
 
 const router = Router();
 
@@ -273,23 +274,17 @@ function ensureUser(req: Request, res: Response, next: NextFunction) {
 
 function ensureManager(req: Request, res: Response, next: NextFunction) {
   if (!req.user?.id) return res.status(401).json({ error: "Authentication required" });
+  // CRITICAL: Superadmin bypasses manager check
+  if (isSuperAdmin(req.user)) return next();
   if (!isManager(req.user)) return res.status(403).json({ error: "Insufficient permissions" });
   next();
 }
 
-function isManager(user: SessionUser) {
-  // Use single role field from User model
-  return ["ADMIN", "SUPERADMIN", "AGENT", "BRAND"].includes(user.role);
-}
-
-function isAdmin(user: SessionUser) {
-  // Use single role field from User model
-  return user.role === "ADMIN" || user.role === "SUPERADMIN";
-}
+// Removed isManager, isAdmin helpers - now using centralized roleHelpers.ts
 
 function canAccessCampaign(campaign: any, userId: string, userRole: string) {
-  // Use single role field from User model
-  if (userRole === "ADMIN" || userRole === "SUPERADMIN") return true;
+  // Use centralized helper - superadmin is already handled in isAdmin
+  if (isAdmin({ role: userRole })) return true;
   if (campaign.ownerId && campaign.ownerId === userId) return true;
   if (campaign.brandSummaries?.some((brand: any) => brand.id === userId)) return true;
   return false;

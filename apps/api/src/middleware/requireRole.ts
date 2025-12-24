@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { UserRoleType } from "@prisma/client";
+import { isSuperAdmin, hasRole } from "../lib/roleHelpers.js";
 
 export function requireRole(roles: UserRoleType[]) {
   return function roleGuard(req: Request, res: Response, next: NextFunction) {
@@ -7,14 +8,13 @@ export function requireRole(roles: UserRoleType[]) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const userRole = req.user.role;
-
-    // Super Admins bypass role checks
-    if (userRole === 'SUPER_ADMIN') {
+    // CRITICAL: Superadmin bypasses ALL role checks
+    if (isSuperAdmin(req.user)) {
       return next();
     }
 
-    if (!userRole || !roles.includes(userRole)) {
+    // Check if user has one of the allowed roles
+    if (!hasRole(req.user, roles)) {
       return res.status(403).json({ error: "Insufficient role permissions" });
     }
     next();

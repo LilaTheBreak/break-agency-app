@@ -1,12 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { SubscriptionStatus } from '@prisma/client';
+import { isSuperAdmin } from '../lib/roleHelpers.js';
 
 /**
  * Middleware to require a specific subscription status.
+ * CRITICAL: SUPERADMIN bypasses subscription checks
  * @param requiredStatuses An array of allowed subscription statuses.
  */
 export const requireSubscription = (requiredStatuses: SubscriptionStatus[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    // CRITICAL: Superadmin bypasses ALL subscription checks
+    if (isSuperAdmin(req.user)) {
+      return next();
+    }
+
     if (!req.user?.subscription_status) {
       return res.status(403).json({ error: 'Subscription status could not be determined.' });
     }

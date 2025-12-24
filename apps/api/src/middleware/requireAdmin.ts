@@ -1,19 +1,18 @@
 import { Request, Response, NextFunction } from "express";
+import { isSuperAdmin, isAdmin } from "../lib/roleHelpers.js";
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  const roles = (req.user.roles || [])
-    .map((r: any) => {
-      if (typeof r === "string") return r.toLowerCase();
-      if (r?.role?.name) return r.role.name.toLowerCase();
-      return null;
-    })
-    .filter(Boolean);
+  // CRITICAL: Superadmin bypasses ALL permission checks
+  if (isSuperAdmin(req.user)) {
+    return next();
+  }
 
-  if (!roles.includes("admin")) {
+  // Check using centralized admin helper
+  if (!isAdmin(req.user)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

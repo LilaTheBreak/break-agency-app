@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { requireAuth } from "../middleware/auth.js";
 import multer from "multer";
 import { saveUploadedFile } from "../services/fileService.js";
+import { isSuperAdmin, isAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -34,7 +35,9 @@ const upload = multer({
 // Middleware to check if user is admin
 const requireAdmin = (req: Request, res: Response, next: any) => {
   const user = (req as any).user;
-  if (!user || (user.role !== "ADMIN" && user.role !== "SUPERADMIN")) {
+  // CRITICAL: Superadmin bypasses admin check
+  if (user && isSuperAdmin(user)) return next();
+  if (!user || !isAdmin(user)) {
     return res.status(403).json({ error: "Admin access required" });
   }
   next();
@@ -77,15 +80,15 @@ router.get("/", async (req: Request, res: Response) => {
     const user = (req as any).user;
     const { status, type, visibility } = req.query;
 
-    const where: any = {};
-
     // Non-admins can only see published resources
-    if (!user || (user.role !== "ADMIN" && user.role !== "SUPERADMIN")) {
+    if (!user || !isAdmin(user)) {
       where.status = "PUBLISHED";
       
       // If not logged in, can only see public resources
       if (!user) {
         where.visibility = "PUBLIC";
+      }
+    } else {e.visibility = "PUBLIC";
       }
     } else {
       // Admins can filter by status
@@ -169,7 +172,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     }
 
     // Check access permissions
-    const isAdmin = user && (user.role === "ADMIN" || user.role === "SUPERADMIN");
+    const isUserAdmin = user && isAdmin(user);
     
     if (!isAdmin) {
       // Non-admins can only see published resources

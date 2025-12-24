@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import type { SessionUser } from "../lib/session.js";
+import { isSuperAdmin, isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 
 declare global {
   namespace Express {
@@ -13,8 +14,10 @@ declare global {
 /**
  * Admin-only authentication middleware
  * 
- * Ensures that only users with ADMIN or AGENCY_ADMIN role can access protected routes.
+ * Ensures that only users with ADMIN, AGENCY_ADMIN, or SUPERADMIN role can access protected routes.
  * Must be used after requireAuth middleware.
+ * 
+ * CRITICAL: SUPERADMIN always bypasses this check
  * 
  * @example
  * router.use(requireAuth);
@@ -29,15 +32,18 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     });
   }
 
-  const adminRoles = ["ADMIN", "AGENCY_ADMIN", "SUPER_ADMIN"];
-  const userRole = req.user.role?.toUpperCase();
+  // CRITICAL: Superadmin bypasses ALL permission checks
+  if (isSuperAdmin(req.user)) {
+    return next();
+  }
 
-  if (!userRole || !adminRoles.includes(userRole)) {
-    console.warn(`[ADMIN_AUTH] Access denied for user ${req.user.id} with role ${userRole}`);
+  // Check if user is admin
+  if (!checkIsAdmin(req.user)) {
+    console.warn(`[ADMIN_AUTH] Access denied for user ${req.user.id} with role ${req.user.role}`);
     return res.status(403).json({ 
       error: "Admin access required",
       code: "ADMIN_REQUIRED",
-      requiredRoles: adminRoles
+      requiredRoles: ["ADMIN", "AGENCY_ADMIN", "SUPERADMIN"]
     });
   }
 
@@ -50,9 +56,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
  */
 export function checkAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.user) {
-    const adminRoles = ["ADMIN", "AGENCY_ADMIN", "SUPER_ADMIN"];
-    const userRole = req.user.role?.toUpperCase();
-    req.isAdmin = Boolean(userRole && adminRoles.includes(userRole));
+    req.isAdmin = checkIsAdmin(req.user);
   } else {
     req.isAdmin = false;
   }

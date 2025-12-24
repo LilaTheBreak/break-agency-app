@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendEmail } from "../services/emailService.js";
+import { isSuperAdmin, isAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 
@@ -19,9 +20,14 @@ const requireAdmin = (req: Request, res: Response, next: Function) => {
     return res.status(401).json({ error: "Authentication required" });
   }
   
-  const userRole = req.user?.role;
-  if (userRole !== "ADMIN" && userRole !== "SUPERADMIN") {
-    console.log("❌ Access denied - user role:", userRole);
+  // CRITICAL: Superadmin bypasses admin check
+  if (isSuperAdmin(req.user)) {
+    console.log("✅ Superadmin access granted");
+    return next();
+  }
+  
+  if (!isAdmin(req.user)) {
+    console.log("❌ Access denied - user role:", req.user.role);
     return res.status(403).json({ error: "Forbidden: Access is restricted to administrators." });
   }
   console.log("✅ Admin access granted");
