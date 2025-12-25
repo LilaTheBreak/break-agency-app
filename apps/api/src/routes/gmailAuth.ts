@@ -33,52 +33,80 @@ router.get("/url", requireAuth, (req, res) => {
 });
 
 router.get("/callback", async (req, res) => {
+  console.log("[GMAIL CALLBACK] Received callback request");
+  console.log("[GMAIL CALLBACK] Query params:", req.query);
+  console.log("[GMAIL CALLBACK] Headers:", req.headers);
+  
   const code = typeof req.query.code === "string" ? req.query.code : null;
   const state = typeof req.query.state === "string" ? req.query.state : null;
   
+  console.log("[GMAIL CALLBACK] Code:", code ? "present" : "missing");
+  console.log("[GMAIL CALLBACK] State (userId):", state);
+  
   if (!code) {
+    console.error("[GMAIL CALLBACK] ERROR: Missing authorization code");
     return res.status(400).json({ error: true, message: "Missing authorization code" });
   }
   
   // State contains the userId
   const userId = state || req.user?.id;
+  console.log("[GMAIL CALLBACK] Resolved userId:", userId);
+  
   if (!userId) {
+    console.error("[GMAIL CALLBACK] ERROR: Missing user ID (no state and no req.user)");
     return res.status(400).json({ error: true, message: "Missing user ID" });
   }
-  const tokens = await exchangeCodeForTokens(code);
-  console.log("[GMAIL OAUTH CALLBACK] Tokens returned:", tokens);
-  if (!tokens.refreshToken) {
-    console.warn("WARNING: No refresh_token returned — Gmail connection will not work");
-    return res.status(400).json({
-      error: "missing_refresh_token",
-      message: "Google did not return a refresh token. Ask the user to reconnect Gmail with forced consent.",
-      requiresReauth: true
-    });
-  }
-  await prisma.gmailToken.upsert({
-    where: { userId },
-    update: {
-      accessToken: tokens.accessToken ?? "",
-      refreshToken: tokens.refreshToken,
-      expiryDate: tokens.expiresAt ?? null,
-      scope: tokens.scope ?? null,
-      tokenType: tokens.tokenType ?? null,
-      idToken: tokens.idToken ?? null,
-    },
-    create: {
-      userId,
-      accessToken: tokens.accessToken ?? "",
-      refreshToken: tokens.refreshToken,
-      expiryDate: tokens.expiresAt ?? null,
-      scope: tokens.scope ?? null,
-      tokenType: tokens.tokenType ?? null,
-      idToken: tokens.idToken ?? null,
-    }
-  });
   
-  console.log(`[GMAIL AUTH] Successfully connected Gmail for user ${userId}`);
-  const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
-  res.redirect(302, redirectUrl);
+  try {
+    console.log("[GMAIL CALLBACK] Exchanging code for tokens...");
+    const tokens = await exchangeCodeForTokens(code);
+    console.log("[GMAIL CALLBACK] Tokens received:", {
+      hasAccessToken: !!tokens.accessToken,
+      hasRefreshToken: !!tokens.refreshToken,
+      expiresAt: tokens.expiresAt
+    });
+    
+    if (!tokens.refreshToken) {
+      console.error("[GMAIL CALLBACK] ERROR: No refresh_token returned");
+      return res.status(400).json({
+        error: "missing_refresh_token",
+        message: "Google did not return a refresh token. Ask the user to reconnect Gmail with forced consent.",
+        requiresReauth: true
+      });
+    }
+    
+    console.log("[GMAIL CALLBACK] Saving tokens to database for user:", userId);
+    await prisma.gmailToken.upsert({
+      where: { userId },
+      update: {
+        accessToken: tokens.accessToken ?? "",
+        refreshToken: tokens.refreshToken,
+        expiryDate: tokens.expiresAt ?? null,
+        scope: tokens.scope ?? null,
+        tokenType: tokens.tokenType ?? null,
+        idToken: tokens.idToken ?? null,
+      },
+      create: {
+        userId,
+        accessToken: tokens.accessToken ?? "",
+        refreshToken: tokens.refreshToken,
+        expiryDate: tokens.expiresAt ?? null,
+        scope: tokens.scope ?? null,
+        tokenType: tokens.tokenType ?? null,
+        idToken: tokens.idToken ?? null,
+      }
+    });
+    
+    console.log(`[GMAIL CALLBACK] Successfully saved tokens for user ${userId}`);
+    const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
+    console.log(`[GMAIL CALLBACK] Redirecting to:`, redirectUrl);
+    res.redirect(302, redirectUrl);
+  } catch (error) {
+    console.error("[GMAIL CALLBACK] ERROR during token exchange or save:", error);
+    const errorRedirect = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_error=1`;
+    console.log(`[GMAIL CALLBACK] Redirecting to error URL:`, errorRedirect);
+    res.redirect(302, errorRedirect);
+  }
 });
 
 // POST /api/gmail/auth/draft-queue - Create Gmail draft with queue items as to-do list
