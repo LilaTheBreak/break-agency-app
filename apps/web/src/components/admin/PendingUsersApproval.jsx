@@ -18,13 +18,13 @@ export default function PendingUsersApproval() {
     try {
       setLoading(true);
       setError(null);
-      console.log("Fetching pending users from:", `${API_URL}/api/users/pending`);
-      const response = await axios.get(`${API_URL}/api/users/pending`, {
+      console.log("Fetching pending users from:", `${API_URL}/api/admin/users/pending`);
+      const response = await axios.get(`${API_URL}/api/admin/users/pending`, {
         withCredentials: true
       });
       console.log("Pending users response:", response.data);
-      // Ensure data is always an array
-      setPendingUsers(Array.isArray(response.data) ? response.data : []);
+      // The API returns { users: [...] }, so extract the users array
+      setPendingUsers(Array.isArray(response.data.users) ? response.data.users : []);
     } catch (err) {
       console.error("Error fetching pending users:", err);
       if (err.response?.status === 403) {
@@ -50,7 +50,7 @@ export default function PendingUsersApproval() {
       setProcessingId(userId);
       setError(null);
       await axios.post(
-        `${API_URL}/api/users/${userId}/approve`,
+        `${API_URL}/api/admin/users/${userId}/approve`,
         {},
         { withCredentials: true }
       );
@@ -76,7 +76,7 @@ export default function PendingUsersApproval() {
       setProcessingId(userId);
       setError(null);
       await axios.post(
-        `${API_URL}/api/users/${userId}/reject`,
+        `${API_URL}/api/admin/users/${userId}/reject`,
         { reason },
         { withCredentials: true }
       );

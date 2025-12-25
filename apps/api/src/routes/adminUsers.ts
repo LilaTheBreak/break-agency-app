@@ -6,7 +6,7 @@ const router = Router();
 
 router.use(requireRole(["admin", "ADMIN"]));
 
-router.delete("/admin/users/:email", async (req, res) => {
+router.delete("/users/:email", async (req, res) => {
   const email = (req.params.email || "").toLowerCase();
   if (!email) {
     return res.status(400).json({ error: "Email is required" });
@@ -20,7 +20,7 @@ router.delete("/admin/users/:email", async (req, res) => {
   }
 });
 
-router.post("/admin/users", async (req, res) => {
+router.post("/users", async (req, res) => {
   const email = (req.body?.email || "").toLowerCase();
   const roleNameRaw = req.body?.role;
   if (!email || !roleNameRaw) {
@@ -54,7 +54,7 @@ router.post("/admin/users", async (req, res) => {
  * GET /api/admin/users/pending
  * Get all users pending approval
  */
-router.get("/admin/users/pending", async (req, res) => {
+router.get("/users/pending", async (req, res) => {
   try {
     const pendingUsers = await prisma.user.findMany({
       where: {
@@ -85,7 +85,7 @@ router.get("/admin/users/pending", async (req, res) => {
  * POST /api/admin/users/:id/approve
  * Approve a user
  */
-router.post("/admin/users/:id/approve", async (req, res) => {
+router.post("/users/:id/approve", async (req, res) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
@@ -123,7 +123,7 @@ router.post("/admin/users/:id/approve", async (req, res) => {
  * POST /api/admin/users/:id/reject
  * Reject a user
  */
-router.post("/admin/users/:id/reject", async (req, res) => {
+router.post("/users/:id/reject", async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
@@ -161,7 +161,7 @@ router.post("/admin/users/:id/reject", async (req, res) => {
  * GET /api/admin/users
  * Get all users with filtering
  */
-router.get("/admin/users", async (req, res) => {
+router.get("/users", async (req, res) => {
   try {
     const { status, role, search } = req.query;
 
@@ -210,7 +210,7 @@ router.get("/admin/users", async (req, res) => {
  * PATCH /api/admin/users/:id
  * Update user details (role, status, notes)
  */
-router.patch("/admin/users/:id", async (req, res) => {
+router.patch("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { role, onboarding_status, admin_notes } = req.body;
