@@ -198,7 +198,7 @@ router.post("/disconnect", requireAuth, async (req, res) => {
     console.log(`[GMAIL AUTH] Successfully disconnected Gmail for user ${userId}`);
     res.json({ success: true, message: "Gmail disconnected successfully" });
   } catch (error) {
-    if (error.code === 'P2025') {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       // Record not found
       return res.json({ success: true, message: "Gmail was not connected" });
     }
