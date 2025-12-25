@@ -50,6 +50,11 @@ body {
     font-family: "Delirium NCV", "Antonio", sans-serif;
     letter-spacing: 0.08em;
   }
+
+  /* Prevent black-on-black buttons by ensuring bg-brand-black always has light text */
+  .bg-brand-black:is(button, a, [role="button"]) {
+    color: var(--brand-white);
+  }
 }
 
 @layer utilities {
