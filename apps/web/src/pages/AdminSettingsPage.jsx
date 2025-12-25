@@ -169,6 +169,7 @@ export function AdminSettingsPage() {
                     <button 
                       type="button"
                       onClick={(e) => {
+                        alert(`Button clicked for ${integration.name}!`);
                         e.preventDefault();
                         e.stopPropagation();
                         isConnected ? handleDisconnect(integration.name) : handleConnect(integration.name);
