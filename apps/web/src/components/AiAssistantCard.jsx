@@ -98,7 +98,7 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
               key={index}
               type="button"
               onClick={() => handleSuggestionClick(prompt)}
-              className="w-full text-left rounded-xl border border-brand-black/10 bg-brand-linen/40 px-3 py-2 text-sm text-brand-black/80 hover:border-brand-black/30 hover:bg-brand-linen/60 transition"
+              className="w-full text-left rounded-xl border border-brand-black/10 bg-brand-linen px-3 py-2 text-sm text-brand-black hover:border-brand-black/30 hover:bg-brand-linen/80 transition"
             >
               {prompt}
             </button>
@@ -112,7 +112,7 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
         placeholder={canUse ? "Ask AI how to optimize this week…" : "Sign in to ask the assistant"}
         disabled={!canUse || loading || !isAIEnabled}
         rows={3}
-        className="mt-3 w-full rounded-2xl border border-brand-black/20 bg-brand-linen/70 px-3 py-2 text-sm text-brand-black focus:border-brand-black focus:outline-none disabled:opacity-50"
+        className="mt-3 w-full rounded-2xl border border-brand-black/20 bg-brand-linen px-3 py-2 text-sm text-brand-black placeholder:text-brand-black/50 focus:border-brand-black focus:outline-none disabled:opacity-50"
       />
       <div className="mt-2 flex gap-2">
         <FeatureGate feature="AI_ASSISTANT" mode="button">
@@ -140,7 +140,7 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
       </div>
       {error ? <p className="mt-3 text-xs text-brand-red">{error}</p> : null}
       {response ? (
-        <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-3 text-sm text-brand-black/80">
+        <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen p-3 text-sm text-brand-black">
           {response.split("\n").map((line, index) => (
             <p key={`${line}-${index}`} className="mb-1">
               {line}
