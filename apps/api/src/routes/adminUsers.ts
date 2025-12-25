@@ -56,6 +56,7 @@ router.post("/users", async (req, res) => {
  */
 router.get("/users/pending", async (req, res) => {
   try {
+    console.log("[ADMIN USERS PENDING] Fetching pending users...");
     const pendingUsers = await prisma.user.findMany({
       where: {
         onboarding_status: "pending_review"
@@ -65,18 +66,19 @@ router.get("/users/pending", async (req, res) => {
         name: true,
         email: true,
         role: true,
-        created_at: true,
+        createdAt: true,
         onboarding_responses: true,
         admin_notes: true
       },
       orderBy: {
-        created_at: "desc"
+        createdAt: "desc"
       }
     });
 
+    console.log("[ADMIN USERS PENDING] Found", pendingUsers.length, "pending users");
     res.json({ users: pendingUsers });
   } catch (error) {
-    console.error("[ADMIN USERS PENDING]", error);
+    console.error("[ADMIN USERS PENDING] Error:", error);
     res.status(500).json({ error: "Failed to fetch pending users" });
   }
 });
@@ -95,7 +97,7 @@ router.post("/users/:id/approve", async (req, res) => {
       data: {
         onboarding_status: "approved",
         admin_notes: notes || null,
-        updated_at: new Date()
+        updatedAt: new Date()
       },
       select: {
         id: true,
@@ -133,7 +135,7 @@ router.post("/users/:id/reject", async (req, res) => {
       data: {
         onboarding_status: "rejected",
         admin_notes: reason || "Application rejected",
-        updated_at: new Date()
+        updatedAt: new Date()
       },
       select: {
         id: true,
@@ -190,11 +192,11 @@ router.get("/users", async (req, res) => {
         email: true,
         role: true,
         onboarding_status: true,
-        created_at: true,
-        updated_at: true
+        createdAt: true,
+        updatedAt: true
       },
       orderBy: {
-        created_at: "desc"
+        createdAt: "desc"
       },
       take: 100 // Pagination TODO
     });
@@ -215,7 +217,7 @@ router.patch("/users/:id", async (req, res) => {
     const { id } = req.params;
     const { role, onboarding_status, admin_notes } = req.body;
 
-    const updateData: any = { updated_at: new Date() };
+    const updateData: any = { updatedAt: new Date() };
 
     if (role) updateData.role = role;
     if (onboarding_status) updateData.onboarding_status = onboarding_status;

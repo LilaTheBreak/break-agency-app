@@ -17,9 +17,6 @@ export default function SignupPage() {
   const [form, setForm] = useState({ email: "", password: "", role: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [namePromptOpen, setNamePromptOpen] = useState(false);
-  const [preferredName, setPreferredName] = useState("");
-  const [postSignupEmail, setPostSignupEmail] = useState("");
 
   const handleGoogleSignup = () => {
     if (!form.role) {
@@ -44,8 +41,17 @@ export default function SignupPage() {
       console.log('[SIGNUP] Attempting signup:', normalizedEmail, form.role);
       await signupWithEmail(normalizedEmail, form.password, form.role);
       console.log('[SIGNUP] Success!');
-      setPostSignupEmail(normalizedEmail);
-      setNamePromptOpen(true);
+      
+      // Initialize onboarding state
+      const current = loadOnboardingState(normalizedEmail);
+      persistOnboardingState(normalizedEmail, {
+        responses: { ...(current.responses || {}) },
+        role: form.role,
+        status: "in_progress"
+      });
+      
+      // Navigate directly to onboarding
+      navigate(`/onboarding?role=${form.role}`, { replace: true });
     } catch (err) {
       console.log('[SIGNUP] Error caught:', err);
       console.log('[SIGNUP] Error code:', err?.code);
@@ -172,12 +178,13 @@ export default function SignupPage() {
         </p>
         {error && /account/i.test(error) ? (
           <p className="text-center text-xs text-brand-black/60">
-            Tip: use “Sign in” to continue your onboarding or access your dashboard.
+            Tip: use "Sign in" to continue your onboarding or access your dashboard.
           </p>
         ) : null}
       </div>
-      {namePromptOpen ? (
-        <NameCaptureModal
+    </div>
+  );
+}
           value={preferredName}
           onChange={setPreferredName}
           onClose={() => setNamePromptOpen(false)}
