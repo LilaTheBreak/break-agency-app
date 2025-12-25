@@ -212,21 +212,27 @@ router.get("/google/callback", async (req: Request, res: Response) => {
 // -------------------------
 router.post("/signup", authRateLimiter, async (req: Request, res: Response) => {
   try {
+    console.log('[SIGNUP] Received request:', { email: req.body.email, role: req.body.role });
     const parsed = SignupSchema.safeParse(req.body);
     if (!parsed.success) {
+      console.log('[SIGNUP] Validation failed:', parsed.error);
       return res.status(400).json({ error: parsed.error.flatten() });
     }
 
     const { email, password, role } = parsed.data;
     const normalizedEmail = email.trim().toLowerCase();
+    console.log('[SIGNUP] Normalized email:', normalizedEmail);
 
     const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    console.log('[SIGNUP] Existing user check:', existing ? 'FOUND' : 'NOT FOUND');
     if (existing) {
+      console.log('[SIGNUP] User exists, returning 409');
       return res.status(409).json({ error: "User already exists" });
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
+    console.log('[SIGNUP] Creating new user...');
     const user = await prisma.user.create({
       data: {
         id: crypto.randomUUID(),
@@ -237,13 +243,14 @@ router.post("/signup", authRateLimiter, async (req: Request, res: Response) => {
         updatedAt: new Date()
       }
     });
+    console.log('[SIGNUP] User created successfully:', user.id);
 
     const token = createAuthToken({ id: user.id });
     setAuthCookie(res, token);
 
     return res.json({ user: buildSessionUser(user), token });
   } catch (err) {
-    console.error("Signup error:", err);
+    console.error("[SIGNUP] Error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });

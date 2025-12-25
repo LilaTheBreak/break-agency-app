@@ -41,14 +41,21 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const normalizedEmail = form.email.trim().toLowerCase();
+      console.log('[SIGNUP] Attempting signup:', normalizedEmail, form.role);
       await signupWithEmail(normalizedEmail, form.password, form.role);
+      console.log('[SIGNUP] Success!');
       setPostSignupEmail(normalizedEmail);
       setNamePromptOpen(true);
     } catch (err) {
+      console.log('[SIGNUP] Error caught:', err);
+      console.log('[SIGNUP] Error code:', err?.code);
+      console.log('[SIGNUP] Error message:', err?.message);
       const message = err instanceof Error ? err.message : "Unable to sign up";
       if (err?.code === 409 || /exist/i.test(message)) {
+        console.log('[SIGNUP] Detected as existing user error');
         setError("Looks like this email already has an account. Try signing in to continue.");
       } else {
+        console.log('[SIGNUP] Setting error message:', message);
         setError(message || "Unable to sign up");
       }
     } finally {
