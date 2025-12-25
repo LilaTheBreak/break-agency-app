@@ -170,15 +170,20 @@ export default function DeckDrawer({
   if (!open) return null;
 
   return (
-    <aside
-      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-black/20 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-full max-w-2xl overflow-y-auto rounded-3xl border border-brand-black/10 bg-brand-white shadow-[0_24px_80px_rgba(0,0,0,0.15)]"
-        style={{ maxHeight: "90vh" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <aside className="fixed inset-0 z-50">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-brand-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Content */}
+      <div className="relative z-10 flex h-full items-center justify-center p-4">
+        <div
+          className="relative w-full max-w-2xl overflow-y-auto rounded-3xl border border-brand-black/10 bg-brand-white shadow-[0_24px_80px_rgba(0,0,0,0.15)]"
+          style={{ maxHeight: "90vh" }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-brand-black/10 bg-brand-white px-6 py-4">
           <div>
@@ -475,6 +480,7 @@ export default function DeckDrawer({
             </div>
           </section>
         </div>
+      </div>
       </div>
     </aside>
   );
