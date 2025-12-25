@@ -13,8 +13,6 @@ export default function DeckDrawer({
   deals = [], 
   campaigns = [] 
 }) {
-  console.log("[DECK_DRAWER] Component rendered, open:", open);
-  
   // Form state: Deck context
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedDeal, setSelectedDeal] = useState("");
@@ -62,6 +60,11 @@ export default function DeckDrawer({
       setCommentaryText("");
       setSummaryPreview(null);
     }
+  }, [open]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("[DECK DRAWER] open prop changed:", open);
   }, [open]);
 
   const handleSummarizeWithAI = async (field) => {
@@ -170,11 +173,11 @@ export default function DeckDrawer({
   };
 
   if (!open) {
-    console.log("[DECK_DRAWER] Not rendering - open is false");
+    console.log("[DECK DRAWER] Not rendering - open is false");
     return null;
   }
 
-  console.log("[DECK_DRAWER] Rendering drawer UI");
+  console.log("[DECK DRAWER] Rendering modal");
 
   return (
     <aside
