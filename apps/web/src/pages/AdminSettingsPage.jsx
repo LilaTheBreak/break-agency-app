@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
-import { apiFetch } from "../lib/apiClient.js";
+import { apiFetch } from "../services/apiClient.js";
 
 export function AdminSettingsPage() {
   const [integrationStatuses, setIntegrationStatuses] = useState({
