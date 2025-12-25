@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getGmailAuthUrl, listGmailMessages, getDealDrafts } from "../services/gmailClient.js";
+import { getGmailStatus } from "../services/inboxClient.js";
 import { FeatureGate, useFeature, DisabledNotice } from "../components/FeatureGate.jsx";
 import { INBOX_SCANNING_ENABLED } from "../config/features.js";
 
@@ -95,17 +96,54 @@ function InboxConnected({ user }) {
 
 export function InboxPage() {
   const { user } = useAuth();
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [checkingConnection, setCheckingConnection] = useState(true);
 
-  // We need to check if the user has a linked Google account.
-  // Based on the schema, this would be the `googleAccount` relation on the `User` model.
-  const isConnected = user && user.googleAccount;
+  // Check Gmail connection status on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const status = await getGmailStatus();
+        setGmailConnected(status.connected);
+      } catch (error) {
+        console.error("[INBOX] Failed to check Gmail status:", error);
+        setGmailConnected(false);
+      } finally {
+        setCheckingConnection(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
+  // Also check for gmail_connected=1 query param (after OAuth redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('gmail_connected') === '1') {
+      setGmailConnected(true);
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  if (checkingConnection) {
+    return (
+      <DashboardShell
+        title="Priority Inbox"
+        subtitle="AI-powered email scanning, deal extraction, and automated replies."
+      >
+        <div className="text-center p-8">
+          <p className="text-sm text-brand-black/60">Checking Gmail connection...</p>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   return (
     <DashboardShell
       title="Priority Inbox"
       subtitle="AI-powered email scanning, deal extraction, and automated replies."
     >
-      {isConnected ? <InboxConnected user={user} /> : <InboxDisconnected />}
+      {gmailConnected ? <InboxConnected user={user} /> : <InboxDisconnected />}
     </DashboardShell>
   );
 }

@@ -15,37 +15,48 @@ export function AdminSettingsPage() {
 
   useEffect(() => {
     // Check Gmail connection status
-    apiFetch("/api/gmail/auth/status").then((data) => {
-      if (data && data.connected) {
-        setIntegrationStatuses((prev) => ({ ...prev, Gmail: true }));
-      }
-    });
+    apiFetch("/api/gmail/auth/status")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data && data.connected) {
+          setIntegrationStatuses((prev) => ({ ...prev, Gmail: true }));
+        }
+      })
+      .catch((error) => {
+        console.error("[SETTINGS] Failed to check Gmail status:", error);
+      });
   }, []);
 
   const handleConnect = async (serviceName) => {
-    console.log("handleConnect called for:", serviceName);
+    console.log("[CONNECT] Gmail connect clicked - handler executing");
     setLoading((prev) => ({ ...prev, [serviceName]: true }));
     
     try {
       if (serviceName === "Gmail") {
-        const data = await apiFetch("/api/gmail/auth/url");
-        console.log("Gmail OAuth response:", data);
+        console.log("[CONNECT] Fetching Gmail OAuth URL from /api/gmail/auth/url");
+        const response = await apiFetch("/api/gmail/auth/url");
+        const data = await response.json();
+        console.log("[CONNECT] Gmail OAuth response:", data);
         if (data && data.url) {
-          console.log("Redirecting to:", data.url);
-          window.location.href = data.url;
+          console.log("[CONNECT] Redirecting to Google OAuth:", data.url);
+          window.location.assign(data.url);
           return; // Don't reset loading state since we're redirecting
         } else {
+          console.error("[CONNECT] No URL in response:", data);
           alert("Failed to get Gmail OAuth URL");
         }
       } else if (serviceName === "Google Calendar") {
         // Google Calendar uses the same OAuth flow as login with calendar scopes
-        const data = await apiFetch("/api/auth/google/url");
-        console.log("Google Calendar OAuth response:", data);
+        console.log("[CONNECT] Fetching Google Calendar OAuth URL from /api/auth/google/url");
+        const response = await apiFetch("/api/auth/google/url");
+        const data = await response.json();
+        console.log("[CONNECT] Google Calendar OAuth response:", data);
         if (data && data.url) {
-          console.log("Redirecting to:", data.url);
-          window.location.href = data.url;
+          console.log("[CONNECT] Redirecting to Google OAuth:", data.url);
+          window.location.assign(data.url);
           return; // Don't reset loading state since we're redirecting
         } else {
+          console.error("[CONNECT] No URL in response:", data);
           alert("Failed to get Google Calendar OAuth URL");
         }
       } else if (serviceName === "Slack") {
@@ -72,12 +83,14 @@ export function AdminSettingsPage() {
     
     try {
       if (serviceName === "Gmail") {
-        await apiFetch("/api/gmail/auth/disconnect", { method: "POST" });
+        const response = await apiFetch("/api/gmail/auth/disconnect", { method: "POST" });
+        const result = await response.json();
+        console.log("[DISCONNECT] Gmail disconnected:", result);
         setIntegrationStatuses((prev) => ({ ...prev, Gmail: false }));
       }
       // Add disconnect logic for other services as needed
     } catch (error) {
-      console.error(`Failed to disconnect ${serviceName}:`, error);
+      console.error(`[DISCONNECT] Failed to disconnect ${serviceName}:`, error);
       alert(`Failed to disconnect ${serviceName}. Please try again.`);
     } finally {
       setLoading((prev) => ({ ...prev, [serviceName]: false }));
@@ -169,7 +182,6 @@ export function AdminSettingsPage() {
                     <button 
                       type="button"
                       onClick={(e) => {
-                        alert(`Button clicked for ${integration.name}!`);
                         e.preventDefault();
                         e.stopPropagation();
                         isConnected ? handleDisconnect(integration.name) : handleConnect(integration.name);

@@ -5,7 +5,7 @@ import { apiFetch } from "./apiClient.js";
  * @returns {Promise<{url: string}>}
  */
 export async function getGmailAuthUrl() {
-  const response = await apiFetch("/gmail/auth/url");
+  const response = await apiFetch("/api/gmail/auth/url");
   if (!response.ok) {
     throw new Error("Failed to get Gmail authentication URL.");
   }
@@ -17,7 +17,7 @@ export async function getGmailAuthUrl() {
  * @returns {Promise<any[]>}
  */
 export async function listGmailMessages() {
-  const response = await apiFetch("/gmail/messages");
+  const response = await apiFetch("/api/gmail/messages");
   if (!response.ok) {
     throw new Error("Failed to list Gmail messages.");
   }

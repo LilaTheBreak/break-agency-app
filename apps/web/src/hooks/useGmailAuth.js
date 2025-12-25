@@ -10,7 +10,7 @@ export function useGmailAuth() {
     setLoading(true);
     setError("");
     try {
-      const response = await apiFetch("/gmail/auth/url");
+      const response = await apiFetch("/api/gmail/auth/url");
       const payload = await response.json();
       if (!response.ok || !payload.url) {
         throw new Error(payload?.message || "Unable to get Gmail auth URL");
@@ -36,7 +36,7 @@ export function useGmailAuth() {
     setLoading(true);
     setError("");
     try {
-      const response = await apiFetch("/gmail/ingest", { method: "POST" });
+      const response = await apiFetch("/api/gmail/ingest", { method: "POST" });
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload?.message || "Unable to ingest Gmail");
