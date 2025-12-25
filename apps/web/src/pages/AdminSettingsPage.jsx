@@ -28,14 +28,24 @@ export function AdminSettingsPage() {
     try {
       if (serviceName === "Gmail") {
         const data = await apiFetch("/api/gmail/auth/url");
+        console.log("Gmail OAuth response:", data);
         if (data && data.url) {
+          console.log("Redirecting to:", data.url);
           window.location.href = data.url;
+          return; // Don't reset loading state since we're redirecting
+        } else {
+          alert("Failed to get Gmail OAuth URL");
         }
       } else if (serviceName === "Google Calendar") {
         // Google Calendar uses the same OAuth flow as login with calendar scopes
         const data = await apiFetch("/api/auth/google/url");
+        console.log("Google Calendar OAuth response:", data);
         if (data && data.url) {
+          console.log("Redirecting to:", data.url);
           window.location.href = data.url;
+          return; // Don't reset loading state since we're redirecting
+        } else {
+          alert("Failed to get Google Calendar OAuth URL");
         }
       } else if (serviceName === "Slack") {
         alert("Slack integration coming soon");
