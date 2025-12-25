@@ -286,6 +286,11 @@ export function AdminOutreachPage({ session }) {
   const [deckDrawerOpen, setDeckDrawerOpen] = useState(false);
   const [taskEditor, setTaskEditor] = useState({ open: false, task: null });
   const [noteEditor, setNoteEditor] = useState({ open: false, note: null, body: "" });
+
+  // Debug: Log deckDrawerOpen state changes
+  useEffect(() => {
+    console.log("[ADMIN OUTREACH] deckDrawerOpen state changed to:", deckDrawerOpen);
+  }, [deckDrawerOpen]);
   
   const [noteForm, setNoteForm] = useState({
     entityType: "outreach",

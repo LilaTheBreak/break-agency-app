@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+console.log("[DECK DRAWER] Module loaded");
+
 /**
  * DeckDrawer: Create branded PDF decks from CRM data
  * Purpose: Fast creation of PDFs for outreach, proposals, and results
@@ -13,6 +15,8 @@ export default function DeckDrawer({
   deals = [], 
   campaigns = [] 
 }) {
+  console.log("[DECK DRAWER] Component function called, open =", open);
+  
   // Form state: Deck context
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedDeal, setSelectedDeal] = useState("");
