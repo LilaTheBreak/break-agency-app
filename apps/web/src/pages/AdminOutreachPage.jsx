@@ -1310,7 +1310,12 @@ export function AdminOutreachPage({ session }) {
             </p>
             <button
               type="button"
-              onClick={() => setDeckDrawerOpen(true)}
+              onClick={() => {
+                console.log("[CREATE_DECK] Button clicked");
+                console.log("[CREATE_DECK] Current deckDrawerOpen state:", deckDrawerOpen);
+                setDeckDrawerOpen(true);
+                console.log("[CREATE_DECK] Called setDeckDrawerOpen(true)");
+              }}
               className="rounded-full border border-brand-red px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red hover:text-brand-white transition-colors"
             >
               Create Deck

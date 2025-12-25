@@ -13,6 +13,8 @@ export default function DeckDrawer({
   deals = [], 
   campaigns = [] 
 }) {
+  console.log("[DECK_DRAWER] Component rendered, open:", open);
+  
   // Form state: Deck context
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedDeal, setSelectedDeal] = useState("");
@@ -167,7 +169,12 @@ export default function DeckDrawer({
     );
   };
 
-  if (!open) return null;
+  if (!open) {
+    console.log("[DECK_DRAWER] Not rendering - open is false");
+    return null;
+  }
+
+  console.log("[DECK_DRAWER] Rendering drawer UI");
 
   return (
     <aside
