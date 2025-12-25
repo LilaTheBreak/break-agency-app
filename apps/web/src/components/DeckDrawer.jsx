@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 
-console.log("[DECK DRAWER] Module loaded");
-
 /**
  * DeckDrawer: Create branded PDF decks from CRM data
  * Purpose: Fast creation of PDFs for outreach, proposals, and results
@@ -15,8 +13,6 @@ export default function DeckDrawer({
   deals = [], 
   campaigns = [] 
 }) {
-  console.log("[DECK DRAWER] Component function called, open =", open);
-  
   // Form state: Deck context
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [selectedDeal, setSelectedDeal] = useState("");
@@ -64,11 +60,6 @@ export default function DeckDrawer({
       setCommentaryText("");
       setSummaryPreview(null);
     }
-  }, [open]);
-
-  // Debug logging
-  useEffect(() => {
-    console.log("[DECK DRAWER] open prop changed:", open);
   }, [open]);
 
   const handleSummarizeWithAI = async (field) => {
@@ -176,12 +167,7 @@ export default function DeckDrawer({
     );
   };
 
-  if (!open) {
-    console.log("[DECK DRAWER] Not rendering - open is false");
-    return null;
-  }
-
-  console.log("[DECK DRAWER] Rendering modal");
+  if (!open) return null;
 
   return (
     <aside

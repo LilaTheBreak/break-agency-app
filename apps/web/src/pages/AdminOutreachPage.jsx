@@ -286,11 +286,6 @@ export function AdminOutreachPage({ session }) {
   const [deckDrawerOpen, setDeckDrawerOpen] = useState(false);
   const [taskEditor, setTaskEditor] = useState({ open: false, task: null });
   const [noteEditor, setNoteEditor] = useState({ open: false, note: null, body: "" });
-
-  // Debug: Log deckDrawerOpen state changes
-  useEffect(() => {
-    console.log("[ADMIN OUTREACH] deckDrawerOpen state changed to:", deckDrawerOpen);
-  }, [deckDrawerOpen]);
   
   const [noteForm, setNoteForm] = useState({
     entityType: "outreach",
@@ -1315,11 +1310,7 @@ export function AdminOutreachPage({ session }) {
             </p>
             <button
               type="button"
-              onClick={() => {
-                console.log("[CREATE DECK] Button clicked");
-                setDeckDrawerOpen(true);
-                console.log("[CREATE DECK] deckDrawerOpen set to true");
-              }}
+              onClick={() => setDeckDrawerOpen(true)}
               className="rounded-full border border-brand-red px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red hover:text-brand-white transition-colors"
             >
               Create Deck
@@ -1952,6 +1943,16 @@ export function AdminOutreachPage({ session }) {
           }}
         />
       ) : null}
+
+      {/* Deck Drawer */}
+      <DeckDrawer
+        open={deckDrawerOpen}
+        onClose={() => setDeckDrawerOpen(false)}
+        records={records}
+        opportunities={opportunities}
+        deals={deals}
+        campaigns={crmCampaigns}
+      />
     </DashboardShell>
   );
 }
@@ -3304,16 +3305,6 @@ function RecordDrawer({
           </div>
         </div>
       </aside>
-
-      {/* Deck Drawer */}
-      <DeckDrawer
-        open={deckDrawerOpen}
-        onClose={() => setDeckDrawerOpen(false)}
-        records={records}
-        opportunities={opportunities}
-        deals={deals}
-        campaigns={crmCampaigns}
-      />
     </div>
   );
 }
