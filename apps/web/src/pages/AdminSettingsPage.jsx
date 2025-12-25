@@ -23,6 +23,7 @@ export function AdminSettingsPage() {
   }, []);
 
   const handleConnect = async (serviceName) => {
+    console.log("handleConnect called for:", serviceName);
     setLoading((prev) => ({ ...prev, [serviceName]: true }));
     
     try {
@@ -166,7 +167,12 @@ export function AdminSettingsPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-brand-black">{integration.name}</span>
                     <button 
-                      onClick={() => isConnected ? handleDisconnect(integration.name) : handleConnect(integration.name)}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        isConnected ? handleDisconnect(integration.name) : handleConnect(integration.name);
+                      }}
                       disabled={isLoading}
                       className="rounded-xl border border-brand-black/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
