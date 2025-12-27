@@ -22,7 +22,6 @@ import { useNavigate } from "react-router-dom";
 import { isFeatureEnabled } from "../config/features.js";
 import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
 import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
-import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 
 export function CreatorDashboard({ session }) {
   const auth = useAuth();

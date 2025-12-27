@@ -17,7 +17,6 @@ import { LineChart as RechartsLineChart } from "../components/charts/index.js";
 import { isFeatureEnabled } from "../config/features.js";
 import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
 import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
-import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 
 // Creator roster - guarded by feature flag CREATOR_ROSTER_ENABLED
 const CREATOR_ROSTER = [];
