@@ -358,19 +358,28 @@ export function AdminTasksPage() {
   };
 
   const saveTask = async () => {
+    // Prevent double submissions
+    if (loading) {
+      console.log("[AdminTasksPage] Already saving, ignoring duplicate call");
+      return;
+    }
+
     try {
       console.log("[AdminTasksPage] saveTask called", { editingId, draft });
+      setLoading(true);
       setFormError("");
       
       if (!draft.title || !draft.title.trim()) {
         console.log("[AdminTasksPage] Validation failed: missing title");
         setFormError("Task title is required.");
+        setLoading(false);
         return;
       }
 
       if (!draft.ownerId) {
         console.log("[AdminTasksPage] Validation failed: missing ownerId");
         setFormError("Primary owner is required.");
+        setLoading(false);
         return;
       }
 
@@ -408,10 +417,12 @@ export function AdminTasksPage() {
       setTasks(data);
       setCreateOpen(false);
       setEditingId("");
+      setLoading(false);
       console.log("[AdminTasksPage] saveTask completed successfully");
     } catch (err) {
       console.error("[AdminTasksPage] Error saving task:", err);
       setFormError(err.message || "Failed to save task");
+      setLoading(false);
     }
   };
 
@@ -641,11 +652,12 @@ export function AdminTasksPage() {
                 setEditingId("");
                 setFormError("");
               }}
+              disabled={loading}
             >
               Cancel
             </TextButton>
-            <PrimaryButton onClick={saveTask}>
-              {editingId ? "Save changes" : "Create task"}
+            <PrimaryButton onClick={saveTask} disabled={loading}>
+              {loading ? "Saving..." : editingId ? "Save changes" : "Create task"}
             </PrimaryButton>
           </div>
         }
