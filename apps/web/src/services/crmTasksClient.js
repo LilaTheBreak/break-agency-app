@@ -68,17 +68,24 @@ export async function fetchCrmTaskById(id) {
  * Create a new CRM task
  */
 export async function createCrmTask(taskData) {
+  console.log("[crmTasksClient] createCrmTask called with:", taskData);
+  
   const response = await apiFetch(`/api/crm-tasks`, {
     method: "POST",
     body: JSON.stringify(taskData),
   });
   
+  console.log("[crmTasksClient] Response status:", response.status);
+  
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Failed to create task" }));
+    console.error("[crmTasksClient] Error response:", error);
     throw new Error(error.error || "Failed to create task");
   }
   
-  return response.json();
+  const result = await response.json();
+  console.log("[crmTasksClient] Task created successfully:", result);
+  return result;
 }
 
 /**

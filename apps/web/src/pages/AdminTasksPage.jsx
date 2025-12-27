@@ -359,14 +359,17 @@ export function AdminTasksPage() {
 
   const saveTask = async () => {
     try {
+      console.log("[AdminTasksPage] saveTask called", { editingId, draft });
       setFormError("");
       
       if (!draft.title || !draft.title.trim()) {
+        console.log("[AdminTasksPage] Validation failed: missing title");
         setFormError("Task title is required.");
         return;
       }
 
       if (!draft.ownerId) {
+        console.log("[AdminTasksPage] Validation failed: missing ownerId");
         setFormError("Primary owner is required.");
         return;
       }
@@ -388,19 +391,26 @@ export function AdminTasksPage() {
         relatedContracts: draft.relatedContracts
       };
 
+      console.log("[AdminTasksPage] Sending task data:", taskData);
+
       if (editingId) {
+        console.log("[AdminTasksPage] Updating task:", editingId);
         await updateCrmTask(editingId, taskData);
       } else {
-        await createCrmTask(taskData);
+        console.log("[AdminTasksPage] Creating new task");
+        const result = await createCrmTask(taskData);
+        console.log("[AdminTasksPage] Task created:", result);
       }
 
       // Refetch tasks
+      console.log("[AdminTasksPage] Refetching tasks");
       const data = await fetchCrmTasks();
       setTasks(data);
       setCreateOpen(false);
       setEditingId("");
+      console.log("[AdminTasksPage] saveTask completed successfully");
     } catch (err) {
-      console.error("Error saving task:", err);
+      console.error("[AdminTasksPage] Error saving task:", err);
       setFormError(err.message || "Failed to save task");
     }
   };
