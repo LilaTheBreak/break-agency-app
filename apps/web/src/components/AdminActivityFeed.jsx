@@ -54,11 +54,12 @@ export function AdminActivityFeed() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Admin activity</p>
-          <h3 className="font-display text-3xl uppercase">Live feed</h3>
+          <h3 className="font-display text-3xl uppercase">Recent Actions</h3>
+          <p className="mt-1 text-xs text-brand-black/50">Last 7 days</p>
         </div>
-        <span className="text-[0.6rem] uppercase tracking-[0.35em] text-brand-black/60">
-          {loading ? "Syncing…" : "Live"}
-        </span>
+        {loading && (
+          <span className="text-[0.6rem] uppercase tracking-[0.35em] text-brand-black/40">Syncing…</span>
+        )}
       </div>
       {error ? (
         <p className="mt-4 text-sm text-brand-black/60">{error}</p>
@@ -91,7 +92,10 @@ export function AdminActivityFeed() {
               </div>
             ))
           ) : (
-            <p className="text-sm text-brand-black/60">No recent activity</p>
+            <div>
+              <p className="text-sm text-brand-black/60">No recent activity</p>
+              <p className="mt-1 text-xs text-brand-black/40">Actions like approvals, role changes, and resource updates appear here</p>
+            </div>
           )}
         </div>
       )}

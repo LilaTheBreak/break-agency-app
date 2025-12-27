@@ -44,17 +44,39 @@ export function DashboardShell({
       label: "Tasks due",
       value: formatCount(mergedSummary.tasksDue),
       detail: "Across all queues",
+      helper: mergedSummary.tasksDue === 0 ? "Tasks will appear as they're created" : "Updates automatically",
       to: "/admin/tasks"
     },
-    { label: "Due tomorrow", value: formatCount(mergedSummary.dueTomorrow), detail: "Next 24h" },
+    { 
+      label: "Due tomorrow", 
+      value: formatCount(mergedSummary.dueTomorrow), 
+      detail: "Next 24h",
+      helper: mergedSummary.dueTomorrow === 0 ? "Populates as deadlines approach" : "Rolling 24h window"
+    },
     {
       label: "Payouts pending",
       value: formatMoneyMetric(payoutPending),
-      detail: payoutPending?.count ? `${payoutPending.count} payouts` : "Awaiting release"
+      detail: payoutPending?.count ? `${payoutPending.count} payouts` : "Awaiting release",
+      helper: (!payoutPending?.count || payoutPending.count === 0) ? "Finance workflows in progress" : "Pending finance review"
     },
-    { label: "Pending approvals", value: formatCount(mergedSummary.pendingApprovals), detail: "Awaiting admin review" },
-    { label: "Content due", value: formatCount(mergedSummary.contentDue), detail: "Assets expected" },
-    { label: "Briefs needing review", value: formatCount(mergedSummary.briefsReview), detail: "Submitted briefs" }
+    { 
+      label: "Pending approvals", 
+      value: formatCount(mergedSummary.pendingApprovals), 
+      detail: "Awaiting admin review",
+      helper: mergedSummary.pendingApprovals === 0 ? "User signups will appear here" : "Requires attention"
+    },
+    { 
+      label: "Content due", 
+      value: formatCount(mergedSummary.contentDue), 
+      detail: "Assets expected",
+      helper: mergedSummary.contentDue === 0 ? "Tracks campaign deliverables" : "Updates daily"
+    },
+    { 
+      label: "Briefs needing review", 
+      value: formatCount(mergedSummary.briefsReview), 
+      detail: "Submitted briefs",
+      helper: mergedSummary.briefsReview === 0 ? "Brief submissions tracked here" : "Ready for review"
+    }
   ];
 
   useEffect(() => {
@@ -195,6 +217,13 @@ export function DashboardShell({
               <p className="text-base text-brand-black/70">{subtitle}</p>
             </div>
           </div>
+          {role === "admin" && showStatusSummary && (
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-3">
+              <p className="text-xs text-brand-black/70">
+                <span className="font-semibold uppercase tracking-[0.2em]">Managed Beta</span> — Empty states are expected during launch. Metrics populate as users create campaigns, tasks, and deals.
+              </p>
+            </div>
+          )}
         </div>
         <div
           className={[
@@ -282,6 +311,9 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error }) {
                 {loading ? "…" : tile.value ?? "—"}
               </p>
               <p className="text-xs text-brand-black/60">{tile.detail}</p>
+              {tile.helper && (
+                <p className="mt-1 text-[0.65rem] text-brand-black/40 italic">{tile.helper}</p>
+              )}
             </>
           );
           return tile.to ? (
@@ -303,15 +335,23 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error }) {
         })}
       </div>
       <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
-        <p className="text-xs uppercase tracking-[0.35em] text-brand-red">AI-generated next steps</p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-red">AI-generated next steps</p>
+          <span className="rounded-full bg-brand-black/5 px-2 py-0.5 text-[0.6rem] uppercase tracking-wider text-brand-black/50">Beta</span>
+        </div>
         {loading ? (
           <p className="mt-3 text-sm text-brand-black/60">Loading insights…</p>
-        ) : (
+        ) : nextSteps && nextSteps.length > 0 ? (
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-brand-black/80">
-            {(nextSteps && nextSteps.length ? nextSteps : ["No next steps queued by AI right now."]).map((step, index) => (
+            {nextSteps.map((step, index) => (
               <li key={index}>{step}</li>
             ))}
           </ul>
+        ) : (
+          <div className="mt-3">
+            <p className="text-sm text-brand-black/60">No suggestions yet</p>
+            <p className="mt-1 text-xs text-brand-black/40">AI analyzes patterns once deals, tasks, or approvals exist in the system</p>
+          </div>
         )}
       </div>
     </div>

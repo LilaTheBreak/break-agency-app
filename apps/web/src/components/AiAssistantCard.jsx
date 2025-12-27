@@ -85,8 +85,15 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
 
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white text-brand-black p-5 shadow-[0_20px_60px_rgba(0,0,0,0.1)]">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{title}</p>
-      {description ? <p className="text-sm text-brand-black/60">{description}</p> : null}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{title}</p>
+          {description ? <p className="text-sm text-brand-black/60">{description}</p> : (
+            <p className="mt-1 text-xs text-brand-black/50">Ask questions about your workflow, pending items, and optimization suggestions</p>
+          )}
+        </div>
+        <span className="rounded-full bg-brand-black/5 px-2 py-0.5 text-[0.6rem] uppercase tracking-wider text-brand-black/50">Beta</span>
+      </div>
       
       <DisabledNotice feature="AI_ASSISTANT" className="mt-3" />
 
@@ -119,8 +126,8 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
           <button
             type="button"
             onClick={askAssistant}
-            disabled={!canUse || loading}
-            className="rounded-full bg-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-white disabled:opacity-40"
+            disabled={!canUse || loading || !input.trim()}
+            className="rounded-full bg-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-white disabled:opacity-40 hover:bg-brand-black/80 transition-colors"
           >
             {loading ? "Thinking…" : "Ask AI"}
           </button>
@@ -133,14 +140,26 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
             setError("");
             setShowSuggestions(true);
           }}
-          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black hover:text-white transition-colors"
+          disabled={!input && !response && !error}
+          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black hover:text-white transition-colors disabled:opacity-40"
         >
           Reset
         </button>
       </div>
-      {error ? <p className="mt-3 text-xs text-brand-red">{error}</p> : null}
-      {response ? (
+      {loading && (
+        <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-3">
+          <p className="text-xs text-brand-black/60 animate-pulse">Analyzing your request...</p>
+        </div>
+      )}
+      {error ? (
+        <div className="mt-3 rounded-2xl border border-brand-red/20 bg-red-50 p-3">
+          <p className="text-xs font-semibold text-brand-red">Unable to get response</p>
+          <p className="mt-1 text-xs text-brand-black/60">{error}</p>
+        </div>
+      ) : null}
+      {response && !loading ? (
         <div className="mt-3 rounded-2xl border border-brand-black/10 bg-brand-linen p-3 text-sm text-brand-black">
+          <p className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/50 mb-2">AI Response</p>
           {response.split("\n").map((line, index) => (
             <p key={`${line}-${index}`} className="mb-1">
               {line}

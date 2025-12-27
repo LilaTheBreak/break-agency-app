@@ -10,14 +10,15 @@ export function AdminAuditTable() {
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Audit logs</p>
           <h3 className="font-display text-3xl uppercase">Sensitive actions</h3>
+          <p className="mt-1 text-xs text-brand-black/50">Security events, role changes, and admin operations</p>
         </div>
         <button
           type="button"
           onClick={reload}
           disabled={loading}
-          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] disabled:opacity-50"
+          className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-white transition-colors disabled:opacity-50"
         >
-          Refresh
+          {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
       {loading ? (
@@ -25,7 +26,10 @@ export function AdminAuditTable() {
       ) : error ? (
         <p className="mt-4 text-sm text-brand-black/60">{error || "No audit logs available yet"}</p>
       ) : logs.length === 0 ? (
-        <p className="mt-4 text-sm text-brand-black/60">No audit logs yet</p>
+        <div className="mt-4">
+          <p className="text-sm text-brand-black/60">No audit logs yet</p>
+          <p className="mt-1 text-xs text-brand-black/40">Tracked actions include: user approvals, role changes, impersonation, password resets, and resource modifications</p>
+        </div>
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-left text-sm text-brand-black/80">
