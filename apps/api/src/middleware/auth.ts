@@ -56,7 +56,10 @@ export async function attachUserFromSession(req: Request, _res: Response, next: 
 
 export function requireAuth(_req: Request, res: Response, next: NextFunction) {
   if (!_req.user?.id) {
-    return res.status(401).json({ error: "Authentication required" });
+    return res.status(401).json({ 
+      error: "Please log in to access this feature",
+      code: "AUTH_REQUIRED"
+    });
   }
   next();
 }

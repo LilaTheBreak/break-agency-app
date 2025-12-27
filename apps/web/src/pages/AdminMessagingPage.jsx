@@ -26,6 +26,8 @@ export function AdminMessagingPage() {
   const [inboxError, setInboxError] = useState(null);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, status: '' });
+  const [lastSyncTime, setLastSyncTime] = useState(null);
   const { connectGmail } = useGmailAuth();
 
   const filteredThreads = useMemo(() => {
@@ -93,17 +95,30 @@ export function AdminMessagingPage() {
   const handleSyncGmail = async () => {
     setSyncing(true);
     setInboxError(null);
-    const result = await syncGmailInbox();
-    setSyncing(false);
+    setSyncProgress({ current: 0, total: 100, status: 'Connecting to Gmail...' });
     
-    if (result.success) {
-      // Refresh inbox after sync
-      const inboxResult = await getRecentInbox(10, false);
-      if (inboxResult.success) {
-        setInboxEmails(inboxResult.data || []);
+    try {
+      const result = await syncGmailInbox();
+      setSyncing(false);
+      setSyncProgress({ current: 0, total: 0, status: '' });
+      
+      if (result.success) {
+        setLastSyncTime(new Date());
+        // Refresh inbox after sync
+        const inboxResult = await getRecentInbox(10, false);
+        if (inboxResult.success) {
+          setInboxEmails(inboxResult.data || []);
+        }
+        // Success feedback
+        const syncedCount = result.synced || result.count || 0;
+        alert(`✓ Successfully synced ${syncedCount} threads`);
+      } else {
+        setInboxError(result.message || "Sync failed");
       }
-    } else {
-      setInboxError(result.message || "Sync failed");
+    } catch (error) {
+      setSyncing(false);
+      setSyncProgress({ current: 0, total: 0, status: '' });
+      setInboxError(error.message || "Network error during sync");
     }
   };
 
@@ -175,12 +190,14 @@ export function AdminMessagingPage() {
         </div>
       </div>
       <SystemAlerts alerts={alerts} />
-      <EmailInboxSection 
-        emails={inboxEmails} 
-        loading={inboxLoading} 
+      <EmailInboxSection
+        emails={inboxEmails}
+        loading={inboxLoading}
         error={inboxError}
         gmailConnected={gmailConnected}
         syncing={syncing}
+        syncProgress={syncProgress}
+        lastSyncTime={lastSyncTime}
         onConnect={connectGmail}
         onSync={handleSyncGmail}
       />
@@ -407,7 +424,20 @@ function SystemAlerts({ alerts }) {
   );
 }
 
-function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, onConnect, onSync }) {
+function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, syncProgress, lastSyncTime, onConnect, onSync }) {
+  // Helper to format relative time
+  const formatRelativeTime = (date) => {
+    if (!date) return null;
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
   // Gmail not connected state
   if (!gmailConnected) {
     return (
@@ -465,14 +495,31 @@ function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, on
             Email Inbox (Latest)
           </p>
           <p className="mt-1 text-xs text-brand-black/60">
-            {error && error.includes("Syncing") ? error : "Recent inbound emails from your connected Gmail account."}
+            {syncing && syncProgress.status ? (
+              <span className="flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-brand-red animate-pulse" />
+                {syncProgress.status}
+              </span>
+            ) : error && error.includes("Syncing") ? (
+              error
+            ) : lastSyncTime ? (
+              `Last synced ${formatRelativeTime(lastSyncTime)}`
+            ) : (
+              "Recent inbound emails from your connected Gmail account."
+            )}
           </p>
         </div>
         <button
           onClick={onSync}
           disabled={syncing || loading}
-          className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
+          {syncing && (
+            <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+            </svg>
+          )}
           {syncing ? "Syncing..." : "Sync Gmail"}
         </button>
       </div>

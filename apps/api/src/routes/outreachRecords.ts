@@ -10,30 +10,20 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     const { brandId, contactId, dealId, outcome, channel, limit } = req.query;
 
     const where: any = {};
-    if (brandId) where.brandId = String(brandId);
-    if (contactId) where.contactId = String(contactId);
-    if (dealId) where.dealId = String(dealId);
-    if (outcome) where.outcome = String(outcome);
-    if (channel) where.channel = String(channel);
+    if (brandId) where.linkedCrmBrandId = String(brandId);
+    // contactId, dealId filters removed - not in Outreach model
+    if (outcome) where.status = String(outcome); // status field exists
+    // channel filter removed - not in Outreach model
 
-    const records = await prisma.outreachRecord.findMany({
+    const records = await prisma.outreach.findMany({
       where,
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true,
             status: true,
             website: true,
-          },
-        },
-        Contact: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            relationshipStatus: true,
-            primaryContact: true,
           },
         },
       },
@@ -53,11 +43,10 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const record = await prisma.outreachRecord.findUnique({
+    const record = await prisma.outreach.findUnique({
       where: { id },
       include: {
-        Brand: true,
-        Contact: true,
+        CrmBrand: true,
       },
     });
 
@@ -104,25 +93,24 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Direction and channel are required" });
     }
 
-    const record = await prisma.outreachRecord.create({
+    const record = await prisma.outreach.create({
       data: {
-        direction,
-        channel,
-        summary: summary.trim(),
-        fullNotes: fullNotes?.trim() || null,
-        brandId,
-        contactId: contactId || null,
-        dealId: dealId || null,
-        campaignId: campaignId || null,
-        talentId: talentId || null,
-        outcome: outcome || "No reply yet",
-        followUpSuggested: Boolean(followUpSuggested),
-        followUpBy: followUpBy?.trim() || null,
-        visibility: visibility || "Internal",
-        createdBy: createdBy || "Admin",
+        id: `outreach_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        target: summary.trim(),
+        type: "Brand",
+        contact: contactId || null,
+        contactEmail: null,
+        summary: fullNotes?.trim() || null,
+        linkedCrmBrandId: brandId,
+        linkedCreatorId: talentId || null,
+        status: outcome || "Not started",
+        stage: "not-started",
+        nextFollowUp: followUpBy ? new Date(followUpBy) : null,
+        createdBy: req.user?.id || createdBy || "unknown",
+        updatedAt: new Date(),
       },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true,
@@ -130,25 +118,8 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
             website: true,
           },
         },
-        Contact: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            relationshipStatus: true,
-            primaryContact: true,
-          },
-        },
       },
     });
-
-    // Update contact's lastContactedAt if contactId provided
-    if (contactId) {
-      await prisma.crmContact.update({
-        where: { id: contactId },
-        data: { lastContactedAt: new Date() },
-      });
-    }
 
     res.json({ record });
   } catch (error) {
@@ -176,43 +147,28 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
       visibility,
     } = req.body;
 
-    const existing = await prisma.outreachRecord.findUnique({ where: { id } });
+    const existing = await prisma.outreach.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: "Outreach record not found" });
     }
 
-    const record = await prisma.outreachRecord.update({
+    const record = await prisma.outreach.update({
       where: { id },
       data: {
-        direction: direction || existing.direction,
-        channel: channel || existing.channel,
-        summary: summary?.trim() || existing.summary,
-        fullNotes: fullNotes !== undefined ? (fullNotes?.trim() || null) : existing.fullNotes,
-        contactId: contactId !== undefined ? (contactId || null) : existing.contactId,
-        dealId: dealId !== undefined ? (dealId || null) : existing.dealId,
-        campaignId: campaignId !== undefined ? (campaignId || null) : existing.campaignId,
-        talentId: talentId !== undefined ? (talentId || null) : existing.talentId,
-        outcome: outcome || existing.outcome,
-        followUpSuggested: followUpSuggested !== undefined ? Boolean(followUpSuggested) : existing.followUpSuggested,
-        followUpBy: followUpBy !== undefined ? (followUpBy?.trim() || null) : existing.followUpBy,
-        visibility: visibility || existing.visibility,
+        target: summary?.trim() || existing.target,
+        summary: fullNotes?.trim() || existing.summary,
+        contact: contactId !== undefined ? (contactId || null) : existing.contact,
+        linkedCreatorId: talentId !== undefined ? (talentId || null) : existing.linkedCreatorId,
+        status: outcome || existing.status,
+        nextFollowUp: followUpBy !== undefined ? (followUpBy ? new Date(followUpBy) : null) : existing.nextFollowUp,
       },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true,
             status: true,
             website: true,
-          },
-        },
-        Contact: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            relationshipStatus: true,
-            primaryContact: true,
           },
         },
       },
@@ -230,7 +186,7 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    await prisma.outreachRecord.delete({ where: { id } });
+    await prisma.outreach.delete({ where: { id } });
 
     res.json({ success: true });
   } catch (error) {
@@ -244,29 +200,29 @@ router.get("/summary/stats", requireAuth, async (req: Request, res: Response) =>
   try {
     const { brandId } = req.query;
 
-    const where = brandId ? { brandId: String(brandId) } : {};
+    const where = brandId ? { linkedCrmBrandId: String(brandId) } : {};
 
-    const [total, byOutcome, byChannel, needsFollowUp] = await Promise.all([
-      prisma.outreachRecord.count({ where }),
-      prisma.outreachRecord.groupBy({
-        by: ["outcome"],
+    const [total, byOutcome, byStage, needsFollowUp] = await Promise.all([
+      prisma.outreach.count({ where }),
+      prisma.outreach.groupBy({
+        by: ["status"],
         where,
         _count: true,
       }),
-      prisma.outreachRecord.groupBy({
-        by: ["channel"],
+      prisma.outreach.groupBy({
+        by: ["stage"],
         where,
         _count: true,
       }),
-      prisma.outreachRecord.count({
-        where: { ...where, followUpSuggested: true },
+      prisma.outreach.count({
+        where: { ...where, nextFollowUp: { not: null } },
       }),
     ]);
 
     res.json({
       total,
       byOutcome,
-      byChannel,
+      byStage,
       needsFollowUp,
     });
   } catch (error) {

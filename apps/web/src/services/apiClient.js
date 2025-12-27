@@ -1,3 +1,5 @@
+import toast from 'react-hot-toast';
+
 const RAW_API_BASE = import.meta.env?.VITE_API_URL;
 const API_BASE = RAW_API_BASE && RAW_API_BASE.length ? RAW_API_BASE : "/api";
 
@@ -42,32 +44,59 @@ export async function apiFetch(path, options = {}) {
           // Only warn on real auth issues (401), not permission issues
           if (this.status === 401) {
             console.warn(`[API] Authentication required for ${path}`);
+            toast.error('Authentication required. Please sign in again.');
           }
           return { error: "Authentication required", _isHtmlResponse: true };
         }
         // Only log parsing errors for 500s, not expected failures
         if (this.status >= 500) {
           console.error(`[API] Invalid JSON from ${path}:`, text.substring(0, 100));
+          toast.error('Server error: Invalid response format');
         }
         throw new Error(`Invalid JSON response from ${path}`);
       }
     };
 
-    // Log only real errors (500+), not permission/not-found
+    // Show toast notifications for errors
     if (response.status >= 500) {
       console.error(`[API] Server error ${response.status} for ${path}`);
-    } else if (response.status === 403 || response.status === 404) {
-      // Silent - these are often expected (permissions, feature flags)
+      toast.error(`Server error (${response.status}): Failed to ${extractAction(path)}`);
+    } else if (response.status === 403) {
+      toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
+    } else if (response.status === 404) {
+      // Silent for 404s - often expected (checking if resource exists)
+    } else if (response.status === 401) {
+      toast.error('Session expired. Please sign in again.');
     }
 
     return response;
   } catch (error) {
-    // Only log unexpected network errors
+    // Show toast for network errors
     if (error.name !== 'AbortError') {
       console.error(`[API] Network error for ${path}:`, error);
+      toast.error(`Connection failed: Unable to ${extractAction(path)}`);
     }
     throw error;
   }
+}
+
+// Helper to extract action from API path for clearer error messages
+function extractAction(path) {
+  const parts = path.split('/').filter(Boolean);
+  const lastPart = parts[parts.length - 1];
+  
+  // Common patterns
+  if (path.includes('/gmail')) return 'connect Gmail';
+  if (path.includes('/approve')) return 'approve user';
+  if (path.includes('/reject')) return 'reject user';
+  if (path.includes('/upload')) return 'upload file';
+  if (path.includes('/delete')) return 'delete item';
+  if (path.includes('/update')) return 'update item';
+  if (path.includes('/create')) return 'create item';
+  if (path.includes('/sync')) return 'sync data';
+  
+  // Fallback to resource name
+  return lastPart || 'complete action';
 }
 
 export { NORMALIZED_BASE as API_BASE };

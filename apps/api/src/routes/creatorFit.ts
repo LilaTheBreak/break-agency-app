@@ -13,6 +13,9 @@ router.post("/calculate", creatorFitController.calculateCreatorFit);
 // POST /api/creator-fit/batch - Calculate fit for multiple creators
 router.post("/batch", creatorFitController.calculateBatchFit);
 
+// POST /api/creator-fit/save - Save a fit score to database
+router.post("/save", creatorFitController.saveFitScore);
+
 // GET /api/creator-fit/talent/:talentId - Get all fit scores for a talent
 router.get("/talent/:talentId", creatorFitController.fetchTalentFit);
 

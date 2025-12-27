@@ -10,6 +10,7 @@ import { ResourceManager } from "../components/admin/ResourceManager.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js"; // This hook will be wired up later
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
+import { SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 
 export function AdminDashboard({ session }) {
   const auth = useAuth();
@@ -51,9 +52,17 @@ function AdminCampaignsPanel({ session }) {
         <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
           <p className="text-sm text-brand-black/60">Unable to load campaign data</p>
           <p className="mt-2 text-xs text-brand-black/40">This feature is currently unavailable</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       ) : loading && !campaigns.length ? (
-        <p className="mt-4 text-sm text-brand-black/60">Loading campaigns…</p>
+        <SkeletonWithMessage message="Loading campaign performance data...">
+          <SkeletonCampaign />
+        </SkeletonWithMessage>
       ) : campaigns.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
           <p className="text-sm text-brand-black/60">No campaigns yet</p>

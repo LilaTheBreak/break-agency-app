@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch } from "../services/apiClient.js";
+import { isFeatureEnabled, getDisabledMessage } from "../config/features.js";
 
 /**
  * Top Performing Posts Component
@@ -10,6 +11,7 @@ import { apiFetch } from "../services/apiClient.js";
  * Sorted by: Engagement rate (primary), Views (secondary)
  * 
  * Design: Calm, motivational, read-only for talent
+ * Feature Flag: TOP_PERFORMING_POSTS_ENABLED
  */
 
 const PLATFORM_ICONS = {
@@ -93,6 +95,15 @@ export function TopPerformingPosts({ session }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasSocials, setHasSocials] = useState(false);
+  
+  // Feature flag check
+  if (!isFeatureEnabled('TOP_PERFORMING_POSTS_ENABLED')) {
+    return (
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/20 p-6 text-center">
+        <p className="text-sm text-brand-black/60">{getDisabledMessage('TOP_PERFORMING_POSTS_ENABLED')}</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const fetchTopPosts = async () => {

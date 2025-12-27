@@ -1,4 +1,4 @@
-import { prisma } from "../../db.js";
+import { prisma } from "../../lib/prisma.js";
 import { aiClient } from "./aiClient.js";
 
 export class ToneController {

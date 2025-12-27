@@ -9,10 +9,12 @@ import { CATEGORY_WEIGHT } from "../constants/threadCategories.js";
 import { apiFetch } from "../services/apiClient.js";
 import { useDealThreads } from "../hooks/useDealThreads.js";
 import DealThreadViewer from "../components/DealThreadViewer.jsx";
+import { useInboxCategories } from "../hooks/useInboxCategories.js";
 
 const TAB_OPTIONS = [
   { id: "priority", label: "Priority" },
   { id: "awaiting", label: "Awaiting Reply" },
+  { id: "smart", label: "Smart Categories" },
   { id: "all", label: "All Inbound" }
 ];
 
@@ -32,6 +34,7 @@ export default function Inbox() {
   const [classifications, setClassifications] = useState({});
   const { inbox, totals, loading, error } = usePriorityInbox();
   const { rebuild, list } = useDealThreads();
+  const { categories: smartCategories, loading: categoriesLoading } = useInboxCategories();
   const [threads, setThreads] = useState([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const [threadsError, setThreadsError] = useState("");
@@ -165,6 +168,12 @@ export default function Inbox() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm">{item.aiSummary}</p>
+                {item.aiRecommendedAction && (
+                  <div className="mt-2 rounded-lg bg-brand-linen/60 p-2">
+                    <p className="text-xs uppercase tracking-[0.25em] text-brand-red">Recommended Action</p>
+                    <p className="mt-1 text-sm text-brand-black">{item.aiRecommendedAction}</p>
+                  </div>
+                )}
               </div>
             ) : null}
           </div>
@@ -231,6 +240,82 @@ export default function Inbox() {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-brand-black">Awaiting reply</h2>
           {renderList(awaiting)}
+        </div>
+      ) : null}
+
+      {tab === "smart" ? (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-brand-black">Smart Categories</h2>
+            <p className="text-sm text-brand-black/60 mt-1">
+              AI-categorized inbox items based on content and context
+            </p>
+          </div>
+          {categoriesLoading ? (
+            <LoadingScreen />
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(smartCategories).map(([category, items]) => {
+                if (!items || items.length === 0) return null;
+                const categoryLabels = {
+                  deals: "💼 Deal Offers",
+                  negotiations: "🤝 Negotiations",
+                  gifting: "🎁 Gifting & PR",
+                  invites: "📅 Event Invites",
+                  vip: "⭐ VIP Contacts",
+                  urgent: "🚨 Urgent",
+                  spam: "🗑️ Spam"
+                };
+                return (
+                  <div key={category} className="rounded-xl border border-brand-black/10 bg-white p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-brand-black">
+                        {categoryLabels[category] || category}
+                      </h3>
+                      <span className="text-xs text-brand-black/60">{items.length} items</span>
+                    </div>
+                    <div className="space-y-2">
+                      {items.slice(0, 5).map((item) => (
+                        <div
+                          key={item.id}
+                          className="rounded-lg border border-brand-black/5 bg-brand-linen/40 p-3 text-sm"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-brand-black truncate">
+                                {item.from || item.sender || "Unknown sender"}
+                              </p>
+                              <p className="text-xs text-brand-black/60 mt-1 truncate">
+                                {item.subject || item.preview || "No subject"}
+                              </p>
+                              {item.aiSummary && (
+                                <p className="text-xs text-brand-black/70 mt-2 line-clamp-2">
+                                  {item.aiSummary}
+                                </p>
+                              )}
+                            </div>
+                            {item.unread && (
+                              <span className="flex-shrink-0 inline-block h-2 w-2 rounded-full bg-brand-red"></span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {items.length > 5 && (
+                        <p className="text-xs text-brand-black/50 text-center pt-2">
+                          +{items.length - 5} more items
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {Object.keys(smartCategories).length === 0 && (
+                <p className="text-sm text-brand-black/60 text-center py-8">
+                  No categorized items yet. AI categorization runs automatically as messages arrive.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       ) : null}
 

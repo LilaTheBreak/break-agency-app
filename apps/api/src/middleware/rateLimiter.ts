@@ -35,3 +35,51 @@ export const sensitiveOperationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Rate limiter for file uploads
+ * Prevents excessive upload attempts
+ */
+export const fileUploadLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // Limit each IP to 10 uploads per 5 minutes
+  message: 'Too many file uploads. Please try again in 5 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate limiter for password reset requests
+ * Prevents abuse of password reset functionality
+ */
+export const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // Limit each IP to 3 password reset requests per hour
+  message: 'Too many password reset requests. Please try again in 1 hour.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate limiter for OAuth callbacks
+ * Prevents callback abuse
+ */
+export const oauthCallbackLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // Limit each IP to 10 OAuth attempts per 5 minutes
+  message: 'Too many authentication attempts. Please try again in 5 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate limiter for admin actions
+ * Moderate protection for admin endpoints
+ */
+export const adminActionLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 50, // Limit each IP to 50 admin actions per minute
+  message: 'Too many admin actions. Please slow down.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});

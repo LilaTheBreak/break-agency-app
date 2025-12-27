@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { isFeatureEnabled } from "../config/features.js";
 
 const ROLE_OPTIONS = [
   { value: "SUPERADMIN", label: "Super Admin", description: "Full platform control" },
@@ -397,20 +398,28 @@ export function EditUserDrawer({ user, isOpen, onClose, onSave, onArchive, onDel
                   />
                 </Field>
 
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={handleResetPassword}
-                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
-                  >
-                    Send Password Reset Email
-                  </button>
-                  <button
-                    onClick={handleForceLogout}
-                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
-                  >
-                    Force Logout from All Sessions
-                  </button>
-                </div>
+                {/* Phase 6: Guard non-functional buttons with feature flags */}
+                {isFeatureEnabled('USER_PASSWORD_RESET_ENABLED') && (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleResetPassword}
+                      className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+                    >
+                      Send Password Reset Email
+                    </button>
+                  </div>
+                )}
+
+                {isFeatureEnabled('USER_FORCE_LOGOUT_ENABLED') && (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleForceLogout}
+                      className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+                    >
+                      Force Logout from All Sessions
+                    </button>
+                  </div>
+                )}
               </div>
             </Section>
           )}
@@ -468,7 +477,7 @@ export function EditUserDrawer({ user, isOpen, onClose, onSave, onArchive, onDel
           </Section>
 
           {/* View As User */}
-          {isSuperAdmin && !isArchived && (
+          {isSuperAdmin && !isArchived && isFeatureEnabled('USER_IMPERSONATION_ENABLED') && (
             <Section title="Impersonation" subtitle="View platform as this user" superAdminOnly className="mt-6">
               <button
                 onClick={handleImpersonate}

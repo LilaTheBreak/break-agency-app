@@ -5,6 +5,7 @@ import { getGmailAuthUrl, listGmailMessages, getDealDrafts } from "../services/g
 import { getGmailStatus } from "../services/inboxClient.js";
 import { FeatureGate, useFeature, DisabledNotice } from "../components/FeatureGate.jsx";
 import { INBOX_SCANNING_ENABLED } from "../config/features.js";
+import toast from "react-hot-toast";
 
 function InboxDisconnected() {
   // UNLOCK WHEN: INBOX_SCANNING_ENABLED flag + Gmail OAuth configured + /api/gmail/* endpoints functional
@@ -120,6 +121,11 @@ export function InboxPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('gmail_connected') === '1') {
       setGmailConnected(true);
+      toast.success('Gmail connected successfully!');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('gmail_error') === '1') {
+      toast.error('Failed to connect Gmail. Please try again.');
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }

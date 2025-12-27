@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+import { apiFetch } from "./apiClient.js";
 
 /**
  * Submit onboarding responses to backend for admin approval
@@ -8,20 +8,14 @@ const API_URL = import.meta.env.VITE_API_URL || "/api";
  * @returns {Promise<Response>}
  */
 export async function submitOnboarding(responses, role, context) {
-  const response = await fetch(`${API_URL}/api/auth/onboarding/submit`, {
+  return apiFetch("/api/auth/onboarding/submit", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
     body: JSON.stringify({
       responses,
       role,
       context,
     }),
   });
-
-  return response;
 }
 
 /**
@@ -29,10 +23,7 @@ export async function submitOnboarding(responses, role, context) {
  * @returns {Promise<Response>}
  */
 export async function getOnboardingStatus() {
-  const response = await fetch(`${API_URL}/api/auth/me`, {
+  return apiFetch("/api/auth/me", {
     method: "GET",
-    credentials: "include",
   });
-
-  return response;
 }

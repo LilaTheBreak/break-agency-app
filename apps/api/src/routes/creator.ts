@@ -95,6 +95,8 @@ router.post("/api/creator/goals", requireCreator, attachCreatorProfile, async (r
 
         const goal = await prisma.creatorGoal.create({
           data: {
+            id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            updatedAt: new Date(),
             creatorId: creator.id,
             goalCategory: goalData.goalCategory || "growth",
             goalType: goalData.goalType || "other",

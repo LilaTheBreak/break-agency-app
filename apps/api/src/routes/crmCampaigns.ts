@@ -26,9 +26,9 @@ router.get("/", async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
-            website: true,
-            status: true,
+            name: true,
+            
+            
           },
         },
       },
@@ -59,10 +59,10 @@ router.get("/:id", async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
-            website: true,
-            industry: true,
-            status: true,
+            name: true,
+            
+            
+            
           },
         },
       },
@@ -110,6 +110,8 @@ router.post("/", async (req, res) => {
     const now = new Date();
     const campaign = await prisma.crmCampaign.create({
       data: {
+        id: `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        updatedAt: new Date(),
         campaignName,
         brandId,
         campaignType: campaignType || "Other",
@@ -132,9 +134,9 @@ router.post("/", async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
-            website: true,
-            status: true,
+            name: true,
+            
+            
           },
         },
       },
@@ -209,9 +211,9 @@ router.patch("/:id", async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
-            website: true,
-            status: true,
+            name: true,
+            
+            
           },
         },
       },
@@ -342,9 +344,9 @@ router.post("/:id/link-deal", async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
-            website: true,
-            status: true,
+            name: true,
+            
+            
           },
         },
       },
@@ -382,9 +384,9 @@ router.delete("/:id/unlink-deal/:dealId", async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
-            website: true,
-            status: true,
+            name: true,
+            
+            
           },
         },
       },

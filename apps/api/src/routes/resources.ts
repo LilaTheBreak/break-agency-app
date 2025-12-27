@@ -89,6 +89,8 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const { status, type, visibility } = req.query;
+    
+    const where: any = {};
 
     // Non-admins can only see published resources
     if (!user || !isAdmin(user)) {
@@ -97,8 +99,6 @@ router.get("/", async (req: Request, res: Response) => {
       // If not logged in, can only see public resources
       if (!user) {
         where.visibility = "PUBLIC";
-      }
-    } else {e.visibility = "PUBLIC";
       }
     } else {
       // Admins can filter by status

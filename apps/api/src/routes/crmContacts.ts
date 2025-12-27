@@ -11,19 +11,14 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 
     const where = brandId ? { brandId: String(brandId) } : {};
 
-    const contacts = await prisma.crmContact.findMany({
-      where,
+    const contacts = await prisma.crmBrandContact.findMany({
+      where: brandId ? { crmBrandId: String(brandId) } : {},
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true,
             status: true,
-          },
-        },
-        _count: {
-          select: {
-            OutreachRecords: true,
           },
         },
       },
@@ -46,19 +41,10 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const contact = await prisma.crmContact.findUnique({
+    const contact = await prisma.crmBrandContact.findUnique({
       where: { id },
       include: {
-        Brand: true,
-        OutreachRecords: {
-          orderBy: { createdAt: "desc" },
-          take: 20,
-        },
-        _count: {
-          select: {
-            OutreachRecords: true,
-          },
-        },
+        CrmBrand: true,
       },
     });
 
@@ -100,28 +86,27 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 
     // If this contact is being set as primary, unset other primary contacts for this brand
     if (primaryContact) {
-      await prisma.crmContact.updateMany({
-        where: { brandId, primaryContact: true },
+      await prisma.crmBrandContact.updateMany({
+        where: { crmBrandId: brandId, primaryContact: true },
         data: { primaryContact: false },
       });
     }
 
-    const contact = await prisma.crmContact.create({
+    const contact = await prisma.crmBrandContact.create({
       data: {
-        brandId,
+        id: `contact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        crmBrandId: brandId,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        role: role?.trim() || null,
+        title: role?.trim() || null,
         email: email?.trim() || null,
         phone: phone?.trim() || null,
-        linkedInUrl: linkedInUrl?.trim() || null,
-        relationshipStatus: relationshipStatus || "New",
-        preferredContactMethod: preferredContactMethod?.trim() || null,
         primaryContact: Boolean(primaryContact),
-        owner: owner?.trim() || null,
+        notes: null,
+        updatedAt: new Date(),
       },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true,
@@ -155,35 +140,32 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
       owner,
     } = req.body;
 
-    const existing = await prisma.crmContact.findUnique({ where: { id } });
+    const existing = await prisma.crmBrandContact.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: "Contact not found" });
     }
 
     // If setting as primary, unset other primary contacts for this brand
     if (primaryContact && !existing.primaryContact) {
-      await prisma.crmContact.updateMany({
-        where: { brandId: existing.brandId, primaryContact: true },
+      await prisma.crmBrandContact.updateMany({
+        where: { crmBrandId: existing.crmBrandId, primaryContact: true },
         data: { primaryContact: false },
       });
     }
 
-    const contact = await prisma.crmContact.update({
+    const contact = await prisma.crmBrandContact.update({
       where: { id },
       data: {
         firstName: firstName?.trim() || existing.firstName,
         lastName: lastName?.trim() || existing.lastName,
-        role: role !== undefined ? (role?.trim() || null) : existing.role,
+        title: role !== undefined ? (role?.trim() || null) : existing.title,
         email: email !== undefined ? (email?.trim() || null) : existing.email,
         phone: phone !== undefined ? (phone?.trim() || null) : existing.phone,
-        linkedInUrl: linkedInUrl !== undefined ? (linkedInUrl?.trim() || null) : existing.linkedInUrl,
-        relationshipStatus: relationshipStatus || existing.relationshipStatus,
-        preferredContactMethod: preferredContactMethod !== undefined ? (preferredContactMethod?.trim() || null) : existing.preferredContactMethod,
         primaryContact: primaryContact !== undefined ? Boolean(primaryContact) : existing.primaryContact,
-        owner: owner !== undefined ? (owner?.trim() || null) : existing.owner,
+        notes: existing.notes,
       },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true,
@@ -205,7 +187,7 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    await prisma.crmContact.delete({ where: { id } });
+    await prisma.crmBrandContact.delete({ where: { id } });
 
     res.json({ success: true });
   } catch (error) {
@@ -224,7 +206,7 @@ router.post("/:id/notes", requireAuth, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Note text is required" });
     }
 
-    const contact = await prisma.crmContact.findUnique({ where: { id } });
+    const contact = await prisma.crmBrandContact.findUnique({ where: { id } });
     if (!contact) {
       return res.status(404).json({ error: "Contact not found" });
     }
@@ -235,13 +217,14 @@ router.post("/:id/notes", requireAuth, async (req: Request, res: Response) => {
       text: text.trim(),
     };
 
-    const notes = [note, ...(contact.notes as any[])];
+    const existingNotes = contact.notes ? (typeof contact.notes === 'string' ? JSON.parse(contact.notes) : contact.notes) : [];
+    const notes = JSON.stringify([note, ...existingNotes]);
 
-    const updated = await prisma.crmContact.update({
+    const updated = await prisma.crmBrandContact.update({
       where: { id },
       data: { notes },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
             brandName: true,

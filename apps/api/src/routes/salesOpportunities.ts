@@ -40,6 +40,8 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 
     const opportunity = await prisma.salesOpportunity.create({
       data: {
+        id: `opportunity_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        updatedAt: new Date(),
         outreachId,
         name: name || outreach.target,
         value: value || 0,
@@ -211,7 +213,7 @@ router.post("/:id/convert-to-deal", requireAuth, requireAdmin, async (req, res) 
           updatedAt: new Date()
         },
         include: {
-          Opportunity: {
+          SalesOpportunity: {
             include: {
               Outreach: {
                 include: {

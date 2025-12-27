@@ -25,6 +25,27 @@ model AIAgentTask {
   @@index([userId])
 }
 
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  userEmail  String?
+  userRole   String?
+  action     String
+  entityType String?
+  entityId   String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  User       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+  @@index([userRole, action])
+}
+
 model AIPromptHistory {
   id        String   @id
   creatorId String
@@ -90,6 +111,8 @@ model Brand {
   restrictedCategories  String[]
   preferredCreatorTypes String[]
   targetAudience        Json?
+  BrandSavedTalent      BrandSavedTalent[]
+  CreatorFitScore       CreatorFitScore[]
   CrmCampaign           CrmCampaign[]
   Deal                  Deal[]
   Invoice               Invoice[]
@@ -143,6 +166,29 @@ model ContractReview {
   @@index([fileId])
   @@index([status])
   @@index([userId])
+}
+
+model Contract {
+  id             String    @id
+  dealId         String
+  title          String
+  fileUrl        String?
+  pdfUrl         String?
+  status         String    @default("draft")
+  sentAt         DateTime?
+  talentSignedAt DateTime?
+  brandSignedAt  DateTime?
+  fullySignedAt  DateTime?
+  terms          Json?
+  templateId     String?
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  Deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([status])
+  @@index([sentAt])
 }
 
 model CreatorBalance {
@@ -267,12 +313,8 @@ model CrmBrand {
   id                   String            @id
   brandName            String
   website              String?
-  logo                 String?
   industry             String            @default("Other")
   status               String            @default("Prospect")
-  lifecycleStage       String?           // Lead | Prospect | Active | Dormant | Inactive
-  relationshipStrength String?           // Strong | Moderate | Weak | New
-  primaryContactId     String?
   owner                String?
   internalNotes        String?
   activity             Json[]            @default([])
@@ -280,6 +322,10 @@ model CrmBrand {
   lastActivityLabel    String?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime
+  lifecycleStage       String?
+  logo                 String?
+  primaryContactId     String?
+  relationshipStrength String?
   CrmBrandContact      CrmBrandContact[]
   CrmTask              CrmTask[]
   Outreach             Outreach[]
@@ -334,35 +380,35 @@ model CrmCampaign {
 }
 
 model CrmTask {
-  id                String       @id
-  title             String
-  description       String?
-  status            String       @default("Pending")
-  priority          String       @default("Medium")
-  dueDate           DateTime?
-  owner             String?
-  ownerId           String?
-  assignedUserIds   String[]     @default([])
-  mentions          Json[]       @default([])
-  relatedBrands     String[]     @default([])
-  relatedCreators   String[]     @default([])
-  relatedUsers      String[]     @default([])
-  relatedDeals      String[]     @default([])
-  relatedCampaigns  String[]     @default([])
-  relatedEvents     String[]     @default([])
-  relatedContracts  String[]     @default([])
-  brandId           String?
-  dealId            String?
-  campaignId        String?
-  eventId           String?
-  contractId        String?
-  createdBy         String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime
-  CrmBrand          CrmBrand?    @relation(fields: [brandId], references: [id])
-  CrmCampaign       CrmCampaign? @relation(fields: [campaignId], references: [id])
-  Owner             User?        @relation("TaskOwner", fields: [ownerId], references: [id])
-  CreatedByUser     User?        @relation("TaskCreatedBy", fields: [createdBy], references: [id])
+  id               String       @id
+  title            String
+  status           String       @default("Pending")
+  priority         String       @default("Medium")
+  dueDate          DateTime?
+  owner            String?
+  brandId          String?
+  dealId           String?
+  campaignId       String?
+  eventId          String?
+  contractId       String?
+  createdBy        String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime
+  assignedUserIds  String[]     @default([])
+  description      String?
+  mentions         Json[]       @default([])
+  ownerId          String?
+  relatedBrands    String[]     @default([])
+  relatedCampaigns String[]     @default([])
+  relatedContracts String[]     @default([])
+  relatedCreators  String[]     @default([])
+  relatedDeals     String[]     @default([])
+  relatedEvents    String[]     @default([])
+  relatedUsers     String[]     @default([])
+  CrmBrand         CrmBrand?    @relation(fields: [brandId], references: [id])
+  CrmCampaign      CrmCampaign? @relation(fields: [campaignId], references: [id])
+  CreatedByUser    User?        @relation("TaskCreatedBy", fields: [createdBy], references: [id])
+  Owner            User?        @relation("TaskOwner", fields: [ownerId], references: [id])
 
   @@index([brandId])
   @@index([campaignId])
@@ -399,6 +445,7 @@ model Deal {
   negotiationStartedAt    DateTime?
   proposalSentAt          DateTime?
   opportunityId           String?           @unique
+  Contract                Contract[]
   CreatorTask             CreatorTask[]
   Brand                   Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
   SalesOpportunity        SalesOpportunity? @relation(fields: [opportunityId], references: [id])
@@ -607,11 +654,11 @@ model GmailToken {
   scope             String?
   tokenType         String?
   idToken           String?
-  lastSyncedAt      DateTime?
-  webhookHistoryId  String?
-  webhookExpiration DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime
+  lastSyncedAt      DateTime?
+  webhookExpiration DateTime?
+  webhookHistoryId  String?
   User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -962,9 +1009,6 @@ model Resource {
   longDescription  String?
   resourceType     ResourceType
   uploadUrl        String?
-  uploadFilename   String?
-  uploadFileType   String?
-  uploadFileSize   Int?
   externalUrl      String?
   thumbnailUrl     String?
   status           ResourceStatus     @default(DRAFT)
@@ -980,6 +1024,9 @@ model Resource {
   createdById      String
   createdAt        DateTime           @default(now())
   updatedAt        DateTime
+  uploadFilename   String?
+  uploadFileType   String?
+  uploadFileSize   Int?
   User             User               @relation(fields: [createdById], references: [id], onDelete: Cascade)
   ResourceRsvp     ResourceRsvp[]
 
@@ -1055,23 +1102,116 @@ model SignatureRequest {
 }
 
 model SocialAccountConnection {
-  id           String    @id
-  creatorId    String
-  platform     String
-  handle       String
-  connected    Boolean   @default(false)
-  accessToken  String?
-  refreshToken String?
-  expiresAt    DateTime?
-  lastSyncedAt DateTime?
-  metadata     Json?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-  Talent       Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  id            String          @id
+  creatorId     String
+  platform      String
+  handle        String
+  connected     Boolean         @default(false)
+  accessToken   String?
+  refreshToken  String?
+  expiresAt     DateTime?
+  lastSyncedAt  DateTime?
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  Talent        Talent          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  SocialProfile SocialProfile?
+  SocialSyncLog SocialSyncLog[]
 
   @@unique([creatorId, platform])
   @@index([creatorId, connected])
   @@index([platform])
+}
+
+model SocialProfile {
+  id                String                  @id @default(cuid())
+  connectionId      String                  @unique
+  platform          String
+  handle            String
+  displayName       String?
+  bio               String?
+  profileImageUrl   String?
+  followerCount     Int                     @default(0)
+  followingCount    Int?
+  postCount         Int?
+  averageViews      Float?
+  averageEngagement Float?
+  engagementRate    Float?
+  isVerified        Boolean                 @default(false)
+  externalId        String?
+  lastSyncedAt      DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime
+  metrics           SocialMetric[]
+  posts             SocialPost[]
+  connection        SocialAccountConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([platform, handle])
+  @@index([connectionId])
+}
+
+model SocialPost {
+  id             String        @id @default(cuid())
+  profileId      String
+  platform       String
+  externalId     String
+  caption        String?
+  mediaType      String
+  mediaUrl       String?
+  thumbnailUrl   String?
+  permalink      String?
+  viewCount      Int?
+  likeCount      Int?
+  commentCount   Int?
+  shareCount     Int?
+  saveCount      Int?
+  engagementRate Float?
+  postedAt       DateTime
+  lastSyncedAt   DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime
+  profile        SocialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([platform, externalId])
+  @@index([profileId, postedAt])
+  @@index([platform, postedAt])
+}
+
+model SocialMetric {
+  id           String        @id @default(cuid())
+  profileId    String
+  platform     String
+  metricType   String
+  value        Float
+  snapshotDate DateTime      @default(now())
+  metadata     Json?
+  createdAt    DateTime      @default(now())
+  profile      SocialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, snapshotDate])
+  @@index([metricType, snapshotDate])
+}
+
+model SocialSyncLog {
+  id             String                  @id @default(cuid())
+  connectionId   String
+  platform       String
+  syncType       String
+  status         String
+  itemsSynced    Int                     @default(0)
+  errorMessage   String?
+  errorCode      String?
+  rateLimitHit   Boolean                 @default(false)
+  rateLimitReset DateTime?
+  startedAt      DateTime
+  completedAt    DateTime?
+  duration       Int?
+  createdAt      DateTime                @default(now())
+  connection     SocialAccountConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId, createdAt])
+  @@index([platform, status])
+  @@index([rateLimitHit])
 }
 
 model Submission {
@@ -1118,7 +1258,9 @@ model Talent {
   categories              String[]
   stage                   String?
   AIPromptHistory         AIPromptHistory[]
+  BrandSavedTalent        BrandSavedTalent[]
   CreatorEvent            CreatorEvent[]
+  CreatorFitScore         CreatorFitScore[]
   CreatorGoal             CreatorGoal[]
   CreatorInsight          CreatorInsight[]
   CreatorTask             CreatorTask[]
@@ -1185,13 +1327,16 @@ model User {
   ugc_categories                          String[]                 @default([])
   ugc_portfolio_url                       String?
   upgrade_suggested                       Boolean?                 @default(false)
+  resetToken                              String?
+  resetTokenExpiry                        DateTime?
   AgentProfile                            AgentProfile?
   AiTokenLog                              AiTokenLog[]
+  AuditLog                                AuditLog[]
   BrandCampaign                           BrandCampaign[]
   CreatorEvent                            CreatorEvent[]
   CreatorTask                             CreatorTask[]
-  CrmTasksOwned                           CrmTask[]                @relation("TaskOwner")
   CrmTasksCreated                         CrmTask[]                @relation("TaskCreatedBy")
+  CrmTasksOwned                           CrmTask[]                @relation("TaskOwner")
   Deal                                    Deal[]
   DealTimeline                            DealTimeline[]
   EmailFeedback                           EmailFeedback[]
@@ -1237,6 +1382,43 @@ model XeroConnection {
   lastSyncedAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime
+}
+
+model BrandSavedTalent {
+  id        String   @id
+  brandId   String
+  talentId  String
+  status    String   @default("saved")
+  notes     String?
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  Talent    Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, talentId])
+  @@index([brandId, status])
+  @@index([talentId])
+}
+
+model CreatorFitScore {
+  id                 String   @id
+  brandId            String
+  talentId           String
+  campaignId         String?
+  totalScore         Int      @default(0)
+  audienceScore      Int      @default(0)
+  engagementScore    Int      @default(0)
+  historyScore       Int      @default(0)
+  categoryScore      Int      @default(0)
+  explanation        String?
+  calculationDetails Json?
+  createdAt          DateTime @default(now())
+  Brand              Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  Talent             Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@index([brandId, totalScore])
+  @@index([talentId])
+  @@index([campaignId])
 }
 
 enum DealStage {

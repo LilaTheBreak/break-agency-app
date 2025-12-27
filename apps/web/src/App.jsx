@@ -18,6 +18,9 @@ import { Badge } from "./components/Badge.jsx";
 import { UgcBoard } from "./components/UgcBoard.jsx";
 import { DashboardShell } from "./components/DashboardShell.jsx";
 import { LogoWordmark } from "./components/LogoWordmark.jsx";
+import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
+import { RouteErrorBoundaryWrapper } from "./components/RouteErrorBoundary.jsx";
+import ToastProvider from "./components/ToastProvider.jsx";
 import BrandDashboardLayout, {
   BrandOverviewPage,
   BrandProfilePage,
@@ -66,6 +69,7 @@ import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
 import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
 import { AdminCrmSettingsPage } from "./pages/AdminCrmSettingsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
+import { AdminRevenuePage } from "./pages/AdminRevenuePage.jsx";
 import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
 import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
 import { OpportunitiesAdmin } from "./pages/admin/OpportunitiesAdmin.jsx";
@@ -242,141 +246,18 @@ const MESSAGE_TEMPLATES = [
   }
 ];
 
-const SIMULATED_ALERT_SCENARIOS = [
-  { title: "Task due", detail: "Creator storyboard needs review within 4 hours.", type: "task" },
-  { title: "Brief update", detail: "Luxury travel drop brief received a revision.", type: "brief" },
-  { title: "Approval needed", detail: "Finance wants confirmation before releasing payouts.", type: "finance" },
-  { title: "System notice", detail: "Webhooks delayed—falling back to polling for 30s.", type: "system" }
-];
+// Mock alert scenarios removed - using remote API only
 
-const SIMULATED_INCOMING_PINGS = [
-  {
-    body: "Dropping the latest storyboard link here—let me know if legal needs adjustments.",
-    attachments: [{ id: "att-storyboard", label: "Storyboard_v3.pdf", type: "pdf" }]
-  },
-  { body: "Any update on the paid media CTA lock? We are queued to post tomorrow.", attachments: [] },
-  { body: "Travel team confirmed availability for next week. Need ticketing info.", attachments: [] },
-  {
-    body: "Uploading product shots tonight. Prefer Google Drive or Break drive?",
-    attachments: [{ id: "att-drive", label: "Drive link", type: "link" }]
-  },
-  { body: "Reminder: hero edit still waiting for approvals before we can post.", attachments: [] }
-];
+// Simulated incoming pings removed - using remote API only
 
-function createMessage({ id, sender, senderRole, body, timestamp = Date.now(), attachments = [], readBy = [] }) {
-  return {
-    id: id || `msg-${timestamp}`,
-    sender,
-    senderRole,
-    body,
-    timestamp,
-    attachments,
-    readBy
-  };
-}
-
-const NOW = Date.now();
-
-const INITIAL_THREADS = [
-  {
-    id: "thread-creators-feedback",
-    subject: "Opportunities board feedback",
-    persona: "Creators",
-    participants: ["ugc@creator.com", DEFAULT_ACTOR_EMAIL],
-    tags: ["UGC", "Pipeline"],
-    lastUpdated: NOW - 1000 * 60 * 30,
-    messages: [
-      createMessage({
-        id: "msg-creators-1",
-        sender: "ugc@creator.com",
-        senderRole: "Creator",
-        body: "Thanks for the notes—I'll revise the draft tonight.",
-        timestamp: NOW - 1000 * 60 * 55,
-        attachments: [{ id: "att-ugc-1", label: "UGC-draft.mov", type: "video" }],
-        readBy: []
-      }),
-      createMessage({
-        id: "msg-creators-2",
-        sender: DEFAULT_ACTOR_EMAIL,
-        senderRole: "Admin",
-        body: "Appreciate the quick turnaround—flag once the revised cut is ready and we can route approvals.",
-        timestamp: NOW - 1000 * 60 * 32,
-        attachments: [],
-        readBy: [DEFAULT_ACTOR_EMAIL]
-      })
-    ]
-  },
-  {
-    id: "thread-brand-budget",
-    subject: "Budget confirmation",
-    persona: "Brands",
-    participants: ["brand@client.com", DEFAULT_ACTOR_EMAIL],
-    tags: ["Finance", "Campaign"],
-    lastUpdated: NOW - 1000 * 60 * 90,
-    messages: [
-      createMessage({
-        id: "msg-brand-1",
-        sender: "brand@client.com",
-        senderRole: "Brand",
-        body: "Confirming the new £45k cap for paid media plus organic boost.",
-        timestamp: NOW - 1000 * 60 * 120,
-        attachments: [{ id: "att-budget", label: "Budget.xlsx", type: "sheet" }],
-        readBy: []
-      }),
-      createMessage({
-        id: "msg-brand-2",
-        sender: DEFAULT_ACTOR_EMAIL,
-        senderRole: "Admin",
-        body: "Logged and shared with finance—once creator invoices hit we will reconcile automatically.",
-        timestamp: NOW - 1000 * 60 * 95,
-        readBy: [DEFAULT_ACTOR_EMAIL]
-      })
-    ]
-  },
-  {
-    id: "thread-roster-onboarding",
-    subject: "Roster onboarding",
-    persona: "Talent Managers",
-    participants: ["manager@breaktalent.com", DEFAULT_ACTOR_EMAIL],
-    tags: ["Onboarding"],
-    lastUpdated: NOW - 1000 * 60 * 15,
-    messages: [
-      createMessage({
-        id: "msg-onboard-1",
-        sender: "manager@breaktalent.com",
-        senderRole: "Talent Manager",
-        body: "Need a quick check on the exclusivity clause before I sign.",
-        timestamp: NOW - 1000 * 60 * 25,
-        attachments: [{ id: "att-contract", label: "Exclusivity.pdf", type: "pdf" }],
-        readBy: []
-      }),
-      createMessage({
-        id: "msg-onboard-2",
-        sender: DEFAULT_ACTOR_EMAIL,
-        senderRole: "Admin",
-        body: "Clause 4.1 only applies to fintech verticals—happy to hop on a call if helpful.",
-        timestamp: NOW - 1000 * 60 * 15,
-        readBy: [DEFAULT_ACTOR_EMAIL]
-      })
-    ]
-  }
-];
-
-const INITIAL_ALERTS = [
-  { id: "alert-brief", title: "Brief update", detail: "AI banking launch brief moved to Approvals.", type: "brief", timestamp: NOW - 1000 * 60 * 90 },
-  { id: "alert-task", title: "Task due", detail: "Exclusive Creator owes draft edits at 18:00 GMT.", type: "task", timestamp: NOW - 1000 * 60 * 20 }
-];
+// Mock messaging data removed - using remote API only
 
 function App() {
   const { user: session, loading: authLoading, logout } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
-  const [threads, setThreads] = useState(INITIAL_THREADS);
-  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
-  const [connectionStatus, setConnectionStatus] = useState("connected");
   const remoteMessaging = useRemoteMessaging(session);
-  const isRemoteMessagingEnabled = remoteMessaging.enabled;
 
   useEffect(() => {
     if (session && authModalOpen) {
@@ -387,146 +268,42 @@ function App() {
   const currentActor = session?.email || DEFAULT_ACTOR_EMAIL;
   const actorRole = session?.role || Roles.ADMIN;
 
-  const threadSource = isRemoteMessagingEnabled ? remoteMessaging.threads : threads;
-  const messagingConnectionStatus = isRemoteMessagingEnabled ? remoteMessaging.connectionStatus : connectionStatus;
-
   const handleSignOut = () => {
     logout();
   };
 
-  const addMessage = useCallback(
-    (entry) => {
-      if (isRemoteMessagingEnabled) return;
-      setThreads((prev) => {
-        const timestamp = Date.now();
-        const sender = entry.participants?.[0] || entry.email || "external@breakagency.com";
-        const starterMessage = createMessage({
-          sender,
-          senderRole: entry.persona || "External",
-          body: entry.preview || entry.body || entry.message || "New inquiry received.",
-          attachments: entry.attachments || [],
-          timestamp,
-          readBy: []
-        });
-        const newThread = {
-          id: `thread-${timestamp}`,
-          subject: entry.subject || "External inquiry",
-          persona: entry.persona || "External",
-          participants: entry.participants || [sender, currentActor],
-          tags: entry.tags || ["Inbound"],
-          lastUpdated: timestamp,
-          messages: [starterMessage]
-        };
-        return [newThread, ...prev];
-      });
-    },
-    [currentActor, isRemoteMessagingEnabled]
-  );
+  // addMessage removed - handled by remote messaging API
 
   const sendMessage = useCallback(
     async (threadId, payload) => {
-      const actor = payload?.sender || currentActor;
-      const role = payload?.senderRole || actorRole || "Admin";
-      const body = payload?.body?.trim();
-      if (!threadId || !body) return;
-      if (isRemoteMessagingEnabled) {
-        await remoteMessaging.sendMessage(threadId, payload);
-        return;
-      }
-      setThreads((prev) =>
-        prev.map((thread) => {
-          if (thread.id !== threadId) return thread;
-          const timestamp = Date.now();
-          const outgoing = createMessage({
-            sender: actor,
-            senderRole: role,
-            body,
-            attachments: payload.attachments || [],
-            timestamp,
-            readBy: [actor]
-          });
-          return {
-            ...thread,
-            messages: [...thread.messages, outgoing],
-            lastUpdated: timestamp
-          };
-        })
-      );
+      if (!threadId || !payload?.body?.trim()) return;
+      await remoteMessaging.sendMessage(threadId, payload);
     },
-    [actorRole, currentActor, isRemoteMessagingEnabled, remoteMessaging]
+    [remoteMessaging]
   );
 
   const markThreadRead = useCallback(
-    async (threadId, actor = currentActor) => {
-      if (!threadId || !actor) return;
-      if (isRemoteMessagingEnabled) {
-        await remoteMessaging.markThreadRead(threadId);
-        return;
-      }
-      setThreads((prev) =>
-        prev.map((thread) => {
-          if (thread.id !== threadId) return thread;
-          const updatedMessages = thread.messages.map((message) =>
-            message.readBy.includes(actor) ? message : { ...message, readBy: [...message.readBy, actor] }
-          );
-          return { ...thread, messages: updatedMessages };
-        })
-      );
+    async (threadId) => {
+      if (!threadId) return;
+      await remoteMessaging.markThreadRead(threadId);
     },
-    [currentActor, isRemoteMessagingEnabled, remoteMessaging]
+    [remoteMessaging]
   );
 
-  useEffect(() => {
-    if (isRemoteMessagingEnabled) return;
-    const interval = setInterval(() => {
-      setConnectionStatus("syncing");
-      setTimeout(() => {
-        setThreads((prev) => {
-          if (!prev.length) return prev;
-          const targetIndex = Math.floor(Math.random() * prev.length);
-          const ping = SIMULATED_INCOMING_PINGS[Math.floor(Math.random() * SIMULATED_INCOMING_PINGS.length)];
-          const timestamp = Date.now();
-          return prev.map((thread, index) => {
-            if (index !== targetIndex) return thread;
-            const incoming = createMessage({
-              sender: thread.participants[0],
-              senderRole: thread.persona,
-              body: ping.body,
-              attachments: ping.attachments || [],
-              timestamp,
-              readBy: []
-            });
-            return {
-              ...thread,
-              messages: [...thread.messages, incoming],
-              lastUpdated: timestamp
-            };
-          });
-        });
-        setAlerts((prev) => {
-          const scenario = SIMULATED_ALERT_SCENARIOS[Math.floor(Math.random() * SIMULATED_ALERT_SCENARIOS.length)];
-          const entry = { ...scenario, id: `alert-${Date.now()}`, timestamp: Date.now() };
-          return [entry, ...prev].slice(0, 6);
-        });
-        setConnectionStatus("connected");
-      }, 700);
-    }, 25000);
-    return () => clearInterval(interval);
-  }, [isRemoteMessagingEnabled]);
+  // Simulation effect removed - using real-time remote messaging only
 
   const messagingValue = useMemo(
     () => ({
-      messages: threadSource,
-      threads: threadSource,
-      addMessage,
+      messages: remoteMessaging.threads,
+      threads: remoteMessaging.threads,
       sendMessage,
       markThreadRead,
       templates: MESSAGE_TEMPLATES,
-      alerts,
-      connectionStatus: messagingConnectionStatus,
+      alerts: [], // Alerts now handled separately, not part of messaging
+      connectionStatus: remoteMessaging.connectionStatus,
       currentUser: currentActor
     }),
-    [threadSource, addMessage, sendMessage, markThreadRead, alerts, messagingConnectionStatus, currentActor]
+    [remoteMessaging.threads, remoteMessaging.connectionStatus, sendMessage, markThreadRead, currentActor]
   );
 
   useEffect(() => {
@@ -539,37 +316,40 @@ function App() {
   }, []);
 
   return (
-    <MessagingContext.Provider value={messagingValue}>
-      {splashVisible && (
-        <div
-          className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
-            splashFade ? "opacity-0" : "opacity-100"
-          }`}
-        >
-            <div className="flex flex-col items-center gap-6">
-              <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
-                <img
-                  src="/B Logo Mark.png"
-                  alt="Break"
-                  className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-                />
+    <AppErrorBoundary>
+      <ToastProvider />
+      <MessagingContext.Provider value={messagingValue}>
+        {splashVisible && (
+          <div
+            className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
+              splashFade ? "opacity-0" : "opacity-100"
+            }`}
+          >
+              <div className="flex flex-col items-center gap-6">
+                <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
+                  <img
+                    src="/B Logo Mark.png"
+                    alt="Break"
+                    className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                  />
+                </div>
+                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
+                  <div className="h-full w-full bg-white/80" style={{ animation: "loaderBar 1.4s ease-in-out infinite" }} />
+                </div>
               </div>
-              <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full w-full bg-white/80" style={{ animation: "loaderBar 1.4s ease-in-out infinite" }} />
-              </div>
-            </div>
-        </div>
-      )}
-      <BrowserRouter>
-        <AppRoutes
-          session={session}
-          authModalOpen={authModalOpen}
-          setAuthModalOpen={setAuthModalOpen}
-          handleSignOut={handleSignOut}
-          authLoading={authLoading}
-        />
-      </BrowserRouter>
-    </MessagingContext.Provider>
+          </div>
+        )}
+        <BrowserRouter>
+          <AppRoutes
+            session={session}
+            authModalOpen={authModalOpen}
+            setAuthModalOpen={setAuthModalOpen}
+            handleSignOut={handleSignOut}
+            authLoading={authLoading}
+          />
+        </BrowserRouter>
+      </MessagingContext.Provider>
+    </AppErrorBoundary>
   );
 }
 
@@ -793,7 +573,9 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminDashboard session={session} />
+              <RouteErrorBoundaryWrapper routeName="Admin Dashboard">
+                <AdminDashboard session={session} />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />
@@ -853,7 +635,9 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminOutreachPage session={session} />
+              <RouteErrorBoundaryWrapper routeName="Outreach">
+                <AdminOutreachPage session={session} />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />
@@ -937,7 +721,9 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminUsersPage />
+              <RouteErrorBoundaryWrapper routeName="User Management">
+                <AdminUsersPage />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />
@@ -949,7 +735,9 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminBrandsPage session={session} />
+              <RouteErrorBoundaryWrapper routeName="Brands CRM">
+                <AdminBrandsPage session={session} />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />
@@ -982,7 +770,9 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               ]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminMessagingPage />
+              <RouteErrorBoundaryWrapper routeName="Messaging">
+                <AdminMessagingPage />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />
@@ -1018,7 +808,23 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.FOUNDER]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminFinancePage session={session} />
+              <RouteErrorBoundaryWrapper routeName="Finance">
+                <AdminFinancePage session={session} />
+              </RouteErrorBoundaryWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/revenue"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.FOUNDER]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="Revenue">
+                <AdminRevenuePage />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />

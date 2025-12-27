@@ -24,6 +24,7 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
 
   const {
     title,
+    titleBadge, // Phase 6: Support for beta badge
     subtitle,
     orientation,
     queue,
@@ -126,7 +127,12 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
 
   return (
     <DashboardShell
-      title={title}
+      title={titleBadge === "beta" ? (
+        <div className="flex items-center gap-3">
+          <span>{title}</span>
+          <BetaBadge variant="subtle" />
+        </div>
+      ) : title}
       subtitle={subtitle}
       role={config.role}
       navLinks={navLinks}

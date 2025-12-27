@@ -61,3 +61,33 @@ export async function logWorkflowEvent(dealId: string, message: string, userId?:
     return { ok: false, error: "Failed to log workflow event" };
   }
 }
+
+export async function changeStage(dealId: string, newStage: string, userId?: string) {
+  console.log("[dealWorkflowService] changeStage called:", { dealId, newStage, userId });
+
+  try {
+    const deal = await prisma.deal.findUnique({
+      where: { id: dealId }
+    });
+
+    if (!deal) {
+      return { success: false, error: "Deal not found", status: 404 };
+    }
+
+    const updated = await prisma.deal.update({
+      where: { id: dealId },
+      data: {
+        stage: newStage as any,
+        updatedAt: new Date()
+      }
+    });
+
+    // Log the stage change
+    await logWorkflowEvent(dealId, `Stage changed to ${newStage}`, userId);
+
+    return { success: true, deal: updated };
+  } catch (error) {
+    console.error("[dealWorkflowService] Error in changeStage:", error);
+    return { success: false, error: "Failed to change deal stage", status: 500 };
+  }
+}

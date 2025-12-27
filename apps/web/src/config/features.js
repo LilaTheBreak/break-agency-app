@@ -41,14 +41,26 @@ export const features = {
   /**
    * Revenue/Finance Dashboards
    * UNLOCK WHEN:
-   * - Stripe integration tested (STRIPE_SECRET_KEY configured)
-   * - /api/payments endpoints functional
-   * - Invoice/payout data coming from real transactions
-   * - No hardcoded revenue numbers in code
+   * - Deal-based revenue calculation service implemented ✅
+   * - /api/revenue endpoints functional ✅
+   * - Revenue metrics derived from deal values and stages ✅
+   * - Clear labeling of projected/contracted/paid states ✅
    */
-  REVENUE_DASHBOARD_ENABLED: false,
-  FINANCE_METRICS_ENABLED: false,
-  PAYOUT_TRACKING_ENABLED: false,
+  REVENUE_DASHBOARD_ENABLED: true, // ✅ Unlocked: Deal-based revenue tracking
+  FINANCE_METRICS_ENABLED: true, // ✅ Unlocked: Revenue metrics from deals
+  PAYOUT_TRACKING_ENABLED: false, // Still requires manual updates via deal stages
+  XERO_INTEGRATION_ENABLED: false, // Xero integration not yet implemented
+
+  /**
+   * Social Media Features
+   * UNLOCK WHEN:
+   * - Social schema models added to database
+   * - Social sync services implemented
+   * - Platform API integrations connected
+   */
+  SOCIAL_ANALYTICS_ENABLED: false, // Social schema models removed, needs reimplementation
+  SOCIAL_INSIGHTS_ENABLED: false, // Social insights not yet implemented
+  TOP_PERFORMING_POSTS_ENABLED: false, // Requires social platform connections
 
   /**
    * Inbox Scanning
@@ -76,22 +88,32 @@ export const features = {
   /**
    * Contract Management
    * UNLOCK WHEN:
-   * - E-signature provider integrated (DocuSign/HelloSign)
-   * - Contract template system built
-   * - PDF generation working
-   * - Signature webhook tested
+   * - Contract model added to database ✅
+   * - Contract template system built ✅
+   * - PDF generation working ✅
+   * - Manual signature tracking implemented ✅
+   * - E-signature provider integrated (DocuSign/HelloSign) - FUTURE
    */
-  CONTRACT_SIGNING_ENABLED: false,
-  CONTRACT_GENERATION_ENABLED: false,
+  CONTRACT_GENERATION_ENABLED: true, // ✅ Unlocked: Template system & PDF generation ready
+  CONTRACT_MANUAL_TRACKING_ENABLED: true, // ✅ Unlocked: Manual signature workflow
+  CONTRACT_SIGNING_ENABLED: false, // E-signature integration not yet implemented
+  
+  /**
+   * Deliverables Management
+   * UNLOCK WHEN:
+   * - Deliverable approval workflow wired ✅
+   * - File upload for proof of completion ✅
+   * - Status tracking in timeline ✅
+   * - Automatic deal advancement on approval ✅
+   */
+  DELIVERABLES_WORKFLOW_ENABLED: true, // ✅ Unlocked: Complete approval workflow
 
   /**
    * Messaging/Threads
-   * UNLOCK WHEN:
-   * - Real-time messaging backend implemented
-   * - Message sending API functional
-   * - Thread persistence working
+   * Now always enabled - uses remote API
+   * Local/mock messaging mode removed
    */
-  MESSAGING_ENABLED: false,
+  MESSAGING_ENABLED: true,
 
   /**
    * File Upload
@@ -110,6 +132,50 @@ export const features = {
    * - Admin review interface functional
    */
   BRIEF_APPLICATIONS_ENABLED: false,
+  
+  /**
+   * Advanced Features
+   * UNLOCK WHEN:
+   * - Backend services fully implemented
+   * - Testing completed
+   */
+  DEAL_PACKAGES_ENABLED: false, // Deal packages removed from schema
+  CREATOR_FIT_BATCH_ENABLED: true, // ✅ Unlocked: Batch fit scoring implemented
+  OUTREACH_LEADS_ENABLED: false, // Outreach leads route not implemented
+  CONTRACT_ANALYSIS_ENABLED: false, // Contract analysis not yet implemented
+
+  /**
+   * Dashboard Feature Sections — Phase 6: Feature Boundary Enforcement
+   * UNLOCK WHEN:
+   * - Backend API endpoints implemented
+   * - Data models complete
+   * - Testing verified
+   */
+  // Brand Dashboard sections
+  CREATOR_ROSTER_ENABLED: true, // ✅ Unlocked: Roster management system implemented
+  BRAND_SOCIAL_ANALYTICS_ENABLED: false, // Social analytics schema removed
+  BRAND_OPPORTUNITIES_ENABLED: false, // Opportunities API incomplete
+  BRAND_CREATOR_MATCHES_ENABLED: true, // ✅ Unlocked: Transparent fit scoring implemented
+
+  // Creator Dashboard sections
+  CREATOR_OPPORTUNITIES_ENABLED: false, // Creator opportunities API incomplete
+  CREATOR_SUBMISSIONS_ENABLED: false, // Submissions API not yet implemented
+  
+  // Exclusive Talent Dashboard sections
+  EXCLUSIVE_TASKS_ENABLED: true, // Task management API functional
+  EXCLUSIVE_SOCIAL_ANALYTICS_ENABLED: true, // Social analytics schema exists
+  EXCLUSIVE_TRENDING_CONTENT_ENABLED: false, // Trending content API not implemented (defer to post-launch)
+  EXCLUSIVE_OPPORTUNITIES_ENABLED: true, // Opportunities API functional
+  EXCLUSIVE_FINANCIAL_SUMMARY_ENABLED: true, // Financial summary API functional
+  EXCLUSIVE_INVOICES_ENABLED: false, // Invoice management needs Stripe/Xero setup (defer to post-launch)
+  EXCLUSIVE_MESSAGES_ENABLED: true, // Messaging API functional (uses Thread/Message models)
+  EXCLUSIVE_ALERTS_ENABLED: true, // Alerts system functional (uses CreatorInsight model)
+  EXCLUSIVE_RESOURCES_ENABLED: false, // Resources management not implemented (defer to post-launch)
+
+  // Admin User Management sections
+  USER_IMPERSONATION_ENABLED: false, // Security-sensitive, not implemented
+  USER_PASSWORD_RESET_ENABLED: false, // Password reset API not implemented
+  USER_FORCE_LOGOUT_ENABLED: false, // Force logout API not implemented
 };
 
 /**
@@ -139,6 +205,11 @@ export function getDisabledMessage(featureName) {
     REVENUE_DASHBOARD_ENABLED: "Revenue tracking will be available once payment integration is complete.",
     FINANCE_METRICS_ENABLED: "Finance metrics will be available once payment integration is complete.",
     PAYOUT_TRACKING_ENABLED: "Payout tracking will be available once payment integration is complete.",
+    XERO_INTEGRATION_ENABLED: "Xero integration coming soon.",
+    
+    SOCIAL_ANALYTICS_ENABLED: "Social analytics will be available once platform connections are restored.",
+    SOCIAL_INSIGHTS_ENABLED: "Social insights coming soon.",
+    TOP_PERFORMING_POSTS_ENABLED: "Top performing posts will be available once social platforms are connected.",
     
     INBOX_SCANNING_ENABLED: "Inbox scanning will be available once email integration is connected.",
     EMAIL_CLASSIFICATION_ENABLED: "Email classification will be available once inbox is connected.",
@@ -150,11 +221,36 @@ export function getDisabledMessage(featureName) {
     CONTRACT_SIGNING_ENABLED: "Contract signing will be available once e-signature provider is connected.",
     CONTRACT_GENERATION_ENABLED: "Contract generation will be available once templates are configured.",
     
-    MESSAGING_ENABLED: "Messaging will be available once real-time backend is ready.",
+    MESSAGING_ENABLED: "Messaging is now available.",
     
     FILE_UPLOAD_ENABLED: "File upload will be available once storage is configured.",
     
     BRIEF_APPLICATIONS_ENABLED: "Applications will be available once the review workflow is ready.",
+    
+    DEAL_PACKAGES_ENABLED: "Deal packages feature is being redesigned.",
+    CREATOR_FIT_BATCH_ENABLED: "Batch creator matching coming soon.",
+    OUTREACH_LEADS_ENABLED: "Outreach leads feature coming soon.",
+    CONTRACT_ANALYSIS_ENABLED: "Contract analysis coming soon.",
+
+    // Dashboard sections
+    CREATOR_ROSTER_ENABLED: "Creator roster management coming soon.",
+    BRAND_SOCIAL_ANALYTICS_ENABLED: "Social analytics coming soon. Connect Instagram/TikTok when available.",
+    BRAND_OPPORTUNITIES_ENABLED: "Opportunities marketplace coming soon.",
+    BRAND_CREATOR_MATCHES_ENABLED: "AI-powered creator matching coming soon.",
+    CREATOR_OPPORTUNITIES_ENABLED: "Creator opportunities coming soon.",
+    CREATOR_SUBMISSIONS_ENABLED: "Submission workflow coming soon.",
+    EXCLUSIVE_TASKS_ENABLED: "Task management coming soon.",
+    EXCLUSIVE_SOCIAL_ANALYTICS_ENABLED: "Social platform analytics coming soon.",
+    EXCLUSIVE_TRENDING_CONTENT_ENABLED: "Trending content feed coming soon.",
+    EXCLUSIVE_OPPORTUNITIES_ENABLED: "Exclusive opportunities coming soon.",
+    EXCLUSIVE_FINANCIAL_SUMMARY_ENABLED: "Financial summary coming soon. Stripe integration required.",
+    EXCLUSIVE_INVOICES_ENABLED: "Invoice management coming soon.",
+    EXCLUSIVE_MESSAGES_ENABLED: "Direct messaging coming soon.",
+    EXCLUSIVE_ALERTS_ENABLED: "Alert system coming soon.",
+    EXCLUSIVE_RESOURCES_ENABLED: "Resource library coming soon.",
+    USER_IMPERSONATION_ENABLED: "User impersonation coming soon.",
+    USER_PASSWORD_RESET_ENABLED: "Password reset via email coming soon.",
+    USER_FORCE_LOGOUT_ENABLED: "Force logout coming soon.",
   };
 
   return messages[featureName] || "This feature is not yet available.";

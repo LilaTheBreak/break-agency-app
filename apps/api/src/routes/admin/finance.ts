@@ -350,6 +350,8 @@ router.post("/payouts", async (req: Request, res: Response) => {
 
     const payout = await prisma.payout.create({
       data: {
+        id: `payout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        updatedAt: new Date(),
         ...parsed.data,
         createdBy: req.user?.id
       }
@@ -395,7 +397,7 @@ router.get("/payouts", async (req: Request, res: Response) => {
             Brand: true
           }
         },
-        Creator: {
+        Talent: {
           include: {
             User: true
           }
@@ -420,7 +422,7 @@ router.get("/payouts/:id", async (req: Request, res: Response) => {
             Brand: true
           }
         },
-        Creator: {
+        Talent: {
           include: {
             User: true
           }
@@ -547,6 +549,7 @@ router.post("/reconciliation", async (req: Request, res: Response) => {
 
     const reconciliation = await prisma.financeReconciliation.create({
       data: {
+        id: `reconciliation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...parsed.data,
         confirmedAt: parsed.data.confirmedAt || new Date(),
         createdBy: req.user?.id || ""
@@ -615,6 +618,7 @@ router.post("/documents", async (req: Request, res: Response) => {
 
     const document = await prisma.financeDocument.create({
       data: {
+        id: `document_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...parsed.data,
         uploadedBy: req.user?.id || ""
       }
@@ -674,16 +678,9 @@ router.get("/activity", async (req: Request, res: Response) => {
     const activities = await prisma.financeActivityLog.findMany({
       where,
       take: parseInt(limit as string),
-      orderBy: { createdAt: "desc" },
-      include: {
-        CreatedByUser: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
+      orderBy: { createdAt: "desc" }
+      // Note: CreatedByUser relation not available in schema
+      // Fetch user details separately if needed
     });
 
     res.json(activities || []);
@@ -731,7 +728,8 @@ router.post("/xero/connect", async (req: Request, res: Response) => {
         tenantId,
         accessToken,
         refreshToken,
-        expiresAt: expiresAt ? new Date(expiresAt) : null
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        updatedAt: new Date()
       }
     });
 

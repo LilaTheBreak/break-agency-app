@@ -27,6 +27,13 @@ import authRouter from "./auth.js";
 import onboardingRouter from "./onboarding.js";
 import adminUsersRouter from "./adminUsers.js";
 
+// Social OAuth routes
+import instagramAuthRouter from "./auth/instagram.js";
+import tiktokAuthRouter from "./auth/tiktok.js";
+// TODO: Convert youtube auth to ES6 module
+// const youtubeAuthRouter = require("./auth/youtube");
+import socialAnalyticsRouter from "./analytics/socials.js";
+
 // ❗ You referenced these in your router but did not import them
 // import agentRouter from "./agent.js";
 // import brandCRMRouter from "./brandCRM.js";
@@ -104,6 +111,13 @@ router.use(documentExtractionRouter);
 router.use(campaignsRouter);
 router.use("/deck", deckRouter);
 router.use("/admin", adminUsersRouter);
+
+// Social media OAuth and analytics
+router.use("/auth/instagram", instagramAuthRouter);
+router.use("/auth/tiktok", tiktokAuthRouter);
+// TODO: Restore YouTube auth when converted to ES6
+// router.use("/auth/youtube", youtubeAuthRouter);
+router.use("/analytics/socials", socialAnalyticsRouter);
 
 /* -------------------------------------------------------
    PROFILE ROUTES (authenticated)

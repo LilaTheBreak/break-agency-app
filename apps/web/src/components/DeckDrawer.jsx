@@ -32,6 +32,7 @@ export default function DeckDrawer({
 
   // UI state
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState('');
   const [summarizing, setSummarizing] = useState(null); // "intro" | "summary" | "commentary" | null
   const [summaryPreview, setSummaryPreview] = useState(null); // { field, text }
 
@@ -111,6 +112,8 @@ export default function DeckDrawer({
 
   const handleGeneratePDF = async () => {
     setGeneratingPDF(true);
+    setGenerationProgress('Preparing deck data...');
+    
     try {
       const deckData = {
         context: {
@@ -132,6 +135,7 @@ export default function DeckDrawer({
         },
       };
 
+      setGenerationProgress('Generating PDF with AI...');
       const response = await fetch("/api/deck/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -140,6 +144,7 @@ export default function DeckDrawer({
 
       if (!response.ok) throw new Error("PDF generation failed");
 
+      setGenerationProgress('Downloading deck...');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -150,9 +155,12 @@ export default function DeckDrawer({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      setGenerationProgress('');
+      alert("✓ Deck generated successfully!");
       onClose();
     } catch (err) {
       console.error("PDF generation error:", err);
+      setGenerationProgress('');
       alert("Unable to generate PDF. Please try again.");
     } finally {
       setGeneratingPDF(false);
@@ -204,9 +212,15 @@ export default function DeckDrawer({
               type="button"
               onClick={handleGeneratePDF}
               disabled={generatingPDF || !selectedBrand}
-              className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50"
+              className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white disabled:opacity-50 flex items-center gap-2"
             >
-              {generatingPDF ? "Generating..." : "Generate PDF"}
+              {generatingPDF && (
+                <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+              )}
+              {generationProgress || (generatingPDF ? "Generating..." : "Generate PDF")}
             </button>
           </div>
         </div>

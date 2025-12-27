@@ -29,6 +29,7 @@ export async function createGoalVersion(
   try {
     await prisma.creatorGoalVersion.create({
       data: {
+        id: `version_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorGoalId: goalId,
         snapshot: snapshot as any,
         changeType,

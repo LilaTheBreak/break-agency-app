@@ -1,6 +1,7 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DealStage } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
+import { requireRole } from '../middleware/requireRole.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -21,7 +22,7 @@ router.get('/public', async (req, res) => {
 });
 
 // Get all opportunities (admin only)
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN', 'BRAND']), async (req, res) => {
   try {
     const opportunities = await prisma.opportunity.findMany({
       orderBy: { createdAt: 'desc' },
@@ -63,7 +64,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create opportunity (admin only)
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN', 'BRAND']), async (req, res) => {
   try {
     const {
       brand,
@@ -107,7 +108,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update opportunity (admin only)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN', 'BRAND']), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -149,7 +150,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete opportunity (admin only)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -299,5 +300,199 @@ router.get('/:id/application', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch application' });
   }
 });
+
+// ===== ADMIN ENDPOINTS =====
+
+// GET /api/opportunities/admin/applications - Get all applications for admin review
+router.get('/admin/applications', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN']), async (req, res) => {
+  try {
+    const { status, opportunityId } = req.query;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (opportunityId) where.opportunityId = opportunityId;
+
+    const applications = await prisma.opportunityApplication.findMany({
+      where,
+      include: {
+        opportunity: {
+          select: {
+            id: true,
+            title: true,
+            brand: true,
+            payment: true,
+            deadline: true,
+            status: true,
+          },
+        },
+        User: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+            Talent: {
+              select: {
+                id: true,
+                instagramHandle: true,
+                tiktokHandle: true,
+                youtubeHandle: true,
+                followers: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { appliedAt: 'desc' },
+    });
+
+    res.json({ applications });
+  } catch (error) {
+    console.error('[OPPORTUNITIES] Error fetching applications:', error);
+    res.status(500).json({ error: 'Failed to fetch applications' });
+  }
+});
+
+// PATCH /api/opportunities/admin/applications/:id - Update application status (admin only)
+router.patch('/admin/applications/:id', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+
+    if (!['pending', 'shortlisted', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const application = await prisma.opportunityApplication.update({
+      where: { id },
+      data: {
+        status,
+        notes,
+        reviewedAt: new Date(),
+      },
+      include: {
+        opportunity: true,
+        User: {
+          include: {
+            Talent: true,
+          },
+        },
+      },
+    });
+
+    // If approved, auto-create deal
+    if (status === 'approved') {
+      await createDealFromApplication(application);
+    }
+
+    res.json({ application });
+  } catch (error) {
+    console.error('[OPPORTUNITIES] Error updating application:', error);
+    res.status(500).json({ error: 'Failed to update application' });
+  }
+});
+
+// PATCH /api/opportunities/:id/status - Update opportunity status (admin only)
+router.patch('/:id/status', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN', 'BRAND']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, isActive } = req.body;
+
+    const updateData: any = {};
+    if (status !== undefined) updateData.status = status;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    const opportunity = await prisma.opportunity.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json({ opportunity });
+  } catch (error) {
+    console.error('[OPPORTUNITIES] Error updating opportunity status:', error);
+    res.status(500).json({ error: 'Failed to update opportunity status' });
+  }
+});
+
+/**
+ * Helper function to auto-create deal from approved application
+ */
+async function createDealFromApplication(application: any) {
+  try {
+    const userId = application.creatorId;
+    const opportunity = application.opportunity;
+
+    // Get or create brand
+    let brand = await prisma.brand.findFirst({
+      where: { name: opportunity.brand },
+    });
+
+    if (!brand) {
+      brand = await prisma.brand.create({
+        data: {
+          id: `brand-${Date.now()}`,
+          name: opportunity.brand,
+          values: [],
+          restrictedCategories: [],
+          preferredCreatorTypes: [],
+        },
+      });
+    }
+
+    // Get user's talent profile
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { Talent: true },
+    });
+
+    if (!user?.Talent) {
+      throw new Error('User does not have a talent profile');
+    }
+
+    // Parse payment to extract value
+    const paymentMatch = opportunity.payment.match(/[\d,]+/);
+    const value = paymentMatch ? parseFloat(paymentMatch[0].replace(/,/g, '')) : 0;
+
+    // Create deal
+    const deal = await prisma.deal.create({
+      data: {
+        id: `deal-${Date.now()}-${userId}`,
+        userId: userId,
+        talentId: user.Talent.id,
+        brandId: brand.id,
+        brandName: brand.name,
+        stage: DealStage.NEW_LEAD,
+        value: value,
+        currency: 'USD',
+        notes: `Auto-created from opportunity: ${opportunity.title}\n\nCreator pitch: ${application.pitch || 'N/A'}\nProposed rate: ${application.proposedRate ? `$${application.proposedRate}` : 'N/A'}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    // Create timeline entry
+    await prisma.dealTimeline.create({
+      data: {
+        id: `timeline-${Date.now()}`,
+        dealId: deal.id,
+        userId: userId,
+        event: 'DEAL_CREATED',
+        description: `Deal created from approved application to opportunity: ${opportunity.title}`,
+        metadata: {
+          opportunityId: opportunity.id,
+          applicationId: application.id,
+          source: 'marketplace',
+        },
+        createdAt: new Date(),
+      },
+    });
+
+    console.log(`[OPPORTUNITIES] Auto-created deal ${deal.id} from application ${application.id}`);
+    return deal;
+  } catch (error) {
+    console.error('[OPPORTUNITIES] Error creating deal from application:', error);
+    // Don't throw - application approval should still succeed
+  }
+}
 
 export default router;

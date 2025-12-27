@@ -21,6 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.940.0",
     "@aws-sdk/s3-request-presigner": "^3.940.0",
+    "@paralleldrive/cuid2": "^3.0.4",
     "@prisma/client": "5.22.0",
     "@tensorflow/tfjs-node": "^4.22.0",
     "@types/multer": "^2.0.0",
@@ -41,6 +42,7 @@
     "jsdom": "^27.3.0",
     "jsonwebtoken": "^9.0.2",
     "mammoth": "^1.6.0",
+    "marked": "^17.0.1",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "node-cron": "^3.0.3",
@@ -49,6 +51,7 @@
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.17.2",
     "prom-client": "^14.2.0",
+    "puppeteer": "^24.34.0",
     "resend": "^6.4.2",
     "stripe": "^15.5.0",
     "tesseract.js": "^5.1.0",

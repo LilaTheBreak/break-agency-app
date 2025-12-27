@@ -33,27 +33,35 @@ router.get("/url", requireAuth, (req, res) => {
 });
 
 router.get("/callback", async (req, res) => {
+  const code = typeof req.query.code === "string" ? req.query.code : null;
+  const state = typeof req.query.state === "string" ? req.query.state : null;
+  const userId = state || req.user?.id;
+  
+  console.log("[INTEGRATION] Gmail OAuth callback received", {
+    hasCode: !!code,
+    userId: userId || "unknown",
+    timestamp: new Date().toISOString()
+  });
+  
   console.log("[GMAIL CALLBACK] Received callback request");
   console.log("[GMAIL CALLBACK] Query params:", req.query);
   console.log("[GMAIL CALLBACK] Headers:", req.headers);
-  
-  const code = typeof req.query.code === "string" ? req.query.code : null;
-  const state = typeof req.query.state === "string" ? req.query.state : null;
   
   console.log("[GMAIL CALLBACK] Code:", code ? "present" : "missing");
   console.log("[GMAIL CALLBACK] State (userId):", state);
   
   if (!code) {
     console.error("[GMAIL CALLBACK] ERROR: Missing authorization code");
+    console.error("[INTEGRATION] Gmail OAuth failed: Missing authorization code");
     return res.status(400).json({ error: true, message: "Missing authorization code" });
   }
   
   // State contains the userId
-  const userId = state || req.user?.id;
   console.log("[GMAIL CALLBACK] Resolved userId:", userId);
   
   if (!userId) {
     console.error("[GMAIL CALLBACK] ERROR: Missing user ID (no state and no req.user)");
+    console.error("[INTEGRATION] Gmail OAuth failed: Missing user ID");
     return res.status(400).json({ error: true, message: "Missing user ID" });
   }
   
@@ -87,6 +95,7 @@ router.get("/callback", async (req, res) => {
         idToken: tokens.idToken ?? null,
       },
       create: {
+        updatedAt: new Date(),
         userId,
         accessToken: tokens.accessToken ?? "",
         refreshToken: tokens.refreshToken,
@@ -98,6 +107,11 @@ router.get("/callback", async (req, res) => {
     });
     
     console.log(`[GMAIL CALLBACK] Successfully saved tokens for user ${userId}`);
+    console.log("[INTEGRATION] Gmail OAuth successful", {
+      userId,
+      hasRefreshToken: !!tokens.refreshToken,
+      timestamp: new Date().toISOString()
+    });
     const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
     console.log(`[GMAIL CALLBACK] Redirecting to:`, redirectUrl);
     res.redirect(302, redirectUrl);

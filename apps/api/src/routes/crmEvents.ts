@@ -20,13 +20,13 @@ router.get("/", async (req: Request, res: Response) => {
     if (status) where.status = status as string;
     if (owner) where.owner = owner as string;
 
-    const events = await prisma.crmEvent.findMany({
+    const events = await prisma.crmTask.findMany({
       where,
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -51,13 +51,13 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const event = await prisma.crmEvent.findUnique({
+    const event = await prisma.crmTask.findUnique({
       where: { id },
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
             website: true,
             industry: true,
           },
@@ -104,8 +104,9 @@ router.post("/", async (req: Request, res: Response) => {
       });
     }
 
-    const event = await prisma.crmEvent.create({
+    const event = await prisma.crmTask.create({
       data: {
+        id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         eventName,
         brandId,
         eventType,
@@ -126,7 +127,7 @@ router.post("/", async (req: Request, res: Response) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -161,7 +162,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
       owner,
     } = req.body;
 
-    const existing = await prisma.crmEvent.findUnique({ where: { id } });
+    const existing = await prisma.crmTask.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: "Event not found" });
     }
@@ -183,14 +184,14 @@ router.patch("/:id", async (req: Request, res: Response) => {
     if (linkedTalentIds !== undefined) updateData.linkedTalentIds = linkedTalentIds;
     if (owner !== undefined) updateData.owner = owner;
 
-    const updated = await prisma.crmEvent.update({
+    const updated = await prisma.crmTask.update({
       where: { id },
       data: updateData,
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -211,12 +212,12 @@ router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const existing = await prisma.crmEvent.findUnique({ where: { id } });
+    const existing = await prisma.crmTask.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    await prisma.crmEvent.delete({ where: { id } });
+    await prisma.crmTask.delete({ where: { id } });
 
     res.status(204).send();
   } catch (error) {
@@ -238,7 +239,7 @@ router.post("/:id/notes", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing required fields: text, author" });
     }
 
-    const event = await prisma.crmEvent.findUnique({ where: { id } });
+    const event = await prisma.crmTask.findUnique({ where: { id } });
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
@@ -249,7 +250,7 @@ router.post("/:id/notes", async (req: Request, res: Response) => {
       text,
     };
 
-    const updated = await prisma.crmEvent.update({
+    const updated = await prisma.crmTask.update({
       where: { id },
       data: {
         notes: [...(Array.isArray(event.notes) ? event.notes : []), newNote],
@@ -259,7 +260,7 @@ router.post("/:id/notes", async (req: Request, res: Response) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -290,6 +291,7 @@ router.post("/batch-import", async (req: Request, res: Response) => {
       try {
         const created = await prisma.crmEvent.create({
           data: {
+            id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             eventName: event.eventName || "Untitled Event",
             brandId: event.brandId,
             eventType: event.eventType || "Other",

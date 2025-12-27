@@ -8,6 +8,8 @@ import { SignupSchema, LoginSchema } from "./authEmailSchemas.js";
 import { googleOAuthConfig } from "../config/google.js";
 import { requireAuth } from "../middleware/auth.js";
 import { authRateLimiter, sensitiveOperationLimiter } from "../middleware/rateLimiter.js";
+import { logAuthEvent, logSuperAdminAction } from "../lib/auditLogger.js";
+import { sendEmail } from "../services/emailService.js";
 
 const router = Router();
 
@@ -64,11 +66,14 @@ router.get("/google/url", (_req, res) => {
    2. GOOGLE OAUTH CALLBACK
 --------------------------------------------------------- */
 router.get("/google/callback", async (req: Request, res: Response) => {
-  console.log(">>> GOOGLE OAUTH CALLBACK HIT", req.query);
+  console.log("[INTEGRATION] Google OAuth callback received", {
+    hasCode: !!req.query.code,
+    timestamp: new Date().toISOString()
+  });
   try {
     const code = typeof req.query.code === "string" ? req.query.code : null;
     if (!code) {
-      console.error(">>> ERROR: Missing authorization code");
+      console.error("[INTEGRATION] Google OAuth failed: Missing authorization code");
       return res.status(400).json({ error: "Missing authorization code" });
     }
 
@@ -109,6 +114,7 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     let assignedRole: string;
     if (isSuperAdmin) {
       assignedRole = "SUPERADMIN";
+      console.log("[AUTH] SUPERADMIN login detected:", normalizedEmail);
     } else if (existingUser) {
       assignedRole = existingUser.role;
     } else {
@@ -141,6 +147,13 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     } else {
       console.log("[INFO] OAuth user authenticated", { role: assignedRole });
     }
+    
+    console.log("[INTEGRATION] Google OAuth successful", {
+      email: normalizedEmail,
+      role: assignedRole,
+      isNewUser: !existingUser,
+      timestamp: new Date().toISOString()
+    });
 
     /* ------------------------------------------
        Store Google Account tokens for Calendar sync
@@ -176,6 +189,25 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     ------------------------------------------ */
     const token = createAuthToken({ id: user.id });
     setAuthCookie(res, token);
+
+    // Log SUPERADMIN login for security audit
+    if (isSuperAdmin) {
+      try {
+        await logAuthEvent(req, {
+          action: "SUPERADMIN_LOGIN_OAUTH",
+          entityType: "User",
+          entityId: user.id,
+          metadata: {
+            email: normalizedEmail,
+            method: "google_oauth",
+            role: assignedRole
+          }
+        });
+        console.log("[AUDIT] SUPERADMIN login logged:", normalizedEmail);
+      } catch (logError) {
+        console.error("[AUDIT] Failed to log SUPERADMIN login:", logError);
+      }
+    }
 
     /* ------------------------------------------
        Redirect user to correct dashboard with token
@@ -381,7 +413,195 @@ router.get("/me", async (req: Request, res: Response) => {
 --------------------------------------------------------- */
 router.post("/logout", (_req: Request, res: Response) => {
   clearAuthCookie(res);
-  res.json({ success: true });
+  return res.json({ success: true });
+});
+
+/* ---------------------------------------------------------
+   PASSWORD RESET FLOW
+--------------------------------------------------------- */
+
+// POST /auth/forgot-password - Request password reset
+router.post("/forgot-password", authRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail }
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      console.log(`[AUTH] Password reset requested for non-existent email: ${normalizedEmail}`);
+      return res.json({ 
+        success: true, 
+        message: "If that email exists, a password reset link has been sent" 
+      });
+    }
+
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+    // Hash token before storing
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+    // Store hashed token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken: hashedToken,
+        resetTokenExpiry
+      }
+    });
+
+    // Send reset email
+    const resetUrl = `${FRONTEND_ORIGIN}/reset-password?token=${resetToken}`;
+    
+    await sendEmail({
+      to: user.email,
+      template: "password-reset",
+      data: { resetUrl },
+      userId: user.id
+    });
+
+    // Log password reset request
+    await logAuthEvent(req, {
+      action: "PASSWORD_RESET_REQUESTED",
+      entityType: "User",
+      entityId: user.id,
+      metadata: {
+        email: user.email,
+        expiresAt: resetTokenExpiry.toISOString()
+      }
+    });
+
+    console.log(`[AUTH] Password reset email sent to: ${normalizedEmail}`);
+    
+    return res.json({ 
+      success: true, 
+      message: "If that email exists, a password reset link has been sent" 
+    });
+  } catch (error) {
+    console.error("[AUTH] Password reset request error:", error);
+    return res.status(500).json({ error: "Failed to process password reset request" });
+  }
+});
+
+// POST /auth/reset-password - Reset password with token
+router.post("/reset-password", authRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+    
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ error: "Reset token is required" });
+    }
+
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters" });
+    }
+
+    // Hash the token from URL to compare with stored hash
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Find user with valid token
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: hashedToken,
+        resetTokenExpiry: {
+          gt: new Date() // Token not expired
+        }
+      }
+    });
+
+    if (!user) {
+      console.log(`[AUTH] Invalid or expired reset token attempted`);
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update password and clear reset token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null
+      }
+    });
+
+    // Log password reset completion
+    await logAuthEvent(req, {
+      action: "PASSWORD_RESET_COMPLETED",
+      entityType: "User",
+      entityId: user.id,
+      metadata: {
+        email: user.email,
+        resetAt: new Date().toISOString()
+      }
+    });
+
+    console.log(`[AUTH] Password successfully reset for: ${user.email}`);
+    
+    return res.json({ 
+      success: true, 
+      message: "Password has been reset successfully. You can now login." 
+    });
+  } catch (error) {
+    console.error("[AUTH] Password reset error:", error);
+    return res.status(500).json({ error: "Failed to reset password" });
+  }
+});
+
+// GET /auth/verify-reset-token - Verify if reset token is valid
+router.get("/verify-reset-token", async (req: Request, res: Response) => {
+  try {
+    const token = typeof req.query.token === "string" ? req.query.token : null;
+    
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    // Hash the token to compare
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Check if token exists and is not expired
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: hashedToken,
+        resetTokenExpiry: {
+          gt: new Date()
+        }
+      },
+      select: {
+        id: true,
+        email: true
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        valid: false, 
+        error: "Invalid or expired token" 
+      });
+    }
+
+    return res.json({ 
+      valid: true, 
+      email: user.email 
+    });
+  } catch (error) {
+    console.error("[AUTH] Token verification error:", error);
+    return res.status(500).json({ error: "Failed to verify token" });
+  }
 });
 
 export default router;

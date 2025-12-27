@@ -86,11 +86,28 @@ export async function getThreadById(req: Request, res: Response, next: NextFunct
 
 export async function syncInbox(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    console.log("[INTEGRATION] Gmail inbox sync requested", {
+      userId: req.user!.id,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!(await checkTokenAndHandleError(req.user!.id, res))) return;
 
     const stats = await syncInboxForUser(req.user!.id);
+    
+    console.log("[INTEGRATION] Gmail inbox sync completed", {
+      userId: req.user!.id,
+      messagesSynced: stats.messagesSynced || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     res.json({ message: "Gmail inbox sync completed.", ...stats });
   } catch (error) {
+    console.error("[INTEGRATION] Gmail inbox sync failed", {
+      userId: req.user!.id,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
     next(error);
   }
 }

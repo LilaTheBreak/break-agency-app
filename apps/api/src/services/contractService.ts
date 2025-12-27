@@ -1,9 +1,79 @@
 import prisma from "../lib/prisma.js";
 import { addTimelineEntry } from "./dealTimelineService.js";
+import { contractTemplateService } from "./contractTemplateService.js";
+import { pdfGenerationService } from "./pdfGenerationService.js";
+import { generateId } from "../lib/utils.js";
+
+/**
+ * Create contract from deal using template
+ */
+export async function createFromDeal(dealId: string) {
+  const contract = await contractTemplateService.createFromDeal(dealId);
+
+  await addTimelineEntry(dealId, "contract_created", {
+    contractId: contract.id,
+    title: contract.title
+  });
+
+  return contract;
+}
+
+/**
+ * Generate PDF for contract
+ */
+export async function generatePDF(id: string) {
+  const contract = await prisma.contract.findUnique({
+    where: { id },
+    include: {
+      Deal: {
+        include: {
+          Brand: true,
+          Talent: {
+            include: {
+              User: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!contract) {
+    throw new Error(`Contract ${id} not found`);
+  }
+
+  // Get contract text from terms
+  const contractText = await contractTemplateService.getContractText(id);
+  
+  if (!contractText) {
+    throw new Error(`Contract ${id} has no text to generate PDF from`);
+  }
+
+  // Generate PDF
+  const pdfUrl = await pdfGenerationService.generateAndStore(
+    contractText,
+    contract.id,
+    contract.title
+  );
+
+  // Update contract with PDF URL
+  const updated = await prisma.contract.update({
+    where: { id },
+    data: { pdfUrl }
+  });
+
+  await addTimelineEntry(contract.dealId || "no_deal_id", "contract_pdf_generated", {
+    contractId: contract.id,
+    pdfUrl
+  });
+
+  return updated;
+}
 
 export async function create(data: { dealId?: string; title: string }) {
   const contract = await prisma.contract.create({
     data: {
+      id: generateId(),
       dealId: data.dealId,
       title: data.title
     }
@@ -18,7 +88,21 @@ export async function create(data: { dealId?: string; title: string }) {
 }
 
 export async function get(id: string) {
-  return prisma.contract.findUnique({ where: { id } });
+  return prisma.contract.findUnique({ 
+    where: { id },
+    include: {
+      Deal: {
+        include: {
+          Brand: true,
+          Talent: {
+            include: {
+              User: true
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 export async function update(
@@ -32,7 +116,17 @@ export async function update(
 }
 
 export async function remove(id: string) {
+  const contract = await prisma.contract.findUnique({
+    where: { id }
+  });
+  
   await prisma.contract.delete({ where: { id } });
+
+  if (contract?.dealId) {
+    await addTimelineEntry(contract.dealId, "contract_deleted", {
+      contractId: id
+    });
+  }
 }
 
 export async function upload(id: string, fileUrl: string) {
@@ -67,13 +161,31 @@ export async function sign(id: string, signer: string) {
   let eventType: string = "";
 
   if (signer === "talent") {
-    data.status = "signed_by_talent";
     data.talentSignedAt = new Date();
     eventType = "contract_signed_talent";
+    
+    // Check if brand already signed
+    const existing = await prisma.contract.findUnique({ where: { id } });
+    if (existing?.brandSignedAt) {
+      data.status = "fully_signed";
+      data.fullySignedAt = new Date();
+      eventType = "contract_fully_signed";
+    } else {
+      data.status = "partially_signed";
+    }
   } else if (signer === "brand") {
-    data.status = "signed_by_brand";
     data.brandSignedAt = new Date();
     eventType = "contract_signed_brand";
+    
+    // Check if talent already signed
+    const existing = await prisma.contract.findUnique({ where: { id } });
+    if (existing?.talentSignedAt) {
+      data.status = "fully_signed";
+      data.fullySignedAt = new Date();
+      eventType = "contract_fully_signed";
+    } else {
+      data.status = "partially_signed";
+    }
   } else {
     throw new Error("Invalid signer");
   }
@@ -87,20 +199,44 @@ export async function sign(id: string, signer: string) {
     contractId: contract.id
   });
 
+  // If fully signed, update deal
+  if (contract.status === "fully_signed") {
+    await prisma.deal.update({
+      where: { id: contract.dealId! },
+      data: {
+        contractSignedAt: new Date()
+      }
+    });
+  }
+
   return contract;
 }
 
 export async function finalise(id: string) {
   const contract = await prisma.contract.update({
     where: { id },
-    data: { status: "fully_signed", fullySignedAt: new Date() }
+    data: { 
+      status: "fully_signed", 
+      fullySignedAt: new Date(),
+      // Set both signatures to now if not already set
+      talentSignedAt: new Date(),
+      brandSignedAt: new Date()
+    }
   });
 
   await addTimelineEntry(contract.dealId || "no_deal_id", "contract_fully_signed", {
     contractId: contract.id
   });
 
-  // In a real application, you would also update the deal stage here.
+  // Update deal
+  if (contract.dealId) {
+    await prisma.deal.update({
+      where: { id: contract.dealId },
+      data: {
+        contractSignedAt: new Date()
+      }
+    });
+  }
 
   return contract;
 }
@@ -113,6 +249,8 @@ export async function analyse(id: string) {
 
 export async function listForDeal(dealId: string) {
   return prisma.contract.findMany({
-    where: { dealId }
+    where: { dealId },
+    orderBy: { createdAt: 'desc' }
   });
 }
+

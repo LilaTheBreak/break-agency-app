@@ -14,13 +14,13 @@ router.get("/", requireAuth, async (req, res) => {
     if (status) where.status = status;
     if (owner) where.owner = owner;
 
-    const deals = await prisma.crmDeal.findMany({
+    const deals = await prisma.deal.findMany({
       where,
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -40,13 +40,13 @@ router.get("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deal = await prisma.crmDeal.findUnique({
+    const deal = await prisma.deal.findUnique({
       where: { id },
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -80,8 +80,9 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Deal type is required" });
     }
 
-    const deal = await prisma.crmDeal.create({
+    const deal = await prisma.deal.create({
       data: {
+        id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         dealName: dealName.trim(),
         brandId,
         dealType,
@@ -103,7 +104,7 @@ router.post("/", requireAuth, async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -139,14 +140,14 @@ router.patch("/:id", requireAuth, async (req, res) => {
     if (linkedEventIds !== undefined) updateData.linkedEventIds = linkedEventIds;
     if (notes !== undefined) updateData.notes = notes;
 
-    const deal = await prisma.crmDeal.update({
+    const deal = await prisma.deal.update({
       where: { id },
       data: updateData,
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -164,7 +165,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    await prisma.crmDeal.delete({
+    await prisma.deal.delete({
       where: { id },
     });
 
@@ -185,7 +186,7 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Note text is required" });
     }
 
-    const deal = await prisma.crmDeal.findUnique({
+    const deal = await prisma.deal.findUnique({
       where: { id },
     });
 
@@ -201,14 +202,14 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
 
     const notes = Array.isArray(deal.notes) ? [...deal.notes, newNote] : [newNote];
 
-    const updatedDeal = await prisma.crmDeal.update({
+    const updatedDeal = await prisma.deal.update({
       where: { id },
       data: { notes },
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
           },
         },
       },
@@ -258,7 +259,7 @@ router.post("/batch-import", requireAuth, async (req, res) => {
 
         await prisma.crmDeal.create({
           data: {
-            id: deal.id, // Preserve original ID if possible
+            id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             dealName: deal.dealName,
             brandId: deal.brandId,
             dealType: deal.dealType || "Other",

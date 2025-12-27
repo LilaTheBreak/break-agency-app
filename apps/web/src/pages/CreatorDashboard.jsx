@@ -19,6 +19,10 @@ import { useCrmOnboarding } from "../hooks/useCrmOnboarding.js";
 import { CrmContactPanel } from "../components/CrmContactPanel.jsx";
 import { getContact } from "../lib/crmContacts.js";
 import { useNavigate } from "react-router-dom";
+import { isFeatureEnabled } from "../config/features.js";
+import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
+import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
+import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 
 export function CreatorDashboard({ session }) {
   const auth = useAuth();
@@ -146,15 +150,34 @@ const STAGE_ACTIONS = {
   "Rejected": { label: "View feedback", nextStage: null }
 };
 
-// TODO: Fetch creator opportunities from API endpoint /api/opportunities/creator
+// Creator opportunities - guarded by feature flag CREATOR_OPPORTUNITIES_ENABLED
 const CREATOR_OPPORTUNITY_PIPELINE = [];
 
 const SUBMISSION_TABS = ["Drafts", "Revisions requested", "Awaiting approval", "Scheduled", "Approved", "Usage log"];
 
-// TODO: Fetch submission payloads from API endpoint /api/submissions
+// Submissions - guarded by feature flag CREATOR_SUBMISSIONS_ENABLED
 const SUBMISSION_PAYLOADS = [];
 
 function CreatorOpportunitiesSection() {
+  // Guard with feature flag
+  if (!isFeatureEnabled('CREATOR_OPPORTUNITIES_ENABLED')) {
+    return (
+      <section id="creator-opportunities" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities system</p>
+            <h3 className="font-display text-3xl uppercase">Apply, submit, track</h3>
+          </div>
+        </div>
+        <ComingSoon
+          feature="CREATOR_OPPORTUNITIES_ENABLED"
+          title="Creator Opportunities"
+          description="Browse open briefs, submit applications, and track your submissions through the approval process"
+        />
+      </section>
+    );
+  }
+
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -398,6 +421,25 @@ function CreatorOnboardingSection() {
 }
 
 function CreatorSubmissionsSection({ session }) {
+  // Guard with feature flag
+  if (!isFeatureEnabled('CREATOR_SUBMISSIONS_ENABLED')) {
+    return (
+      <section id="creator-submissions" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Submissions</p>
+            <h3 className="font-display text-3xl uppercase">Uploads, revisions, approvals</h3>
+          </div>
+        </div>
+        <ComingSoon
+          feature="CREATOR_SUBMISSIONS_ENABLED"
+          title="Submission Workflow"
+          description="Upload drafts, receive revision requests, and track content through the approval process"
+        />
+      </section>
+    );
+  }
+
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -520,7 +562,9 @@ function CreatorCampaignsPanel({ session }) {
       </div>
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       {loading && !campaigns.length ? (
-        <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+        <SkeletonWithMessage message="Loading your active campaigns and collaborations...">
+          <SkeletonCampaign />
+        </SkeletonWithMessage>
       ) : campaigns.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
           <p className="text-sm text-brand-black/60">No campaigns yet</p>

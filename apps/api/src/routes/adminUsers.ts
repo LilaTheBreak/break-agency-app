@@ -91,6 +91,13 @@ router.post("/users/:id/approve", async (req, res) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
+    
+    console.log("[INTEGRATION] Admin user approval requested", {
+      userId: id,
+      adminId: req.user?.id || "unknown",
+      hasNotes: !!notes,
+      timestamp: new Date().toISOString()
+    });
 
     const user = await prisma.user.update({
       where: { id },
@@ -107,6 +114,13 @@ router.post("/users/:id/approve", async (req, res) => {
         onboarding_status: true
       }
     });
+    
+    console.log("[INTEGRATION] User approval completed", {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      timestamp: new Date().toISOString()
+    });
 
     // TODO: Send approval email notification
 
@@ -117,6 +131,11 @@ router.post("/users/:id/approve", async (req, res) => {
     });
   } catch (error) {
     console.error("[ADMIN USER APPROVE]", error);
+    console.error("[INTEGRATION] User approval failed", {
+      userId: req.params.id,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
     res.status(500).json({ error: "Failed to approve user" });
   }
 });
@@ -129,6 +148,13 @@ router.post("/users/:id/reject", async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
+    
+    console.log("[INTEGRATION] Admin user rejection requested", {
+      userId: id,
+      adminId: req.user?.id || "unknown",
+      hasReason: !!reason,
+      timestamp: new Date().toISOString()
+    });
 
     const user = await prisma.user.update({
       where: { id },
@@ -145,6 +171,12 @@ router.post("/users/:id/reject", async (req, res) => {
         onboarding_status: true
       }
     });
+    
+    console.log("[INTEGRATION] User rejection completed", {
+      userId: user.id,
+      email: user.email,
+      timestamp: new Date().toISOString()
+    });
 
     // TODO: Send rejection email notification
 
@@ -155,6 +187,11 @@ router.post("/users/:id/reject", async (req, res) => {
     });
   } catch (error) {
     console.error("[ADMIN USER REJECT]", error);
+    console.error("[INTEGRATION] User rejection failed", {
+      userId: req.params.id,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
     res.status(500).json({ error: "Failed to reject user" });
   }
 });

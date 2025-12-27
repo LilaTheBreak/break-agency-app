@@ -15,14 +15,14 @@ router.get("/", requireAuth, async (req, res) => {
     if (status) where.status = status as string;
     if (owner) where.internalOwner = owner as string;
 
-    const contracts = await prisma.crmContract.findMany({
+    const contracts = await prisma.contract.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
             status: true,
           },
         },
@@ -42,13 +42,13 @@ router.get("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const contract = await prisma.crmContract.findUnique({
+    const contract = await prisma.contract.findUnique({
       where: { id },
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
             status: true,
           },
         },
@@ -106,8 +106,9 @@ router.post("/", requireAuth, async (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const contract = await prisma.crmContract.create({
+    const contract = await prisma.contract.create({
       data: {
+        id: `contract_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         contractName: contractName.trim(),
         contractType,
         status,
@@ -131,7 +132,7 @@ router.post("/", requireAuth, async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
             status: true,
           },
         },
@@ -152,7 +153,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
     const updates = req.body;
 
     // Check if contract exists
-    const existing = await prisma.crmContract.findUnique({ where: { id } });
+    const existing = await prisma.contract.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: "Contract not found" });
     }
@@ -195,14 +196,14 @@ router.patch("/:id", requireAuth, async (req, res) => {
       }
     }
 
-    const contract = await prisma.crmContract.update({
+    const contract = await prisma.contract.update({
       where: { id },
       data: updateData,
       include: {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
             status: true,
           },
         },
@@ -221,7 +222,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    await prisma.crmContract.delete({ where: { id } });
+    await prisma.contract.delete({ where: { id } });
 
     res.json({ success: true });
   } catch (error) {
@@ -240,7 +241,7 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Note is required" });
     }
 
-    const contract = await prisma.crmContract.findUnique({ where: { id } });
+    const contract = await prisma.contract.findUnique({ where: { id } });
     if (!contract) {
       return res.status(404).json({ error: "Contract not found" });
     }
@@ -251,7 +252,7 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
       { at: now, label: `Note added: ${note.trim().substring(0, 50)}${note.trim().length > 50 ? "..." : ""}` },
     ];
 
-    const updated = await prisma.crmContract.update({
+    const updated = await prisma.contract.update({
       where: { id },
       data: {
         notes: note.trim(),
@@ -261,7 +262,7 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
         Brand: {
           select: {
             id: true,
-            brandName: true,
+            name: true,
             status: true,
           },
         },
@@ -299,8 +300,9 @@ router.post("/batch-import", requireAuth, async (req, res) => {
           continue;
         }
 
-        const created = await prisma.crmContract.create({
+        const created = await prisma.contract.create({
           data: {
+            id: `contract_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             contractName: contract.contractName || "Untitled Contract",
             contractType: contract.contractType || "Other",
             status: contract.status || "Draft",

@@ -42,6 +42,7 @@ import inboxPriorityFeedRouter from "./routes/inboxPriorityFeed.js";
 import inboxCountersRouter from "./routes/inboxCounters.js";
 import inboxThreadRouter from "./routes/inboxThread.js";
 import inboxRescanRouter from "./routes/inboxRescan.js";
+import inboxCategoriesRouter from "./routes/inboxCategories.js";
 import unifiedInboxRouter from "./routes/unifiedInbox.js";
 import emailOpportunitiesRouter from "./routes/emailOpportunities.js";
 
@@ -82,6 +83,9 @@ import creatorRouter from "./routes/creator.js";
 // Analytics
 import analyticsRouter from "./routes/analytics.js";
 
+// Revenue
+import revenueRouter from "./routes/revenue.js";
+
 // Admin Finance
 import adminFinanceRouter from "./routes/admin/finance.js";
 
@@ -96,7 +100,7 @@ import wellnessCheckinsRouter from "./routes/wellnessCheckins.js";
 import dealsRouter from "./routes/deals.js";
 import dealTimelineRouter from "./routes/dealTimeline.js";
 import dealInsightsRouter from "./routes/dealInsights.js";
-import dealPackagesRouter from "./routes/dealPackages.js";
+// dealPackagesRouter removed - deal packages schema models were removed
 
 // Deliverables / Contracts
 import deliverablesRouter from "./routes/deliverables.js";
@@ -113,6 +117,7 @@ import briefsRouter from "./routes/briefs.js";
 import brandCRMRouter from "./routes/brandCRM.js";
 import strategyRouter from "./routes/strategy.js";
 import creatorFitRouter from "./routes/creatorFit.js";
+import rosterRouter from "./routes/roster.js";
 
 // CRM: Brands, Contacts, Outreach, Campaigns, Events & Deals
 import crmBrandsRouter from "./routes/crmBrands.js";
@@ -151,7 +156,18 @@ import threadRouter from "./routes/threads.js";
 import insightsRouter from "./routes/insights.js";
 
 // Health
-import { healthCheck } from "./routes/health.js";
+import { healthCheck, detailedHealthCheck, cronStatusCheck } from "./routes/health.js";
+
+// Monitoring utilities
+import { normalizeError } from "./utils/errorNormalizer.js";
+import { sendAlert, logErrorForSummary } from "./utils/alerting.js";
+
+// Performance monitoring
+import { initializeSlowQueryLogging, requestDurationMiddleware, startMemoryTracking } from "./utils/slowQueryDetection.js";
+import { prisma } from "./utils/prismaClient.js";
+
+// Performance dashboard
+import performanceRouter from "./routes/admin/performance.js";
 
 dotenv.config();
 
@@ -176,6 +192,13 @@ const allowedOrigins = FRONTEND_ORIGIN.split(',').map(o => o.trim());
 // ------------------------------------------------------
 // CORE MIDDLEWARE
 // ------------------------------------------------------
+
+// Initialize performance monitoring
+console.log("[MONITORING] Initializing performance monitoring...");
+initializeSlowQueryLogging(prisma);
+startMemoryTracking(60000); // Sample every 60 seconds
+console.log("[MONITORING] Performance monitoring initialized");
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -194,6 +217,10 @@ app.use(
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(cookieParser());
+
+// Request duration tracking (must be early in middleware chain)
+app.use(requestDurationMiddleware);
+
 app.use(attachUserFromSession);
 
 // Stripe webhook MUST run BEFORE body parsers
@@ -212,6 +239,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // ------------------------------------------------------
 // AUTH ROUTES (Google OAuth, session management)
+// Rate limiting already applied in auth.ts routes
 // ------------------------------------------------------
 app.use("/api/auth", authRouter);
 
@@ -226,6 +254,7 @@ app.use("/api/inbox/priority-feed", inboxPriorityFeedRouter);
 app.use("/api/inbox/counters", inboxCountersRouter);
 app.use("/api/inbox/thread", inboxThreadRouter);
 app.use("/api/inbox/rescan", inboxRescanRouter);
+app.use("/api/inbox", inboxCategoriesRouter);
 app.use("/api/inbox/unified", unifiedInboxRouter);
 
 // ------------------------------------------------------
@@ -283,6 +312,11 @@ app.use("/api/wellness-checkins", wellnessCheckinsRouter);
 app.use("/api/analytics", analyticsRouter);
 
 // ------------------------------------------------------
+// REVENUE (Deal-Based Financial Metrics)
+// ------------------------------------------------------
+app.use("/api/revenue", revenueRouter);
+
+// ------------------------------------------------------
 // CREATOR ONBOARDING
 // ------------------------------------------------------
 app.use(creatorRouter); // Routes already prefixed with /api/creator
@@ -302,6 +336,11 @@ app.use("/api/queues", queuesRouter);
 // ADMIN FINANCE CONTROL ROOM
 // ------------------------------------------------------
 app.use("/api/admin/finance", adminFinanceRouter);
+
+// ------------------------------------------------------
+// ADMIN PERFORMANCE DASHBOARD
+// ------------------------------------------------------
+app.use("/api/admin/performance", performanceRouter);
 
 // ------------------------------------------------------
 // ADMIN USER MANAGEMENT
@@ -326,13 +365,17 @@ app.use("/api/suitability", suitabilityRouter);
 app.use("/api/deals", dealsRouter);
 app.use("/api/deal-timeline", dealTimelineRouter);
 app.use("/api/deal-insights", dealInsightsRouter);
-app.use("/api/deal-packages", dealPackagesRouter);
+// /api/deal-packages route removed - deal packages feature was removed from schema
 
 // ------------------------------------------------------
 // CONTRACTS / DELIVERABLES
 // ------------------------------------------------------
 app.use("/api/contracts", contractRouter);
 app.use("/api/deliverables", deliverablesRouter);
+
+// New contract and deliverable workflow (manual-first, with templates and file upload)
+import deliverablesV2Router from "./routes/deliverables-v2.js";
+app.use("/api/deliverables-v2", deliverablesV2Router);
 
 // ------------------------------------------------------
 // CAMPAIGNS
@@ -349,6 +392,7 @@ app.use("/api/briefs", briefsRouter);
 app.use("/api/brand-crm", brandCRMRouter);
 app.use("/api/strategy", strategyRouter);
 app.use("/api/creator-fit", creatorFitRouter);
+app.use("/api/roster", rosterRouter);
 
 // ------------------------------------------------------
 // CRM: BRANDS, CONTACTS, OUTREACH, CAMPAIGNS & EVENTS
@@ -429,9 +473,11 @@ app.get("/", (_req, res) => {
 });
 
 // ------------------------------------------------------
-// HEALTH ENDPOINT
+// HEALTH ENDPOINTS
 // ------------------------------------------------------
 app.get("/health", healthCheck);
+app.get("/health/detailed", detailedHealthCheck);
+app.get("/api/cron/status", cronStatusCheck);
 
 // ------------------------------------------------------
 // FALLBACK ROUTES
@@ -449,12 +495,29 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     return next(err);
   }
   
+  // Normalize error for user-friendly message
+  const normalized = normalizeError(err);
+  
+  // Log error for daily summary
+  logErrorForSummary(err);
+  
+  // Send alert if critical (async, don't wait)
+  sendAlert(err, { 
+    endpoint: req.path, 
+    userId: (req as any).user?.id,
+    method: req.method 
+  }).catch(alertError => {
+    console.error("Failed to send alert:", alertError);
+  });
+  
   const statusCode = err.statusCode || err.status || 500;
-  const message = err.message || "Internal server error";
   
   res.status(statusCode).json({
-    error: message,
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack })
+    error: normalized.userMessage,
+    ...(process.env.NODE_ENV === "development" && { 
+      technicalError: normalized.message,
+      stack: err.stack 
+    })
   });
 });
 
@@ -462,7 +525,18 @@ const PORT = process.env.PORT || 5001;
 
 // Start queue + cron
 registerEmailQueueJob();
-// registerCronJobs(); // TEMPORARILY DISABLED - was hanging server startup
+
+// Register cron jobs asynchronously to not block server startup
+setTimeout(async () => {
+  try {
+    console.log("[INTEGRATION] Registering cron jobs...");
+    registerCronJobs();
+    console.log("[INTEGRATION] Cron jobs registered successfully");
+  } catch (error) {
+    console.error("[INTEGRATION] Failed to register cron jobs:", error);
+    // Don't crash the server if cron registration fails
+  }
+}, 5000); // Wait 5 seconds after server starts to register crons
 
 console.log("[SERVER] About to start listening on port", PORT);
 
@@ -476,13 +550,35 @@ const server = app.listen(PORT, () => {
 // ------------------------------------------------------
 // GRACEFUL ERROR HANDLING
 // ------------------------------------------------------
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", async (reason, promise) => {
   console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+  
+  // Log for monitoring
+  logErrorForSummary(reason as Error);
+  
+  // Send critical alert
+  try {
+    await sendAlert(reason as Error, { context: "unhandledRejection" });
+  } catch (alertError) {
+    console.error("Failed to send alert for unhandled rejection:", alertError);
+  }
+  
   // Don't crash the server, just log it
 });
 
-process.on("uncaughtException", (error) => {
+process.on("uncaughtException", async (error) => {
   console.error("❌ Uncaught Exception:", error);
+  
+  // Log for monitoring
+  logErrorForSummary(error);
+  
+  // Send critical alert
+  try {
+    await sendAlert(error, { context: "uncaughtException" });
+  } catch (alertError) {
+    console.error("Failed to send alert for uncaught exception:", alertError);
+  }
+  
   // Log but don't crash immediately to allow cleanup
   setTimeout(() => {
     process.exit(1);

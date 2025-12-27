@@ -5,6 +5,8 @@ import { Badge } from "../components/Badge.jsx";
 import { OutreachRecordsPanel } from "../components/OutreachRecordsPanel.jsx";
 import { CampaignChip } from "../components/CampaignChip.jsx";
 import DeckDrawer from "../components/DeckDrawer.jsx";
+import DealAIPanel from "../components/DealAIPanel.jsx";
+import GmailThreadLinker from "../components/GmailThreadLinker.jsx";
 import { linkDealToCampaign, readCrmCampaigns, unlinkDealFromCampaign } from "../lib/crmCampaigns.js";
 import {
   fetchOutreachRecords,
@@ -3035,6 +3037,15 @@ function RecordDrawer({
               </p>
             </div>
 
+            {/* Gmail Thread Linker Component */}
+            <GmailThreadLinker
+              outreachId={outreach.id}
+              currentThreadId={outreach.gmailThreadId || null}
+              onLinked={(threadId) => {
+                onThreadLink(outreach.id, threadId);
+              }}
+            />
+
             <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
               <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Gmail thread</p>
               <input
@@ -3228,6 +3239,22 @@ function RecordDrawer({
                 ) : null}
               </div>
             </div>
+
+            {/* AI Intelligence Panel for Deal Analysis */}
+            <DealAIPanel 
+              emailId={deal.emailId || null}
+              dealId={deal.id}
+            />
+
+            {/* Gmail Thread Linker */}
+            <GmailThreadLinker
+              outreachId={deal.id}
+              currentThreadId={deal.gmailThreadId || null}
+              onLinked={(threadId) => {
+                onUpdateDeal(deal.id, { gmailThreadId: threadId });
+              }}
+            />
+
             <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
               <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Gmail thread</p>
               <input

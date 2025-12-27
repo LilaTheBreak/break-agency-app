@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "/api";
+import toast from "react-hot-toast";
+import { apiFetch } from "../../services/apiClient.js";
 
 export default function PendingUsersApproval() {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     fetchPendingUsers();
@@ -18,26 +16,23 @@ export default function PendingUsersApproval() {
     try {
       setLoading(true);
       setError(null);
-      console.log("Fetching pending users from:", `${API_URL}/api/admin/users/pending`);
-      const response = await axios.get(`${API_URL}/api/admin/users/pending`, {
-        withCredentials: true
-      });
-      console.log("Pending users response:", response.data);
+      const response = await apiFetch("/api/admin/users/pending");
+      if (!response.ok) {
+        if (response.status === 403 || response.status === 404) {
+          // Permission denied or not found - show empty state
+          setPendingUsers([]);
+          return;
+        }
+        throw new Error(`Failed to fetch pending users: ${response.status}`);
+      }
+      const data = await response.json();
       // The API returns { users: [...] }, so extract the users array
-      setPendingUsers(Array.isArray(response.data.users) ? response.data.users : []);
+      setPendingUsers(Array.isArray(data.users) ? data.users : []);
     } catch (err) {
       console.error("Error fetching pending users:", err);
-      if (err.response?.status === 403) {
-        // Permission denied - silent failure
-        setPendingUsers([]);
-        setError(null);
-      } else if (err.response?.status === 404) {
-        // Endpoint not found
-        setPendingUsers([]);
-        setError(null);
-      } else {
-        setError("Unable to load pending users");
-      }
+      toast.error(`Failed to load pending users: ${err.message}`);
+      setError("Unable to load pending users");
+      setPendingUsers([]);
     } finally {
       setLoading(false);
     }
@@ -49,19 +44,21 @@ export default function PendingUsersApproval() {
     try {
       setProcessingId(userId);
       setError(null);
-      await axios.post(
-        `${API_URL}/api/admin/users/${userId}/approve`,
-        {},
-        { withCredentials: true }
-      );
+      const response = await apiFetch(`/api/admin/users/${userId}/approve`, {
+        method: "POST",
+      });
       
-      setSuccessMessage(`User ${userEmail} approved successfully`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      if (!response.ok) {
+        throw new Error(`Failed to approve user: ${response.status}`);
+      }
+      
+      toast.success(`✓ User ${userEmail} approved successfully`);
       
       // Remove from list - ensure prev is always an array
       setPendingUsers(prev => (Array.isArray(prev) ? prev.filter(u => u.id !== userId) : []));
     } catch (err) {
       console.error("Error approving user:", err);
+      toast.error(`Failed to approve user: ${err.message}`);
       setError("Failed to approve user");
     } finally {
       setProcessingId(null);
@@ -75,19 +72,22 @@ export default function PendingUsersApproval() {
     try {
       setProcessingId(userId);
       setError(null);
-      await axios.post(
-        `${API_URL}/api/admin/users/${userId}/reject`,
-        { reason },
-        { withCredentials: true }
-      );
+      const response = await apiFetch(`/api/admin/users/${userId}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
       
-      setSuccessMessage(`User ${userEmail} rejected`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      if (!response.ok) {
+        throw new Error(`Failed to reject user: ${response.status}`);
+      }
+      
+      toast.success(`User ${userEmail} rejected`);
       
       // Remove from list - ensure prev is always an array
       setPendingUsers(prev => (Array.isArray(prev) ? prev.filter(u => u.id !== userId) : []));
     } catch (err) {
       console.error("Error rejecting user:", err);
+      toast.error(`Failed to reject user: ${err.message}`);
       setError("Failed to reject user");
     } finally {
       setProcessingId(null);

@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from "express";
+import { createId as cuid } from "@paralleldrive/cuid2";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createTaskNotifications, canViewTask, buildTaskVisibilityWhere } from "../services/taskNotifications.js";
@@ -236,6 +237,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     const task = await prisma.crmTask.create({
       data: {
+        id: cuid(),
         title: title.trim(),
         description: description || null,
         status: status || "Pending",
@@ -257,7 +259,8 @@ router.post("/", async (req: Request, res: Response) => {
         campaignId: campaignId || null,
         eventId: eventId || null,
         contractId: contractId || null,
-        createdBy: req.user?.id || null
+        createdBy: req.user?.id || null,
+        updatedAt: new Date()
       },
       include: {
         CrmBrand: {
@@ -299,7 +302,7 @@ router.post("/", async (req: Request, res: Response) => {
       code: error.code,
       meta: error.meta,
       userId: req.user?.id,
-      title: title?.substring(0, 50)
+      requestBody: req.body
     });
     
     // Return specific error messages for common issues

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { EditUserDrawer } from "../components/EditUserDrawer.jsx";
+import { DataState } from "../components/DataState.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { getRecentUsers } from "../services/dashboardClient.js";
 import { apiFetch } from "../services/apiClient.js";
@@ -31,6 +32,8 @@ export function AdminUsersPage() {
   const [error, setError] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [impersonating, setImpersonating] = useState(null);
+  const [showNotImplementedModal, setShowNotImplementedModal] = useState(false);
+  const [notImplementedFeature, setNotImplementedFeature] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -145,9 +148,18 @@ export function AdminUsersPage() {
   };
 
   const handleImpersonateUser = (user) => {
-    setImpersonating(user);
-    // TODO: Implement actual impersonation logic
-    alert(`Impersonation feature coming soon. Would switch to ${user.email}'s view.`);
+    setNotImplementedFeature({
+      name: "User Impersonation",
+      description: `Switch to ${user.email}'s view to debug issues or assist with setup.`,
+      requirements: [
+        "Secure impersonation session management",
+        "Audit trail logging of all impersonation events",
+        "Clear UI banner showing impersonation is active",
+        "Security review and approval",
+        "Time-limited sessions with automatic logout"
+      ]
+    });
+    setShowNotImplementedModal(true);
   };
 
   const handleExitImpersonation = () => {
@@ -420,6 +432,52 @@ export function AdminUsersPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Not Implemented Modal */}
+      {showNotImplementedModal && notImplementedFeature && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-black/50 backdrop-blur-sm">
+          <div className="relative max-w-lg w-full mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl">
+            <button
+              onClick={() => setShowNotImplementedModal(false)}
+              className="absolute right-6 top-6 text-brand-black/40 hover:text-brand-black"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <DataState
+              state="not-implemented"
+              resource={notImplementedFeature.name}
+              message={notImplementedFeature.description}
+              variant="minimal"
+            />
+            
+            {notImplementedFeature.requirements && (
+              <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+                <p className="text-xs uppercase tracking-wider text-brand-black/60 mb-3">Required to implement:</p>
+                <ul className="space-y-2">
+                  {notImplementedFeature.requirements.map((req, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-brand-black/70">
+                      <span className="mt-1 text-brand-black/40">•</span>
+                      <span>{req}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowNotImplementedModal(false)}
+                className="rounded-full border border-brand-black bg-brand-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-brand-white transition-all hover:bg-brand-black/90"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardShell>
   );
 }

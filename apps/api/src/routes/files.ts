@@ -66,6 +66,8 @@ router.post("/upload", requireUser, async (req, res, next) => {
     // Save file record to database
     const file = await prisma.file.create({
       data: {
+        id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        updatedAt: new Date(),
         userId: currentUser.id,
         key,
         url,

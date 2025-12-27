@@ -1,18 +1,12 @@
 import { apiFetch } from "./apiClient.js";
 
 export async function fetchOutreachRecords() {
-  try {
-    const response = await apiFetch("/api/outreach/records");
-    if (!response.ok) {
-      console.warn("[Outreach] Failed to fetch outreach records:", response.status);
-      return []; // Return empty array instead of throwing
-    }
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.warn("[Outreach] Error fetching outreach records:", error.message);
-    return []; // Safe fallback
+  const response = await apiFetch("/api/outreach/records");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch outreach records: ${response.status}`);
   }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export async function createOutreachRecord(data) {
@@ -50,17 +44,11 @@ export async function updateOutreachRecord(id, updates) {
 }
 
 export async function fetchGmailThread(outreachId) {
-  try {
-    const response = await apiFetch(`/api/outreach/records/${outreachId}/gmail-thread`);
-    if (!response.ok) {
-      console.warn("[Outreach] Failed to fetch Gmail thread:", response.status);
-      return null; // Return null instead of throwing
-    }
-    return response.json();
-  } catch (error) {
-    console.warn("[Outreach] Error fetching Gmail thread:", error.message);
-    return null; // Safe fallback
+  const response = await apiFetch(`/api/outreach/records/${outreachId}/gmail-thread`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch Gmail thread: ${response.status}`);
   }
+  return response.json();
 }
 
 export async function addOutreachNote(outreachId, body) {
@@ -81,18 +69,12 @@ export async function addOutreachNote(outreachId, body) {
 }
 
 export async function fetchOutreachNotes(outreachId) {
-  try {
-    const response = await apiFetch(`/api/outreach/records/${outreachId}/notes`);
-    if (!response.ok) {
-      console.warn("[Outreach] Failed to fetch notes:", response.status);
-      return []; // Return empty array instead of throwing
-    }
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.warn("[Outreach] Error fetching notes:", error.message);
-    return []; // Safe fallback
+  const response = await apiFetch(`/api/outreach/records/${outreachId}/notes`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch notes: ${response.status}`);
   }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export async function addOutreachTask(outreachId, taskData) {
@@ -113,18 +95,12 @@ export async function addOutreachTask(outreachId, taskData) {
 }
 
 export async function fetchOutreachTasks(outreachId) {
-  try {
-    const response = await apiFetch(`/api/outreach/records/${outreachId}/tasks`);
-    if (!response.ok) {
-      console.warn("[Outreach] Failed to fetch tasks:", response.status);
-      return []; // Return empty array instead of throwing
-    }
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.warn("[Outreach] Error fetching tasks:", error.message);
-    return []; // Safe fallback
+  const response = await apiFetch(`/api/outreach/records/${outreachId}/tasks`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch tasks: ${response.status}`);
   }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export async function updateOutreachTask(taskId, updates) {
@@ -145,16 +121,10 @@ export async function updateOutreachTask(taskId, updates) {
 }
 
 export async function fetchUpcomingReminders() {
-  try {
-    const response = await apiFetch("/api/outreach/reminders");
-    if (!response.ok) {
-      console.warn("[Outreach] Failed to fetch reminders:", response.status);
-      return []; // Return empty array instead of throwing
-    }
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  } catch (error) {
-    console.warn("[Outreach] Error fetching reminders:", error.message);
-    return []; // Safe fallback
+  const response = await apiFetch("/api/outreach/reminders");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reminders: ${response.status}`);
   }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }

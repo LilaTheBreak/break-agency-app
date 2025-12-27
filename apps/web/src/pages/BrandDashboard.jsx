@@ -14,8 +14,12 @@ import { Roles } from "../constants/roles.js";
 import { FeatureGate } from "../components/FeatureGate.jsx";
 import { useRevenue, useMetrics } from "../hooks/useAnalytics.js";
 import { LineChart as RechartsLineChart } from "../components/charts/index.js";
+import { isFeatureEnabled } from "../config/features.js";
+import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
+import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
+import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 
-// TODO: Fetch creator roster from API
+// Creator roster - guarded by feature flag CREATOR_ROSTER_ENABLED
 const CREATOR_ROSTER = [];
 
 const CAMPAIGN_REPORTS = [
@@ -60,7 +64,12 @@ const BRAND_NAV_LINKS = (basePath) => [
 export default function BrandDashboardLayout({ basePath = "/brand/dashboard", session }) {
   return (
     <DashboardShell
-      title="Brand Control Room"
+      title={
+        <div className="flex items-center gap-3">
+          <span>Brand Control Room</span>
+          <BetaBadge variant="subtle" />
+        </div>
+      }
       subtitle="Campaign controls, creator match, contracts, messaging, and reporting in one lane."
       role="brand"
       navLinks={BRAND_NAV_LINKS(basePath)}
@@ -237,13 +246,13 @@ function BrandOverviewSection({ session }) {
   );
 }
 
-// TODO: Fetch brand social analytics from API
+// Brand social analytics - guarded by feature flag BRAND_SOCIAL_ANALYTICS_ENABLED
 const BRAND_SOCIALS = [];
 
-// TODO: Fetch opportunities from API endpoint /api/opportunities
+// Opportunities - guarded by feature flag BRAND_OPPORTUNITIES_ENABLED
 const OPPORTUNITY_PIPELINE = [];
 
-// TODO: Fetch creator match pool from API endpoint /api/creators/matches
+// Creator matches - guarded by feature flag BRAND_CREATOR_MATCHES_ENABLED
 const CREATOR_MATCH_POOL = [];
 
 const FINANCIAL_PROFILES = {
@@ -312,7 +321,9 @@ function BrandCampaignSection({ session }) {
       </div>
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       {loading && !campaigns.length ? (
-        <p className="text-sm text-brand-black/60">Loading campaigns…</p>
+        <SkeletonWithMessage message="Loading your campaigns and performance data...">
+          <SkeletonCampaign />
+        </SkeletonWithMessage>
       ) : campaigns.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
           <p className="text-sm text-brand-black/60">No campaigns yet</p>
@@ -335,6 +346,25 @@ function BrandCampaignSection({ session }) {
 }
 
 function BrandSocialsSection() {
+  // Guard with feature flag
+  if (!isFeatureEnabled('BRAND_SOCIAL_ANALYTICS_ENABLED')) {
+    return (
+      <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Socials</p>
+            <h3 className="font-display text-3xl uppercase">Brand amplification</h3>
+          </div>
+        </div>
+        <ComingSoon
+          feature="BRAND_SOCIAL_ANALYTICS_ENABLED"
+          title="Social Analytics"
+          description="Track your brand's social media performance across Instagram, TikTok, and other platforms"
+        />
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between">
@@ -368,6 +398,25 @@ function BrandSocialsSection() {
 }
 
 function BrandOpportunitiesSection({ session }) {
+  // Guard with feature flag
+  if (!isFeatureEnabled('BRAND_OPPORTUNITIES_ENABLED')) {
+    return (
+      <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities</p>
+            <h3 className="font-display text-3xl uppercase">Automated creator matching</h3>
+          </div>
+        </div>
+        <ComingSoon
+          feature="BRAND_OPPORTUNITIES_ENABLED"
+          title="Opportunities Marketplace"
+          description="Post briefs and get matched with creators based on AI-powered fit analysis"
+        />
+      </section>
+    );
+  }
+
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

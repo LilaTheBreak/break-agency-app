@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ExclusiveSocialPanel } from "./ExclusiveSocialPanel.jsx";
 import { Badge } from "../components/Badge.jsx";
+import { DataState, DataStateWrapper } from "../components/DataState.jsx";
 import { Outlet, useNavigate, useOutletContext } from "react-router-dom";
 import { AiAssistantCard } from "../components/AiAssistantCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
@@ -90,41 +91,44 @@ const PROJECTS = [
   }
 ];
 
-// TODO: Fetch tasks from API
-const TASKS = [];
+// Tasks will be fetched from API when component mounts
+// Using empty initial state with proper DataState feedback
+const INITIAL_TASKS = [];
+const INITIAL_SUGGESTED_TASKS = [];
 
-// TODO: Fetch AI-suggested tasks from API
-const SUGGESTED_TASKS = [];
-
-// TODO: Fetch social platform analytics from API endpoint /api/analytics/socials
+// Social platform analytics not yet implemented (requires Instagram/TikTok/YouTube OAuth)
 const SOCIAL_PLATFORMS = [];
+const SOCIAL_PLATFORMS_STATE = "not-implemented"; // Signals to UI to show explicit state
 
 const INITIAL_PILLARS = ["Luxury travel diaries", "AI copilot tips", "Residency IRL drops"];
 
-// TODO: Fetch trending content from API
+// Trending content API not yet connected
 const TRENDING_CONTENT = [];
+const TRENDING_CONTENT_STATE = "not-implemented";
 
-// TODO: Fetch opportunities from API
-const OPPORTUNITIES = [];
+// Opportunities will be fetched from backend
+const INITIAL_OPPORTUNITIES = [];
 
-// TODO: Fetch financial summary from API
+// Financial data limited (Stripe integration incomplete)
 const FINANCIAL_SUMMARY = [];
+const FINANCIAL_STATE = "limited"; // Payment provider not fully connected
 const FINANCIAL_SERIES = {
   Week: [1200, 1600, 900, 2200, 1800],
   Month: [5200, 6100, 4300, 7800, 6500],
   YTD: [32000, 48000, 62000, 74000, 88000]
 };
-// TODO: Fetch invoices from API
-const INVOICES = [];
+// Invoices will be fetched (limited by Stripe integration status)
+const INITIAL_INVOICES = [];
 
-// TODO: Fetch messages from API
-const MESSAGES = [];
+// Messages sync with Gmail (may show syncing state)
+const INITIAL_MESSAGES = [];
 
-// TODO: Fetch creator alerts from API
+// Creator alerts and resources APIs not yet connected
 const CREATOR_ALERTS = [];
+const CREATOR_ALERTS_STATE = "not-implemented";
 
-// TODO: Fetch creator resources from API
 const CREATOR_RESOURCES = [];
+const CREATOR_RESOURCES_STATE = "not-implemented";
 
 export default function ExclusiveTalentDashboardLayout({ basePath = "/admin/view/exclusive", session }) {
   return (
@@ -2596,8 +2600,9 @@ function ExclusiveProjects() {
 }
 
 function ExclusiveTasks() {
-  const [taskQueue, setTaskQueue] = useState(TASKS);
-  const [suggestedTasks, setSuggestedTasks] = useState(SUGGESTED_TASKS);
+  const [taskQueue, setTaskQueue] = useState(INITIAL_TASKS);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [suggestedTasks, setSuggestedTasks] = useState(INITIAL_SUGGESTED_TASKS);
 
   const handleAddSuggested = (taskId) => {
     const task = suggestedTasks.find((item) => item.id === taskId);
@@ -2645,7 +2650,12 @@ function ExclusiveTasks() {
         </div>
         <div className="mt-3 space-y-3">
           {suggestedTasks.length === 0 ? (
-            <p className="text-sm text-brand-black/60">All caught up — no suggestions pending.</p>
+            <DataState
+              state="not-implemented"
+              resource="AI-suggested tasks"
+              message="AI task suggestions API not yet connected. Requires OpenAI integration for analyzing deals and suggesting follow-ups."
+              variant="compact"
+            />
           ) : (
             suggestedTasks.map((task) => (
               <article key={task.id} className="rounded-2xl border border-dashed border-brand-black/20 bg-brand-linen/30 p-4">
@@ -2673,10 +2683,12 @@ function ExclusiveTasks() {
 }
 
 function ExclusiveOpportunities() {
+  const [opportunities, setOpportunities] = useState(INITIAL_OPPORTUNITIES);
+  const [loading, setLoading] = useState(false);
   const [stageFilter, setStageFilter] = useState("All");
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);
   const stages = ["All", "Awaiting reply", "Reviewing offer", "Pitch scheduled", "Briefing"];
-  const filtered = OPPORTUNITIES.filter((item) => stageFilter === "All" || item.stage === stageFilter);
+  const filtered = opportunities.filter((item) => stageFilter === "All" || item.stage === stageFilter);
 
   return (
     <section id="exclusive-opportunities" className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">

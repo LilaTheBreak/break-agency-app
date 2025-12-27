@@ -51,4 +51,10 @@ router.post("/:id/analyse", contractController.analyseContract);
 // GET /api/deals/:dealId/contracts - List all contracts for a deal
 router.get("/deals/:dealId/contracts", contractController.listByDeal);
 
+// POST /api/deals/:dealId/contracts - Create contract from deal
+router.post("/deals/:dealId/contracts", contractController.createFromDeal);
+
+// POST /api/contracts/:id/generate-pdf - Generate PDF for contract
+router.post("/:id/generate-pdf", contractController.generatePDF);
+
 export default router;

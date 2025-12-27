@@ -116,7 +116,7 @@ export async function calculateOutreachMetrics(
       // Closed deals
       prisma.deal.count({
         where: {
-          Opportunity: {
+          SalesOpportunity: {
             Outreach: where
           }
         }

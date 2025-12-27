@@ -209,3 +209,31 @@ export async function listByDeal(
     next(error);
   }
 }
+
+export async function createFromDeal(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { dealId } = req.params;
+    const contract = await contractService.createFromDeal(dealId);
+    res.status(201).json(contract);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function generatePDF(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const contract = await contractService.generatePDF(id);
+    res.json(contract);
+  } catch (error) {
+    next(error);
+  }
+}

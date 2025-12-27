@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { randomUUID } from "crypto";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import { logDestructiveAction } from "../lib/auditLogger.js";
 
 const router = Router();
 
@@ -250,6 +251,18 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
     }
 
     await prisma.crmBrand.delete({ where: { id } });
+
+    // Log destructive action for audit trail
+    await logDestructiveAction(req, {
+      action: "BRAND_DELETE",
+      entityType: "CrmBrand",
+      entityId: id,
+      metadata: {
+        brandName: brand.name,
+        deletedBy: user.email,
+        deletedAt: new Date().toISOString()
+      }
+    });
 
     res.json({ success: true });
   } catch (error) {

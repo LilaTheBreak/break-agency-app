@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getRevenueMetrics } from '../services/revenueCalculationService.js';
 
 const router = Router();
 
@@ -10,51 +11,40 @@ router.use(requireAuth);
 /**
  * GET /api/analytics/revenue
  * Revenue analytics with breakdown by time period
+ * Now uses deal-based revenue calculation service
  */
 router.get('/revenue', async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const period = (req.query.period as string) || 'Month';
     
-    // Get real deals data
+    // Get revenue metrics from deals
+    const metrics = await getRevenueMetrics({ userId });
+    
+    // Get real deals data for breakdown
     const deals = await prisma.deal.findMany({
       where: {
         userId,
-        stage: 'COMPLETED',
+        value: { not: null },
         closedAt: { not: null }
       },
       select: {
         value: true,
         closedAt: true,
-        brandName: true
+        brandName: true,
+        stage: true
       },
       orderBy: { closedAt: 'desc' },
       take: 30
     });
 
-    // Calculate totals
-    const totalRevenue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
-    
     // Format for chart
     const breakdown = deals.slice(0, 10).map(deal => ({
       date: deal.closedAt?.toISOString() || new Date().toISOString(),
       amount: deal.value || 0,
-      source: deal.brandName || 'Unknown'
+      source: deal.brandName || 'Unknown',
+      stage: deal.stage
     }));
-
-    // Add sample data if no deals
-    if (breakdown.length === 0) {
-      const now = new Date();
-      for (let i = 9; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i * 3);
-        breakdown.push({
-          date: date.toISOString(),
-          amount: 3000 + Math.random() * 2000,
-          source: 'Sample Deal'
-        });
-      }
-    }
 
     const formatRevenue = (amount: number) => {
       if (amount >= 1000000) return `£${(amount / 1000000).toFixed(1)}M`;
@@ -63,11 +53,26 @@ router.get('/revenue', async (req: Request, res: Response) => {
     };
 
     res.json({
-      current: formatRevenue(totalRevenue),
-      projected: formatRevenue(totalRevenue * 1.2),
+      // Current = paid revenue
+      current: formatRevenue(metrics.paid),
+      // Projected = contracted + projected
+      projected: formatRevenue(metrics.contracted + metrics.projected),
+      // Total pipeline
+      total: formatRevenue(metrics.total),
       trend: '+15%',
       period,
-      breakdown
+      breakdown,
+      // Add revenue state breakdown
+      revenueBreakdown: {
+        projected: metrics.projected,
+        contracted: metrics.contracted,
+        paid: metrics.paid
+      },
+      labels: {
+        projected: "Projected (in negotiation)",
+        contracted: "Contracted (signed but unpaid)",
+        paid: "Paid (manually confirmed)"
+      }
     });
 
   } catch (error) {
