@@ -1,9 +1,18 @@
 import toast from 'react-hot-toast';
 
+// Clean and validate the API URL
 const RAW_API_BASE = import.meta.env?.VITE_API_URL;
-const API_BASE = RAW_API_BASE && RAW_API_BASE.length ? RAW_API_BASE : "/api";
+let API_BASE = "/api"; // Default fallback
+
+if (RAW_API_BASE && RAW_API_BASE.length) {
+  // Remove any trailing newlines, whitespace, or escaped characters
+  const cleaned = RAW_API_BASE.replace(/\\n|\\r|\n|\r/g, '').trim();
+  API_BASE = cleaned || "/api";
+}
 
 const NORMALIZED_BASE = API_BASE.replace(/\/$/, "");
+
+console.log("[apiClient] Using API base URL:", NORMALIZED_BASE);
 
 export function apiUrl(path = "") {
   if (!path) return NORMALIZED_BASE;
