@@ -214,6 +214,7 @@ export function AdminTasksPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState("");
   const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All statuses");
@@ -418,6 +419,12 @@ export function AdminTasksPage() {
       setCreateOpen(false);
       setEditingId("");
       setLoading(false);
+      
+      // Show success message
+      const message = editingId ? "Task updated successfully" : "Task created successfully";
+      setSuccessMessage(message);
+      setTimeout(() => setSuccessMessage(""), 4000);
+      
       console.log("[AdminTasksPage] saveTask completed successfully");
     } catch (err) {
       console.error("[AdminTasksPage] Error saving task:", err);
@@ -457,10 +464,20 @@ export function AdminTasksPage() {
           </div>
           <PrimaryButton onClick={openCreate}>Add task</PrimaryButton>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green-700">Success</p>
+            <p className="mt-2 text-sm text-brand-black/80">{successMessage}</p>
+          </div>
+        )}
         
+        {/* Error State */}
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            {error}
+          <div className="mt-4 rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Error</p>
+            <p className="mt-2 text-sm text-brand-black/80">{error}</p>
           </div>
         )}
         
@@ -498,6 +515,22 @@ export function AdminTasksPage() {
               </select>
             </div>
 
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green-700">Success</p>
+                <p className="mt-2 text-sm text-brand-black/80">{successMessage}</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <div className="mt-4 rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Error</p>
+                <p className="mt-2 text-sm text-brand-black/80">{error}</p>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               <table className="mt-4 w-full text-left text-sm text-brand-black/80">
                 <thead>
@@ -512,6 +545,23 @@ export function AdminTasksPage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {visibleTasks.length === 0 && !loading && !error ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-xs text-brand-black/60">
+                        {tasks.length === 0 ? (
+                          <div>
+                            <p className="font-semibold text-brand-black">No tasks yet</p>
+                            <p className="mt-1">Tasks will appear here once created. Click "Add Task" to get started.</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="font-semibold text-brand-black">No tasks match your filters</p>
+                            <p className="mt-1">Try adjusting your search or filter criteria, or reset filters to see all tasks.</p>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ) : null}
                   {visibleTasks.map((task) => {
                     const owner = users.find(u => u.id === task.ownerId);
                     const assigned = (task.assignedUserIds || [])
@@ -644,21 +694,28 @@ export function AdminTasksPage() {
           setFormError("");
         }}
         footer={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {formError ? <p className="mr-auto text-sm text-brand-red">{formError}</p> : null}
-            <TextButton
-              onClick={() => {
-                setCreateOpen(false);
-                setEditingId("");
-                setFormError("");
-              }}
-              disabled={loading}
-            >
-              Cancel
-            </TextButton>
-            <PrimaryButton onClick={saveTask} disabled={loading}>
-              {loading ? "Saving..." : editingId ? "Save changes" : "Create task"}
-            </PrimaryButton>
+          <div className=\"space-y-3\">
+            {formError && (
+              <div className=\"rounded-2xl border border-brand-red/20 bg-brand-red/5 p-3\">
+                <p className=\"text-xs font-semibold uppercase tracking-[0.3em] text-brand-red\">Validation Error</p>
+                <p className=\"mt-1 text-sm text-brand-black/80\">{formError}</p>
+              </div>
+            )}
+            <div className=\"flex items-center justify-end gap-2\">
+              <TextButton
+                onClick={() => {
+                  setCreateOpen(false);
+                  setEditingId(\"\");
+                  setFormError(\"\");
+                }}
+                disabled={loading}
+              >
+                Cancel
+              </TextButton>
+              <PrimaryButton onClick={saveTask} disabled={loading}>
+                {loading ? "Saving..." : editingId ? "Save changes" : "Create task"}
+              </PrimaryButton>
+            </div>
           </div>
         }
       >
