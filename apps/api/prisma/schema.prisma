@@ -243,6 +243,30 @@ model CalendarEvent {
   @@index([status])
 }
 
+model InternalQueueTask {
+  id               String    @id
+  title            String
+  description      String?
+  status           String    @default("pending") // pending, completed
+  priority         String    @default("Medium") // High, Medium, Low
+  dueDate          DateTime?
+  assignedToUserId String?
+  createdByUserId  String
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime
+  metadata         Json?     @default("{}")
+
+  AssignedToUser User? @relation("InternalTaskAssignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  CreatedByUser  User  @relation("InternalTaskCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([createdByUserId])
+  @@index([assignedToUserId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([priority])
+}
+
 model CreatorEvent {
   id            String    @id
   creatorId     String
@@ -1384,6 +1408,8 @@ model User {
   FinanceReconciliation                   FinanceReconciliation[]
   GmailToken                              GmailToken?
   InboundEmail                            InboundEmail[]
+  InternalTasksAssigned                   InternalQueueTask[]      @relation("InternalTaskAssignedTo")
+  InternalTasksCreated                    InternalQueueTask[]      @relation("InternalTaskCreatedBy")
   Notification                            Notification[]
   OpportunityApplication                  OpportunityApplication[]
   Outreach_Outreach_createdByToUser       Outreach[]               @relation("Outreach_createdByToUser")

@@ -5,13 +5,6 @@ import { ContactAutocomplete } from "../components/ContactAutocomplete.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
 
-const createId = () => {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
-
 const TALENT_DIRECTORY = [
   "Lila Prasad",
   "Mo Al Ghazi",
@@ -22,45 +15,87 @@ const TALENT_DIRECTORY = [
 ];
 
 export function AdminQueuesPage() {
-  const [tasks, setTasks] = useState([]);
+  // Queue items state
+  const [queueItems, setQueueItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const [dispatchingId, setDispatchingId] = useState(null);
+
+  // Internal tasks state - NOW API-BACKED
+  const [internalTasks, setInternalTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksError, setTasksError] = useState(null);
+  
+  // Modal state
   const [activeTask, setActiveTask] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [formState, setFormState] = useState(null);
-  
-  // Real queue data
-  const [queueItems, setQueueItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [dispatchingId, setDispatchingId] = useState(null);
+  const [formSaving, setFormSaving] = useState(false);
 
   // Fetch queue items on mount
   useEffect(() => {
     fetchQueueItems();
+    fetchInternalTasks();
   }, []);
 
   const fetchQueueItems = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await apiFetch("/api/queues/all");
       
       if (!response.ok) {
-        console.warn("Queue fetch returned status:", response.status);
-        setQueueItems([]);
-        return;
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
       
       const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        setQueueItems(data.items || []);
-      } else {
-        console.warn("Queue endpoint returned non-JSON response");
-        setQueueItems([]);
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Invalid response format");
       }
-    } catch (error) {
-      console.error("Failed to fetch queue items:", error);
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || "Failed to fetch queue items");
+      }
+      
+      setQueueItems(data.items || []);
+      setLastRefreshed(new Date());
+    } catch (err) {
+      console.error("Failed to fetch queue items:", err);
+      setError(err.message || "Failed to load queue items");
       setQueueItems([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchInternalTasks = async () => {
+    try {
+      setTasksLoading(true);
+      setTasksError(null);
+      const response = await apiFetch("/api/queues/internal-tasks");
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || "Failed to fetch internal tasks");
+      }
+      
+      setInternalTasks(data.tasks || []);
+    } catch (err) {
+      console.error("Failed to fetch internal tasks:", err);
+      setTasksError(err.message || "Failed to load internal tasks");
+      setInternalTasks([]);
+    } finally {
+      setTasksLoading(false);
     }
   };
 
@@ -73,14 +108,16 @@ export function AdminQueuesPage() {
         body: JSON.stringify({ type: item.type })
       });
 
-      if (response.ok) {
-        // Remove from list
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
         setQueueItems(prev => prev.filter(q => q.id !== item.id));
       } else {
-        console.warn("Failed to mark item complete:", response.status);
+        alert(data.error || "Failed to mark item complete");
       }
     } catch (error) {
       console.error("Failed to complete item:", error);
+      alert("Failed to mark item complete. Please try again.");
     } finally {
       setDispatchingId(null);
     }
@@ -97,14 +134,16 @@ export function AdminQueuesPage() {
         body: JSON.stringify({ type: item.type, reason: "Rejected from queue" })
       });
 
-      if (response.ok) {
-        // Remove from list
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
         setQueueItems(prev => prev.filter(q => q.id !== item.id));
       } else {
-        console.warn("Failed to delete item:", response.status);
+        alert(data.error || "Failed to delete item");
       }
     } catch (error) {
       console.error("Failed to delete item:", error);
+      alert("Failed to delete item. Please try again.");
     } finally {
       setDispatchingId(null);
     }
@@ -130,13 +169,11 @@ export function AdminQueuesPage() {
     const payload =
       task ||
       ({
-        id: createId(),
         title: "",
-        dueDate: new Date().toISOString().slice(0, 16),
+        dueDate: formatInputDate(new Date()),
         assignee: "",
-        status: "Queued",
+        status: "pending",
         description: "",
-        talent: [],
         priority: "Medium"
       });
     setActiveTask(task || null);
@@ -148,6 +185,7 @@ export function AdminQueuesPage() {
     setModalOpen(false);
     setActiveTask(null);
     setFormState(null);
+    setFormSaving(false);
   };
 
   const handleChange = (field) => (event) => {
@@ -155,42 +193,110 @@ export function AdminQueuesPage() {
     setFormState((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleTalent = (name) => {
-    setFormState((prev) => {
-      const picked = new Set(prev.talent || []);
-      if (picked.has(name)) {
-        picked.delete(name);
-      } else {
-        picked.add(name);
-      }
-      return { ...prev, talent: Array.from(picked) };
-    });
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    setTasks((prev) => {
-      const exists = prev.some((item) => item.id === formState.id);
-      if (exists) {
-        return prev.map((item) => (item.id === formState.id ? formState : item));
+    
+    if (!formState.title || !formState.dueDate) {
+      alert("Title and due date are required.");
+      return;
+    }
+    
+    try {
+      setFormSaving(true);
+      
+      if (activeTask) {
+        // Update existing task
+        const response = await apiFetch(`/api/queues/internal-tasks/${activeTask.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: formState.title,
+            description: formState.description,
+            priority: formState.priority,
+            dueDate: formState.dueDate,
+            assignedToUserId: formState.assignee || null,
+            metadata: {
+              talent: formState.talent || []
+            }
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed to update task");
+        }
+        
+        await fetchInternalTasks();
+      } else {
+        // Create new task
+        const response = await apiFetch("/api/queues/internal-tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: formState.title,
+            description: formState.description,
+            priority: formState.priority,
+            dueDate: formState.dueDate,
+            assignedToUserId: formState.assignee || null,
+            metadata: {
+              talent: formState.talent || []
+            }
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed to create task");
+        }
+        
+        await fetchInternalTasks();
       }
-      return [formState, ...prev];
-    });
-    closeModal();
+      
+      closeModal();
+    } catch (error) {
+      console.error("Failed to save task:", error);
+      alert(error.message || "Failed to save task. Please try again.");
+    } finally {
+      setFormSaving(false);
+    }
   };
 
-  const handleDeleteTask = (id) => {
-    setTasks((prev) => prev.filter((task) => task.id !== id));
-    if (activeTask?.id === id) {
-      closeModal();
+  const handleDeleteTask = async (id) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    
+    try {
+      const response = await apiFetch(`/api/queues/internal-tasks/${id}`, {
+        method: "DELETE"
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        await fetchInternalTasks();
+        if (activeTask?.id === id) {
+          closeModal();
+        }
+      } else {
+        alert(data.error || "Failed to delete task");
+      }
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      alert("Failed to delete task. Please try again.");
     }
+  };
+
+  const formatInputDate = (date) => {
+    const iso = new Date(date).toISOString();
+    return iso.slice(0, 16);
   };
 
   const formattedTasks = useMemo(
     () =>
-      tasks.map((task) => {
-        const date = new Date(task.dueDate);
-        const isValid = !Number.isNaN(date.getTime());
+      internalTasks.map((task) => {
+        const date = task.dueDate ? new Date(task.dueDate) : null;
+        const isValid = date && !Number.isNaN(date.getTime());
         return {
           ...task,
           dueLabel: isValid
@@ -199,10 +305,12 @@ export function AdminQueuesPage() {
                 hour: "2-digit",
                 minute: "2-digit"
               })
-            : "No due date"
+            : "No due date",
+          assignee: task.AssignedToUser?.name || task.AssignedToUser?.email || "Unassigned",
+          talent: task.metadata?.talent || []
         };
       }),
-    [tasks]
+    [internalTasks]
   );
 
   return (
@@ -217,6 +325,11 @@ export function AdminQueuesPage() {
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Queues</p>
             <h3 className="font-display text-2xl uppercase">What needs attention</h3>
+            {lastRefreshed && !loading && !error && (
+              <p className="text-xs text-brand-black/50 mt-1">
+                Last refreshed: {lastRefreshed.toLocaleTimeString()}
+              </p>
+            )}
           </div>
           <button
             onClick={fetchQueueItems}
@@ -228,13 +341,24 @@ export function AdminQueuesPage() {
         </div>
 
         <div className="mt-4 space-y-3">
-          {loading && queueItems.length === 0 ? (
+          {error ? (
+            <div className="rounded-2xl border border-brand-red/30 bg-brand-red/5 px-4 py-6 text-center">
+              <p className="font-semibold text-brand-red mb-2">⚠️ Failed to Load Queue</p>
+              <p className="text-sm text-brand-black/70 mb-3">{error}</p>
+              <button
+                onClick={fetchQueueItems}
+                className="rounded-full border border-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red hover:text-white transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : loading && queueItems.length === 0 ? (
             <div className="text-center py-8 text-brand-black/60">
               <p>Loading queue items...</p>
             </div>
           ) : queueItems.length === 0 ? (
             <div className="text-center py-8 text-brand-black/60">
-              <p>No items in queue. All caught up! 🎉</p>
+              <p>No items require attention right now.</p>
             </div>
           ) : (
             queueItems.map((item) => (
@@ -287,17 +411,34 @@ export function AdminQueuesPage() {
           >
             + New task
           </button>
-          <ul className="mt-4 space-y-3 text-left text-sm text-brand-black/80">
-            {formattedTasks.length === 0 ? (
-              <li className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3 text-brand-black/60">
-                No internal tasks yet.
-              </li>
-            ) : (
-              formattedTasks.map((task) => (
-                <li
-                  key={task.id}
-                  className="cursor-pointer rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3 transition hover:bg-brand-white"
-                  onClick={() => openModal(task)}
+          
+          {tasksError ? (
+            <div className="mt-4 rounded-2xl border border-brand-red/30 bg-brand-red/5 px-3 py-4 text-center">
+              <p className="text-sm font-semibold text-brand-red mb-1">Failed to load tasks</p>
+              <p className="text-xs text-brand-black/60 mb-2">{tasksError}</p>
+              <button
+                onClick={fetchInternalTasks}
+                className="text-xs uppercase tracking-[0.3em] text-brand-red hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          ) : tasksLoading ? (
+            <div className="mt-4 text-center py-4 text-sm text-brand-black/60">
+              Loading tasks...
+            </div>
+          ) : (
+            <ul className="mt-4 space-y-3 text-left text-sm text-brand-black/80">
+              {formattedTasks.length === 0 ? (
+                <li className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3 text-brand-black/60">
+                  No internal tasks yet.
+                </li>
+              ) : (
+                formattedTasks.map((task) => (
+                  <li
+                    key={task.id}
+                    className="cursor-pointer rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3 transition hover:bg-brand-white"
+                    onClick={() => openModal(task)}
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -316,7 +457,7 @@ export function AdminQueuesPage() {
                     </button>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge tone="neutral">{task.assignee || "Unassigned"}</Badge>
+                    <Badge tone="neutral">{task.assignee}</Badge>
                     <Badge tone="positive">{task.priority}</Badge>
                     {(task.talent || []).map((name) => (
                       <Badge key={name}>{name}</Badge>
@@ -326,6 +467,7 @@ export function AdminQueuesPage() {
               ))
             )}
           </ul>
+          )}
         </div>
         <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Queue summary</p>
@@ -437,7 +579,7 @@ export function AdminQueuesPage() {
                 <div className="mt-2 space-y-2">
                   <ContactAutocomplete
                     options={TALENT_DIRECTORY}
-                    value={formState.talent?.[0] || ""}
+                    value={(formState.talent || [])[0] || ""}
                     onSelect={(value) => setFormState((prev) => ({ ...prev, talent: value ? [value] : [] }))}
                   />
                 </div>
@@ -446,8 +588,9 @@ export function AdminQueuesPage() {
                 {activeTask ? (
                   <button
                     type="button"
-                    onClick={() => handleDeleteTask(formState.id)}
-                    className="rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-red"
+                    onClick={() => handleDeleteTask(activeTask.id)}
+                    disabled={formSaving}
+                    className="rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-red disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Delete task
                   </button>
@@ -458,15 +601,17 @@ export function AdminQueuesPage() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black hover:text-white transition-colors"
+                    disabled={formSaving}
+                    className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 transition-colors"
+                    disabled={formSaving}
+                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {activeTask ? "Save changes" : "Add task"}
+                    {formSaving ? "Saving..." : activeTask ? "Save changes" : "Add task"}
                   </button>
                 </div>
               </div>
