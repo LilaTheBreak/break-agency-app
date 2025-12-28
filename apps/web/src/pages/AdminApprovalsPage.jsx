@@ -5,8 +5,6 @@ import { Badge } from "../components/Badge.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { ContactAutocomplete } from "../components/ContactAutocomplete.jsx";
 import { FileUploadPanel } from "../components/FileUploadPanel.jsx";
-import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
-import { getPendingApprovals } from "../services/dashboardClient.js";
 import { apiFetch } from "../services/apiClient.js";
 
 const CONTACT_BOOK = [
@@ -18,8 +16,6 @@ const CONTACT_BOOK = [
   "lila@thebreakco.com"
 ];
 
-const createId = () => `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
 export function AdminApprovalsPage({ session }) {
   const navigate = useNavigate();
   const [approvals, setApprovals] = useState([]);
@@ -28,6 +24,11 @@ export function AdminApprovalsPage({ session }) {
   const [formState, setFormState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Filters
+  const [filterStatus, setFilterStatus] = useState("PENDING");
+  const [filterType, setFilterType] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Real approval counts from backend
   const [contentCount, setContentCount] = useState(0);
@@ -41,7 +42,23 @@ export function AdminApprovalsPage({ session }) {
       try {
         setLoading(true);
         setError(null);
-        const data = await getPendingApprovals();
+        
+        const params = new URLSearchParams();
+        if (filterStatus) params.set("status", filterStatus);
+        if (filterType) params.set("type", filterType);
+        if (searchQuery) params.set("search", searchQuery);
+        params.set("limit", "50");
+        
+        const response = await apiFetch(`/api/approvals?${params.toString()}`);
+        
+        if (!response.ok) {
+          if (response.status === 403) {
+            throw new Error("Admin access required to view approvals");
+          }
+          throw new Error(`Failed to load approvals (${response.status})`);
+        }
+        
+        const data = await response.json();
         setApprovals(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching approvals:", err);
@@ -52,7 +69,7 @@ export function AdminApprovalsPage({ session }) {
       }
     }
     fetchData();
-  }, []);
+  }, [filterStatus, filterType, searchQuery]);
 
   // Fetch real approval counts from various endpoints
   useEffect(() => {
@@ -191,11 +208,10 @@ export function AdminApprovalsPage({ session }) {
     const payload =
       approval ||
       ({
-        id: createId(),
         title: "",
         type: "Contract",
         submittedBy: "",
-        status: "Needs approval",
+        status: "PENDING",
         owner: "",
         contact: "",
         notes: "",
@@ -237,25 +253,52 @@ export function AdminApprovalsPage({ session }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
     
-    try {
-      // Optimistically update UI
-      setApprovals((prev) => {
-        const exists = prev.some((item) => item.id === formState.id);
-        if (exists) {
-          return prev.map((item) => (item.id === formState.id ? formState : item));
-        }
-        return [formState, ...prev];
-      });
-      closeModal();
+    if (!formState.type || !formState.title) {
+      alert("Type and title are required");
+      return;
+    }
 
-      // TODO: Send to backend when endpoint exists
-      // await apiFetch("/api/approvals", {
-      //   method: activeApproval ? "PATCH" : "POST",
-      //   body: JSON.stringify(formState)
-      // });
+    try {
+      setLoading(true);
+      
+      const method = activeApproval ? "PATCH" : "POST";
+      const endpoint = activeApproval ? `/api/approvals/${formState.id}` : "/api/approvals";
+      
+      const response = await apiFetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: formState.type,
+          title: formState.title,
+          description: formState.notes || null,
+          ownerId: formState.owner || null,
+          attachments: formState.attachments || [],
+          metadata: {}
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "Failed to save approval");
+      }
+
+      const savedApproval = await response.json();
+      
+      // Update local state with server response
+      setApprovals((prev) => {
+        if (activeApproval) {
+          return prev.map((item) => (item.id === savedApproval.id ? savedApproval : item));
+        }
+        return [savedApproval, ...prev];
+      });
+      
+      closeModal();
+      alert(activeApproval ? "Approval updated successfully" : "Approval created successfully");
     } catch (err) {
       console.error("Error saving approval:", err);
-      alert("Failed to save approval. Please try again.");
+      alert(err.message || "Failed to save approval. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -263,14 +306,25 @@ export function AdminApprovalsPage({ session }) {
     if (!confirm("Delete this approval entry? This cannot be undone.")) return;
     
     try {
+      setLoading(true);
+      
+      const response = await apiFetch(`/api/approvals/${id}`, { 
+        method: "DELETE" 
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "Failed to delete approval");
+      }
+
       setApprovals((prev) => prev.filter((item) => item.id !== id));
       closeModal();
-
-      // TODO: Send to backend when endpoint exists
-      // await apiFetch(`/api/approvals/${id}`, { method: "DELETE" });
+      alert("Approval deleted successfully");
     } catch (err) {
       console.error("Error deleting approval:", err);
-      alert("Failed to delete approval. Please try again.");
+      alert(err.message || "Failed to delete approval. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -341,6 +395,40 @@ export function AdminApprovalsPage({ session }) {
         </button>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-3">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] focus:border-brand-black focus:outline-none"
+        >
+          <option value="">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+        
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] focus:border-brand-black focus:outline-none"
+        >
+          <option value="">All Types</option>
+          <option value="Contract">Contract</option>
+          <option value="Brief">Brief</option>
+          <option value="Finance">Finance</option>
+          <option value="Content">Content</option>
+          <option value="Support">Support</option>
+        </select>
+
+        <input
+          type="text"
+          placeholder="Search by title..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="flex-1 rounded-full border border-brand-black/20 px-4 py-2 text-xs focus:border-brand-black focus:outline-none"
+        />
+      </div>
+
       {loading && (
         <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-8 text-center">
           <p className="text-sm text-brand-black/60">Loading approvals...</p>
@@ -370,27 +458,41 @@ export function AdminApprovalsPage({ session }) {
       
       {!loading && !error && approvals.length > 0 && (
         <section className="space-y-3">
-          {approvals.map((approval) => (
-            <article
-              key={approval.id}
-              className="cursor-pointer rounded-3xl border border-brand-black/10 bg-brand-white p-5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition hover:bg-brand-linen/40"
-              onClick={() => openModal(approval)}
-            >
-              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
-                {approval.type || "General"}
-              </p>
-              <h3 className="mt-2 font-display text-2xl uppercase">{approval.title || "Untitled"}</h3>
-              <p className="text-sm text-brand-black/70">
-                Submitted by {approval.requestor?.name || approval.submittedBy || "System"}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Badge tone={approval.status === "Approved" ? "positive" : "neutral"}>
-                  {approval.status || "Pending"}
-                </Badge>
-                {approval.owner ? <Badge tone="positive">{approval.owner}</Badge> : null}
-              </div>
-            </article>
-          ))}
+          {approvals.map((approval) => {
+            const statusMap = {
+              PENDING: { label: "Pending", tone: "neutral" },
+              APPROVED: { label: "Approved", tone: "positive" },
+              REJECTED: { label: "Rejected", tone: "negative" }
+            };
+            const statusInfo = statusMap[approval.status] || { label: approval.status, tone: "neutral" };
+            
+            return (
+              <article
+                key={approval.id}
+                className="cursor-pointer rounded-3xl border border-brand-black/10 bg-brand-white p-5 text-left shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition hover:bg-brand-linen/40"
+                onClick={() => openModal(approval)}
+              >
+                <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+                  {approval.type || "General"}
+                </p>
+                <h3 className="mt-2 font-display text-2xl uppercase">{approval.title || "Untitled"}</h3>
+                <p className="text-sm text-brand-black/70">
+                  Submitted by {approval.Requestor?.name || approval.submittedBy || "System"}
+                </p>
+                {approval.Approver && (
+                  <p className="text-xs text-brand-black/50 mt-1">
+                    {approval.status === "APPROVED" ? "Approved" : "Handled"} by {approval.Approver.name}
+                  </p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge tone={statusInfo.tone}>
+                    {statusInfo.label}
+                  </Badge>
+                  {approval.ownerId ? <Badge tone="positive">{approval.ownerId}</Badge> : null}
+                </div>
+              </article>
+            );
+          })}
         </section>
       )}
 
@@ -468,13 +570,19 @@ export function AdminApprovalsPage({ session }) {
                   value={formState.status}
                   onChange={handleChange("status")}
                   className="mt-1 w-full rounded-2xl border border-brand-black/20 px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+                  disabled={activeApproval}
                 >
-                  {["Needs approval", "Approved", "Rejected", "In review", "Escalated"].map((item) => (
+                  {["PENDING", "APPROVED", "REJECTED"].map((item) => (
                     <option key={item} value={item}>
                       {item}
                     </option>
                   ))}
                 </select>
+                {activeApproval && (
+                  <p className="mt-1 text-xs text-brand-black/50">
+                    Status is managed by approve/reject actions
+                  </p>
+                )}
               </label>
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Associated contact</p>
@@ -523,13 +631,6 @@ export function AdminApprovalsPage({ session }) {
                   <p className="mt-2 text-xs text-brand-black/50">No attachments uploaded.</p>
                 )}
               </div>
-              <VersionHistoryCard
-                session={session}
-                briefId={formState.id}
-                data={formState}
-                allowCreate
-                allowRestore
-              />
               <div className="flex justify-between">
                 {activeApproval ? (
                   <button

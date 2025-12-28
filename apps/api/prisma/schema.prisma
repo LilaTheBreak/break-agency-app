@@ -72,6 +72,29 @@ model AgentProfile {
   User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Approval {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  description String?
+  status      String   @default("PENDING")
+  requestorId String
+  approverId  String?
+  ownerId     String?
+  attachments Json[]   @default([])
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  Requestor User  @relation("ApprovalRequestor", fields: [requestorId], references: [id])
+  Approver  User? @relation("ApprovalApprover", fields: [approverId], references: [id])
+
+  @@index([status])
+  @@index([type])
+  @@index([requestorId])
+  @@index([approverId])
+}
+
 model AiTokenLog {
   id               String   @id
   userId           String?
@@ -1391,6 +1414,8 @@ model User {
   resetTokenExpiry                        DateTime?
   AgentProfile                            AgentProfile?
   AiTokenLog                              AiTokenLog[]
+  ApprovalsCreated                        Approval[]               @relation("ApprovalRequestor")
+  ApprovalsHandled                        Approval[]               @relation("ApprovalApprover")
   AuditLog                                AuditLog[]
   BrandCampaign                           BrandCampaign[]
   CalendarEventsCreated                   CalendarEvent[]          @relation("CalendarEventCreator")

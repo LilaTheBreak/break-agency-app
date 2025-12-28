@@ -8,7 +8,7 @@ export async function uploadFileRequest({ file, folder }) {
     throw new Error("Unsupported file type");
   }
   const content = await fileToBase64(file);
-  const response = await apiFetch("/files/upload", {
+  const response = await apiFetch("/api/files/upload", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -31,7 +31,7 @@ export async function listFilesRequest({ folder, userId }) {
   if (folder) params.set("folder", folder);
   if (userId) params.set("userId", userId);
   const query = params.toString();
-  const response = await apiFetch(`/files${query ? `?${query}` : ""}`);
+  const response = await apiFetch(`/api/files${query ? `?${query}` : ""}`);
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new Error(text || "Unable to load files");
@@ -40,7 +40,7 @@ export async function listFilesRequest({ folder, userId }) {
 }
 
 export async function deleteFileRequest({ id }) {
-  const response = await apiFetch(`/files/${encodeURIComponent(id)}`, {
+  const response = await apiFetch(`/api/files/${encodeURIComponent(id)}`, {
     method: "DELETE"
   });
   if (!response.ok) {

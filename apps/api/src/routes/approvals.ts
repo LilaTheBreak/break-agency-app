@@ -5,75 +5,257 @@ import prisma from "../lib/prisma.js";
 
 const router = Router();
 
+// Helper: Log approval actions to audit log
+async function logApprovalAction(
+  userId: string,
+  action: string,
+  approvalId: string,
+  metadata?: any
+) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action,
+        entityType: "APPROVAL",
+        entityId: approvalId,
+        metadata: metadata || {},
+        createdAt: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("[Audit] Failed to log approval action:", error);
+  }
+}
+
+// GET /api/approvals - List approvals with filters
 router.get("/api/approvals", requireAuth, async (req: Request, res: Response) => {
-  // Check single role field (not roles array)
   const userRole = req.user?.role || "";
   if (userRole !== "ADMIN" && userRole !== "SUPERADMIN") {
-    // Return empty array instead of 403 - graceful degradation
-    return res.status(200).json([]);
+    return res.status(403).json({ error: "Admin access required" });
   }
 
   try {
-    const limit = parseInt(req.query.limit as string) || 4;
-    const status = (req.query.status as string)?.toUpperCase() || "PENDING";
+    const limit = parseInt(req.query.limit as string) || 50;
+    const status = req.query.status as string;
+    const type = req.query.type as string;
+    const search = req.query.search as string;
 
-    const [contentApprovals, ugcApprovals] = await prisma.$transaction([
-      prisma.contentApproval.findMany({
-        where: { status },
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.ugcApproval.findMany({
-        where: { status },
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+    const where: any = {};
+    if (status) where.status = status.toUpperCase();
+    if (type) where.type = type;
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
-    const combined = [
-      ...contentApprovals.map(a => ({ ...a, type: 'content' })),
-      ...ugcApprovals.map(a => ({ ...a, type: 'ugc' })),
-    ];
+    const approvals = await prisma.approval.findMany({
+      where,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        Requestor: {
+          select: { id: true, name: true, email: true },
+        },
+        Approver: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
 
-    const sortedApprovals = combined.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
-
-    res.json(sortedApprovals);
+    res.json(approvals);
   } catch (error) {
     console.error("[Approvals] Error fetching approvals:", error);
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json([]);
+    res.status(500).json({ error: "Failed to fetch approvals" });
   }
 });
 
-const updateApprovalStatus = async (id: string, status: "APPROVED" | "REJECTED") => {
-  // This logic assumes approval IDs are unique across both tables.
-  // A more robust solution might involve a `type` parameter in the request.
+// POST /api/approvals - Create approval
+router.post("/api/approvals", requireAdmin, async (req: Request, res: Response) => {
   try {
-    // Attempt to update ContentApproval first
-    return await prisma.contentApproval.update({ where: { id }, data: { status } });
-  } catch (e) {
-    // If it fails (e.g., record not found), try UGCApproval
-    return prisma.ugcApproval.update({ where: { id }, data: { status } });
-  }
-};
+    const { type, title, description, ownerId, attachments, metadata } = req.body;
 
+    if (!type || !title) {
+      return res.status(400).json({ error: "Type and title are required" });
+    }
+
+    const approval = await prisma.approval.create({
+      data: {
+        type,
+        title,
+        description,
+        requestorId: req.user!.id,
+        ownerId,
+        attachments: attachments || [],
+        metadata: metadata || {},
+        status: "PENDING",
+      },
+      include: {
+        Requestor: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    await logApprovalAction(req.user!.id, "APPROVAL_CREATED", approval.id, {
+      type: approval.type,
+      title: approval.title,
+    });
+
+    res.status(201).json(approval);
+  } catch (error) {
+    console.error("[Approvals] Error creating approval:", error);
+    res.status(500).json({ error: "Failed to create approval" });
+  }
+});
+
+// PATCH /api/approvals/:id - Update approval
+router.patch("/api/approvals/:id", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { type, title, description, ownerId, attachments, metadata } = req.body;
+
+    const existing = await prisma.approval.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Approval not found" });
+    }
+
+    const updateData: any = {};
+    if (type !== undefined) updateData.type = type;
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (ownerId !== undefined) updateData.ownerId = ownerId;
+    if (attachments !== undefined) updateData.attachments = attachments;
+    if (metadata !== undefined) updateData.metadata = metadata;
+
+    const updated = await prisma.approval.update({
+      where: { id },
+      data: updateData,
+      include: {
+        Requestor: {
+          select: { id: true, name: true, email: true },
+        },
+        Approver: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    await logApprovalAction(req.user!.id, "APPROVAL_UPDATED", id, {
+      changes: updateData,
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("[Approvals] Error updating approval:", error);
+    res.status(500).json({ error: "Failed to update approval" });
+  }
+});
+
+// DELETE /api/approvals/:id - Delete approval
+router.delete("/api/approvals/:id", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await prisma.approval.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Approval not found" });
+    }
+
+    await prisma.approval.delete({ where: { id } });
+
+    await logApprovalAction(req.user!.id, "APPROVAL_DELETED", id, {
+      type: existing.type,
+      title: existing.title,
+    });
+
+    res.json({ success: true, message: "Approval deleted" });
+  } catch (error) {
+    console.error("[Approvals] Error deleting approval:", error);
+    res.status(500).json({ error: "Failed to delete approval" });
+  }
+});
+
+// POST /api/approvals/:id/approve - Approve
 router.post("/api/approvals/:id/approve", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const updated = await updateApprovalStatus(req.params.id, "APPROVED");
+    const { id } = req.params;
+
+    const existing = await prisma.approval.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Approval not found" });
+    }
+
+    const updated = await prisma.approval.update({
+      where: { id },
+      data: {
+        status: "APPROVED",
+        approverId: req.user!.id,
+      },
+      include: {
+        Requestor: {
+          select: { id: true, name: true, email: true },
+        },
+        Approver: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    await logApprovalAction(req.user!.id, "APPROVAL_APPROVED", id, {
+      type: updated.type,
+      title: updated.title,
+      previousStatus: existing.status,
+      newStatus: "APPROVED",
+    });
+
     res.json(updated);
   } catch (error) {
-    res.status(404).json({ error: "Approval item not found." });
+    console.error("[Approvals] Error approving:", error);
+    res.status(500).json({ error: "Failed to approve" });
   }
 });
 
+// POST /api/approvals/:id/reject - Reject
 router.post("/api/approvals/:id/reject", requireAdmin, async (req: Request, res: Response) => {
   try {
-    const updated = await updateApprovalStatus(req.params.id, "REJECTED");
+    const { id } = req.params;
+
+    const existing = await prisma.approval.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Approval not found" });
+    }
+
+    const updated = await prisma.approval.update({
+      where: { id },
+      data: {
+        status: "REJECTED",
+        approverId: req.user!.id,
+      },
+      include: {
+        Requestor: {
+          select: { id: true, name: true, email: true },
+        },
+        Approver: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    await logApprovalAction(req.user!.id, "APPROVAL_REJECTED", id, {
+      type: updated.type,
+      title: updated.title,
+      previousStatus: existing.status,
+      newStatus: "REJECTED",
+    });
+
     res.json(updated);
   } catch (error) {
-    res.status(404).json({ error: "Approval item not found." });
+    console.error("[Approvals] Error rejecting:", error);
+    res.status(500).json({ error: "Failed to reject" });
   }
 });
-
 
 export default router;

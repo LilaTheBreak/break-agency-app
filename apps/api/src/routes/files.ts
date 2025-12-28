@@ -1,6 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import prisma from "../lib/prisma.js";
-import { deleteObject } from "../lib/s3.js";
+import { deleteObject, buildObjectKey, s3 } from "../lib/s3.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import {
   requestUploadUrl,
   confirmUpload,
@@ -8,9 +9,11 @@ import {
   getDownloadUrl
 } from "../services/fileService.js";
 import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
+import { safeEnv } from "../utils/safeEnv.js";
 // import slackClient from "../integrations/slack/slackClient.js";
 
 const router = Router();
+const bucket = safeEnv("S3_BUCKET", "local-bucket");
 
 router.get("/", requireUser, async (req, res, next) => {
   try {
@@ -57,28 +60,67 @@ router.post("/upload", requireUser, async (req, res, next) => {
     const size = buffer.length;
     
     // Generate storage key
-    const key = `uploads/${currentUser.id}-${Date.now()}-${filename}`;
+    const key = buildObjectKey(currentUser.id, filename);
     
-    // In production, upload to S3 here
-    // For now, create a stub URL
-    const url = `https://stub-s3.local/${key}`;
+    // Determine content type from base64 header or default
+    let contentType = "application/octet-stream";
+    const dataUrlMatch = content.match(/^data:([^;]+);base64,/);
+    if (dataUrlMatch) {
+      contentType = dataUrlMatch[1];
+    }
     
-    // Save file record to database
-    const file = await prisma.file.create({
-      data: {
-        id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        updatedAt: new Date(),
-        userId: currentUser.id,
-        key,
-        url,
-        filename,
-        type: req.body.contentType || "application/octet-stream",
-        folder: folder || null,
-        size
-      }
-    });
-    
-    res.json({ file });
+    try {
+      // Actually upload to S3
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          Body: buffer,
+          ContentType: contentType,
+        })
+      );
+      
+      // Generate public or signed URL
+      const url = `https://${bucket}.s3.amazonaws.com/${key}`;
+      
+      // Save file record to database
+      const file = await prisma.file.create({
+        data: {
+          id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          updatedAt: new Date(),
+          userId: currentUser.id,
+          key,
+          url,
+          filename,
+          type: contentType,
+          folder: folder || null,
+          size
+        }
+      });
+      
+      res.json({ file });
+    } catch (s3Error) {
+      console.error("[FILE_UPLOAD] S3 Error:", s3Error);
+      
+      // Fallback: save stub URL if S3 fails (for development/testing)
+      const stubUrl = `https://stub-s3.local/${key}`;
+      const file = await prisma.file.create({
+        data: {
+          id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          updatedAt: new Date(),
+          userId: currentUser.id,
+          key,
+          url: stubUrl,
+          filename,
+          type: contentType,
+          folder: folder || null,
+          size
+        }
+      });
+      
+      console.warn("[FILE_UPLOAD] S3 upload failed, created stub record");
+      res.json({ file, warning: "File metadata saved but upload to storage failed" });
+    }
   } catch (err) {
     console.error("[FILE_UPLOAD] Error:", err);
     next(err);
