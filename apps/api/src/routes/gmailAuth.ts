@@ -7,7 +7,10 @@ import { refreshAccessToken } from "../integrations/gmail/googleAuth.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
+
+// Support comma-separated origins for CORS, but only use first for redirects
+const FRONTEND_ORIGIN_RAW = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
+const FRONTEND_ORIGIN = FRONTEND_ORIGIN_RAW.split(',')[0].trim();
 
 // GET /api/gmail/auth/status - Check if Gmail is connected
 router.get("/status", requireAuth, async (req, res) => {

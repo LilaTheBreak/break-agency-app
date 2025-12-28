@@ -213,6 +213,21 @@ const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL |
 // Support multiple origins (comma-separated)
 const allowedOrigins = FRONTEND_ORIGIN.split(',').map(o => o.trim());
 
+// Validate each origin is a valid URL
+allowedOrigins.forEach((origin, index) => {
+  try {
+    new URL(origin);
+  } catch (error) {
+    console.error(`\n❌ INVALID FRONTEND_ORIGIN[${index}]: "${origin}"`);
+    console.error(`   Each comma-separated origin must be a valid URL (e.g., https://domain.com)`);
+    if (process.env.NODE_ENV === "production") {
+      process.exit(1);
+    }
+  }
+});
+
+console.log("✅ FRONTEND_ORIGIN validated:", allowedOrigins[0], `(+${allowedOrigins.length - 1} more)`);
+
 // ------------------------------------------------------
 // CORE MIDDLEWARE
 // ------------------------------------------------------
