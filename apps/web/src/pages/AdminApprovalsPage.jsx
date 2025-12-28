@@ -328,6 +328,70 @@ export function AdminApprovalsPage({ session }) {
     }
   };
 
+  const handleApprove = async (id) => {
+    if (!confirm("Approve this request? This will mark it as approved.")) return;
+    
+    try {
+      setLoading(true);
+      
+      const response = await apiFetch(`/api/approvals/${id}/approve`, { 
+        method: "POST" 
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "Failed to approve");
+      }
+
+      const updatedApproval = await response.json();
+      
+      // Update local state with server response
+      setApprovals((prev) => 
+        prev.map((item) => (item.id === updatedApproval.id ? updatedApproval : item))
+      );
+      
+      closeModal();
+      alert("Approval approved successfully");
+    } catch (err) {
+      console.error("Error approving:", err);
+      alert(err.message || "Failed to approve. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (id) => {
+    if (!confirm("Reject this request? This will mark it as rejected.")) return;
+    
+    try {
+      setLoading(true);
+      
+      const response = await apiFetch(`/api/approvals/${id}/reject`, { 
+        method: "POST" 
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "Failed to reject");
+      }
+
+      const updatedApproval = await response.json();
+      
+      // Update local state with server response
+      setApprovals((prev) => 
+        prev.map((item) => (item.id === updatedApproval.id ? updatedApproval : item))
+      );
+      
+      closeModal();
+      alert("Approval rejected successfully");
+    } catch (err) {
+      console.error("Error rejecting:", err);
+      alert(err.message || "Failed to reject. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DashboardShell
       title="Approvals"
@@ -632,17 +696,38 @@ export function AdminApprovalsPage({ session }) {
                 )}
               </div>
               <div className="flex justify-between">
-                {activeApproval ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(formState.id)}
-                    className="rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red hover:text-white transition-colors"
-                  >
-                    Delete entry
-                  </button>
-                ) : (
-                  <span />
-                )}
+                <div className="flex gap-2">
+                  {activeApproval && formState.status === "PENDING" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleApprove(formState.id)}
+                        disabled={loading}
+                        className="rounded-full border border-green-600 bg-green-600 px-4 py-2 text-xs uppercase tracking-[0.35em] text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleReject(formState.id)}
+                        disabled={loading}
+                        className="rounded-full border border-brand-red bg-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 transition-colors disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {activeApproval && formState.status !== "PENDING" && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(formState.id)}
+                      disabled={loading}
+                      className="rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red hover:text-white transition-colors disabled:opacity-50"
+                    >
+                      Delete entry
+                    </button>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -651,12 +736,15 @@ export function AdminApprovalsPage({ session }) {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="rounded-full bg-brand-red px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 transition-colors"
-                  >
-                    {activeApproval ? "Save changes" : "Add approval"}
-                  </button>
+                  {formState.status === "PENDING" && (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="rounded-full bg-brand-black px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-black/90 transition-colors disabled:opacity-50"
+                    >
+                      {activeApproval ? "Save changes" : "Add approval"}
+                    </button>
+                  )}
                 </div>
               </div>
             </form>
