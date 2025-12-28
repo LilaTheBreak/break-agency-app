@@ -12,14 +12,43 @@ const ENTITY_OPTIONS = [
   { label: "Briefs", value: "brief" },
   { label: "Approvals", value: "approval" },
   { label: "Finance", value: "finance" },
-  { label: "Social", value: "social" }
+  { label: "Social", value: "social" },
+  { label: "Audit", value: "audit" }
+];
+
+const ACTION_OPTIONS = [
+  { label: "All actions", value: "" },
+  { label: "Login", value: "LOGIN" },
+  { label: "Logout", value: "LOGOUT" },
+  { label: "Role change", value: "ROLE_CHANGE" },
+  { label: "User approved", value: "USER_APPROVED" },
+  { label: "User rejected", value: "USER_REJECTED" },
+  { label: "User archived", value: "USER_ARCHIVED" },
+  { label: "Brief created", value: "BRIEF_CREATED" },
+  { label: "Audit viewed", value: "AUDIT_VIEWED" },
+  { label: "Audit exported", value: "AUDIT_EXPORTED" }
+];
+
+const ROLE_OPTIONS = [
+  { label: "All roles", value: "" },
+  { label: "Superadmin", value: "SUPERADMIN" },
+  { label: "Admin", value: "ADMIN" },
+  { label: "Brand", value: "BRAND" },
+  { label: "Creator", value: "CREATOR" }
 ];
 
 const PAGE_LIMIT = 25;
 
 export function AdminActivityPage() {
   const { hasRole } = useAuth();
-  const [filters, setFilters] = useState({ userId: "", entityType: "", date: "" });
+  const [filters, setFilters] = useState({
+    userId: "",
+    entityType: "",
+    action: "",
+    userRole: "",
+    startDate: "",
+    endDate: ""
+  });
   const [formState, setFormState] = useState(filters);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,9 +60,10 @@ export function AdminActivityPage() {
     total: 0,
     limit: PAGE_LIMIT
   });
+  const [lastFetch, setLastFetch] = useState(null);
+  const [exportLoading, setExportLoading] = useState(false);
 
   const fetchLogs = useCallback(async () => {
-    // Check role before making API call
     if (!hasRole("ADMIN", "SUPERADMIN")) {
       setLogs([]);
       setLoading(false);
@@ -51,21 +81,37 @@ export function AdminActivityPage() {
       const trimmedUser = filters.userId.trim();
       if (trimmedUser) params.set("userId", trimmedUser);
       if (filters.entityType) params.set("entityType", filters.entityType);
+      if (filters.action) params.set("action", filters.action);
+      if (filters.userRole) params.set("userRole", filters.userRole);
+      if (filters.startDate) params.set("startDate", filters.startDate);
+      if (filters.endDate) params.set("endDate", filters.endDate);
+
       const response = await apiFetch(`/audit?${params.toString()}`);
-      if (response.status === 403 || response.status === 404) {
+
+      if (response.status === 403) {
         setLogs([]);
         setPagination({ page: 1, totalPages: 1, total: 0, limit: PAGE_LIMIT });
-        setError("");
+        setError("Access denied. Admin privileges required.");
         return;
       }
+
       if (!response.ok) {
-        console.warn("Audit logs request failed:", response.status);
+        const errorData = await response.json().catch(() => ({}));
         setLogs([]);
         setPagination({ page: 1, totalPages: 1, total: 0, limit: PAGE_LIMIT });
-        setError("");
+        setError(errorData.error || "Failed to load audit logs. Please refresh or contact support.");
         return;
       }
+
       const payload = await response.json();
+      
+      if (!payload.success) {
+        setError(payload.error || "An error occurred loading audit logs.");
+        setLogs([]);
+        setPagination({ page: 1, totalPages: 1, total: 0, limit: PAGE_LIMIT });
+        return;
+      }
+
       setLogs(payload.logs ?? []);
       setPagination(
         payload.pagination ?? {
@@ -75,37 +121,31 @@ export function AdminActivityPage() {
           limit: PAGE_LIMIT
         }
       );
+      setLastFetch(new Date());
+      setError("");
     } catch (err) {
-      console.warn("Audit logs error:", err);
-      // Silently fail - don't crash UI
+      console.error("Audit logs error:", err);
       setLogs([]);
       setPagination({ page: 1, totalPages: 1, total: 0, limit: PAGE_LIMIT });
-      setError("");
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
-  }, [filters.entityType, filters.userId, page, hasRole]);
+  }, [filters, page, hasRole]);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
-  const filteredLogs = useMemo(() => {
-    if (!filters.date) return logs;
-    return logs.filter((log) => {
-      if (!log?.createdAt) return false;
-      return log.createdAt.slice(0, 10) === filters.date;
-    });
-  }, [logs, filters.date]);
-
+  // Entity breakdown shows current page counts
   const entityBreakdown = useMemo(() => {
     const counts = new Map();
-    filteredLogs.forEach((log) => {
+    logs.forEach((log) => {
       const entity = log.entityType || "unclassified";
       counts.set(entity, (counts.get(entity) || 0) + 1);
     });
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-  }, [filteredLogs]);
+  }, [logs]);
 
   const handleFilterChange = (field) => (event) => {
     const value = event.target.value;
@@ -119,7 +159,14 @@ export function AdminActivityPage() {
   };
 
   const resetFilters = () => {
-    const defaults = { userId: "", entityType: "", date: "" };
+    const defaults = {
+      userId: "",
+      entityType: "",
+      action: "",
+      userRole: "",
+      startDate: "",
+      endDate: ""
+    };
     setFormState(defaults);
     setFilters(defaults);
     setPage(1);
@@ -134,12 +181,128 @@ export function AdminActivityPage() {
     });
   };
 
+  const exportCSV = async () => {
+    setExportLoading(true);
+    try {
+      const params = new URLSearchParams();
+      const trimmedUser = filters.userId.trim();
+      if (trimmedUser) params.set("userId", trimmedUser);
+      if (filters.entityType) params.set("entityType", filters.entityType);
+      if (filters.action) params.set("action", filters.action);
+      if (filters.userRole) params.set("userRole", filters.userRole);
+      if (filters.startDate) params.set("startDate", filters.startDate);
+      if (filters.endDate) params.set("endDate", filters.endDate);
+
+      const response = await apiFetch(`/audit/export?${params.toString()}`);
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Export error:", err);
+      alert("Failed to export audit logs. Please try again.");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+
+  // Enhanced empty state logic
+  const getEmptyStateMessage = () => {
+    if (error) {
+      return error;
+    }
+    if (activeFiltersCount > 0) {
+      return "No audit entries match your current filters. Try adjusting or resetting them.";
+    }
+    if (pagination.total === 0) {
+      return "No audit entries exist yet. Actions will appear here as users interact with the platform.";
+    }
+    return "No audit entries found.";
+  };
+
+  // Get user display for clickable link
+  const getUserDisplay = (log) => {
+    if (log.User?.email) {
+      return log.User.email;
+    }
+    if (log.User?.name) {
+      return log.User.name;
+    }
+    return log.userId || "—";
+  };
+
+  // Determine severity for action
+  const getActionSeverity = (action) => {
+    const critical = ["USER_ARCHIVED", "ROLE_CHANGE", "USER_REJECTED", "PASSWORD_RESET"];
+    const warning = ["USER_APPROVED", "LOGIN_FAILED", "PERMISSION_DENIED"];
+    if (critical.some((a) => action.includes(a))) return "critical";
+    if (warning.some((a) => action.includes(a))) return "warning";
+    return "info";
+  };
+
   return (
     <DashboardShell
       title="Activity"
-      subtitle="Track every sensitive action across the console. Filters stay local so you can triage faster."
+      subtitle="Complete audit trail of all platform actions. All filters applied at database level."
       navLinks={ADMIN_NAV_LINKS}
     >
+      {/* Filter Summary Bar */}
+      {activeFiltersCount > 0 && (
+        <div className="mt-6 rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">
+                {activeFiltersCount} Active Filter{activeFiltersCount > 1 ? "s" : ""}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                {filters.userId && (
+                  <Badge tone="info">User: {filters.userId}</Badge>
+                )}
+                {filters.entityType && (
+                  <Badge tone="info">Entity: {filters.entityType}</Badge>
+                )}
+                {filters.action && (
+                  <Badge tone="info">Action: {filters.action}</Badge>
+                )}
+                {filters.userRole && (
+                  <Badge tone="info">Role: {filters.userRole}</Badge>
+                )}
+                {filters.startDate && (
+                  <Badge tone="info">From: {filters.startDate}</Badge>
+                )}
+                {filters.endDate && (
+                  <Badge tone="info">To: {filters.endDate}</Badge>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-brand-black/60">
+                Showing {logs.length} of {pagination.total} total records
+                {lastFetch && (
+                  <span className="ml-2">
+                    · Last updated {lastFetch.toLocaleTimeString()}
+                  </span>
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red hover:text-white"
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+      )}
+
       <section className="mt-6 grid gap-4 lg:grid-cols-[280px_1fr]">
         <form
           className="rounded-3xl border border-brand-black/10 bg-brand-white p-5"
@@ -148,12 +311,12 @@ export function AdminActivityPage() {
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Filters</p>
           <div className="mt-4 space-y-4 text-sm">
             <label className="block space-y-2">
-              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">User</span>
+              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">User ID</span>
               <input
                 type="text"
                 value={formState.userId}
                 onChange={handleFilterChange("userId")}
-                placeholder="user@example.com"
+                placeholder="user-id-123"
                 className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
               />
             </label>
@@ -172,11 +335,48 @@ export function AdminActivityPage() {
               </select>
             </label>
             <label className="block space-y-2">
-              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">Date</span>
+              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">Action</span>
+              <select
+                value={formState.action}
+                onChange={handleFilterChange("action")}
+                className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
+              >
+                {ACTION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-2">
+              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">User role</span>
+              <select
+                value={formState.userRole}
+                onChange={handleFilterChange("userRole")}
+                className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
+              >
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-2">
+              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">Start date</span>
               <input
                 type="date"
-                value={formState.date}
-                onChange={handleFilterChange("date")}
+                value={formState.startDate}
+                onChange={handleFilterChange("startDate")}
+                className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">End date</span>
+              <input
+                type="date"
+                value={formState.endDate}
+                onChange={handleFilterChange("endDate")}
                 className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
               />
             </label>
@@ -198,7 +398,10 @@ export function AdminActivityPage() {
           </div>
           <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-xs text-brand-black/70">
             <p className="font-subtitle text-[0.55rem] uppercase tracking-[0.35em] text-brand-red">
-              Entity mix
+              Current Page Mix
+            </p>
+            <p className="mt-1 text-[0.6rem] text-brand-black/60">
+              Entity counts on this page (not database totals)
             </p>
             <ul className="mt-2 space-y-1">
               {entityBreakdown.length ? (
@@ -209,7 +412,7 @@ export function AdminActivityPage() {
                   </li>
                 ))
               ) : (
-                <li>No entries.</li>
+                <li>No entries on current page.</li>
               )}
             </ul>
           </div>
@@ -221,17 +424,31 @@ export function AdminActivityPage() {
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Audit</p>
               <h3 className="font-display text-3xl uppercase">Activity table</h3>
             </div>
-            <button
-              type="button"
-              onClick={() => fetchLogs()}
-              className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
-              disabled={loading}
-            >
-              {loading ? "Syncing…" : "Refresh"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={exportCSV}
+                disabled={exportLoading || loading || logs.length === 0}
+                className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {exportLoading ? "Exporting…" : "Export CSV"}
+              </button>
+              <button
+                type="button"
+                onClick={() => fetchLogs()}
+                className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                disabled={loading}
+              >
+                {loading ? "Syncing…" : "Refresh"}
+              </button>
+            </div>
           </div>
+
           {error ? (
-            <p className="mt-4 text-sm text-brand-red">{error}</p>
+            <div className="mt-4 rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Error</p>
+              <p className="mt-2 text-sm text-brand-black/80">{error}</p>
+            </div>
           ) : loading ? (
             <p className="mt-4 text-sm text-brand-black/60">Loading audit entries…</p>
           ) : (
@@ -242,38 +459,65 @@ export function AdminActivityPage() {
                     <tr className="text-xs uppercase tracking-[0.3em] text-brand-black/50">
                       <th className="py-2 pr-3">Timestamp</th>
                       <th className="py-2 pr-3">User</th>
+                      <th className="py-2 pr-3">Role</th>
                       <th className="py-2 pr-3">Action</th>
                       <th className="py-2 pr-3">Entity</th>
-                      <th className="py-2 pr-3">Metadata</th>
+                      <th className="py-2 pr-3">IP</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredLogs.map((log) => (
-                      <tr key={log.id} className="border-t border-brand-black/10 text-xs">
-                        <td className="py-2 pr-3 text-brand-black/60">
-                          {new Date(log.createdAt).toLocaleString()}
-                        </td>
-                        <td className="py-2 pr-3">{log.userId || "—"}</td>
-                        <td className="py-2 pr-3 text-brand-black uppercase tracking-[0.2em]">
-                          <span>{log.action}</span>
-                        </td>
-                        <td className="py-2 pr-3">
-                          <div className="flex flex-col gap-1">
-                            <Badge tone="neutral">{log.entityType || "unclassified"}</Badge>
-                            <span className="text-[0.6rem] text-brand-black/60">{log.entityId || "—"}</span>
-                          </div>
-                        </td>
-                        <td className="py-2 pr-3 text-brand-black/60">
-                          <pre className="max-h-16 max-w-xs overflow-auto text-[0.6rem]">
-                            {JSON.stringify(log.metadata ?? {}, null, 2)}
-                          </pre>
-                        </td>
-                      </tr>
-                    ))}
-                    {!filteredLogs.length ? (
+                    {logs.map((log) => {
+                      const severity = getActionSeverity(log.action);
+                      return (
+                        <tr key={log.id} className="border-t border-brand-black/10 text-xs hover:bg-brand-linen/30">
+                          <td className="py-2 pr-3 text-brand-black/60">
+                            {new Date(log.createdAt).toLocaleString()}
+                          </td>
+                          <td className="py-2 pr-3">
+                            {log.userId ? (
+                              <a
+                                href={`/admin/users?search=${log.userId}`}
+                                className="text-brand-red underline hover:text-brand-red/80"
+                                title="View user"
+                              >
+                                {getUserDisplay(log)}
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="py-2 pr-3">
+                            <Badge tone="neutral">{log.userRole || "—"}</Badge>
+                          </td>
+                          <td className="py-2 pr-3">
+                            <div className="flex items-center gap-2">
+                              {severity === "critical" && (
+                                <span className="h-2 w-2 rounded-full bg-brand-red" title="Critical action" />
+                              )}
+                              {severity === "warning" && (
+                                <span className="h-2 w-2 rounded-full bg-yellow-500" title="Warning action" />
+                              )}
+                              <span className="uppercase tracking-[0.2em]">{log.action}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 pr-3">
+                            <div className="flex flex-col gap-1">
+                              <Badge tone="neutral">{log.entityType || "unclassified"}</Badge>
+                              {log.entityId && (
+                                <span className="text-[0.6rem] text-brand-black/60">{log.entityId}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-2 pr-3 text-[0.65rem] text-brand-black/60">
+                            {log.ipAddress || "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!logs.length ? (
                       <tr>
-                        <td colSpan={5} className="py-4 text-center text-xs text-brand-black/50">
-                          No audit entries match those filters.
+                        <td colSpan={6} className="py-8 text-center text-xs text-brand-black/60">
+                          {getEmptyStateMessage()}
                         </td>
                       </tr>
                     ) : null}
@@ -282,7 +526,7 @@ export function AdminActivityPage() {
               </div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-brand-black/70">
                 <p className="uppercase tracking-[0.3em]">
-                  Page {pagination.page || page} / {pagination.totalPages || 1} · {pagination.total} records
+                  Page {pagination.page || page} / {pagination.totalPages || 1} · {pagination.total} total records
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -302,6 +546,14 @@ export function AdminActivityPage() {
                     Next
                   </button>
                 </div>
+              </div>
+              
+              {/* Retention Policy Footer */}
+              <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4 text-xs text-brand-black/60">
+                <p className="font-semibold uppercase tracking-[0.3em]">Retention Policy</p>
+                <p className="mt-2">
+                  Audit logs are retained for the platform lifetime during beta. Retention policy may be updated before public launch. Export regularly for your records.
+                </p>
               </div>
             </>
           )}
