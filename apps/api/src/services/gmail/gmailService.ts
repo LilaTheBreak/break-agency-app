@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import prisma from "../../lib/prisma.js";
 import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
 import { getOAuthClientForUser } from "./tokens.js";
+import { linkEmailToCrm } from "./linkEmailToCrm.js";
 
 function flattenParts(payload: any) {
   const results: Array<{ mimeType: string; body: string; attachmentId?: string; filename?: string }> = [];
@@ -206,8 +207,16 @@ export async function ingestGmailForUser(userId: string) {
           extractedSummary: summaryText,
         };
 
-        const inbound = await prisma.inboundEmail.create({
-          data: {
+        // Use upsert to handle race conditions (concurrent syncs)
+        const inbound = await prisma.inboundEmail.upsert({
+          where: { gmailId: parsed.id },
+          update: {
+            subject: parsed.subject,
+            snippet: parsed.snippet,
+            body: parsed.bodyText ?? parsed.bodyHtml ?? null,
+            metadata,
+          },
+          create: {
             userId,
             threadId: parsed.threadId,
             gmailId: parsed.id,
@@ -221,6 +230,22 @@ export async function ingestGmailForUser(userId: string) {
             metadata,
           },
         });
+
+        // Link email to CRM (Contact + Brand)
+        try {
+          const linkResult = await linkEmailToCrm({
+            id: inbound.id,
+            fromEmail: inbound.fromEmail,
+            userId,
+          });
+
+          if (linkResult.error) {
+            console.warn(`[GMAIL INGEST] CRM link failed for email ${inbound.id}:`, linkResult.error);
+          }
+        } catch (linkError) {
+          console.error(`[GMAIL INGEST] CRM link error for email ${inbound.id}:`, linkError);
+          // Don't fail the entire ingest on CRM link errors
+        }
 
         processed += 1;
       } catch (error) {

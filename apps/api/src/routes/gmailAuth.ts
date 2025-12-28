@@ -73,6 +73,14 @@ router.get("/status", requireAuth, async (req, res) => {
         }
       }
     });
+
+    // Get error count from audit logs (GMAIL_SYNC_FAILED actions)
+    const errorCount = await prisma.auditLog.count({
+      where: {
+        userId: req.user!.id,
+        action: "GMAIL_SYNC_FAILED"
+      }
+    });
     
     res.json({
       connected: true,
@@ -87,6 +95,7 @@ router.get("/status", requireAuth, async (req, res) => {
         emailsLinked: emailsWithCrmLinks,
         contactsCreated: contactsFromGmail,
         brandsCreated: brandsFromGmail,
+        errors: errorCount,
       }
     });
   } catch (error) {

@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import prisma from "../../lib/prisma.js";
 import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
 import { googleConfig } from "../../config/env.js";
+import { logAction } from "../../lib/auditLogger.js";
 
 const clientId = googleConfig.clientId;
 const clientSecret = googleConfig.clientSecret;
@@ -82,5 +83,18 @@ export async function persistToken(userId: string, tokens: {
       tokenType,
       idToken
     }
+  });
+
+  // Audit log: Gmail OAuth connected
+  await logAction({
+    userId,
+    action: "GMAIL_OAUTH_CONNECTED",
+    entityType: "GMAIL_TOKEN",
+    entityId: userId,
+    metadata: {
+      scope,
+      hasRefreshToken: !!refreshToken,
+      expiresAt: expiresAt?.toISOString() || null,
+    },
   });
 }

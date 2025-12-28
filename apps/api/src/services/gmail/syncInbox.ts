@@ -111,7 +111,18 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           update: inboxMessageData,
           create: { ...inboxMessageData, userId }
         });
-        createdEmail = await tx.inboundEmail.create({ data: { ...inboundEmailData, inboxMessageId: thread.id } });
+        
+        // Use upsert to handle race conditions (concurrent syncs)
+        createdEmail = await tx.inboundEmail.upsert({
+          where: { gmailId: gmailMessage.id! },
+          update: {
+            subject: inboundEmailData.subject,
+            snippet: inboundEmailData.snippet,
+            body: inboundEmailData.body,
+            inboxMessageId: thread.id,
+          },
+          create: { ...inboundEmailData, inboxMessageId: thread.id },
+        });
       });
 
       stats.imported++;

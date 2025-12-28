@@ -52,7 +52,7 @@ export async function syncGmailForUser(userId: string): Promise<SyncStats> {
       // 4. Map Gmail message to our Prisma schema
       const { inboxMessageData, inboundEmailData } = mapGmailMessageToDb(gmailMessage, userId);
 
-      // 5. Use a transaction to upsert the thread (InboxMessage) and create the email (InboundEmail)
+      // 5. Use a transaction to upsert the thread (InboxMessage) and upsert the email (InboundEmail)
       try {
         await prisma.$transaction(async (tx) => {
           const thread = await tx.inboxMessage.upsert({
@@ -61,8 +61,16 @@ export async function syncGmailForUser(userId: string): Promise<SyncStats> {
             create: { ...inboxMessageData, userId }
           });
 
-          await tx.inboundEmail.create({
-            data: { ...inboundEmailData, inboxMessageId: thread.id }
+          // Use upsert to handle race conditions (concurrent syncs)
+          await tx.inboundEmail.upsert({
+            where: { gmailId: gmailMessage.id! },
+            update: {
+              subject: inboundEmailData.subject,
+              snippet: inboundEmailData.snippet,
+              body: inboundEmailData.body,
+              inboxMessageId: thread.id,
+            },
+            create: { ...inboundEmailData, inboxMessageId: thread.id },
           });
         });
         stats.imported++;
