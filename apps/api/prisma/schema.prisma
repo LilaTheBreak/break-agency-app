@@ -207,6 +207,42 @@ model CreatorBalance {
   @@index([userId])
 }
 
+model CalendarEvent {
+  id               String    @id @default(cuid())
+  title            String
+  description      String?
+  startAt          DateTime
+  endAt            DateTime
+  type             String    // "meeting" | "event" | "content"
+  source           String    @default("internal") // "internal" | "email" | "google"
+  location         String?
+  status           String    @default("scheduled") // "scheduled" | "cancelled" | "completed"
+  isAllDay         Boolean   @default(false)
+  createdBy        String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Metadata for filtering and relations
+  metadata         Json?     // { brand, category, confirmed, etc. }
+  
+  // Relations to CRM entities
+  relatedBrandIds     String[] @default([])
+  relatedCreatorIds   String[] @default([])
+  relatedDealIds      String[] @default([])
+  relatedCampaignIds  String[] @default([])
+  relatedTaskIds      String[] @default([])
+  
+  // Creator relation
+  Creator          User      @relation("CalendarEventCreator", fields: [createdBy], references: [id])
+  
+  @@index([createdBy])
+  @@index([startAt])
+  @@index([endAt])
+  @@index([type])
+  @@index([source])
+  @@index([status])
+}
+
 model CreatorEvent {
   id            String    @id
   creatorId     String
@@ -1333,6 +1369,7 @@ model User {
   AiTokenLog                              AiTokenLog[]
   AuditLog                                AuditLog[]
   BrandCampaign                           BrandCampaign[]
+  CalendarEventsCreated                   CalendarEvent[]          @relation("CalendarEventCreator")
   CreatorEvent                            CreatorEvent[]
   CreatorTask                             CreatorTask[]
   CrmTasksCreated                         CrmTask[]                @relation("TaskCreatedBy")

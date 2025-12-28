@@ -138,16 +138,21 @@ export function CalendarBoard({
         const transformedEvents = response.data.events.map(event => ({
           id: event.id,
           title: event.title,
-          date: event.startTime.split('T')[0], // Extract date from ISO string
-          time: event.startTime.split('T')[1]?.substring(0, 5), // Extract HH:mm
+          date: event.startAt.split('T')[0], // Extract date from ISO string
+          time: event.startAt.split('T')[1]?.substring(0, 5), // Extract HH:mm
           brand: event.metadata?.brand || "",
-          status: event.metadata?.status || "Accepted",
-          category: event.category || event.metadata?.category || DEFAULT_TYPE_ID,
+          status: event.metadata?.status || event.status || "Accepted",
+          category: event.type || event.metadata?.category || DEFAULT_TYPE_ID,
           notes: event.description || "",
-          confirmed: true, // Events from API are considered confirmed
+          confirmed: event.status === "scheduled",
           source: event.source,
           location: event.location,
-          isAllDay: event.isAllDay
+          isAllDay: event.isAllDay,
+          createdBy: event.createdBy,
+          relatedBrandIds: event.relatedBrandIds || [],
+          relatedCreatorIds: event.relatedCreatorIds || [],
+          relatedDealIds: event.relatedDealIds || [],
+          relatedCampaignIds: event.relatedCampaignIds || [],
         }));
         setEvents(transformedEvents);
         
@@ -361,34 +366,44 @@ export function CalendarBoard({
     }
     
     try {
-      if (activeEventId) {
-        // For now, just update locally (would need update API endpoint)
-        setEvents((prev) =>
-          prev.map((evt) => (evt.id === activeEventId ? { ...evt, ...formState } : evt))
-        );
-      } else {
-        // Create new event via API
-        const startTime = `${formState.date}T${formState.time || '00:00'}:00.000Z`;
-        const endTime = `${formState.date}T${formState.time ? 
-          String(Number(formState.time.split(':')[0]) + 1).padStart(2, '0') + ':' + formState.time.split(':')[1] 
-          : '01:00'}:00.000Z`;
-        
-        await createCalendarEvent({
-          title: formState.title,
-          startTime,
-          endTime,
-          description: formState.notes,
+      const startTime = `${formState.date}T${formState.time || '00:00'}:00.000Z`;
+      const endTime = `${formState.date}T${formState.time ? 
+        String(Number(formState.time.split(':')[0]) + 1).padStart(2, '0') + ':' + formState.time.split(':')[1] 
+        : '01:00'}:00.000Z`;
+      
+      const payload = {
+        title: formState.title,
+        startTime,
+        endTime,
+        description: formState.notes,
+        type: formState.category,
+        metadata: {
+          brand: formState.brand,
+          status: formState.status,
           category: formState.category,
-          metadata: {
-            brand: formState.brand,
-            status: formState.status,
-            category: formState.category
-          }
+          confirmed: formState.confirmed,
+        }
+      };
+
+      if (activeEventId) {
+        // Update existing event
+        const response = await fetch(`/api/calendar/events/${activeEventId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
         });
         
-        // Reload events after creation
-        await loadEvents();
+        if (!response.ok) {
+          throw new Error("Failed to update event");
+        }
+      } else {
+        // Create new event
+        await createCalendarEvent(payload);
       }
+      
+      // Reload events after creation/update
+      await loadEvents();
       setIsModalOpen(false);
     } catch (error) {
       console.error("Failed to save event:", error);
@@ -636,55 +651,16 @@ export function CalendarBoard({
         </div>
       </section>
 
-      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-2xl uppercase">Calendar sync</h3>
-            <p className="text-sm text-brand-black/60">
-              Connect your source calendars. New events will sync into Break and dispatch tasks automatically.
-            </p>
-          </div>
-          {connectedProviders.google && (
-            <button
-              onClick={handleSyncGoogleCalendar}
-              disabled={syncing}
-              className="rounded-full border border-brand-red bg-brand-red px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-white disabled:opacity-50"
-            >
-              {syncing ? "Syncing..." : "Sync Now"}
-            </button>
-          )}
-        </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          {CAL_PROVIDERS.map((provider) => (
-            <div
-              key={provider.id}
-              className="flex items-center justify-between rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3"
-            >
-              <div>
-                <p className="font-semibold">{provider.label}</p>
-                <p className="text-xs text-brand-black/60">
-                  {connectedProviders[provider.id] ? "Synced" : "Not connected"}
-                </p>
-              </div>
-              {provider.id === 'google' ? (
-                <span className="rounded-full border border-brand-black/20 px-4 py-1 text-xs text-brand-black/60">
-                  Auto-sync
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => toggleProvider(provider.id)}
-                  className={`rounded-full border px-4 py-1 text-xs uppercase tracking-[0.3em] ${
-                    connectedProviders[provider.id]
-                      ? "border-brand-red text-brand-red"
-                      : "border-brand-black text-brand-black"
-                  }`}
-                >
-                  {connectedProviders[provider.id] ? "Disconnect" : "Connect"}
-                </button>
-              )}
-            </div>
-          ))}
+      {/* Calendar Sync - Coming Soon Notice */}
+      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-linen/30 p-6">
+        <div>
+          <h3 className="font-display text-2xl uppercase">Calendar sync</h3>
+          <p className="mt-2 text-sm text-brand-black/60">
+            External calendar sync (Google, Outlook, Apple) is in development. For now, create events manually within Break.
+          </p>
+          <p className="mt-1 text-xs text-brand-black/40">
+            Coming soon: Automatic two-way sync with your external calendars.
+          </p>
         </div>
       </section>
 
@@ -767,44 +743,20 @@ export function CalendarBoard({
         </div>
       </section>
 
-      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Meeting summaries</p>
-            <h3 className="font-display text-2xl uppercase">Auto-generated notes & tasks</h3>
-          </div>
-          <button className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]">
-            Upload recording
-          </button>
-        </div>
-        <div className="mt-4 space-y-4">
-          {MEETING_SUMMARIES.length > 0 ? (
-            MEETING_SUMMARIES.map((summary) => (
-              <div key={summary.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 space-y-2">
-                <p className="font-semibold text-brand-black">{summary.title}</p>
-                <p className="text-sm text-brand-black/70">{summary.summary}</p>
-                <ul className="space-y-1 text-sm text-brand-black/80">
-                  {summary.tasks.map((task) => (
-                    <li key={task}>• {task}</li>
-                  ))}
-                </ul>
-                <div className="flex gap-2">
-                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
-                    View transcript
-                  </button>
-                  <button className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em]">
-                    Push tasks
-                  </button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/20 p-8 text-center">
-              <p className="text-sm text-brand-black/60">No meeting summaries yet. Upload a recording to generate auto-notes and tasks.</p>
-            </div>
-          )}
+      {/* Meeting Summaries - Coming Soon Notice */}
+      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-linen/30 p-6">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Meeting summaries</p>
+          <h3 className="font-display text-2xl uppercase">Auto-generated notes & tasks</h3>
+          <p className="mt-2 text-sm text-brand-black/60">
+            AI-powered meeting transcription and task generation is in development. For now, create tasks manually from the Tasks page.
+          </p>
+          <p className="mt-1 text-xs text-brand-black/40">
+            Coming soon: Upload recordings, get instant transcripts, and auto-generate actionable tasks.
+          </p>
         </div>
       </section>
+
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-brand-black/30" onClick={handleModalClose} />

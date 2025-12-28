@@ -137,6 +137,7 @@ import notificationsRouter from "./routes/notifications.js";
 
 // Calendar Intelligence
 import calendarIntelligenceRouter from "./routes/calendarIntelligence.js";
+import calendarRouter from "./routes/calendar.js";
 
 // Outreach System
 import outreachRouter from "./routes/outreach.js";
@@ -277,6 +278,7 @@ app.use("/api/cron", cronRouter);
 // ------------------------------------------------------
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/calendar", calendarIntelligenceRouter);
+app.use("/api/calendar", calendarRouter); // Real calendar CRUD routes
 
 // ------------------------------------------------------
 // OPPORTUNITIES & SUBMISSIONS
