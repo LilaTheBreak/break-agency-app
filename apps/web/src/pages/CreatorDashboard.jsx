@@ -681,8 +681,8 @@ function SubmissionDetailPanel({ submission, session }) {
         session={session}
         briefId={submission.id}
         data={submission}
-        allowCreate={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN' || session?.role === 'AGENT')}
-        allowRestore={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN' || session?.role === 'AGENT')}
+        allowCreate={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN')}
+        allowRestore={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN')}
       />
     </div>
   );

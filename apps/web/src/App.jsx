@@ -488,7 +488,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.SUPERADMIN, Roles.ADMIN, Roles.BRAND, Roles.CREATOR, Roles.EXCLUSIVE_TALENT, Roles.UGC, Roles.TALENT_MANAGER, Roles.AGENT, Roles.FOUNDER]}
+              allowed={[Roles.SUPERADMIN, Roles.ADMIN, Roles.BRAND, Roles.CREATOR, Roles.EXCLUSIVE_TALENT, Roles.UGC, Roles.TALENT_MANAGER, Roles.FOUNDER]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <ProfilePageNew />
@@ -503,7 +503,6 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[
                 Roles.ADMIN,
                 Roles.SUPERADMIN,
-                Roles.AGENT,
                 Roles.BRAND,
                 Roles.FOUNDER,
                 Roles.CREATOR,
@@ -548,7 +547,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="opportunities"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT, Roles.BRAND]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.BRAND]}>
                 <BrandOpportunitiesPage />
               </RoleGate>
             }
@@ -556,7 +555,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="contracts"
             element={
-              <RoleGate session={session} allowed={[Roles.BRAND, Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.BRAND, Roles.ADMIN, Roles.SUPERADMIN]}>
                 <BrandContractsPage />
               </RoleGate>
             }
@@ -761,7 +760,6 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[
                 Roles.ADMIN,
                 Roles.SUPERADMIN,
-                Roles.AGENT,
                 Roles.BRAND,
                 Roles.CREATOR,
                 Roles.EXCLUSIVE_TALENT,
@@ -781,7 +779,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminContractsPage session={session} />
@@ -793,7 +791,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminDocumentsPage session={session} />
@@ -883,7 +881,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="opportunities"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
                 <BrandOpportunitiesPage />
               </RoleGate>
             }
@@ -891,7 +889,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="contracts"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
                 <BrandContractsPage />
               </RoleGate>
             }
@@ -923,7 +921,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="opportunities"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
                 <ExclusiveOpportunitiesPage />
               </RoleGate>
             }
@@ -932,7 +930,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route
             path="contracts"
             element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.AGENT]}>
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
                 <ExclusiveContractsPage />
               </RoleGate>
             }
@@ -980,7 +978,7 @@ function DashboardRedirect({ session }) {
     return <Navigate to={`/onboarding${search}`} replace />;
   }
   const userRole = session.role;
-  if (userRole === 'ADMIN' || userRole === 'SUPERADMIN' || userRole === 'AGENT') {
+  if (userRole === 'ADMIN' || userRole === 'SUPERADMIN') {
     return <Navigate to="/admin/dashboard" replace />;
   }
   if (userRole === 'BRAND' || userRole === 'FOUNDER') {

@@ -29,12 +29,7 @@ async function logApprovalAction(
 }
 
 // GET /api/approvals - List approvals with filters
-router.get("/api/approvals", requireAuth, async (req: Request, res: Response) => {
-  const userRole = req.user?.role || "";
-  if (userRole !== "ADMIN" && userRole !== "SUPERADMIN") {
-    return res.status(403).json({ error: "Admin access required" });
-  }
-
+router.get("/api/approvals", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
     const status = req.query.status as string;

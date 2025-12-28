@@ -6,7 +6,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "/api";
 const RESOURCE_TYPES = ["TEMPLATE", "GUIDE", "ARTICLE", "WEBINAR", "EVENT"];
 const RESOURCE_STATUS = ["DRAFT", "PUBLISHED", "ARCHIVED"];
 const RESOURCE_VISIBILITY = ["PUBLIC", "PROTECTED"];
-const USER_ROLES = ["CREATOR", "EXCLUSIVE_TALENT", "BRAND", "AGENT", "FOUNDER", "ADMIN"];
+const USER_ROLES = ["CREATOR", "EXCLUSIVE_TALENT", "UGC", "BRAND", "FOUNDER", "ADMIN", "SUPERADMIN", "TALENT_MANAGER"];
 
 export default function AdminResourceHub() {
   const { user } = useAuth();

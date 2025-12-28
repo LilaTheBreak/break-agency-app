@@ -7,6 +7,7 @@ import prisma from "../lib/prisma.js";
 import { stripeClient, handleStripeEvent } from "../services/stripeService.js";
 import { sendTemplatedEmail } from "../services/email/emailClient.js";
 import { logError } from "../lib/logger.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -27,7 +28,7 @@ const invoiceSchema = z.object({
   description: z.string().min(1)
 });
 
-router.post("/intent", async (req: Request, res: Response) => {
+router.post("/intent", requireAuth, async (req: Request, res: Response) => {
   if (!stripeClient) {
     return res.status(503).json({ error: true, message: "Stripe not configured" });
   }
@@ -45,7 +46,7 @@ router.post("/intent", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/invoice", async (req: Request, res: Response) => {
+router.post("/invoice", requireAuth, async (req: Request, res: Response) => {
   if (!stripeClient) {
     return res.status(503).json({ error: true, message: "Stripe not configured" });
   }

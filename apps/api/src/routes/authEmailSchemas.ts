@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Public roles that can be selected during signup
-export const PUBLIC_ROLES = ["BRAND", "FOUNDER", "CREATOR", "UGC", "AGENT"] as const;
+export const PUBLIC_ROLES = ["BRAND", "FOUNDER", "CREATOR", "UGC", "TALENT_MANAGER"] as const;
 
 // Restricted roles that cannot be created via public signup
 export const RESTRICTED_ROLES = ["EXCLUSIVE_TALENT", "ADMIN", "SUPERADMIN"] as const;

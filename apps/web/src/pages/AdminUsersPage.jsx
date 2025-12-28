@@ -14,7 +14,7 @@ const ROLE_OPTIONS = [
   { label: "Brand", value: "BRAND" },
   { label: "Exclusive Talent", value: "EXCLUSIVE_TALENT" },
   { label: "Creator", value: "CREATOR" },
-  { label: "UGC Talent", value: "UGC_TALENT" }
+  { label: "UGC", value: "UGC" }
 ];
 
 export function AdminUsersPage() {

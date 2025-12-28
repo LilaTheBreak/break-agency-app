@@ -7,6 +7,8 @@ import { logAuditEvent } from "../lib/auditLogger.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { sendTemplatedEmail, listEmailLogs } from "../services/email/emailClient.js";
 import { sendTestEmail } from "../services/emailService.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireAdmin } from "../middleware/adminAuth.js";
 
 const router = Router();
 
@@ -29,7 +31,7 @@ const sendSchema = z.object({
   userId: z.string().optional()
 });
 
-router.post("/email/test", async (req: Request, res: Response) => {
+router.post("/email/test", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const to = typeof req.body?.to === "string" ? req.body.to : process.env.TEST_EMAIL_TO || "";
     if (!to) {
@@ -51,7 +53,7 @@ router.post("/email/test", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/email/send", async (req: Request, res: Response) => {
+router.post("/email/send", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const payload = sendSchema.parse(req.body ?? {});
     const response = await sendTemplatedEmail({ ...payload, template: payload.template as EmailTemplateName });
@@ -74,7 +76,7 @@ router.post("/email/send", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/email/logs", async (req: Request, res: Response) => {
+router.get("/email/logs", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const limit = Math.min(parseInt(String(req.query.limit ?? "50"), 10) || 50, 200);
     const logs = await listEmailLogs(limit);

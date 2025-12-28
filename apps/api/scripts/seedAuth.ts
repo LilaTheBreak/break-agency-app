@@ -7,8 +7,10 @@ const ROLE_DEFINITIONS = [
   { name: "TALENT_MANAGER", description: "Talent manager overseeing rosters" },
   { name: "EXCLUSIVE_TALENT", description: "Premium managed talent" },
   { name: "CREATOR", description: "Creator in the ecosystem" },
-  { name: "UGC_TALENT", description: "UGC-focused creator" },
-  { name: "BRAND", description: "Brand or client team" }
+  { name: "UGC", description: "UGC-focused creator" },
+  { name: "BRAND", description: "Brand or client team" },
+  { name: "SUPERADMIN", description: "System superadmin" },
+  { name: "FOUNDER", description: "Company founders" }
 ];
 
 const SEEDED_USERS = [
@@ -17,7 +19,7 @@ const SEEDED_USERS = [
   { email: "brand@thebreakco.com", name: "Brand Lead", roles: ["BRAND"] },
   { email: "exclusive@thebreakco.com", name: "Exclusive Talent", roles: ["EXCLUSIVE_TALENT"] },
   { email: "creator@thebreakco.com", name: "Creator Talent", roles: ["CREATOR"] },
-  { email: "ugc@thebreakco.com", name: "UGC Talent", roles: ["UGC_TALENT"] }
+  { email: "ugc@thebreakco.com", name: "UGC Creator", roles: ["UGC"] }
 ];
 
 async function main() {

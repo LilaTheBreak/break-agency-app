@@ -7,6 +7,7 @@ import {
   metrics,
   refresh
 } from "../controllers/socialController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -19,10 +20,10 @@ const limiter = rateLimit({
 
 router.use(limiter);
 
-router.get("/", getAccounts);
-router.post("/connect", connect);
-router.post("/disconnect", disconnect);
-router.post("/refresh", refresh);
-router.get("/metrics/:platform", metrics);
+router.get("/", requireAuth, getAccounts);
+router.post("/connect", requireAuth, connect);
+router.post("/disconnect", requireAuth, disconnect);
+router.post("/refresh", requireAuth, refresh);
+router.get("/metrics/:platform", requireAuth, metrics);
 
 export default router;

@@ -5,8 +5,8 @@ import { isFeatureEnabled } from "../config/features.js";
 const ROLE_OPTIONS = [
   { value: "SUPERADMIN", label: "Super Admin", description: "Full platform control" },
   { value: "ADMIN", label: "Admin", description: "Manage users & content" },
-  { value: "AGENT", label: "Agent", description: "Talent management" },
   { value: "CREATOR", label: "Creator", description: "Content creator" },
+  { value: "UGC", label: "UGC", description: "UGC creator" },
   { value: "BRAND", label: "Brand", description: "Brand partner" },
   { value: "FOUNDER", label: "Founder", description: "Startup founder" },
   { value: "TALENT_MANAGER", label: "Talent Manager", description: "External manager" },

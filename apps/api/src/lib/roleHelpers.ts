@@ -74,7 +74,7 @@ export function isAdmin(user: any): boolean {
 
 /**
  * Check if user is a manager-level role (can manage campaigns, etc.)
- * Manager roles: ADMIN, SUPERADMIN, AGENT, BRAND
+ * Manager roles: ADMIN, SUPERADMIN, BRAND, TALENT_MANAGER
  * Handles both single role field and legacy roles array
  * 
  * @param user - The session user or user-like object
@@ -83,7 +83,7 @@ export function isAdmin(user: any): boolean {
 export function isManager(user: any): boolean {
   if (isSuperAdmin(user)) return true;
   
-  const managerRoles = ["ADMIN", "AGENCY_ADMIN", "AGENT", "BRAND"];
+  const managerRoles = ["ADMIN", "AGENCY_ADMIN", "BRAND", "TALENT_MANAGER"];
   
   // Handle single role field (current pattern)
   if (user?.role) {

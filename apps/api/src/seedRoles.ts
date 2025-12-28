@@ -1,13 +1,15 @@
-import prisma from "../lib/prisma.js";
+import prisma from "./lib/prisma.js";
 
 async function main() {
   const roles = [
-    "UGC_TALENT",
+    "UGC",
     "CREATOR",
     "EXCLUSIVE_TALENT",
     "ADMIN",
     "FOUNDER",
-    "BRAND"
+    "BRAND",
+    "SUPERADMIN",
+    "TALENT_MANAGER"
   ];
 
   for (const name of roles) {

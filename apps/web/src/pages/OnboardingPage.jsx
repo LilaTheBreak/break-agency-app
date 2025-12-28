@@ -168,13 +168,13 @@ const UGC_PRICING_CONFIDENCE = [
 ];
 
 function deriveDefaultContext(role) {
-  if (role === Roles.UGC_TALENT) return "UGC creator";
+  if (role === Roles.UGC) return "UGC creator";
   if (role === Roles.FOUNDER) return "Founder / SMB owner + creator";
   return "Creator (audience-led)";
 }
 
 function isUgcFlow(role, contextValue) {
-  return role === Roles.UGC_TALENT || contextValue === "UGC creator";
+  return role === Roles.UGC || contextValue === "UGC creator";
 }
 
 function buildSteps(includeUgcScreens) {

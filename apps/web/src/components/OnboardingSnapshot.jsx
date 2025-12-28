@@ -25,7 +25,7 @@ export function OnboardingSnapshot({ data, role, heading = "Onboarding summary" 
   }
 
   const responses = data.responses;
-  const showUgc = role === "UGC_TALENT" || responses.context === "UGC creator";
+  const showUgc = role === "UGC" || responses.context === "UGC creator";
 
   const cards = [
     {

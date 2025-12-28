@@ -582,8 +582,8 @@ function BrandOpportunitiesSection({ session }) {
                 session={session}
                 briefId={selectedOpportunity.id}
                 data={selectedOpportunity}
-                allowCreate={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN' || session?.role === 'AGENT')}
-                allowRestore={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN' || session?.role === 'AGENT')}
+                allowCreate={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN')}
+                allowRestore={Boolean(session?.role === 'ADMIN' || session?.role === 'SUPERADMIN')}
               />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>

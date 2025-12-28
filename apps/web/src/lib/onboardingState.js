@@ -11,11 +11,10 @@ const DEFAULT_STATE = {
   completedAt: null
 };
 
-const ONBOARDING_ROLES = new Set([Roles.CREATOR, Roles.FOUNDER, Roles.UGC_TALENT]);
+const ONBOARDING_ROLES = new Set([Roles.CREATOR, Roles.FOUNDER, Roles.UGC]);
 
 function normalizeRole(role) {
   if (!role) return "";
-  if (role === "UGC") return Roles.UGC_TALENT;
   return role;
 }
 
@@ -105,13 +104,13 @@ export function shouldRouteToOnboarding(user) {
 
 export function getDashboardPathForRole(role) {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === Roles.ADMIN || normalizedRole === Roles.SUPERADMIN || normalizedRole === Roles.AGENT) {
+  if (normalizedRole === Roles.ADMIN || normalizedRole === Roles.SUPERADMIN) {
     return "/admin/dashboard";
   }
   if (normalizedRole === Roles.BRAND || normalizedRole === Roles.FOUNDER) {
     return "/brand/dashboard";
   }
-  if (normalizedRole === Roles.CREATOR || normalizedRole === Roles.EXCLUSIVE_TALENT || normalizedRole === Roles.UGC_TALENT) {
+  if (normalizedRole === Roles.CREATOR || normalizedRole === Roles.EXCLUSIVE_TALENT || normalizedRole === Roles.UGC) {
     return "/creator/dashboard";
   }
   return "/dashboard";
@@ -120,7 +119,7 @@ export function getDashboardPathForRole(role) {
 export function isAwaitingApproval(user) {
   // Admins and superadmins should never see approval hold
   const normalizedRole = normalizeRole(user?.role);
-  if (normalizedRole === Roles.ADMIN || normalizedRole === Roles.SUPERADMIN || normalizedRole === Roles.AGENT) {
+  if (normalizedRole === Roles.ADMIN || normalizedRole === Roles.SUPERADMIN) {
     return false;
   }
   

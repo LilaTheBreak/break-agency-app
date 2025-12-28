@@ -1,10 +1,11 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
+import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/requireRole.js";
 
 const router = Router();
 
-router.use(requireRole(["admin", "ADMIN"]));
+router.use(requireAuth, requireRole(["ADMIN"]));
 
 router.delete("/users/:email", async (req, res) => {
   const email = (req.params.email || "").toLowerCase();
