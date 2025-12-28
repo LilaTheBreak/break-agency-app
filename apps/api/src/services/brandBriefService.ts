@@ -13,41 +13,10 @@ export async function ingestBrief({
   contactEmail?: string;
   submittedBy?: string;
 }) {
-  const parsed = await parseBrandBrief(rawText);
-
-  const brief = await prisma.brandBrief.create({
-    data: {
-      brandName,
-      contactEmail,
-      submittedBy,
-      content: rawText,
-      aiSummary: parsed.summary,
-      aiKeywords: parsed.keywords,
-      categories: parsed.categories || [],
-      budgetMin: parsed.budget?.min,
-      budgetMax: parsed.budget?.max
-    }
-  });
-
-  const creators = await prisma.user.findMany({
-    where: { accountType: "CREATOR" },
-    include: { socialAnalytics: true }
-  });
-
-  const matches = await matchCreatorsToBrief({ brief: parsed, creators });
-
-  if (Array.isArray(matches) && matches.length) {
-    await prisma.briefMatch.createMany({
-      data: matches.map((m: any) => ({
-        briefId: brief.id,
-        creatorId: m.creatorId,
-        score: m.score,
-        reason: m.reason,
-        predictedFee: m.predictedFee,
-        predictedPerformance: m.predictedPerformance
-      }))
-    });
-  }
-
-  return brief;
+  // REMOVED: BrandBrief and BriefMatch models do not exist in schema.prisma
+  // This service cannot function without the required database models
+  throw new Error(
+    "Brief ingestion not available: BrandBrief and BriefMatch models do not exist in database schema. " +
+    "Please add these models to schema.prisma before using this feature."
+  );
 }

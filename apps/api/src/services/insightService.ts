@@ -9,17 +9,27 @@ const client = OPENAI_API_KEY && OPENAI_API_KEY !== "dev-openai-key"
   : null;
 
 export async function generateCreatorInsights(userId: string) {
-  const latest = await prisma.socialAnalytics.findMany({
-    where: { userId },
-    orderBy: { capturedAt: "desc" },
+  // REMOVED: socialAnalytics and creatorInsights models do not exist in schema.prisma
+  // Use CreatorInsight model instead (which exists in schema)
+  
+  // Try to get social metrics from existing SocialMetric model
+  const metrics = await prisma.socialMetric.findMany({
+    where: { 
+      profile: {
+        connection: {
+          creatorId: userId
+        }
+      }
+    },
+    orderBy: { snapshotDate: "desc" },
     take: 5
   });
 
-  const prompt = `You are an AI Creator Performance Analyst.\nEvaluate this creator's last 5 data points:\n\n${JSON.stringify(latest, null, 2)}\n\nReturn strict JSON:\n{\n  "summary": string,\n  "opportunities": string,\n  "risks": string,\n  "contentIdeas": [string, string, string]\n}`;
+  const prompt = `You are an AI Creator Performance Analyst.\nEvaluate this creator's last 5 data points:\n\n${JSON.stringify(metrics, null, 2)}\n\nReturn strict JSON:\n{\n  "summary": string,\n  "opportunities": string,\n  "risks": string,\n  "contentIdeas": [string, string, string]\n}`;
 
   const response =
     OPENAI_API_KEY &&
-    (await client.chat.completions.create({
+    (await client!.chat.completions.create({
       model: OPENAI_MODEL,
       temperature: 0.2,
       messages: [{ role: "user", content: prompt }]
@@ -33,17 +43,23 @@ export async function generateCreatorInsights(userId: string) {
       contentIdeas: []
     };
 
-  return prisma.creatorInsights.create({
+  // Use existing CreatorInsight model (note: singular, not plural)
+  return prisma.creatorInsight.create({
     data: {
-      userId,
-      followers: latest[0]?.followerCount || 0,
-      engagementRate: latest[0]?.engagementRate || 0,
-      impressions: latest[0]?.impressions || 0,
-      reach: latest[0]?.reach || 0,
+      creatorId: userId,
+      insightType: "performance",
+      title: "Performance Analysis",
       summary: data.summary,
-      opportunities: data.opportunities,
-      risks: data.risks,
-      contentIdeas: data.contentIdeas
+      context: JSON.stringify({
+        opportunities: data.opportunities,
+        risks: data.risks,
+        contentIdeas: data.contentIdeas
+      }),
+      metadata: {
+        metricsCount: metrics.length,
+        generatedAt: new Date().toISOString()
+      },
+      priority: 0
     }
   });
 }

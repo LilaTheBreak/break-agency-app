@@ -45,38 +45,63 @@ Data: ${JSON.stringify(dataset).slice(0, 12000)}`;
 async function buildDataset(userId: string) {
   const ninetyDaysAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 90);
 
-  const analytics = await prisma.socialAnalytics.findMany({
-    where: { userId, capturedAt: { gte: ninetyDaysAgo } },
-    include: { account: { select: { platform: true } } },
-    orderBy: { capturedAt: "desc" }
+  // FIXED: Use SocialMetric model instead of non-existent socialAnalytics
+  const metrics = await prisma.socialMetric.findMany({
+    where: { 
+      snapshotDate: { gte: ninetyDaysAgo },
+      profile: {
+        connection: {
+          creatorId: userId
+        }
+      }
+    },
+    include: { 
+      profile: { 
+        include: { 
+          connection: { 
+            select: { platform: true } 
+          } 
+        } 
+      } 
+    },
+    orderBy: { snapshotDate: "desc" }
   });
 
+  // FIXED: SocialPost uses profileId, not userId
   const posts = await prisma.socialPost.findMany({
-    where: { userId },
+    where: { 
+      profile: {
+        connection: {
+          creatorId: userId
+        }
+      }
+    },
     orderBy: { postedAt: "desc" },
     take: 100
   });
 
-  const followerHistory = analytics.map((entry) => ({
-    capturedAt: entry.capturedAt,
-    followerCount: entry.followerCount,
-    platform: entry.account?.platform
-  }));
-
-  const engagementHistory = analytics
-    .filter((entry) => entry.engagementRate !== null && entry.engagementRate !== undefined)
+  const followerHistory = metrics
+    .filter((entry) => entry.metricType === "followerCount")
     .map((entry) => ({
-      capturedAt: entry.capturedAt,
-      engagementRate: entry.engagementRate,
-      platform: entry.account?.platform
+      capturedAt: entry.snapshotDate,
+      followerCount: entry.value,
+      platform: entry.profile?.connection?.platform
     }));
 
-  const impressions = analytics
-    .filter((entry) => entry.impressions)
+  const engagementHistory = metrics
+    .filter((entry) => entry.metricType === "engagementRate")
     .map((entry) => ({
-      capturedAt: entry.capturedAt,
-      impressions: entry.impressions,
-      platform: entry.account?.platform
+      capturedAt: entry.snapshotDate,
+      engagementRate: entry.value,
+      platform: entry.profile?.connection?.platform
+    }));
+
+  const impressions = metrics
+    .filter((entry) => entry.metricType === "impressions")
+    .map((entry) => ({
+      capturedAt: entry.snapshotDate,
+      impressions: entry.value,
+      platform: entry.profile?.connection?.platform
     }));
 
   const normalizedPosts = posts.map((post) => ({

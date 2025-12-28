@@ -29,23 +29,25 @@ export async function autoPlanCampaign(input: AutoPlanInput) {
   let talent: any;
 
   if (dealId) {
-    deal = await prisma.deal.findUnique({ where: { id: dealId }, include: { talent: true } });
+    deal = await prisma.deal.findUnique({ where: { id: dealId }, include: { Talent: true, Brand: true } });
     if (!deal) throw new Error("Deal not found.");
-    brief = await prisma.brandBrief.findFirst({ where: { campaignId: deal.campaignId } }); // Assuming deal links to campaign, which links to brief
-    brand = await prisma.brand.findUnique({ where: { id: deal.brandId } });
-    talent = deal.talent;
+    // REMOVED: BrandBrief model does not exist
+    // Campaign plan generation currently only works with deal data
+    brief = null;
+    brand = deal.Brand;
+    talent = deal.Talent;
   } else if (briefId) {
-    brief = await prisma.brandBrief.findUnique({ where: { id: briefId }, include: { campaign: true } });
-    if (!brief) throw new Error("Brief not found.");
-    deal = await prisma.deal.findFirst({ where: { campaignId: brief.campaignId } });
-    brand = brief.campaign ? await prisma.brand.findUnique({ where: { id: brief.campaign.brandId } }) : null;
-    talent = deal ? await prisma.talent.findUnique({ where: { id: deal.talentId } }) : null;
+    // REMOVED: BrandBrief model does not exist in schema.prisma
+    throw new Error(
+      "Campaign plan generation from brief not available: BrandBrief model does not exist in database schema. " +
+      "Please provide dealId instead."
+    );
   } else {
     throw new Error("Either dealId or briefId must be provided.");
   }
 
-  if (!brief || !brand || !talent) {
-    throw new Error("Insufficient data to generate campaign plan (missing brief, brand, or talent).");
+  if (!brand || !talent) {
+    throw new Error("Insufficient data to generate campaign plan (missing brand or talent).");
   }
 
   const llmInput = { brief, brandProfile: brand, talentProfile: talent };

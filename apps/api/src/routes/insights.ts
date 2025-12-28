@@ -5,8 +5,9 @@ import { generateCreatorInsights } from "../services/insightService.js";
 const router = Router();
 
 router.get("/:userId", async (req, res) => {
-  const data = await prisma.creatorInsights.findMany({
-    where: { userId: req.params.userId },
+  // Use existing CreatorInsight model (singular, not plural)
+  const data = await prisma.creatorInsight.findMany({
+    where: { creatorId: req.params.userId },
     orderBy: { createdAt: "desc" },
     take: 20
   });
@@ -19,12 +20,11 @@ router.post("/:userId/generate", async (req, res) => {
 });
 
 router.get("/:userId/weekly", async (req, res) => {
-  const reports = await prisma.creatorWeeklyReport.findMany({
-    where: { userId: req.params.userId },
-    orderBy: { createdAt: "desc" },
-    take: 12
+  // REMOVED: creatorWeeklyReport model does not exist in schema.prisma
+  return res.status(501).json({ 
+    error: "Weekly reports feature not implemented",
+    message: "CreatorWeeklyReport model does not exist in database schema" 
   });
-  res.json(reports);
 });
 
 export default router;

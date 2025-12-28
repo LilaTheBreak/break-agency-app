@@ -8,34 +8,14 @@ const router = Router();
 // GET /api/briefs - List all briefs with optional status filter (production-ready)
 router.get("/", requireAuth, async (req, res, next) => {
   try {
-    const status = req.query.status as string;
-    
-    const where: any = {};
-    
-    // Map status query to database field
-    if (status === "draft") {
-      // Briefs without matches yet could be considered "draft"
-      // For now return empty until brief workflow is fully defined
-    }
-    
-    const briefs = await prisma.brandBrief.findMany({
-      where,
-      select: {
-        id: true,
-        brandName: true,
-        rawText: true,
-        contactEmail: true,
-        createdAt: true,
-        updatedAt: true
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20
+    // REMOVED: BrandBrief model does not exist in schema.prisma
+    // Return empty array until model is implemented
+    return res.status(501).json({ 
+      error: "Briefs feature not implemented",
+      message: "BrandBrief model does not exist in database schema" 
     });
-    
-    return res.json(briefs);
   } catch (error) {
     console.error("Error fetching briefs:", error);
-    // Graceful fallback - return empty array instead of error
     return res.json([]);
   }
 });
@@ -57,11 +37,11 @@ router.post("/ingest", requireAuth, async (req, res, next) => {
 
 router.get("/:id", requireAuth, async (req, res, next) => {
   try {
-    const brief = await prisma.brandBrief.findUnique({
-      where: { id: req.params.id },
-      include: { matches: true }
+    // REMOVED: BrandBrief model does not exist in schema.prisma
+    return res.status(501).json({ 
+      error: "Briefs feature not implemented",
+      message: "BrandBrief model does not exist in database schema" 
     });
-    res.json({ brief });
   } catch (error) {
     next(error);
   }
@@ -69,12 +49,11 @@ router.get("/:id", requireAuth, async (req, res, next) => {
 
 router.get("/:id/matches", requireAuth, async (req, res, next) => {
   try {
-    const matches = await prisma.briefMatch.findMany({
-      where: { briefId: req.params.id },
-      include: { user: true },
-      orderBy: { score: "desc" }
+    // REMOVED: BriefMatch model does not exist in schema.prisma
+    return res.status(501).json({ 
+      error: "Brief matches feature not implemented",
+      message: "BriefMatch model does not exist in database schema" 
     });
-    res.json({ matches });
   } catch (error) {
     next(error);
   }
