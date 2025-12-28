@@ -214,6 +214,7 @@ export function AdminTasksPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState("");
   const [formError, setFormError] = useState("");
+  const [formSaving, setFormSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
   const [search, setSearch] = useState("");
@@ -314,6 +315,21 @@ export function AdminTasksPage() {
     });
   }, [tasks, search, statusFilter, brandFilter, brandById]);
 
+  // Calculate active filter count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search) count++;
+    if (statusFilter !== "All statuses") count++;
+    if (brandFilter !== "All brands") count++;
+    return count;
+  }, [search, statusFilter, brandFilter]);
+
+  const resetFilters = () => {
+    setSearch("");
+    setStatusFilter("All statuses");
+    setBrandFilter("All brands");
+  };
+
   const openCreate = () => {
     setEditingId("");
     setFormError("");
@@ -360,27 +376,27 @@ export function AdminTasksPage() {
 
   const saveTask = async () => {
     // Prevent double submissions
-    if (loading) {
+    if (formSaving) {
       console.log("[AdminTasksPage] Already saving, ignoring duplicate call");
       return;
     }
 
     try {
       console.log("[AdminTasksPage] saveTask called", { editingId, draft });
-      setLoading(true);
+      setFormSaving(true);
       setFormError("");
       
       if (!draft.title || !draft.title.trim()) {
         console.log("[AdminTasksPage] Validation failed: missing title");
         setFormError("Task title is required.");
-        setLoading(false);
+        setFormSaving(false);
         return;
       }
 
       if (!draft.ownerId) {
         console.log("[AdminTasksPage] Validation failed: missing ownerId");
         setFormError("Primary owner is required.");
-        setLoading(false);
+        setFormSaving(false);
         return;
       }
 
@@ -418,7 +434,7 @@ export function AdminTasksPage() {
       setTasks(data);
       setCreateOpen(false);
       setEditingId("");
-      setLoading(false);
+      setFormSaving(false);
       
       // Show success message
       const message = editingId ? "Task updated successfully" : "Task created successfully";
@@ -429,7 +445,7 @@ export function AdminTasksPage() {
     } catch (err) {
       console.error("[AdminTasksPage] Error saving task:", err);
       setFormError(err.message || "Failed to save task");
-      setLoading(false);
+      setFormSaving(false);
     }
   };
 
@@ -437,12 +453,15 @@ export function AdminTasksPage() {
     if (!confirm("Delete this task? This cannot be undone.")) return;
     
     try {
+      setError("");
       await deleteCrmTask(id);
       const data = await fetchCrmTasks();
       setTasks(data);
+      setSuccessMessage("Task deleted successfully");
+      setTimeout(() => setSuccessMessage(""), 4000);
     } catch (err) {
       console.error("Error deleting task:", err);
-      alert(err.message || "Failed to delete task");
+      setError(err.message || "Failed to delete task");
     }
   };
 
@@ -465,9 +484,37 @@ export function AdminTasksPage() {
           <PrimaryButton onClick={openCreate}>Add task</PrimaryButton>
         </div>
 
+        {/* Filter Summary Bar */}
+        {activeFiltersCount > 0 && !loading && (
+          <div className="rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">
+                  {activeFiltersCount} Active Filter{activeFiltersCount > 1 ? "s" : ""}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  {search && <Badge tone="info">Search: {search}</Badge>}
+                  {statusFilter !== "All statuses" && <Badge tone="info">Status: {statusFilter}</Badge>}
+                  {brandFilter !== "All brands" && <Badge tone="info">Brand: {brandFilter}</Badge>}
+                </div>
+                <p className="mt-2 text-xs text-brand-black/60">
+                  Showing {visibleTasks.length} of {tasks.length} total tasks
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red hover:text-white"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Success Message */}
         {successMessage && (
-          <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4">
+          <div className="rounded-2xl border border-green-500/20 bg-green-500/5 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green-700">Success</p>
             <p className="mt-2 text-sm text-brand-black/80">{successMessage}</p>
           </div>
@@ -475,7 +522,7 @@ export function AdminTasksPage() {
         
         {/* Error State */}
         {error && (
-          <div className="mt-4 rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+          <div className="rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Error</p>
             <p className="mt-2 text-sm text-brand-black/80">{error}</p>
           </div>
@@ -514,22 +561,6 @@ export function AdminTasksPage() {
                 ))}
               </select>
             </div>
-
-            {/* Success Message */}
-            {successMessage && (
-              <div className="mt-4 rounded-2xl border border-green-500/20 bg-green-500/5 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green-700">Success</p>
-                <p className="mt-2 text-sm text-brand-black/80">{successMessage}</p>
-              </div>
-            )}
-
-            {/* Error State */}
-            {error && (
-              <div className="mt-4 rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Error</p>
-                <p className="mt-2 text-sm text-brand-black/80">{error}</p>
-              </div>
-            )}
 
             <div className="overflow-x-auto">
               <table className="mt-4 w-full text-left text-sm text-brand-black/80">
@@ -694,26 +725,26 @@ export function AdminTasksPage() {
           setFormError("");
         }}
         footer={
-          <div className=\"space-y-3\">
+          <div className="space-y-3">
             {formError && (
-              <div className=\"rounded-2xl border border-brand-red/20 bg-brand-red/5 p-3\">
-                <p className=\"text-xs font-semibold uppercase tracking-[0.3em] text-brand-red\">Validation Error</p>
-                <p className=\"mt-1 text-sm text-brand-black/80\">{formError}</p>
+              <div className="rounded-2xl border border-brand-red/20 bg-brand-red/5 p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Validation Error</p>
+                <p className="mt-1 text-sm text-brand-black/80">{formError}</p>
               </div>
             )}
-            <div className=\"flex items-center justify-end gap-2\">
+            <div className="flex items-center justify-end gap-2">
               <TextButton
                 onClick={() => {
                   setCreateOpen(false);
-                  setEditingId(\"\");
-                  setFormError(\"\");
+                  setEditingId("");
+                  setFormError("");
                 }}
-                disabled={loading}
+                disabled={formSaving}
               >
                 Cancel
               </TextButton>
-              <PrimaryButton onClick={saveTask} disabled={loading}>
-                {loading ? "Saving..." : editingId ? "Save changes" : "Create task"}
+              <PrimaryButton onClick={saveTask} disabled={formSaving}>
+                {formSaving ? "Saving..." : editingId ? "Save changes" : "Create task"}
               </PrimaryButton>
             </div>
           </div>
