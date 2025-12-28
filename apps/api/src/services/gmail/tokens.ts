@@ -49,10 +49,27 @@ export async function getOAuthClientForUser(userId: string) {
           scope: newTokens.scope ?? current.scope,
           tokenType: newTokens.token_type ?? current.tokenType,
           idToken: newTokens.id_token ?? current.idToken,
+          lastError: null, // Clear error on successful refresh
+          lastErrorAt: null,
         },
       });
+      
+      console.log(`[GMAIL TOKEN REFRESH] Success for userId=${userId}`);
     } catch (err) {
       console.error("[GMAIL TOKEN REFRESH ERROR]", err);
+      
+      // Update lastError field
+      try {
+        await prisma.gmailToken.update({
+          where: { userId },
+          data: {
+            lastError: err instanceof Error ? err.message : String(err),
+            lastErrorAt: new Date(),
+          },
+        });
+      } catch (updateError) {
+        console.error("[GMAIL TOKEN ERROR UPDATE FAILED]", updateError);
+      }
     }
   });
 

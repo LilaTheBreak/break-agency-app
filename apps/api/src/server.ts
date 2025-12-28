@@ -184,6 +184,29 @@ console.log(
 );
 console.log(">>> GOOGLE_REDIRECT_URI =", process.env.GOOGLE_REDIRECT_URI);
 
+// ------------------------------------------------------
+// VALIDATE PRODUCTION CREDENTIALS
+// ------------------------------------------------------
+import { validateProductionCredentials } from "./lib/env.js";
+
+const credentialValidation = validateProductionCredentials();
+
+if (!credentialValidation.valid) {
+  console.error("\n❌ INVALID GOOGLE OAUTH CREDENTIALS:");
+  credentialValidation.errors.forEach(err => console.error(`   - ${err}`));
+  
+  if (process.env.NODE_ENV === "production") {
+    console.error("\n🚨 FATAL: Cannot start server in production with invalid credentials");
+    console.error("   Please set valid GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI");
+    process.exit(1);
+  } else {
+    console.warn("\n⚠️  WARNING: Invalid credentials detected in development mode");
+    console.warn("   Gmail features will not work correctly");
+  }
+} else {
+  console.log("✅ Google OAuth credentials validated");
+}
+
 const app = express();
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";

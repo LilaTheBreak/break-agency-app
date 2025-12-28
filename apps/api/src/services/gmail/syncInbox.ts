@@ -2,12 +2,17 @@ import { gmail_v1 as gmailV1 } from "googleapis";
 import prisma from "../../lib/prisma.js";
 import { getOAuthClientForUser } from "./tokens.js";
 import { mapGmailMessageToDb } from "./mappings.js";
+import { linkEmailToCrm } from "./linkEmailToCrm.js";
+import { logAction } from "../../lib/auditLogger.js";
 
 interface SyncStats {
   imported: number;
   updated: number;
   skipped: number;
   failed: number;
+  contactsCreated: number;
+  brandsCreated: number;
+  linkErrors: number;
 }
 
 /**
@@ -48,7 +53,24 @@ async function fetchRecentMessages(gmail: gmailV1.Gmail): Promise<gmailV1.Schema
  * @returns A promise that resolves with synchronization statistics.
  */
 export async function syncInboxForUser(userId: string): Promise<SyncStats> {
-  const stats: SyncStats = { imported: 0, updated: 0, skipped: 0, failed: 0 };
+  const stats: SyncStats = { 
+    imported: 0, 
+    updated: 0, 
+    skipped: 0, 
+    failed: 0,
+    contactsCreated: 0,
+    brandsCreated: 0,
+    linkErrors: 0,
+  };
+
+  // Audit log: Gmail sync started
+  await logAction({
+    userId,
+    action: "GMAIL_SYNC_STARTED",
+    entityType: "GMAIL_SYNC",
+    entityId: userId,
+    metadata: { timestamp: new Date().toISOString() },
+  });
 
   const gmail = await getOAuthClientForUser(userId);
   if (!gmail) {
@@ -82,19 +104,92 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
 
       const { inboxMessageData, inboundEmailData } = mapGmailMessageToDb(gmailMessage, userId);
 
+      let createdEmail: any = null;
       await prisma.$transaction(async (tx) => {
         const thread = await tx.inboxMessage.upsert({
           where: { threadId: inboxMessageData.threadId },
           update: inboxMessageData,
           create: { ...inboxMessageData, userId }
         });
-        await tx.inboundEmail.create({ data: { ...inboundEmailData, inboxMessageId: thread.id } });
+        createdEmail = await tx.inboundEmail.create({ data: { ...inboundEmailData, inboxMessageId: thread.id } });
       });
 
       stats.imported++;
+
+      // Link email to CRM (contact + brand)
+      if (createdEmail) {
+        try {
+          const linkResult = await linkEmailToCrm({
+            id: createdEmail.id,
+            fromEmail: createdEmail.fromEmail,
+            userId,
+          });
+
+          if (linkResult.error) {
+            console.warn(`[GMAIL SYNC] CRM link failed for email ${createdEmail.id}:`, linkResult.error);
+            stats.linkErrors++;
+          } else {
+            if (linkResult.contactCreated) stats.contactsCreated++;
+            if (linkResult.brandCreated) stats.brandsCreated++;
+          }
+        } catch (linkError) {
+          console.error(`[GMAIL SYNC] CRM link error for email ${createdEmail.id}:`, linkError);
+          stats.linkErrors++;
+        }
+      }
     }
+
+    // Update last synced timestamp and clear errors
+    await prisma.gmailToken.update({
+      where: { userId },
+      data: { 
+        lastSyncedAt: new Date(),
+        lastError: null,
+        lastErrorAt: null,
+      },
+    });
+
+    // Audit log: Gmail sync completed
+    await logAction({
+      userId,
+      action: "GMAIL_SYNC_COMPLETED",
+      entityType: "GMAIL_SYNC",
+      entityId: userId,
+      metadata: { 
+        stats,
+        timestamp: new Date().toISOString(),
+      },
+    });
   } catch (error) {
     console.error(`Error during Gmail sync for user ${userId}:`, error);
+    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Update GmailToken with error
+    try {
+      await prisma.gmailToken.update({
+        where: { userId },
+        data: { 
+          lastError: errorMessage,
+          lastErrorAt: new Date(),
+        },
+      });
+    } catch (updateError) {
+      console.error(`Failed to update GmailToken lastError for user ${userId}:`, updateError);
+    }
+    
+    // Audit log: Gmail sync failed
+    await logAction({
+      userId,
+      action: "GMAIL_SYNC_FAILED",
+      entityType: "GMAIL_SYNC",
+      entityId: userId,
+      metadata: { 
+        error: errorMessage,
+        stats,
+      },
+    });
+    
     throw new Error("Gmail sync failed.");
   }
 

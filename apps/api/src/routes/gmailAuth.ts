@@ -14,16 +14,88 @@ router.get("/status", requireAuth, async (req, res) => {
   try {
     const token = await prisma.gmailToken.findUnique({
       where: { userId: req.user!.id },
-      select: { refreshToken: true, expiryDate: true }
+      select: { 
+        refreshToken: true, 
+        expiryDate: true, 
+        lastSyncedAt: true,
+        lastError: true,
+        lastErrorAt: true,
+      }
+    });
+    
+    if (!token || !token.refreshToken) {
+      return res.json({
+        connected: false,
+        status: "disconnected",
+        message: "Gmail account not connected. Please authenticate to continue."
+      });
+    }
+    
+    // Determine connection status
+    let status = "connected";
+    let message = "Gmail connected successfully";
+    
+    if (token.lastError) {
+      status = "error";
+      message = token.lastError;
+    }
+    
+    // Get sync stats
+    const emailCount = await prisma.inboundEmail.count({
+      where: { userId: req.user!.id }
+    });
+
+    // Get CRM creation stats from metadata
+    const emailsWithCrmLinks = await prisma.inboundEmail.count({
+      where: {
+        userId: req.user!.id,
+        metadata: {
+          path: ["crmContactId"],
+          not: null
+        }
+      }
+    });
+
+    // Get unique contacts created from Gmail
+    const contactsFromGmail = await prisma.crmBrandContact.count({
+      where: {
+        notes: {
+          contains: "Auto-created from Gmail"
+        }
+      }
+    });
+
+    // Get unique brands created from Gmail
+    const brandsFromGmail = await prisma.crmBrand.count({
+      where: {
+        internalNotes: {
+          contains: "Auto-created from Gmail"
+        }
+      }
     });
     
     res.json({
-      connected: !!token?.refreshToken,
-      expiresAt: token?.expiryDate || null
+      connected: true,
+      status,
+      message,
+      expiresAt: token?.expiryDate || null,
+      lastSyncedAt: token?.lastSyncedAt || null,
+      lastError: token?.lastError || null,
+      lastErrorAt: token?.lastErrorAt || null,
+      stats: {
+        emailsIngested: emailCount,
+        emailsLinked: emailsWithCrmLinks,
+        contactsCreated: contactsFromGmail,
+        brandsCreated: brandsFromGmail,
+      }
     });
   } catch (error) {
     console.error("[GMAIL AUTH STATUS]", error);
-    res.json({ connected: false });
+    res.status(500).json({ 
+      connected: false,
+      status: "error",
+      message: error instanceof Error ? error.message : "Failed to check Gmail status"
+    });
   }
 });
 
