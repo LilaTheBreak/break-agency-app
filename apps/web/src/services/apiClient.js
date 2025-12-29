@@ -73,15 +73,28 @@ export async function apiFetch(path, options = {}) {
     };
 
     // Show toast notifications for errors
+    // Note: Don't show errors for /auth/me - it's expected to return 200 or 401 when not logged in
+    const isAuthMe = path.includes('/auth/me');
+    
     if (response.status >= 500) {
       console.error(`[API] Server error ${response.status} for ${path}`);
-      toast.error(`Server error (${response.status}): Failed to ${extractAction(path)}`);
+      if (!isAuthMe) {
+        toast.error(`Server error (${response.status}): Failed to ${extractAction(path)}`);
+      }
     } else if (response.status === 403) {
-      toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
+      // For /auth/me, 403 might be a CORS issue - don't show confusing error
+      if (isAuthMe) {
+        console.warn(`[API] CORS or permission issue for /auth/me - this is expected if not logged in`);
+      } else {
+        toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
+      }
     } else if (response.status === 404) {
       // Silent for 404s - often expected (checking if resource exists)
     } else if (response.status === 401) {
-      toast.error('Session expired. Please sign in again.');
+      // For /auth/me, 401 is expected when not logged in - don't show error
+      if (!isAuthMe) {
+        toast.error('Session expired. Please sign in again.');
+      }
     }
 
     return response;

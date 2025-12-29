@@ -27,14 +27,24 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const response = await getCurrentUser();
-      if (response.status === 401) {
+      
+      // Handle expected status codes gracefully
+      if (response.status === 401 || response.status === 403) {
+        // Not authenticated - this is normal, not an error
         setUser(null);
         return;
       }
+      
       if (!response.ok) {
+        // Only throw error for unexpected status codes
         const text = await response.text().catch(() => "");
-        throw new Error(text || "Unable to load session");
+        const errorMsg = text || `Unable to load session (${response.status})`;
+        console.warn("[AUTH] Failed to load user:", errorMsg);
+        setUser(null);
+        // Don't set error for auth failures - they're expected
+        return;
       }
+      
       const payload = await response.json();
       setUser(
         payload.user
@@ -45,8 +55,13 @@ export function AuthProvider({ children }) {
           : null
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load session");
+      // Network errors or JSON parsing errors
+      console.warn("[AUTH] Error loading user:", err);
       setUser(null);
+      // Only set error for actual network failures, not auth failures
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError("Unable to connect to server. Please check your connection.");
+      }
     } finally {
       setLoading(false);
     }
