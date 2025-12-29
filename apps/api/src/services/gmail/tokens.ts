@@ -14,12 +14,28 @@ export async function getOAuthClientForUser(userId: string) {
     where: { userId },
   });
 
-  if (!token || !token.refreshToken) {
+  if (!token) {
+    console.log(`[GMAIL TOKEN] No token found for user ${userId}`);
     throw new GmailNotConnectedError();
   }
 
+  if (!token.refreshToken) {
+    console.error(`[GMAIL TOKEN] Missing refresh token for user ${userId}`);
+    throw new GmailNotConnectedError();
+  }
+
+  // Use same redirect URI derivation as auth flow
   const gmailRedirectUri = process.env.GMAIL_REDIRECT_URI || 
-    googleConfig.redirectUri.replace('/api/auth/google/callback', '/api/gmail/auth/callback');
+    (googleConfig.redirectUri 
+      ? googleConfig.redirectUri.replace('/api/auth/google/callback', '/api/gmail/auth/callback')
+      : 'http://localhost:5001/api/gmail/auth/callback');
+
+  console.log(`[GMAIL TOKEN] Creating OAuth client for user ${userId}`, {
+    hasAccessToken: !!token.accessToken,
+    hasRefreshToken: !!token.refreshToken,
+    tokenExpiry: token.expiryDate?.toISOString(),
+    redirectUri: gmailRedirectUri,
+  });
 
   const client = new google.auth.OAuth2(
     googleConfig.clientId,
@@ -56,17 +72,29 @@ export async function getOAuthClientForUser(userId: string) {
       
       console.log(`[GMAIL TOKEN REFRESH] Success for userId=${userId}`);
     } catch (err) {
-      console.error("[GMAIL TOKEN REFRESH ERROR]", err);
+      console.error("[GMAIL TOKEN REFRESH ERROR]", {
+        userId,
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       
       // Update lastError field
       try {
+        const errorMessage = err instanceof Error ? err.message : String(err);
         await prisma.gmailToken.update({
           where: { userId },
           data: {
-            lastError: err instanceof Error ? err.message : String(err),
+            lastError: errorMessage.slice(0, 500), // Limit error message length
             lastErrorAt: new Date(),
           },
         });
+        
+        // Log specific error types for debugging
+        if (errorMessage.includes('invalid_grant')) {
+          console.error(`[GMAIL TOKEN] Invalid grant for user ${userId} - user needs to reconnect Gmail`);
+        } else if (errorMessage.includes('invalid_client')) {
+          console.error(`[GMAIL TOKEN] Invalid client credentials - check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET`);
+        }
       } catch (updateError) {
         console.error("[GMAIL TOKEN ERROR UPDATE FAILED]", updateError);
       }

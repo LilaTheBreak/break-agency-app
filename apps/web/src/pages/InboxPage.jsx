@@ -151,8 +151,29 @@ export function InboxPage() {
       toast.success('Gmail connected successfully!');
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
-    } else if (params.get('gmail_error') === '1') {
-      toast.error('Failed to connect Gmail. Please try again.');
+    } else if (params.get('gmail_error')) {
+      const errorType = params.get('gmail_error');
+      let errorMessage = 'Failed to connect Gmail. Please try again.';
+      
+      switch(errorType) {
+        case 'redirect_uri_mismatch':
+          errorMessage = 'Gmail OAuth configuration error. Please contact support.';
+          break;
+        case 'code_expired':
+          errorMessage = 'Authorization code expired. Please try connecting again.';
+          break;
+        case 'invalid_credentials':
+          errorMessage = 'Gmail OAuth credentials invalid. Please contact support.';
+          break;
+        case 'missing_refresh_token':
+          errorMessage = 'Gmail did not provide refresh token. Please try again.';
+          break;
+        default:
+          errorMessage = 'Failed to connect Gmail. Please try again.';
+      }
+      
+      toast.error(errorMessage);
+      console.error('[INBOX] Gmail connection error:', errorType);
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
     }

@@ -160,11 +160,17 @@ router.get("/callback", async (req, res) => {
     
     if (!tokens.refreshToken) {
       console.error("[GMAIL CALLBACK] ERROR: No refresh_token returned");
-      return res.status(400).json({
-        error: "missing_refresh_token",
-        message: "Google did not return a refresh token. Ask the user to reconnect Gmail with forced consent.",
-        requiresReauth: true
+      console.error("[GMAIL CALLBACK] Tokens received:", {
+        hasAccessToken: !!tokens.accessToken,
+        hasRefreshToken: !!tokens.refreshToken,
+        scope: tokens.scope,
       });
+      
+      // This might happen if user has already granted access before
+      // and Google didn't prompt for consent again
+      const errorRedirect = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_error=missing_refresh_token`;
+      console.log(`[GMAIL CALLBACK] Redirecting to error URL:`, errorRedirect);
+      return res.redirect(302, errorRedirect);
     }
     
     console.log("[GMAIL CALLBACK] Saving tokens to database for user:", userId);
@@ -177,6 +183,8 @@ router.get("/callback", async (req, res) => {
         scope: tokens.scope ?? null,
         tokenType: tokens.tokenType ?? null,
         idToken: tokens.idToken ?? null,
+        lastError: null, // Clear any previous errors
+        lastErrorAt: null,
       },
       create: {
         updatedAt: new Date(),
@@ -213,7 +221,27 @@ router.get("/callback", async (req, res) => {
     res.redirect(302, redirectUrl);
   } catch (error) {
     console.error("[GMAIL CALLBACK] ERROR during token exchange or save:", error);
-    const errorRedirect = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_error=1`;
+    console.error("[GMAIL CALLBACK] Full error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    });
+    
+    // Extract specific error message for user
+    let errorMessage = "unknown_error";
+    if (error instanceof Error) {
+      if (error.message.includes("redirect_uri_mismatch")) {
+        errorMessage = "redirect_uri_mismatch";
+      } else if (error.message.includes("invalid_grant") || error.message.includes("Code was already redeemed")) {
+        errorMessage = "code_expired";
+      } else if (error.message.includes("invalid_client")) {
+        errorMessage = "invalid_credentials";
+      } else if (error.message.includes("refresh_token")) {
+        errorMessage = "missing_refresh_token";
+      }
+    }
+    
+    const errorRedirect = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_error=${errorMessage}`;
     console.log(`[GMAIL CALLBACK] Redirecting to error URL:`, errorRedirect);
     res.redirect(302, errorRedirect);
   }
