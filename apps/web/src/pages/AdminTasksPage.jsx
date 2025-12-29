@@ -703,7 +703,6 @@ export function AdminTasksPage() {
                   <EmptyStateWithHint
                     entity="tasks"
                     onCreate={openCreate}
-                    onLearnMore={() => window.location.href = "/admin/crm-settings"}
                   />
                 </div>
               ) : visibleTasks.length === 0 ? (

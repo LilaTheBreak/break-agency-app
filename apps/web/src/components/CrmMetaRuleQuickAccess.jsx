@@ -56,24 +56,6 @@ export function CrmMetaRuleHelpIcon({ onNavigate }) {
 }
 
 /**
- * Inline Link to CRM Settings
- * 
- * Usage:
- * <CrmMetaRuleLearnMore />
- */
-export function CrmMetaRuleLearnMore() {
-  return (
-    <a
-      href="/admin/crm-settings"
-      className="inline-flex items-center gap-1 text-xs text-brand-black/50 hover:text-brand-black/70"
-    >
-      <span>Learn about CRM modeling</span>
-      <span>→</span>
-    </a>
-  );
-}
-
-/**
  * Quick Reference Card (Collapsible)
  * 
  * Usage:
@@ -120,9 +102,6 @@ export function CrmMetaRuleQuickRef() {
               <span>💼</span>
               <span className="text-brand-black/60">Thing → Deal/Contract</span>
             </div>
-          </div>
-          <div className="mt-3 border-t border-brand-black/10 pt-3">
-            <CrmMetaRuleLearnMore />
           </div>
         </div>
       )}

@@ -14,6 +14,5 @@ export const ADMIN_NAV_LINKS = [
   { label: "Deals", to: "/admin/deals" },
   { label: "Messaging", to: "/admin/messaging" },
   { label: "Finance", to: "/admin/finance" },
-  { label: "CRM Settings", to: "/admin/crm-settings" },
   { label: "Settings", to: "/admin/settings" }
 ];

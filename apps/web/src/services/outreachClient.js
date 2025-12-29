@@ -6,7 +6,10 @@ export async function fetchOutreachRecords() {
     throw new Error(`Failed to fetch outreach records: ${response.status}`);
   }
   const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  // API returns { records: [...] } - ensure we always return this shape
+  return {
+    records: Array.isArray(data?.records) ? data.records : []
+  };
 }
 
 export async function createOutreachRecord(data) {

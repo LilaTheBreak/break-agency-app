@@ -196,6 +196,18 @@ router.get("/callback", async (req, res) => {
       hasRefreshToken: !!tokens.refreshToken,
       timestamp: new Date().toISOString()
     });
+    
+    // Trigger initial sync in background (don't block redirect)
+    console.log(`[GMAIL CALLBACK] Triggering initial sync for user ${userId}`);
+    const { syncInboxForUser } = await import("../services/gmail/syncInbox.js");
+    syncInboxForUser(userId)
+      .then((stats) => {
+        console.log(`[GMAIL CALLBACK] Initial sync completed for user ${userId}:`, stats);
+      })
+      .catch((syncError) => {
+        console.error(`[GMAIL CALLBACK] Initial sync failed for user ${userId}:`, syncError);
+      });
+    
     const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
     console.log(`[GMAIL CALLBACK] Redirecting to:`, redirectUrl);
     res.redirect(302, redirectUrl);

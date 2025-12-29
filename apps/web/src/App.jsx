@@ -67,7 +67,6 @@ import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
 import { AdminOutreachPage } from "./pages/AdminOutreachPage.jsx";
 import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
 import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
-import { AdminCrmSettingsPage } from "./pages/AdminCrmSettingsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
 import { AdminRevenuePage } from "./pages/AdminRevenuePage.jsx";
 import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
@@ -673,18 +672,6 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminDealsPage session={session} />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/crm-settings"
-          element={
-            <ProtectedRoute
-              session={session}
-              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
-              onRequestSignIn={() => setAuthModalOpen(true)}
-            >
-              <AdminCrmSettingsPage session={session} />
             </ProtectedRoute>
           }
         />

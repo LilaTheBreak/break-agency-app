@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getGmailAuthUrl, listGmailMessages, getDealDrafts } from "../services/gmailClient.js";
-import { getGmailStatus } from "../services/inboxClient.js";
+import { getGmailStatus, syncGmailInbox } from "../services/inboxClient.js";
 import { FeatureGate, useFeature, DisabledNotice } from "../components/FeatureGate.jsx";
 import { INBOX_SCANNING_ENABLED } from "../config/features.js";
 import toast from "react-hot-toast";
@@ -46,30 +46,57 @@ function InboxConnected({ user }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [messagesData, dealsData] = await Promise.all([
+        listGmailMessages(),
+        getDealDrafts(user.id),
+      ]);
+      setMessages(messagesData.messages || []);
+      setDeals(dealsData.drafts || []);
+      setError(null);
+    } catch (err) {
+      setError(err.message || "Failed to load inbox data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSync = async () => {
+    try {
+      setSyncing(true);
+      setError(null);
+      await syncGmailInbox();
+      toast.success('Gmail sync completed');
+      await fetchData(); // Reload messages after sync
+    } catch (err) {
+      setError(err.message || "Failed to sync Gmail");
+      toast.error('Gmail sync failed');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const [messagesData, dealsData] = await Promise.all([
-          listGmailMessages(),
-          getDealDrafts(user.id),
-        ]);
-        setMessages(messagesData.messages || []);
-        setDeals(dealsData.drafts || []);
-      } catch (err) {
-        setError(err.message || "Failed to load inbox data.");
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchData();
   }, [user.id]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
-        <h3 className="font-display text-2xl uppercase">Recent Messages</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-2xl uppercase">Recent Messages</h3>
+          <button
+            onClick={handleSync}
+            disabled={syncing || loading}
+            className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {syncing ? 'Syncing...' : 'Sync Gmail'}
+          </button>
+        </div>
         {loading && <p>Loading messages...</p>}
         {error && <p className="text-brand-red">{error}</p>}
         {!loading && messages.map(msg => (
