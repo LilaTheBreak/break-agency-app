@@ -23,10 +23,15 @@ interface SyncStats {
 async function fetchRecentMessages(gmail: gmailV1.Gmail): Promise<gmailV1.Schema$Message[]> {
   let listResponse;
   try {
+    console.log(`[GMAIL SYNC] Listing messages from Gmail API (query: "in:inbox", maxResults: 100)...`);
     listResponse = await gmail.users.messages.list({
       userId: "me",
       maxResults: 100, // Fetch more messages to ensure comprehensive sync
       q: "in:inbox"
+    });
+    console.log(`[GMAIL SYNC] Gmail API list response:`, {
+      resultSizeEstimate: listResponse.data.resultSizeEstimate,
+      messagesCount: listResponse.data.messages?.length || 0,
     });
   } catch (listError: any) {
     console.error(`[GMAIL SYNC] Failed to list messages:`, {
@@ -40,8 +45,11 @@ async function fetchRecentMessages(gmail: gmailV1.Gmail): Promise<gmailV1.Schema
 
   const messages = listResponse.data.messages;
   if (!messages || messages.length === 0) {
+    console.log(`[GMAIL SYNC] No messages found in Gmail inbox (resultSizeEstimate: ${listResponse.data.resultSizeEstimate})`);
     return [];
   }
+  
+  console.log(`[GMAIL SYNC] Found ${messages.length} message IDs, fetching full details...`);
 
   // Note: For production scale, a proper batching endpoint is recommended.
   // This implementation uses Promise.all for simplicity with 100 messages.
@@ -68,6 +76,7 @@ async function fetchRecentMessages(gmail: gmailV1.Gmail): Promise<gmailV1.Schema
     console.warn(`[GMAIL SYNC] Some messages failed to fetch: ${fullMessages.length - validMessages.length} failed out of ${fullMessages.length}`);
   }
   
+  console.log(`[GMAIL SYNC] Successfully fetched ${validMessages.length} full message details`);
   return validMessages;
 }
 
@@ -134,7 +143,9 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
   try {
     let gmailMessages: gmailV1.Schema$Message[];
     try {
+      console.log(`[GMAIL SYNC] Fetching messages from Gmail API for user ${userId}...`);
       gmailMessages = await fetchRecentMessages(gmail);
+      console.log(`[GMAIL SYNC] Fetched ${gmailMessages.length} messages from Gmail API for user ${userId}`);
     } catch (fetchError: any) {
       // Handle Google API errors specifically
       const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
@@ -168,6 +179,7 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     const existingGmailIds = new Set<string>();
     if (gmailMessages.length > 0) {
       const gmailIds = gmailMessages.map((m) => m.id!).filter(Boolean);
+      console.log(`[GMAIL SYNC] Checking for duplicates: ${gmailIds.length} message IDs for user ${userId}`);
       if (gmailIds.length > 0) {
         try {
           const existingEmails = await prisma.inboundEmail.findMany({
@@ -177,6 +189,7 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           existingEmails.forEach((e) => {
             if (e.gmailId) existingGmailIds.add(e.gmailId);
           });
+          console.log(`[GMAIL SYNC] Found ${existingGmailIds.size} existing emails (duplicates) for user ${userId}`);
         } catch (dbError) {
           console.error(`[GMAIL SYNC] Failed to check existing emails for user ${userId}:`, {
             error: dbError instanceof Error ? dbError.message : String(dbError),
@@ -185,10 +198,17 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           // Continue with sync even if we can't check duplicates
         }
       }
+    } else {
+      console.log(`[GMAIL SYNC] No messages fetched from Gmail API for user ${userId} - inbox may be empty or query returned no results`);
     }
 
+    console.log(`[GMAIL SYNC] Processing ${gmailMessages.length} messages for user ${userId}...`);
     for (const gmailMessage of gmailMessages) {
       if (!gmailMessage.id || !gmailMessage.threadId) {
+        console.warn(`[GMAIL SYNC] Skipping message missing id or threadId for user ${userId}:`, {
+          hasId: !!gmailMessage.id,
+          hasThreadId: !!gmailMessage.threadId,
+        });
         stats.failed++;
         continue;
       }
@@ -234,11 +254,15 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           });
         });
         stats.imported++;
+        if (stats.imported % 10 === 0 || stats.imported === 1) {
+          console.log(`[GMAIL SYNC] Imported ${stats.imported} message${stats.imported !== 1 ? 's' : ''} so far for user ${userId}...`);
+        }
       } catch (txError) {
         console.error(`[GMAIL SYNC] Transaction failed for message ${gmailMessage.id} for user ${userId}:`, {
           error: txError instanceof Error ? txError.message : String(txError),
           messageId: gmailMessage.id,
           threadId: gmailMessage.threadId,
+          errorCode: (txError as any)?.code,
         });
         stats.failed++;
         continue; // Continue with next message instead of failing entire sync
@@ -354,6 +378,15 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     throw error;
   }
 
-  console.log(`Sync complete for user ${userId}:`, stats);
+  console.log(`[GMAIL SYNC] Sync complete for user ${userId}:`, {
+    imported: stats.imported,
+    updated: stats.updated,
+    skipped: stats.skipped,
+    failed: stats.failed,
+    contactsCreated: stats.contactsCreated,
+    brandsCreated: stats.brandsCreated,
+    linkErrors: stats.linkErrors,
+    totalProcessed: stats.imported + stats.skipped + stats.failed,
+  });
   return stats;
 }

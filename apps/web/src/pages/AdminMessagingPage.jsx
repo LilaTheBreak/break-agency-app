@@ -109,9 +109,19 @@ export function AdminMessagingPage() {
         if (inboxResult.success) {
           setInboxEmails(inboxResult.data || []);
         }
-        // Success feedback
-        const syncedCount = result.synced || result.count || 0;
-        alert(`✓ Successfully synced ${syncedCount} threads`);
+        // Success feedback - use stats from backend
+        const stats = result.stats || {};
+        const syncedCount = stats.imported || 0;
+        const skippedCount = stats.skipped || 0;
+        const failedCount = stats.failed || 0;
+        
+        if (syncedCount > 0) {
+          alert(`✓ Successfully synced ${syncedCount} email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} skipped as duplicates)` : ''}`);
+        } else if (skippedCount > 0) {
+          alert(`✓ Sync completed: ${skippedCount} email${skippedCount !== 1 ? 's' : ''} already synced (no new emails)`);
+        } else {
+          alert(`✓ Sync completed: No new emails found${failedCount > 0 ? ` (${failedCount} failed)` : ''}`);
+        }
       } else {
         setInboxError(result.message || "Sync failed");
       }

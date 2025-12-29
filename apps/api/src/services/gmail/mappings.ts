@@ -102,13 +102,21 @@ export function mapGmailMessageToDb(
   // Combine bodyHtml and bodyText into single body field (prefer text, fallback to HTML)
   const body = bodyText || (bodyHtml ? cleanEmailBody(bodyHtml) : "");
   
+  // Ensure required fields are present
+  const fromEmail = getHeader(headers, "From") || "";
+  const toEmail = getHeader(headers, "To") || "";
+  
+  if (!fromEmail) {
+    console.warn(`[GMAIL MAPPING] Message ${message.id} missing From header, using fallback`);
+  }
+  
   const inboundEmailData: InboundEmailCreateInput = {
     userId,
     gmailId: message.id!,
     threadId: message.threadId!,
-    subject: getHeader(headers, "Subject"),
-    fromEmail: getHeader(headers, "From"),
-    toEmail: getHeader(headers, "To"),
+    subject: getHeader(headers, "Subject") || null,
+    fromEmail: fromEmail || "unknown@unknown.com", // Fallback for required field
+    toEmail: toEmail || "", // Can be empty string
     receivedAt: messageDate,
     body: body || null,
     snippet: message.snippet || null,
