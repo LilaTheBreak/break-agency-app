@@ -209,7 +209,12 @@ if (!credentialValidation.valid) {
 
 const app = express();
 
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
+// CRITICAL: Production frontend MUST be in allowed origins
+// If FRONTEND_ORIGIN not set in Railway, add production domain to defaults
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 
+  process.env.WEB_APP_URL || 
+  "https://www.tbctbctbc.online,http://localhost:5173,http://localhost:3000";
+
 // Support multiple origins (comma-separated)
 const allowedOrigins = FRONTEND_ORIGIN.split(',').map(o => o.trim());
 
