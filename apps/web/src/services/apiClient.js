@@ -8,9 +8,15 @@ if (RAW_API_BASE && RAW_API_BASE.length) {
   // Remove any trailing newlines, whitespace, or escaped characters
   const cleaned = RAW_API_BASE.replace(/\\n|\\r|\n|\r/g, '').trim();
   
-  // If it's a full URL (starts with http), append /api
+  // If it's a full URL (starts with http)
   if (/^https?:\/\//i.test(cleaned)) {
-    API_BASE = cleaned.replace(/\/$/, '') + '/api';
+    // Remove trailing slash
+    let base = cleaned.replace(/\/$/, '');
+    // Only append /api if it doesn't already end with /api
+    if (!base.endsWith('/api')) {
+      base = base + '/api';
+    }
+    API_BASE = base;
   } else {
     API_BASE = cleaned || "/api";
   }
