@@ -332,6 +332,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
       status,
       priority,
       dueDate,
+      completedAt,
       owner,
       ownerId,
       assignedUserIds,
@@ -366,6 +367,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
     if (status !== undefined) updateData.status = status;
     if (priority !== undefined) updateData.priority = priority;
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+    if (completedAt !== undefined) updateData.completedAt = completedAt ? new Date(completedAt) : null;
     if (owner !== undefined) updateData.owner = owner || null;
     if (ownerId !== undefined) updateData.ownerId = ownerId || null;
     if (assignedUserIds !== undefined) updateData.assignedUserIds = assignedUserIds;

@@ -10,6 +10,7 @@ import { MultiSelect } from "../components/MultiSelect.jsx";
 import { TASK_PRIORITIES, TASK_STATUSES } from "../lib/crmTasks.js";
 import { 
   fetchCrmTasks, 
+  fetchCrmTaskById,
   createCrmTask, 
   updateCrmTask, 
   deleteCrmTask,
@@ -215,7 +216,10 @@ export function AdminTasksPage() {
   const [editingId, setEditingId] = useState("");
   const [formError, setFormError] = useState("");
   const [formSaving, setFormSaving] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All statuses");
@@ -352,26 +356,44 @@ export function AdminTasksPage() {
     setCreateOpen(true);
   };
 
-  const openEdit = (task) => {
-    setEditingId(task.id);
-    setFormError("");
-    setDraft({
-      title: task.title || "",
-      description: task.description || "",
-      status: task.status || TASK_STATUSES[0],
-      priority: task.priority || "Medium",
-      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : formatInputDate(),
-      ownerId: task.ownerId || "",
-      assignedUserIds: task.assignedUserIds || [],
-      mentions: task.mentions || [],
-      relatedBrands: task.relatedBrands || [],
-      relatedCreators: task.relatedCreators || [],
-      relatedDeals: task.relatedDeals || [],
-      relatedCampaigns: task.relatedCampaigns || [],
-      relatedEvents: task.relatedEvents || [],
-      relatedContracts: task.relatedContracts || []
-    });
-    setCreateOpen(true);
+  const openEdit = async (taskIdOrObject) => {
+    try {
+      // Support both task ID string and task object
+      const taskId = typeof taskIdOrObject === 'string' ? taskIdOrObject : taskIdOrObject.id;
+      
+      setEditingId(taskId);
+      setFormError("");
+      setFormLoading(true);
+      setCreateOpen(true);
+      
+      // Fetch fresh task data from API (not stale local state)
+      console.log("[AdminTasksPage] Fetching fresh task data for:", taskId);
+      const task = await fetchCrmTaskById(taskId);
+      console.log("[AdminTasksPage] Loaded task:", task);
+      
+      setDraft({
+        title: task.title || "",
+        description: task.description || "",
+        status: task.status || TASK_STATUSES[0],
+        priority: task.priority || "Medium",
+        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : formatInputDate(),
+        completedAt: task.completedAt || null,
+        ownerId: task.ownerId || "",
+        assignedUserIds: task.assignedUserIds || [],
+        mentions: task.mentions || [],
+        relatedBrands: task.relatedBrands || [],
+        relatedCreators: task.relatedCreators || [],
+        relatedDeals: task.relatedDeals || [],
+        relatedCampaigns: task.relatedCampaigns || [],
+        relatedEvents: task.relatedEvents || [],
+        relatedContracts: task.relatedContracts || []
+      });
+      setFormLoading(false);
+    } catch (err) {
+      console.error("[AdminTasksPage] Error loading task:", err);
+      setFormError(err.message || "Failed to load task");
+      setFormLoading(false);
+    }
   };
 
   const saveTask = async () => {
@@ -400,12 +422,23 @@ export function AdminTasksPage() {
         return;
       }
 
+      // Auto-set completedAt when status changes to "Completed"
+      let completedAt = draft.completedAt;
+      if (draft.status === "Completed" && !completedAt) {
+        completedAt = new Date().toISOString();
+        console.log("[AdminTasksPage] Auto-setting completedAt:", completedAt);
+      } else if (draft.status !== "Completed") {
+        // Clear completedAt if status is changed away from Completed
+        completedAt = null;
+      }
+
       const taskData = {
         title: draft.title.trim(),
         description: draft.description || null,
         status: draft.status,
         priority: draft.priority,
         dueDate: draft.dueDate ? new Date(draft.dueDate).toISOString() : null,
+        completedAt: completedAt,
         ownerId: draft.ownerId,
         assignedUserIds: draft.assignedUserIds,
         mentions: draft.mentions,
@@ -462,6 +495,32 @@ export function AdminTasksPage() {
     } catch (err) {
       console.error("Error deleting task:", err);
       setError(err.message || "Failed to delete task");
+    }
+  };
+
+  const handleDeleteFromModal = async () => {
+    if (!editingId) return;
+    
+    setDeleteConfirmOpen(false);
+    setDeleting(true);
+    
+    try {
+      setFormError("");
+      await deleteCrmTask(editingId);
+      
+      // Refetch tasks and close modal
+      const data = await fetchCrmTasks();
+      setTasks(data);
+      setCreateOpen(false);
+      setEditingId("");
+      setDeleting(false);
+      
+      setSuccessMessage("Task deleted successfully");
+      setTimeout(() => setSuccessMessage(""), 4000);
+    } catch (err) {
+      console.error("[AdminTasksPage] Error deleting task:", err);
+      setFormError(err.message || "Failed to delete task");
+      setDeleting(false);
     }
   };
 
@@ -600,7 +659,11 @@ export function AdminTasksPage() {
                       .filter(Boolean);
 
                     return (
-                      <tr key={task.id} className="border-b border-brand-black/5">
+                      <tr 
+                        key={task.id} 
+                        className="border-b border-brand-black/5 cursor-pointer hover:bg-brand-linen/30 transition-colors"
+                        onClick={() => openEdit(task.id)}
+                      >
                         <td className="px-4 py-3">
                           <p className="font-semibold text-brand-black">{task.title}</p>
                           {task.description && (
@@ -678,14 +741,20 @@ export function AdminTasksPage() {
                           <div className="flex justify-end gap-2">
                             <button
                               className="rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
-                              onClick={() => openEdit(task)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEdit(task.id);
+                              }}
                             >
                               Edit
                             </button>
                             {isAdmin && (
                               <button
                                 className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50"
-                                onClick={() => handleDelete(task.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(task.id);
+                                }}
                               >
                                 Delete
                               </button>
@@ -719,36 +788,60 @@ export function AdminTasksPage() {
         title={editingId ? "Edit task" : "Add task"}
         subtitle="Tasks"
         onClose={() => {
-          setCreateOpen(false);
-          setEditingId("");
-          setFormError("");
+          if (!formSaving && !deleting) {
+            setCreateOpen(false);
+            setEditingId("");
+            setFormError("");
+            setDeleteConfirmOpen(false);
+          }
         }}
         footer={
           <div className="space-y-3">
             {formError && (
               <div className="rounded-2xl border border-brand-red/20 bg-brand-red/5 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Validation Error</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-red">Error</p>
                 <p className="mt-1 text-sm text-brand-black/80">{formError}</p>
               </div>
             )}
-            <div className="flex items-center justify-end gap-2">
-              <TextButton
-                onClick={() => {
-                  setCreateOpen(false);
-                  setEditingId("");
-                  setFormError("");
-                }}
-                disabled={formSaving}
-              >
-                Cancel
-              </TextButton>
-              <PrimaryButton onClick={saveTask} disabled={formSaving}>
-                {formSaving ? "Saving..." : editingId ? "Save changes" : "Create task"}
-              </PrimaryButton>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                {editingId && isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={formSaving || deleting}
+                    className="rounded-full border border-brand-red px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting..." : "Delete Task"}
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <TextButton
+                  onClick={() => {
+                    setCreateOpen(false);
+                    setEditingId("");
+                    setFormError("");
+                    setDeleteConfirmOpen(false);
+                  }}
+                  disabled={formSaving || deleting}
+                >
+                  Cancel
+                </TextButton>
+                <PrimaryButton onClick={saveTask} disabled={formSaving || deleting || formLoading}>
+                  {formSaving ? "Saving..." : editingId ? "Save changes" : "Create task"}
+                </PrimaryButton>
+              </div>
             </div>
           </div>
         }
       >
+        {formLoading ? (
+          <div className="py-12 text-center">
+            <p className="text-sm text-brand-black/60">Loading task data...</p>
+          </div>
+        ) : (
+          <>
         {/* Section 1: Core Task */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-brand-black/10">
@@ -893,7 +986,60 @@ export function AdminTasksPage() {
             </p>
           </div>
         </div>
+
+        {/* Completed Date Display (Read-only) */}
+        {draft.completedAt && (
+          <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green-700">Task Completed</p>
+            <p className="mt-1 text-sm text-green-800">
+              Completed on {new Date(draft.completedAt).toLocaleString("en-GB", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              })}
+            </p>
+          </div>
+        )}
+        </>
+        )}
       </ModalFrame>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !deleting && setDeleteConfirmOpen(false)}
+          />
+          <div className="relative w-full max-w-md rounded-3xl border border-brand-red/20 bg-white p-6 shadow-[0_35px_120px_rgba(0,0,0,0.25)]">
+            <div className="mb-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Confirm Deletion</p>
+              <h3 className="font-display text-2xl uppercase text-brand-black">Delete this task?</h3>
+            </div>
+            <p className="text-sm text-brand-black/70 mb-6">
+              This action cannot be undone. The task and all its data will be permanently deleted.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <TextButton
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </TextButton>
+              <button
+                type="button"
+                onClick={handleDeleteFromModal}
+                disabled={deleting}
+                className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deleting ? "Deleting..." : "Delete Task"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardShell>
   );
 }
