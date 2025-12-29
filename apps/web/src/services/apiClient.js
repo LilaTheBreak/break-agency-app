@@ -28,7 +28,20 @@ console.log("[apiClient] Using API base URL:", NORMALIZED_BASE);
 
 export function apiUrl(path = "") {
   if (!path) return NORMALIZED_BASE;
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  
+  // Remove leading /api from path if it exists (since NORMALIZED_BASE already includes /api)
+  let normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  
+  // If the base URL already includes /api and the path starts with /api, remove the duplicate
+  if (NORMALIZED_BASE.endsWith('/api') && normalizedPath.startsWith('/api/')) {
+    normalizedPath = normalizedPath.substring(4); // Remove '/api' prefix
+  }
+  
+  // Ensure path starts with /
+  if (!normalizedPath.startsWith('/')) {
+    normalizedPath = '/' + normalizedPath;
+  }
+  
   return `${NORMALIZED_BASE}${normalizedPath}`;
 }
 
