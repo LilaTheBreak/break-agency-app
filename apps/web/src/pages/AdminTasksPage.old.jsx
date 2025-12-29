@@ -395,6 +395,14 @@ export function AdminTasksPage() {
         setSuggestedLoading(true);
         setSuggestedError("");
         const messages = await listGmailMessages();
+        
+        // If no messages, check if Gmail is connected and suggest syncing
+        if (!messages || messages.length === 0) {
+          setSuggestedError("No Gmail messages found. Try syncing your inbox or connect Gmail if you haven't already.");
+          setSuggested([]);
+          return;
+        }
+        
         const normalized = (messages || [])
           .flatMap((msg) => {
             const emails = msg.emails || msg.InboundEmail || [];
@@ -427,7 +435,19 @@ export function AdminTasksPage() {
         setSuggested(normalized);
       } catch (error) {
         console.error("Failed to load suggested tasks from Gmail:", error);
-        setSuggestedError(error.message || "Unable to load email suggestions. Connect Gmail and try again.");
+        
+        // Provide more helpful error messages
+        let errorMessage = "Unable to load email suggestions.";
+        if (error.code === "gmail_not_connected") {
+          errorMessage = "Gmail account is not connected. Please connect your Gmail account first.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = "Unable to load email suggestions. Connect Gmail and try again.";
+        }
+        
+        setSuggestedError(errorMessage);
+        setSuggested([]);
       } finally {
         setSuggestedLoading(false);
       }

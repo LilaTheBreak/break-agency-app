@@ -18,10 +18,30 @@ export async function getGmailAuthUrl() {
  */
 export async function listGmailMessages() {
   const response = await apiFetch("/api/gmail/messages");
+  
   if (!response.ok) {
-    throw new Error("Failed to list Gmail messages.");
+    // Try to get error details from response
+    let errorMessage = "Failed to list Gmail messages.";
+    try {
+      const errorData = await response.json();
+      if (errorData.error === "gmail_not_connected") {
+        errorMessage = "Gmail account is not connected. Please connect your Gmail account first.";
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch (e) {
+      // If response isn't JSON, use default message
+    }
+    
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    error.code = response.status === 404 ? "gmail_not_connected" : "unknown";
+    throw error;
   }
-  return response.json();
+  
+  const data = await response.json();
+  // Handle case where API returns {messages: []} or just []
+  return Array.isArray(data) ? data : (data.messages || []);
 }
 
 /**

@@ -78,6 +78,8 @@ import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { ProfilePageNew } from "./pages/ProfilePageNew.jsx";
 import { CreatorPage } from "./pages/CreatorPage.jsx";
 import { LegalPrivacyPage } from "./pages/LegalPrivacy.jsx";
+import { PrivacyPolicyPage } from "./pages/PrivacyPolicy.jsx";
+import { TermsOfServicePage } from "./pages/TermsOfService.jsx";
 import { ContactPage } from "./pages/Contact.jsx";
 import { HelpCenterPage } from "./pages/HelpCenter.jsx";
 import { SupportPage } from "./pages/SupportPage.jsx";
@@ -437,6 +439,8 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         />
         <Route path="/resource-hub" element={<ResourceHubPage />} />
         <Route path="/legal" element={<LegalPrivacyPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms-of-service" element={<TermsOfServicePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/careers" element={<CareersPage />} />

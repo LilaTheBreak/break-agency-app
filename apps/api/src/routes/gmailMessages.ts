@@ -9,14 +9,30 @@ const router = Router();
 // GET /messages — list last 50 inbox messages
 router.get("/messages", requireAuth, async (req, res, next) => {
   try {
+    // Check if Gmail is connected
+    const token = await prisma.gmailToken.findUnique({ 
+      where: { userId: req.user!.id },
+      select: { refreshToken: true }
+    });
+    
+    if (!token || !token.refreshToken) {
+      return res.status(404).json({
+        error: "gmail_not_connected",
+        message: "Gmail account is not connected. Please authenticate to continue.",
+        messages: [] // Return empty array so frontend doesn't crash
+      });
+    }
+
     const messages = await prisma.inboxMessage.findMany({
       where: { userId: req.user!.id },
       orderBy: { lastMessageAt: "desc" },
       take: 50,
       include: { InboundEmail: { orderBy: { receivedAt: "asc" } } }
     });
+    
     res.json(messages);
   } catch (error) {
+    console.error("[GMAIL MESSAGES] Error fetching messages:", error);
     next(error);
   }
 });
