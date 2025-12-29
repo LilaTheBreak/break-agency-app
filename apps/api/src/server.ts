@@ -226,8 +226,7 @@ allowedOrigins.forEach((origin, index) => {
   }
 });
 
-console.log("✅ FRONTEND_ORIGIN validated:", allowedOrigins);
-console.log(`[CORS] Allowed origins: ${allowedOrigins.join(", ")}`);
+console.log("✅ FRONTEND_ORIGIN validated:", allowedOrigins[0], `(+${allowedOrigins.length - 1} more)`);
 
 // ------------------------------------------------------
 // CORE MIDDLEWARE
@@ -242,30 +241,14 @@ console.log("[MONITORING] Performance monitoring initialized");
 // CORS Configuration - MUST be first middleware
 const corsConfig = cors({
   origin: (origin, callback) => {
-    try {
-      // Log ALL origin checks
-      console.log(`[CORS] Checking origin: ${origin}`);
-      
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) {
-        console.log("[CORS] ✅ No origin header - allowing");
-        return callback(null, true);
-      }
-      
-      const isAllowed = allowedOrigins.includes(origin);
-      console.log(`[CORS] Origin "${origin}" is ${isAllowed ? 'ALLOWED' : 'BLOCKED'}`);
-      
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        console.warn(`[CORS] Blocked origins allowed list: ${JSON.stringify(allowedOrigins)}`);
-        // Return false to not set CORS headers (proper rejection)
-        callback(null, false);
-      }
-    } catch (error) {
-      console.error("[CORS] ERROR in origin callback:", error);
-      // On error, deny the request
-      callback(null, false);
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
   credentials: true,
@@ -277,15 +260,15 @@ const corsConfig = cors({
   optionsSuccessStatus: 204
 });
 
-console.log("[CORS] Applying CORS middleware to Express app...");
+// Apply CORS to ALL routes including OPTIONS
 app.use(corsConfig);
-
-// Explicitly handle ALL OPTIONS requests (preflight)
-console.log("[CORS] Registering explicit OPTIONS handler for all routes...");
 app.options("*", corsConfig);
-console.log("[CORS] ✅ CORS middleware fully configured");
 
-app.use(helmet());
+// Helmet AFTER CORS to avoid interference
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Allow CORS to control cross-origin policies
+  crossOriginOpenerPolicy: false
+}));
 app.use(morgan("dev"));
 app.use(cookieParser());
 
