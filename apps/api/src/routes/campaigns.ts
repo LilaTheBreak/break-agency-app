@@ -97,12 +97,12 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     targetId === "all"
       ? {}
       : {
-          OR: [{ ownerId: targetId }, { brandLinks: { some: { brandId: targetId } } }]
+          OR: [{ ownerId: targetId }, { CampaignBrandPivot: { some: { brandId: targetId } } }]
         };
   try {
     const campaigns = await prisma.brandCampaign.findMany({
       where: whereClause,
-      include: { brandLinks: true },
+      include: { CampaignBrandPivot: true },
       orderBy: { createdAt: "desc" },
       take: 25
     });
@@ -178,7 +178,7 @@ router.put("/campaigns/:id", ensureManager, async (req: Request, res: Response) 
 async function fetchCampaign(id: string, requesterId: string) {
   const campaign = await prisma.brandCampaign.findUnique({
     where: { id },
-    include: { brandLinks: true }
+    include: { CampaignBrandPivot: true }
   });
   if (!campaign) return null;
   return formatCampaign(campaign);
@@ -210,7 +210,7 @@ async function syncBrandPivots(campaignId: string, brands: any[]) {
 
 function formatCampaign(campaign: any) {
   const brandEntries = Array.isArray(campaign.brands) ? campaign.brands : [];
-  const pivotEntries = (campaign.brandLinks || []).map((pivot) => ({
+  const pivotEntries = (campaign.CampaignBrandPivot || []).map((pivot) => ({
     id: pivot.brandId,
     metrics: pivot.metrics || {}
   }));

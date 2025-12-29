@@ -91,7 +91,7 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
 
     setIsDispatchLoading(true);
     try {
-      const response = await apiFetch("/gmail/auth/draft-queue", {
+      const response = await apiFetch("/api/gmail/auth/draft-queue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
