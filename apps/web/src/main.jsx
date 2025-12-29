@@ -58,4 +58,10 @@ if (prerenderShell) {
   prerenderShell.remove();
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(appTree);
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  console.error("[FATAL] Root element not found. Cannot mount React app.");
+  throw new Error("Root element '#root' not found in DOM");
+}
+
+ReactDOM.createRoot(rootElement).render(appTree);
