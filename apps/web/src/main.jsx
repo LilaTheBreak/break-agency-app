@@ -53,11 +53,6 @@ const appTree = (
   </React.StrictMode>
 );
 
-const prerenderShell = document.getElementById("prerender-shell");
-if (prerenderShell) {
-  prerenderShell.remove();
-}
-
 const rootElement = document.getElementById("root");
 if (!rootElement) {
   console.error("[FATAL] Root element not found. Cannot mount React app.");
