@@ -242,23 +242,29 @@ console.log("[MONITORING] Performance monitoring initialized");
 // CORS Configuration - MUST be first middleware
 const corsConfig = cors({
   origin: (origin, callback) => {
-    // Log ALL origin checks
-    console.log(`[CORS] Request from origin: "${origin}"`);
-    
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) {
-      console.log("[CORS] ✅ Allowing request with no origin");
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.includes(origin)) {
-      console.log(`[CORS] ✅ Allowing origin: ${origin}`);
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] ❌ BLOCKED origin: ${origin}`);
-      console.warn(`[CORS] Allowed origins are: ${allowedOrigins.join(", ")}`);
-      // Return false instead of Error to avoid 500 status
-      // This will cause CORS to not set headers, which is the correct behavior
+    try {
+      // Log ALL origin checks
+      console.log(`[CORS] Checking origin: ${origin}`);
+      
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) {
+        console.log("[CORS] ✅ No origin header - allowing");
+        return callback(null, true);
+      }
+      
+      const isAllowed = allowedOrigins.includes(origin);
+      console.log(`[CORS] Origin "${origin}" is ${isAllowed ? 'ALLOWED' : 'BLOCKED'}`);
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Blocked origins allowed list: ${JSON.stringify(allowedOrigins)}`);
+        // Return false to not set CORS headers (proper rejection)
+        callback(null, false);
+      }
+    } catch (error) {
+      console.error("[CORS] ERROR in origin callback:", error);
+      // On error, deny the request
       callback(null, false);
     }
   },
