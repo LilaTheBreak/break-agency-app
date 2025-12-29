@@ -231,7 +231,11 @@ allowedOrigins.forEach((origin, index) => {
   }
 });
 
-console.log("✅ FRONTEND_ORIGIN validated:", allowedOrigins[0], `(+${allowedOrigins.length - 1} more)`);
+console.log("✅ FRONTEND_ORIGIN validated:");
+allowedOrigins.forEach((origin, i) => {
+  console.log(`   [${i}] "${origin}"`);
+});
+console.log(`   Total: ${allowedOrigins.length} origins allowed`);
 
 // ------------------------------------------------------
 // CORE MIDDLEWARE
@@ -244,9 +248,29 @@ startMemoryTracking(60000); // Sample every 60 seconds
 console.log("[MONITORING] Performance monitoring initialized");
 
 // CORS Configuration - MUST be first middleware
-// Use array directly instead of callback to avoid runtime errors
+// Use custom origin function with explicit logging
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    console.log(`[CORS] Incoming origin: "${origin}"`);
+    console.log(`[CORS] Allowed origins:`, allowedOrigins);
+    
+    // Allow requests with no origin (server-to-server, Postman, etc.)
+    if (!origin) {
+      console.log("[CORS] No origin header - allowing");
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      console.log(`[CORS] Origin "${origin}" is ALLOWED`);
+      return callback(null, true);
+    }
+    
+    // Origin not allowed
+    console.warn(`[CORS] Origin "${origin}" is BLOCKED`);
+    console.warn(`[CORS] Allowed origins are:`, allowedOrigins);
+    return callback(null, false); // Don't throw error, just don't add CORS headers
+  },
   credentials: true,
   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS", "PUT"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
