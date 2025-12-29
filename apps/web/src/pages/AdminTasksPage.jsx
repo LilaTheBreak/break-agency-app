@@ -682,7 +682,7 @@ export function AdminTasksPage() {
                             >
                               Edit
                             </button>
-                            {isSuperAdmin && (
+                            {isAdmin && (
                               <button
                                 className="rounded-full border border-brand-red px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50"
                                 onClick={() => handleDelete(task.id)}

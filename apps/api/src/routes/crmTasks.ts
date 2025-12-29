@@ -435,9 +435,9 @@ router.delete("/:id", async (req: Request, res: Response) => {
     const { id } = req.params;
     const userRole = req.user?.role || "";
     
-    // Only SuperAdmins can delete tasks
-    if (userRole !== "SUPERADMIN") {
-      return res.status(403).json({ error: "Only Super Admins can delete tasks" });
+    // Only Admins and SuperAdmins can delete tasks
+    if (userRole !== "SUPERADMIN" && userRole !== "ADMIN") {
+      return res.status(403).json({ error: "Only Admins can delete tasks" });
     }
 
     const existing = await prisma.crmTask.findUnique({ where: { id } });
