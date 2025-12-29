@@ -7,7 +7,13 @@ let API_BASE = "/api"; // Default fallback
 if (RAW_API_BASE && RAW_API_BASE.length) {
   // Remove any trailing newlines, whitespace, or escaped characters
   const cleaned = RAW_API_BASE.replace(/\\n|\\r|\n|\r/g, '').trim();
-  API_BASE = cleaned || "/api";
+  
+  // If it's a full URL (starts with http), append /api
+  if (/^https?:\/\//i.test(cleaned)) {
+    API_BASE = cleaned.replace(/\/$/, '') + '/api';
+  } else {
+    API_BASE = cleaned || "/api";
+  }
 }
 
 const NORMALIZED_BASE = API_BASE.replace(/\/$/, "");

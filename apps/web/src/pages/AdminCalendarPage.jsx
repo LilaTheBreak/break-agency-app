@@ -27,9 +27,6 @@ const TYPE_FILTERS = [
 const DEFAULT_TYPE_ID = TYPE_FILTERS[0].id;
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-// Meeting summaries - auto-generated from recordings (feature in development)
-const MEETING_SUMMARIES = [];
-
 function getCalendarMatrix(date = new Date()) {
   const year = date.getFullYear();
   const month = date.getMonth();
