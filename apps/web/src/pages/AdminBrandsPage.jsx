@@ -711,41 +711,47 @@ export function AdminBrandsPage({ session }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (brands || [])
-      .filter((b) => (statusFilter === "All" ? true : b.status === statusFilter))
-      .filter((b) => (q ? `${b.brandName} ${b.website} ${b.industry}`.toLowerCase().includes(q) : true))
+    const safeBrands = Array.isArray(brands) ? brands : [];
+    return safeBrands
+      .filter((b) => b && (statusFilter === "All" ? true : b.status === statusFilter))
+      .filter((b) => (q ? `${b.brandName || ""} ${b.website || ""} ${b.industry || ""}`.toLowerCase().includes(q) : true))
       .sort((a, b) => (b.lastActivityAt || b.createdAt || "").localeCompare(a.lastActivityAt || a.createdAt || ""));
   }, [brands, query, statusFilter]);
 
   const selectedBrand = useMemo(() => brands.find((b) => b.id === drawerBrandId) || null, [brands, drawerBrandId]);
   const brandCampaigns = useMemo(() => {
     if (!selectedBrand) return [];
-    return (campaigns || [])
-      .filter((c) => c.brandId === selectedBrand.id)
+    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    return safeCampaigns
+      .filter((c) => c && c.brandId === selectedBrand.id)
       .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
   }, [campaigns, selectedBrand]);
   const brandEvents = useMemo(() => {
     if (!selectedBrand) return [];
-    return (events || [])
-      .filter((e) => e.brandId === selectedBrand.id)
+    const safeEvents = Array.isArray(events) ? events : [];
+    return safeEvents
+      .filter((e) => e && e.brandId === selectedBrand.id)
       .sort((a, b) => String(b.startDateTime || "").localeCompare(String(a.startDateTime || "")));
   }, [events, selectedBrand]);
   const brandDeals = useMemo(() => {
     if (!selectedBrand) return [];
-    return (deals || [])
-      .filter((d) => d.brandId === selectedBrand.id)
+    const safeDeals = Array.isArray(deals) ? deals : [];
+    return safeDeals
+      .filter((d) => d && d.brandId === selectedBrand.id)
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   }, [deals, selectedBrand]);
   const brandContracts = useMemo(() => {
     if (!selectedBrand) return [];
-    return (contracts || [])
-      .filter((c) => c.brandId === selectedBrand.id)
+    const safeContracts = Array.isArray(contracts) ? contracts : [];
+    return safeContracts
+      .filter((c) => c && c.brandId === selectedBrand.id)
       .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
   }, [contracts, selectedBrand]);
   const brandContacts = useMemo(() => {
     if (!selectedBrand) return [];
-    return (contacts || [])
-      .filter((c) => c.brandId === selectedBrand.id)
+    const safeContacts = Array.isArray(contacts) ? contacts : [];
+    return safeContacts
+      .filter((c) => c && c.brandId === selectedBrand.id)
       .sort((a, b) => {
         if (Boolean(b.primaryContact) !== Boolean(a.primaryContact)) return b.primaryContact ? 1 : -1;
         return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(`${b.lastName || ""} ${b.firstName || ""}`);
@@ -754,7 +760,10 @@ export function AdminBrandsPage({ session }) {
 
   const [contactDrawerId, setContactDrawerId] = useState("");
   const selectedContact = useMemo(
-    () => (contacts || []).find((c) => c.id === contactDrawerId) || null,
+    () => {
+      const safeContacts = Array.isArray(contacts) ? contacts : [];
+      return safeContacts.find((c) => c && c.id === contactDrawerId) || null;
+    },
     [contacts, contactDrawerId]
   );
 
@@ -1041,10 +1050,14 @@ export function AdminBrandsPage({ session }) {
 
   const getLinkedObjectsSummary = (brand) => {
     if (!brand) return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
-    const campaignCount = (campaigns || []).filter(c => c.brandId === brand.id).length;
-    const dealCount = (deals || []).filter(d => d.brandId === brand.id).length;
-    const eventCount = (events || []).filter(e => e.brandId === brand.id).length;
-    const contractCount = (contracts || []).filter(c => c.brandId === brand.id).length;
+    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    const safeDeals = Array.isArray(deals) ? deals : [];
+    const safeEvents = Array.isArray(events) ? events : [];
+    const safeContracts = Array.isArray(contracts) ? contracts : [];
+    const campaignCount = safeCampaigns.filter(c => c && c.brandId === brand.id).length;
+    const dealCount = safeDeals.filter(d => d && d.brandId === brand.id).length;
+    const eventCount = safeEvents.filter(e => e && e.brandId === brand.id).length;
+    const contractCount = safeContracts.filter(c => c && c.brandId === brand.id).length;
     const outreachCount = brand._count?.OutreachRecords || 0;
     return {
       total: campaignCount + dealCount + eventCount + contractCount + outreachCount,
@@ -1611,7 +1624,7 @@ export function AdminBrandsPage({ session }) {
                 </div>
               </div>
               <div className="mt-4 space-y-2">
-                {(selectedBrand.activity || []).slice(0, 12).map((entry) => (
+                {(Array.isArray(selectedBrand.activity) ? selectedBrand.activity : []).slice(0, 12).map((entry) => (
                   <div key={`${entry.at}-${entry.label}`} className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3">
                     <p className="text-sm text-brand-black/80">{entry.label}</p>
                     <p className="mt-1 text-xs text-brand-black/60">{formatWhen(entry.at)}</p>
@@ -1991,7 +2004,7 @@ export function AdminBrandsPage({ session }) {
               onChange={(v) => setEditorDraft((prev) => ({ ...prev, primaryContactId: v }))}
               options={[
                 { value: "", label: "None" },
-                ...brandContacts.map(c => ({ 
+                ...(Array.isArray(brandContacts) ? brandContacts : []).map(c => ({ 
                   value: c.id, 
                   label: `${c.firstName || ""} ${c.lastName || ""}`.trim() || c.email || "Unnamed" 
                 }))
