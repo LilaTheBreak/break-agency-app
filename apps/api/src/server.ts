@@ -301,14 +301,7 @@ app.use(express.json({ limit: "350mb" }));
 app.use(express.urlencoded({ extended: true, limit: "350mb" }));
 
 // ------------------------------------------------------
-// DEV AUTH (development only)
-// ------------------------------------------------------
-if (process.env.NODE_ENV !== 'production') {
-  app.use("/api/dev-auth", devAuthRouter);
-}
-
-// ------------------------------------------------------
-// DEBUG: CORS Configuration Endpoint
+// PUBLIC DEBUG ENDPOINT (BEFORE AUTH)
 // ------------------------------------------------------
 app.get("/api/cors-debug", (_req, res) => {
   res.json({
@@ -320,6 +313,13 @@ app.get("/api/cors-debug", (_req, res) => {
     }
   });
 });
+
+// ------------------------------------------------------
+// DEV AUTH (development only)
+// ------------------------------------------------------
+if (process.env.NODE_ENV !== 'production') {
+  app.use("/api/dev-auth", devAuthRouter);
+}
 
 // ------------------------------------------------------
 // AUTH ROUTES (Google OAuth, session management)
