@@ -9,13 +9,21 @@ const router = Router();
 // GET /messages — list last 50 inbox messages
 router.get("/messages", requireAuth, async (req, res, next) => {
   try {
+    const userId = req.user!.id;
+    
     // Check if Gmail is connected
     const token = await prisma.gmailToken.findUnique({ 
-      where: { userId: req.user!.id },
-      select: { refreshToken: true }
+      where: { userId },
+      select: { 
+        refreshToken: true,
+        lastError: true,
+        lastErrorAt: true,
+        lastSyncedAt: true,
+      }
     });
     
     if (!token || !token.refreshToken) {
+      console.log(`[GMAIL MESSAGES] No Gmail token found for user ${userId}`);
       return res.status(404).json({
         error: "gmail_not_connected",
         message: "Gmail account is not connected. Please authenticate to continue.",
@@ -23,16 +31,36 @@ router.get("/messages", requireAuth, async (req, res, next) => {
       });
     }
 
+    // Check if there's a recent sync error
+    if (token.lastError && token.lastErrorAt) {
+      const errorAge = Date.now() - token.lastErrorAt.getTime();
+      const oneHour = 60 * 60 * 1000;
+      
+      if (errorAge < oneHour) {
+        console.warn(`[GMAIL MESSAGES] Recent sync error for user ${userId}:`, token.lastError);
+        // Still return messages if any exist, but log the error
+      }
+    }
+
     const messages = await prisma.inboxMessage.findMany({
-      where: { userId: req.user!.id },
+      where: { userId },
       orderBy: { lastMessageAt: "desc" },
       take: 50,
       include: { InboundEmail: { orderBy: { receivedAt: "asc" } } }
     });
     
+    // Log if inbox is empty but Gmail is connected (might need sync)
+    if (messages.length === 0 && token.lastSyncedAt === null) {
+      console.log(`[GMAIL MESSAGES] Inbox is empty for user ${userId} and never synced. User may need to trigger sync.`);
+    }
+    
     res.json(messages);
   } catch (error) {
-    console.error("[GMAIL MESSAGES] Error fetching messages:", error);
+    console.error("[GMAIL MESSAGES] Error fetching messages:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: req.user?.id,
+    });
     next(error);
   }
 });

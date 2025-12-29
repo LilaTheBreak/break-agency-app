@@ -1,6 +1,6 @@
 import { gmail_v1 as gmailV1, google } from "googleapis";
 import prisma from "../../lib/prisma.js";
-import { getOAuthClientForUser } from "./tokens.js";
+import { getOAuthClientForUser, GmailNotConnectedError } from "./tokens.js";
 import { mapGmailMessageToDb } from "./mappings.js";
 import { linkEmailToCrm } from "./linkEmailToCrm.js";
 // import { logAuditEvent } from "../../lib/auditLogger.js"; // No req context in service
@@ -21,11 +21,22 @@ interface SyncStats {
  * @returns A promise that resolves to an array of full Gmail message objects.
  */
 async function fetchRecentMessages(gmail: gmailV1.Gmail): Promise<gmailV1.Schema$Message[]> {
-  const listResponse = await gmail.users.messages.list({
-    userId: "me",
-    maxResults: 100, // Fetch more messages to ensure comprehensive sync
-    q: "in:inbox"
-  });
+  let listResponse;
+  try {
+    listResponse = await gmail.users.messages.list({
+      userId: "me",
+      maxResults: 100, // Fetch more messages to ensure comprehensive sync
+      q: "in:inbox"
+    });
+  } catch (listError: any) {
+    console.error(`[GMAIL SYNC] Failed to list messages:`, {
+      error: listError instanceof Error ? listError.message : String(listError),
+      code: listError?.code,
+      status: listError?.response?.status,
+      statusText: listError?.response?.statusText,
+    });
+    throw listError; // Re-throw to be handled by caller
+  }
 
   const messages = listResponse.data.messages;
   if (!messages || messages.length === 0) {
@@ -40,10 +51,24 @@ async function fetchRecentMessages(gmail: gmailV1.Gmail): Promise<gmailV1.Schema
       gmail.users.messages
         .get({ userId: "me", id: msg.id!, format: "full" })
         .then((res) => res.data)
+        .catch((getError) => {
+          // Log individual message fetch failures but don't fail entire sync
+          console.warn(`[GMAIL SYNC] Failed to fetch message ${msg.id}:`, {
+            error: getError instanceof Error ? getError.message : String(getError),
+            messageId: msg.id,
+          });
+          return null; // Return null for failed fetches
+        })
     );
 
   const fullMessages = await Promise.all(messagePromises);
-  return fullMessages.filter((msg): msg is gmailV1.Schema$Message => !!msg);
+  const validMessages = fullMessages.filter((msg): msg is gmailV1.Schema$Message => !!msg);
+  
+  if (validMessages.length < fullMessages.length) {
+    console.warn(`[GMAIL SYNC] Some messages failed to fetch: ${fullMessages.length - validMessages.length} failed out of ${fullMessages.length}`);
+  }
+  
+  return validMessages;
 }
 
 /**
@@ -77,13 +102,66 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     const oauthClient = await getOAuthClientForUser(userId);
     gmail = google.gmail({ version: "v1", auth: oauthClient });
   } catch (error) {
-    console.warn(`Skipping sync for user ${userId}: No valid Gmail client.`, error);
-    stats.failed = 1; // Mark the whole sync as failed
-    return stats;
+    // Handle GmailNotConnectedError specifically - don't swallow it
+    if (error instanceof GmailNotConnectedError) {
+      console.warn(`[GMAIL SYNC] Gmail not connected for user ${userId}`);
+      throw error; // Re-throw so controller can handle it properly
+    }
+    
+    // Log other OAuth errors with full details
+    console.error(`[GMAIL SYNC] Failed to get OAuth client for user ${userId}:`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
+    // Update GmailToken with error
+    try {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      await prisma.gmailToken.update({
+        where: { userId },
+        data: { 
+          lastError: errorMessage.slice(0, 500),
+          lastErrorAt: new Date(),
+        },
+      });
+    } catch (updateError) {
+      console.error(`[GMAIL SYNC] Failed to update GmailToken error for user ${userId}:`, updateError);
+    }
+    
+    throw error; // Re-throw original error with full details
   }
 
   try {
-    const gmailMessages = await fetchRecentMessages(gmail);
+    let gmailMessages: gmailV1.Schema$Message[];
+    try {
+      gmailMessages = await fetchRecentMessages(gmail);
+    } catch (fetchError: any) {
+      // Handle Google API errors specifically
+      const errorMessage = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      const errorCode = fetchError?.code || fetchError?.response?.status;
+      
+      console.error(`[GMAIL SYNC] Failed to fetch messages from Gmail API for user ${userId}:`, {
+        error: errorMessage,
+        code: errorCode,
+        status: fetchError?.response?.status,
+        statusText: fetchError?.response?.statusText,
+      });
+      
+      // Update GmailToken with error
+      try {
+        await prisma.gmailToken.update({
+          where: { userId },
+          data: { 
+            lastError: `Gmail API error: ${errorMessage}`.slice(0, 500),
+            lastErrorAt: new Date(),
+          },
+        });
+      } catch (updateError) {
+        console.error(`[GMAIL SYNC] Failed to update GmailToken error for user ${userId}:`, updateError);
+      }
+      
+      throw fetchError; // Re-throw to be caught by outer catch
+    }
 
     const existingGmailIds = new Set(
       (
@@ -204,36 +282,33 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     //   },
     // });
   } catch (error) {
-    console.error(`Error during Gmail sync for user ${userId}:`, error);
-    
+    // Preserve original error details - don't throw generic error
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
     
-    // Update GmailToken with error
+    console.error(`[GMAIL SYNC] Error during Gmail sync for user ${userId}:`, {
+      error: errorMessage,
+      stack: errorStack,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      isGmailNotConnected: error instanceof GmailNotConnectedError,
+    });
+    
+    // Update GmailToken with error details
     try {
       await prisma.gmailToken.update({
         where: { userId },
         data: { 
-          lastError: errorMessage,
+          lastError: errorMessage.slice(0, 500), // Limit length
           lastErrorAt: new Date(),
         },
       });
     } catch (updateError) {
-      console.error(`Failed to update GmailToken lastError for user ${userId}:`, updateError);
+      console.error(`[GMAIL SYNC] Failed to update GmailToken lastError for user ${userId}:`, updateError);
     }
     
-    // Audit log: Gmail sync failed
-    // await logAction({
-    //   userId,
-    //   action: "GMAIL_SYNC_FAILED",
-    //   entityType: "GMAIL_SYNC",
-    //   entityId: userId,
-    //   metadata: { 
-    //     error: errorMessage,
-    //     stats,
-    //   },
-    // });
-    
-    throw new Error("Gmail sync failed.");
+    // Re-throw original error to preserve error type and details
+    // This allows the controller to handle GmailNotConnectedError specifically
+    throw error;
   }
 
   console.log(`Sync complete for user ${userId}:`, stats);
