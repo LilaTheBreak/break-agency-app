@@ -275,6 +275,13 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Allow Vercel preview URLs (dynamic per deployment)
+    // Pattern: https://break-agency-*.vercel.app or https://*.vercel.app
+    if (origin.includes('.vercel.app')) {
+      console.log(`[CORS] Origin "${origin}" is ALLOWED (Vercel preview)`);
+      return callback(null, true);
+    }
+    
     // Origin not allowed
     console.warn(`[CORS] Origin "${origin}" is BLOCKED`);
     console.warn(`[CORS] Allowed origins are:`, allowedOrigins);
