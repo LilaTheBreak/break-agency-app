@@ -226,7 +226,8 @@ allowedOrigins.forEach((origin, index) => {
   }
 });
 
-console.log("✅ FRONTEND_ORIGIN validated:", allowedOrigins[0], `(+${allowedOrigins.length - 1} more)`);
+console.log("✅ FRONTEND_ORIGIN validated:", allowedOrigins);
+console.log(`[CORS] Allowed origins: ${allowedOrigins.join(", ")}`);
 
 // ------------------------------------------------------
 // CORE MIDDLEWARE
@@ -241,13 +242,21 @@ console.log("[MONITORING] Performance monitoring initialized");
 // CORS Configuration - MUST be first middleware
 const corsConfig = cors({
   origin: (origin, callback) => {
+    // Log ALL origin checks
+    console.log(`[CORS] Request from origin: "${origin}"`);
+    
     // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log("[CORS] ✅ Allowing request with no origin");
+      return callback(null, true);
+    }
     
     if (allowedOrigins.includes(origin)) {
+      console.log(`[CORS] ✅ Allowing origin: ${origin}`);
       callback(null, true);
     } else {
-      console.warn(`[CORS] Blocked origin: ${origin}`);
+      console.warn(`[CORS] ❌ BLOCKED origin: ${origin}`);
+      console.warn(`[CORS] Allowed origins are: ${allowedOrigins.join(", ")}`);
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
@@ -260,10 +269,13 @@ const corsConfig = cors({
   optionsSuccessStatus: 204
 });
 
+console.log("[CORS] Applying CORS middleware to Express app...");
 app.use(corsConfig);
 
 // Explicitly handle ALL OPTIONS requests (preflight)
+console.log("[CORS] Registering explicit OPTIONS handler for all routes...");
 app.options("*", corsConfig);
+console.log("[CORS] ✅ CORS middleware fully configured");
 
 app.use(helmet());
 app.use(morgan("dev"));
