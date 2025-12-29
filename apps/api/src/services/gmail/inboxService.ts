@@ -28,8 +28,8 @@ export async function fetchInboxThreads(options: FetchInboxOptions) {
     take: limit,
     include: {
       // Include only the most recent email for a lightweight list view
-      emails: {
-        orderBy: { date: "desc" },
+      InboundEmail: {
+        orderBy: { receivedAt: "desc" },
         take: 1
       }
     }
@@ -49,8 +49,8 @@ export async function fetchThreadDetails(userId: string, threadId: string) {
     where: { userId, threadId },
     include: {
       // Include all emails, sorted chronologically
-      emails: {
-        orderBy: { date: "asc" }
+      InboundEmail: {
+        orderBy: { receivedAt: "asc" }
       }
     }
   });

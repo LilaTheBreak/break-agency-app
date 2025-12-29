@@ -84,15 +84,15 @@ export async function analyzeEmailById(
   userId: string
 ): Promise<InboundEmail | null> {
   const email = await prisma.inboundEmail.findFirst({
-    where: { id: emailId, inboxMessage: { userId } }
+    where: { id: emailId, userId }
   });
 
   if (!email) {
     return null;
   }
 
-  const cleanText = cleanEmailBody(email.bodyHtml || email.bodyText || "");
-  const ruleBasedResult = classifyWithRules(cleanText, email.subject);
+  const cleanText = email.body || "";
+  const ruleBasedResult = classifyWithRules(cleanText, email.subject || "");
 
   // Use AI analysis
   const aiResult = await getAIAnalysis(cleanText);
@@ -131,16 +131,16 @@ export async function analyzeEmailById(
 export async function analyzeThreadById(threadId: string, userId: string) {
   const thread = await prisma.inboxMessage.findFirst({
     where: { threadId, userId },
-    include: { emails: { orderBy: { date: "asc" } } }
+    include: { InboundEmail: { orderBy: { receivedAt: "asc" } } }
   });
 
-  if (!thread || thread.emails.length === 0) {
+  if (!thread || thread.InboundEmail.length === 0) {
     return { error: "Thread not found or is empty." };
   }
 
   // Concatenate content from all emails in the thread
-  const fullThreadText = thread.emails
-    .map((email) => `From: ${email.from}\nSubject: ${email.subject}\n\n${cleanEmailBody(email.bodyHtml || email.bodyText || "")}`)
+  const fullThreadText = thread.InboundEmail
+    .map((email) => `From: ${email.fromEmail}\nSubject: ${email.subject}\n\n${email.body || ""}`)
     .join("\n\n--- Next Email in Thread ---\n\n");
 
   // A different prompt for thread-level summarization
@@ -164,8 +164,8 @@ export async function analyzeThreadById(threadId: string, userId: string) {
  */
 export async function analyzeBulkForUser(userId: string) {
   const emailsToAnalyze = await prisma.inboundEmail.findMany({
-    where: { inboxMessage: { userId }, aiCategory: null },
-    orderBy: { date: "desc" },
+    where: { userId, aiCategory: null },
+    orderBy: { receivedAt: "desc" },
     take: 200,
     select: { id: true }
   });

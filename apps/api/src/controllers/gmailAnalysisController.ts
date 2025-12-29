@@ -31,10 +31,9 @@ export async function getAnalysisForEmail(
   try {
     const { emailId } = req.params;
     const email = await prisma.inboundEmail.findFirst({
-      where: { id: emailId, inboxMessage: { userId: req.user!.id } },
+      where: { id: emailId, userId: req.user!.id },
       select: {
         aiCategory: true,
-        aiBrand: true,
         aiUrgency: true,
         aiSummary: true,
         aiRecommendedAction: true,

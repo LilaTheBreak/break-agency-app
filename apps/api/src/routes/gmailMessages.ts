@@ -13,7 +13,7 @@ router.get("/gmail/messages", requireAuth, async (req, res, next) => {
       where: { userId: req.user!.id },
       orderBy: { lastMessageAt: "desc" },
       take: 50,
-      include: { emails: { orderBy: { date: "asc" } } }
+      include: { InboundEmail: { orderBy: { receivedAt: "asc" } } }
     });
     res.json(messages);
   } catch (error) {
@@ -25,7 +25,10 @@ router.get("/gmail/messages", requireAuth, async (req, res, next) => {
 router.get("/gmail/messages/:id", requireAuth, async (req, res, next) => {
   try {
     const message = await prisma.inboundEmail.findFirst({
-      where: { id: req.params.id, inboxMessage: { userId: req.user!.id } }
+      where: { 
+        id: req.params.id, 
+        userId: req.user!.id 
+      }
     });
     if (!message) {
       return res.status(404).json({ error: "Message not found" });
@@ -41,7 +44,7 @@ router.get("/gmail/threads/:id", requireAuth, async (req, res, next) => {
   try {
     const thread = await prisma.inboxMessage.findFirst({
       where: { threadId: req.params.id, userId: req.user!.id },
-      include: { emails: { orderBy: { date: "asc" } } }
+      include: { InboundEmail: { orderBy: { receivedAt: "asc" } } }
     });
     if (!thread) {
       return res.status(404).json({ error: "Thread not found" });
