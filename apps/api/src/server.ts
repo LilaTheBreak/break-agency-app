@@ -257,7 +257,9 @@ const corsConfig = cors({
     } else {
       console.warn(`[CORS] ❌ BLOCKED origin: ${origin}`);
       console.warn(`[CORS] Allowed origins are: ${allowedOrigins.join(", ")}`);
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      // Return false instead of Error to avoid 500 status
+      // This will cause CORS to not set headers, which is the correct behavior
+      callback(null, false);
     }
   },
   credentials: true,
