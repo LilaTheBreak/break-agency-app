@@ -1,6 +1,11 @@
 @import "tailwindcss";
-@import url("https://fonts.cdnfonts.com/css/delirium-ncv");
-@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Poppins:wght@400;500;600&display=swap");
+
+/* 
+  Font loading removed for production CSP compliance.
+  Using system font fallbacks for optimal performance and security.
+  - Headings use: Antonio (system), then generic sans-serif
+  - Body uses: Poppins fallback to system-ui for consistency
+*/
 
 :root {
   --brand-black: #000000;
@@ -19,7 +24,7 @@ body,
 body {
   background: var(--brand-ivory);
   color: var(--brand-black);
-  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -47,8 +52,9 @@ body {
   h2,
   h3,
   h4 {
-    font-family: "Delirium NCV", "Antonio", sans-serif;
-    letter-spacing: 0.08em;
+    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   /* Prevent black-on-black buttons by ensuring bg-brand-black always has light text */

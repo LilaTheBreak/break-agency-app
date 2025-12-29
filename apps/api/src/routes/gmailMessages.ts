@@ -6,8 +6,8 @@ import { getOAuthClientForUser } from "../services/gmail/tokens.js";
 
 const router = Router();
 
-// GET /api/gmail/messages — list last 50 inbox messages
-router.get("/gmail/messages", requireAuth, async (req, res, next) => {
+// GET /messages — list last 50 inbox messages
+router.get("/messages", requireAuth, async (req, res, next) => {
   try {
     const messages = await prisma.inboxMessage.findMany({
       where: { userId: req.user!.id },
@@ -21,8 +21,8 @@ router.get("/gmail/messages", requireAuth, async (req, res, next) => {
   }
 });
 
-// GET /api/gmail/messages/:id — fetch message details
-router.get("/gmail/messages/:id", requireAuth, async (req, res, next) => {
+// GET /messages/:id — fetch message details
+router.get("/messages/:id", requireAuth, async (req, res, next) => {
   try {
     const message = await prisma.inboundEmail.findFirst({
       where: { 
@@ -39,8 +39,8 @@ router.get("/gmail/messages/:id", requireAuth, async (req, res, next) => {
   }
 });
 
-// GET /api/gmail/threads/:id — get full thread with replies
-router.get("/gmail/threads/:id", requireAuth, async (req, res, next) => {
+// GET /threads/:id — get full thread with replies
+router.get("/threads/:id", requireAuth, async (req, res, next) => {
   try {
     const thread = await prisma.inboxMessage.findFirst({
       where: { threadId: req.params.id, userId: req.user!.id },
@@ -55,8 +55,8 @@ router.get("/gmail/threads/:id", requireAuth, async (req, res, next) => {
   }
 });
 
-// POST /api/gmail/sync — trigger Gmail sync manually
-router.post("/gmail/sync", requireAuth, async (req, res, next) => {
+// POST /sync — trigger Gmail sync manually
+router.post("/sync", requireAuth, async (req, res, next) => {
   try {
     const stats = await syncGmailForUser(req.user!.id);
     res.json({ message: "Gmail sync completed successfully.", ...stats });

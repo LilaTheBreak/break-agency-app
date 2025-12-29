@@ -51,14 +51,22 @@ function InboxConnected({ user }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [messagesData, dealsData] = await Promise.all([
-        listGmailMessages(),
-        getDealDrafts(user.id),
-      ]);
-      setMessages(messagesData.messages || []);
-      setDeals(dealsData.drafts || []);
       setError(null);
+      const [messagesData, dealsData] = await Promise.all([
+        listGmailMessages().catch(err => {
+          console.error('[INBOX] Failed to load messages:', err);
+          return []; // Return empty array on error, don't crash
+        }),
+        getDealDrafts(user.id).catch(err => {
+          console.error('[INBOX] Failed to load deals:', err);
+          return { drafts: [] }; // Return empty structure on error
+        }),
+      ]);
+      // API returns array directly, not wrapped in {messages: []}
+      setMessages(Array.isArray(messagesData) ? messagesData : []);
+      setDeals(dealsData.drafts || []);
     } catch (err) {
+      console.error('[INBOX] Unexpected error:', err);
       setError(err.message || "Failed to load inbox data.");
     } finally {
       setLoading(false);

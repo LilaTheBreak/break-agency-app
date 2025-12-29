@@ -369,7 +369,7 @@ app.use("/api/gmail/auth", gmailAuthRouter);
 app.use("/api/gmail/analysis", gmailAnalysisRouter);
 app.use("/api/gmail/inbox", gmailInboxRouter);
 app.use("/api/gmail/webhook", gmailWebhookRouter);
-app.use("/api", gmailMessagesRouter);
+app.use("/api/gmail", gmailMessagesRouter);
 app.use("/api/email-opportunities", emailOpportunitiesRouter);
 
 // ------------------------------------------------------
