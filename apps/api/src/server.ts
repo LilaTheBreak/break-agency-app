@@ -239,34 +239,21 @@ startMemoryTracking(60000); // Sample every 60 seconds
 console.log("[MONITORING] Performance monitoring initialized");
 
 // CORS Configuration - MUST be first middleware
-const corsConfig = cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] Blocked origin: ${origin}`);
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
-  },
+// Use array directly instead of callback to avoid runtime errors
+app.use(cors({
+  origin: allowedOrigins,
   credentials: true,
   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS", "PUT"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   exposedHeaders: ["Set-Cookie"],
-  maxAge: 86400, // 24 hours - cache preflight requests
+  maxAge: 86400,
   preflightContinue: false,
   optionsSuccessStatus: 204
-});
-
-// Apply CORS to ALL routes including OPTIONS
-app.use(corsConfig);
-app.options("*", corsConfig);
+}));
 
 // Helmet AFTER CORS to avoid interference
 app.use(helmet({
-  crossOriginResourcePolicy: false, // Allow CORS to control cross-origin policies
+  crossOriginResourcePolicy: false,
   crossOriginOpenerPolicy: false
 }));
 app.use(morgan("dev"));
