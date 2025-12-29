@@ -149,13 +149,7 @@ const STAGE_ACTIONS = {
   "Rejected": { label: "View feedback", nextStage: null }
 };
 
-// Creator opportunities - guarded by feature flag CREATOR_OPPORTUNITIES_ENABLED
-const CREATOR_OPPORTUNITY_PIPELINE = [];
-
 const SUBMISSION_TABS = ["Drafts", "Revisions requested", "Awaiting approval", "Scheduled", "Approved", "Usage log"];
-
-// Submissions - guarded by feature flag CREATOR_SUBMISSIONS_ENABLED
-const SUBMISSION_PAYLOADS = [];
 
 function CreatorOpportunitiesSection() {
   // Guard with feature flag

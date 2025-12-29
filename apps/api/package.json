@@ -11,10 +11,10 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "dev:watch": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.build.json || true",
+    "build": "tsc -p tsconfig.build.json",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "postinstall": "if [ \"$NODE_ENV\" != \"production\" ]; then prisma generate --schema=./prisma/schema.prisma; fi",
+    "postinstall": "prisma generate --schema=./prisma/schema.prisma",
     "seed:auth": "tsx prisma/seeds/seedRoles.ts",
     "migrate": "dotenv -e .env -- prisma migrate dev"
   },

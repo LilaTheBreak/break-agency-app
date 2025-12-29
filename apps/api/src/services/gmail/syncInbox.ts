@@ -1,4 +1,4 @@
-import { gmail_v1 as gmailV1 } from "googleapis";
+import { gmail_v1 as gmailV1, google } from "googleapis";
 import prisma from "../../lib/prisma.js";
 import { getOAuthClientForUser } from "./tokens.js";
 import { mapGmailMessageToDb } from "./mappings.js";
@@ -72,9 +72,12 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
   //   metadata: { timestamp: new Date().toISOString() },
   // });
 
-  const gmail = await getOAuthClientForUser(userId);
-  if (!gmail) {
-    console.warn(`Skipping sync for user ${userId}: No valid Gmail client.`);
+  let gmail: gmailV1.Gmail;
+  try {
+    const oauthClient = await getOAuthClientForUser(userId);
+    gmail = google.gmail({ version: "v1", auth: oauthClient });
+  } catch (error) {
+    console.warn(`Skipping sync for user ${userId}: No valid Gmail client.`, error);
     stats.failed = 1; // Mark the whole sync as failed
     return stats;
   }
@@ -127,9 +130,10 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
 
       stats.imported++;
 
-      // Link email to CRM (contact + brand)
+      // Link email to CRM (contact + brand) and classify
       if (createdEmail) {
         try {
+          // 1. Link to CRM (creates contacts/brands)
           const linkResult = await linkEmailToCrm({
             id: createdEmail.id,
             fromEmail: createdEmail.fromEmail,
@@ -142,6 +146,34 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           } else {
             if (linkResult.contactCreated) stats.contactsCreated++;
             if (linkResult.brandCreated) stats.brandsCreated++;
+          }
+
+          // 2. Classify email (rule-based, fast)
+          try {
+            const { classifyWithRules } = await import("./gmailCategoryEngine.js");
+            const classification = classifyWithRules(
+              createdEmail.body || "",
+              createdEmail.subject || "",
+              createdEmail.fromEmail
+            );
+            
+            // Update email with classification
+            await prisma.inboundEmail.update({
+              where: { id: createdEmail.id },
+              data: {
+                categories: [classification.category],
+                // Store classification in metadata for now (aiCategory requires AI analysis)
+                metadata: {
+                  ...(createdEmail.metadata as object || {}),
+                  ruleCategory: classification.category,
+                  ruleUrgency: classification.urgency,
+                  classifiedAt: new Date().toISOString(),
+                }
+              }
+            });
+          } catch (classifyError) {
+            // Don't fail sync on classification errors
+            console.warn(`[GMAIL SYNC] Classification failed for email ${createdEmail.id}:`, classifyError);
           }
         } catch (linkError) {
           console.error(`[GMAIL SYNC] CRM link error for email ${createdEmail.id}:`, linkError);

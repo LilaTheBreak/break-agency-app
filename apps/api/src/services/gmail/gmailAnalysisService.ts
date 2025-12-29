@@ -92,7 +92,7 @@ export async function analyzeEmailById(
   }
 
   const cleanText = email.body || "";
-  const ruleBasedResult = classifyWithRules(cleanText, email.subject || "");
+  const ruleBasedResult = classifyWithRules(cleanText, email.subject || "", email.fromEmail);
 
   // Use AI analysis
   const aiResult = await getAIAnalysis(cleanText);

@@ -1,5 +1,6 @@
 import { gmail_v1 as gmailV1 } from "googleapis";
 import { Prisma } from "@prisma/client";
+import { cleanEmailBody } from "./gmailParser.js";
 
 type InboundEmailCreateInput = Prisma.InboundEmailCreateWithoutInboxMessageInput;
 type InboxMessageUpdateInput = Prisma.InboxMessageUpdateInput;
@@ -60,40 +61,43 @@ export function mapGmailMessageToDb(
   const dateHeader = getHeader(headers, "Date");
   const messageDate = dateHeader ? new Date(dateHeader) : new Date();
 
+  const fromHeader = getHeader(headers, "From");
+  const toHeader = getHeader(headers, "To");
+  
   // Data for the thread (InboxMessage)
   const inboxMessageData: InboxMessageUpdateInput = {
     threadId: message.threadId!,
     subject: getHeader(headers, "Subject"),
     snippet: message.snippet || "",
     lastMessageAt: messageDate,
+    sender: fromHeader, // Store sender email
     isRead: !(message.labelIds?.includes("UNREAD") ?? false),
-    // Participants can be derived from 'From', 'To', 'Cc' headers across the thread
-    // For simplicity, we'll just use the 'From' of the latest message for now.
-    participants: [getHeader(headers, "From")]
+    // Participants: combine From, To, and Cc headers
+    participants: [
+      fromHeader,
+      ...(toHeader ? [toHeader] : []),
+      ...(getHeader(headers, "Cc") ? [getHeader(headers, "Cc")] : [])
+    ].filter(Boolean)
   };
 
   // Data for the individual email (InboundEmail)
+  // Combine bodyHtml and bodyText into single body field (prefer text, fallback to HTML)
+  const body = bodyText || (bodyHtml ? cleanEmailBody(bodyHtml) : "");
+  
   const inboundEmailData: InboundEmailCreateInput = {
+    userId,
     gmailId: message.id!,
     threadId: message.threadId!,
     subject: getHeader(headers, "Subject"),
-    from: getHeader(headers, "From"),
-    to: getHeader(headers, "To"),
-    date: messageDate,
-    bodyHtml,
-    bodyText,
+    fromEmail: getHeader(headers, "From"),
+    toEmail: getHeader(headers, "To"),
+    receivedAt: messageDate,
+    body: body || null,
+    snippet: message.snippet || null,
     isRead: !(message.labelIds?.includes("UNREAD") ?? false),
-    labels: message.labelIds || [],
-    // Attachment handling stub
-    attachments:
-      message.payload?.parts
-        ?.filter((part) => part.filename && part.body?.attachmentId)
-        .map((part) => ({
-          filename: part.filename,
-          mimeType: part.mimeType,
-          size: part.body?.size,
-          attachmentId: part.body?.attachmentId
-        })) || []
+    categories: [],
+    // Note: Schema doesn't have separate bodyHtml/bodyText or attachments fields
+    // Attachments would need to be stored in metadata if needed
   };
 
   return { inboxMessageData, inboundEmailData };

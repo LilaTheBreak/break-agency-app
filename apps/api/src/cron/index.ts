@@ -176,6 +176,18 @@ export function registerCronJobs() {
       }
     });
 
+    // Gmail sync (every 15 minutes)
+    cron.schedule("*/15 * * * *", async () => {
+      try {
+        console.log("[CRON] Starting Gmail background sync...");
+        const { syncAllUsers } = await import("../services/gmail/backgroundSync.js");
+        await syncAllUsers();
+        console.log("[CRON] Gmail background sync completed");
+      } catch (err) {
+        console.error("[CRON] Gmail sync failed", err);
+      }
+    });
+
     // Weekly talent reports (Mondays 9am)
     cron.schedule("0 9 * * 1", async () => {
       logInfo("Starting weekly report generation job...");

@@ -219,10 +219,9 @@ function BrandOverviewSection({ session }) {
 // Brand social analytics - guarded by feature flag BRAND_SOCIAL_ANALYTICS_ENABLED
 const BRAND_SOCIALS = [];
 
-// Opportunities - guarded by feature flag BRAND_OPPORTUNITIES_ENABLED
-const OPPORTUNITY_PIPELINE = [];
-
 // Creator matches - guarded by feature flag BRAND_CREATOR_MATCHES_ENABLED
+// TODO: Replace with real API call to /api/creators or /api/roster when available
+// Currently empty array - computeCreatorMatches will return [] until API is implemented
 const CREATOR_MATCH_POOL = [];
 
 const FINANCIAL_PROFILES = {
