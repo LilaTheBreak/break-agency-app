@@ -19,6 +19,10 @@ const CAL_PROVIDERS = [
 ];
 
 const STATUS_OPTIONS = ["Awaiting response", "Accepted", "Tentative", "Declined"];
+
+// Safety: Define MEETING_SUMMARIES as empty array to prevent ReferenceError
+// This was likely removed from config but still referenced somewhere
+const MEETING_SUMMARIES = [];
 const TYPE_FILTERS = [
   { id: "content", label: "Content calendar" },
   { id: "meeting", label: "Meetings" },
