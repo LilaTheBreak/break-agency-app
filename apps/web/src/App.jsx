@@ -1136,9 +1136,12 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           type="button"
                           onClick={() => {
                             setAdminMenuOpen(false);
-                            alert("Quick add note (coming soon). For now, add notes inside Brand, Contact, or Deal drawers.");
+                            // Disabled: Feature not implemented yet
+                            // Users can add notes inside Brand, Contact, or Deal drawers
                           }}
-                          className="block w-full rounded-xl px-4 py-2 text-left text-sm hover:bg-brand-black/5"
+                          disabled
+                          title="Feature coming soon. Add notes inside Brand, Contact, or Deal drawers."
+                          className="block w-full rounded-xl px-4 py-2 text-left text-sm text-brand-black/40 cursor-not-allowed opacity-50"
                         >
                           Note / intelligence
                         </button>
