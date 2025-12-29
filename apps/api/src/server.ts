@@ -308,6 +308,20 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // ------------------------------------------------------
+// DEBUG: CORS Configuration Endpoint
+// ------------------------------------------------------
+app.get("/api/cors-debug", (_req, res) => {
+  res.json({
+    allowedOrigins,
+    env: {
+      FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || "(not set)",
+      WEB_APP_URL: process.env.WEB_APP_URL || "(not set)",
+      NODE_ENV: process.env.NODE_ENV
+    }
+  });
+});
+
+// ------------------------------------------------------
 // AUTH ROUTES (Google OAuth, session management)
 // Rate limiting already applied in auth.ts routes
 // ------------------------------------------------------
