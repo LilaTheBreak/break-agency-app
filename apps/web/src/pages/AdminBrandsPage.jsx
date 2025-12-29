@@ -98,7 +98,7 @@ function Pill({ tone = "neutral", children }) {
 
 // Removed local TextButton and PrimaryButton - using imported components from Button.jsx
 
-function BrandAvatar({ name, logo, size = "md" }) {
+function BrandAvatar({ name, logo, logoUrl, size = "md" }) {
   const sizeClasses = {
     sm: "h-8 w-8 text-xs",
     md: "h-12 w-12 text-sm",
@@ -114,11 +114,14 @@ function BrandAvatar({ name, logo, size = "md" }) {
     return (words[0][0] + words[1][0]).toUpperCase();
   };
 
-  if (logo) {
+  // Use logoUrl (enriched) if available, fallback to logo (manual)
+  const imageUrl = logoUrl || logo;
+
+  if (imageUrl) {
     return (
       <div className={`flex-shrink-0 overflow-hidden rounded-full border border-brand-black/10 bg-brand-white ${sizeClasses[size]}`}>
         <img
-          src={logo}
+          src={imageUrl}
           alt={name}
           className="h-full w-full object-cover"
           onError={(e) => {
@@ -1181,7 +1184,7 @@ export function AdminBrandsPage({ session }) {
                   onClick={() => openDrawer(brand.id)}
                 >
                   <div className="flex items-start gap-4">
-                    <BrandAvatar name={brand.brandName} logo={brand.logo} size="md" />
+                    <BrandAvatar name={brand.brandName} logo={brand.logo} logoUrl={brand.logoUrl} size="md" />
                     <div className="min-w-0 flex-1 space-y-3">
                       <div className="space-y-2">
                         <h3 className="font-display text-xl uppercase text-brand-black">{brand.brandName}</h3>
@@ -1255,7 +1258,7 @@ export function AdminBrandsPage({ session }) {
           <>
             <section className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-5">
               <div className="mb-5 flex items-center gap-3">
-                <BrandAvatar name={selectedBrand.brandName} logo={selectedBrand.logo} size="lg" />
+                <BrandAvatar name={selectedBrand.brandName} logo={selectedBrand.logo} logoUrl={selectedBrand.logoUrl} size="lg" />
                 <div>
                   <h4 className="font-display text-xl uppercase text-brand-black">{selectedBrand.brandName}</h4>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -1264,6 +1267,72 @@ export function AdminBrandsPage({ session }) {
                   </div>
                 </div>
               </div>
+              
+              {selectedBrand.about && (
+                <div className="mb-5 rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60 mb-2">About</p>
+                  <p className="text-sm text-brand-black/80 leading-relaxed">{selectedBrand.about}</p>
+                </div>
+              )}
+              
+              {selectedBrand.socialLinks && Object.keys(selectedBrand.socialLinks).length > 0 && (
+                <div className="mb-5 rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60 mb-2">Social Links</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedBrand.socialLinks.instagram && (
+                      <a
+                        href={selectedBrand.socialLinks.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-red hover:underline"
+                      >
+                        Instagram
+                      </a>
+                    )}
+                    {selectedBrand.socialLinks.linkedin && (
+                      <a
+                        href={selectedBrand.socialLinks.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-red hover:underline"
+                      >
+                        LinkedIn
+                      </a>
+                    )}
+                    {selectedBrand.socialLinks.tiktok && (
+                      <a
+                        href={selectedBrand.socialLinks.tiktok}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-red hover:underline"
+                      >
+                        TikTok
+                      </a>
+                    )}
+                    {selectedBrand.socialLinks.twitter && (
+                      <a
+                        href={selectedBrand.socialLinks.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-red hover:underline"
+                      >
+                        Twitter
+                      </a>
+                    )}
+                    {selectedBrand.socialLinks.facebook && (
+                      <a
+                        href={selectedBrand.socialLinks.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-brand-red hover:underline"
+                      >
+                        Facebook
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Overview</p>
               <div className="mt-3 grid gap-3 md:grid-cols-2">
                 <div className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-4">

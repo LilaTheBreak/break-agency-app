@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { logDestructiveAction } from "../lib/auditLogger.js";
+import { enrichBrandFromUrl } from "../services/brandEnrichment.js";
 
 const router = Router();
 
@@ -90,6 +91,11 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
       ...brand,
       website: brand.website ?? null,
       logo: brand.logo ?? null,
+      logoUrl: brand.logoUrl ?? null,
+      about: brand.about ?? null,
+      socialLinks: brand.socialLinks ?? null,
+      enrichedAt: brand.enrichedAt ?? null,
+      enrichmentSource: brand.enrichmentSource ?? null,
       lifecycleStage: brand.lifecycleStage ?? null,
       relationshipStrength: brand.relationshipStrength ?? null,
       primaryContactId: brand.primaryContactId ?? null,
@@ -128,11 +134,14 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     }
 
     const now = new Date().toISOString();
+    const websiteUrl = website?.trim() || null;
+    
+    // Create brand first (don't wait for enrichment)
     const brand = await prisma.crmBrand.create({
       data: {
         id: randomUUID(),
         brandName: brandName.trim(),
-        website: website?.trim() || null,
+        website: websiteUrl,
         logo: logo?.trim() || null,
         industry: industry || "Other",
         status: status || "Prospect",
@@ -147,6 +156,61 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
         updatedAt: now,
       },
     });
+
+    // Trigger enrichment asynchronously (don't block response)
+    if (websiteUrl) {
+      enrichBrandFromUrl(websiteUrl, brandName.trim())
+        .then(async (enrichment) => {
+          if (enrichment.success) {
+            const updateData: any = {
+              enrichedAt: new Date().toISOString(),
+              enrichmentSource: enrichment.source,
+              updatedAt: new Date().toISOString(),
+            };
+            
+            // Only update fields that were enriched (don't overwrite manual entries)
+            if (enrichment.logoUrl && !logo) {
+              updateData.logoUrl = enrichment.logoUrl;
+            }
+            if (enrichment.about) {
+              updateData.about = enrichment.about;
+            }
+            if (enrichment.industry && industry === "Other") {
+              updateData.industry = enrichment.industry;
+            }
+            if (enrichment.socialLinks) {
+              updateData.socialLinks = enrichment.socialLinks;
+            }
+            
+            // Add activity log
+            const existing = await prisma.crmBrand.findUnique({
+              where: { id: brand.id },
+              select: { activity: true },
+            });
+            
+            const activity = [
+              { at: new Date().toISOString(), label: "Brand enriched from website" },
+              ...(Array.isArray(existing?.activity) ? existing.activity : []),
+            ];
+            updateData.activity = activity;
+            updateData.lastActivityAt = new Date().toISOString();
+            updateData.lastActivityLabel = "Brand enriched from website";
+            
+            await prisma.crmBrand.update({
+              where: { id: brand.id },
+              data: updateData,
+            });
+            
+            console.log(`[BRAND ENRICHMENT] Successfully enriched brand ${brand.id} from ${websiteUrl}`);
+          } else {
+            console.warn(`[BRAND ENRICHMENT] Failed to enrich brand ${brand.id}: ${enrichment.error}`);
+          }
+        })
+        .catch((error) => {
+          console.error(`[BRAND ENRICHMENT] Error enriching brand ${brand.id}:`, error);
+          // Don't fail the request - enrichment is best-effort
+        });
+    }
 
     res.json({ brand });
   } catch (error) {
@@ -178,16 +242,19 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
     }
 
     const now = new Date().toISOString();
+    const websiteUrl = website !== undefined ? (website?.trim() || null) : existing.website;
+    const websiteChanged = website !== undefined && websiteUrl !== existing.website;
+    
     const activity = [
       { at: now, label: "Brand updated" },
-      ...(existing.activity as any[]),
+      ...(Array.isArray(existing.activity) ? existing.activity : []),
     ];
 
     const brand = await prisma.crmBrand.update({
       where: { id },
       data: {
         brandName: brandName?.trim() || existing.brandName,
-        website: website !== undefined ? (website?.trim() || null) : existing.website,
+        website: websiteUrl,
         logo: logo !== undefined ? (logo?.trim() || null) : existing.logo,
         industry: industry || existing.industry,
         status: status || existing.status,
@@ -201,6 +268,61 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
         activity,
       },
     });
+
+    // Trigger enrichment if website was added or changed
+    if (websiteUrl && websiteChanged) {
+      enrichBrandFromUrl(websiteUrl, brand.brandName)
+        .then(async (enrichment) => {
+          if (enrichment.success) {
+            const updateData: any = {
+              enrichedAt: new Date().toISOString(),
+              enrichmentSource: enrichment.source,
+              updatedAt: new Date().toISOString(),
+            };
+            
+            // Only update fields that were enriched (don't overwrite manual entries)
+            if (enrichment.logoUrl && !logo) {
+              updateData.logoUrl = enrichment.logoUrl;
+            }
+            if (enrichment.about) {
+              updateData.about = enrichment.about;
+            }
+            if (enrichment.industry && industry === existing.industry) {
+              updateData.industry = enrichment.industry;
+            }
+            if (enrichment.socialLinks) {
+              updateData.socialLinks = enrichment.socialLinks;
+            }
+            
+            // Add activity log
+            const current = await prisma.crmBrand.findUnique({
+              where: { id: brand.id },
+              select: { activity: true },
+            });
+            
+            const newActivity = [
+              { at: new Date().toISOString(), label: "Brand enriched from website" },
+              ...(Array.isArray(current?.activity) ? current.activity : []),
+            ];
+            updateData.activity = newActivity;
+            updateData.lastActivityAt = new Date().toISOString();
+            updateData.lastActivityLabel = "Brand enriched from website";
+            
+            await prisma.crmBrand.update({
+              where: { id: brand.id },
+              data: updateData,
+            });
+            
+            console.log(`[BRAND ENRICHMENT] Successfully enriched brand ${brand.id} from ${websiteUrl}`);
+          } else {
+            console.warn(`[BRAND ENRICHMENT] Failed to enrich brand ${brand.id}: ${enrichment.error}`);
+          }
+        })
+        .catch((error) => {
+          console.error(`[BRAND ENRICHMENT] Error enriching brand ${brand.id}:`, error);
+          // Don't fail the request - enrichment is best-effort
+        });
+    }
 
     res.json({ brand });
   } catch (error) {
