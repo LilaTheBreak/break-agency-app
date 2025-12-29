@@ -247,10 +247,15 @@ app.use(
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.warn(`[CORS] Blocked origin: ${origin}`);
         callback(new Error(`Origin ${origin} not allowed by CORS`));
       }
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS", "PUT"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["Set-Cookie"],
+    maxAge: 86400 // 24 hours - cache preflight requests
   })
 );
 app.use(helmet());
