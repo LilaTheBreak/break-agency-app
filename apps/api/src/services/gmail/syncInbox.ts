@@ -3,7 +3,7 @@ import prisma from "../../lib/prisma.js";
 import { getOAuthClientForUser } from "./tokens.js";
 import { mapGmailMessageToDb } from "./mappings.js";
 import { linkEmailToCrm } from "./linkEmailToCrm.js";
-import { logAction } from "../../lib/auditLogger.js";
+// import { logAuditEvent } from "../../lib/auditLogger.js"; // No req context in service
 
 interface SyncStats {
   imported: number;
@@ -64,13 +64,13 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
   };
 
   // Audit log: Gmail sync started
-  await logAction({
-    userId,
-    action: "GMAIL_SYNC_STARTED",
-    entityType: "GMAIL_SYNC",
-    entityId: userId,
-    metadata: { timestamp: new Date().toISOString() },
-  });
+  // await logAction({
+  //   userId,
+  //   action: "GMAIL_SYNC_STARTED",
+  //   entityType: "GMAIL_SYNC",
+  //   entityId: userId,
+  //   metadata: { timestamp: new Date().toISOString() },
+  // });
 
   const gmail = await getOAuthClientForUser(userId);
   if (!gmail) {
@@ -161,16 +161,16 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     });
 
     // Audit log: Gmail sync completed
-    await logAction({
-      userId,
-      action: "GMAIL_SYNC_COMPLETED",
-      entityType: "GMAIL_SYNC",
-      entityId: userId,
-      metadata: { 
-        stats,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    // await logAction({
+    //   userId,
+    //   action: "GMAIL_SYNC_COMPLETED",
+    //   entityType: "GMAIL_SYNC",
+    //   entityId: userId,
+    //   metadata: { 
+    //     stats,
+    //     timestamp: new Date().toISOString(),
+    //   },
+    // });
   } catch (error) {
     console.error(`Error during Gmail sync for user ${userId}:`, error);
     
@@ -190,16 +190,16 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     }
     
     // Audit log: Gmail sync failed
-    await logAction({
-      userId,
-      action: "GMAIL_SYNC_FAILED",
-      entityType: "GMAIL_SYNC",
-      entityId: userId,
-      metadata: { 
-        error: errorMessage,
-        stats,
-      },
-    });
+    // await logAction({
+    //   userId,
+    //   action: "GMAIL_SYNC_FAILED",
+    //   entityType: "GMAIL_SYNC",
+    //   entityId: userId,
+    //   metadata: { 
+    //     error: errorMessage,
+    //     stats,
+    //   },
+    // });
     
     throw new Error("Gmail sync failed.");
   }

@@ -1,6 +1,6 @@
 import prisma from "../../lib/prisma.js";
 import { randomUUID } from "crypto";
-import { logAction } from "../../lib/auditLogger.js";
+// import { logAuditEvent } from "../../lib/auditLogger.js"; // No req context in service
 
 /**
  * Free email providers that should NOT be treated as brands
@@ -164,17 +164,17 @@ export async function linkEmailToCrm(inboundEmail: {
         console.log(`[GMAIL → CRM] Created contact: ${normalized} (${contact.id})`);
 
         // Audit log: Contact created from email
-        await logAction({
-          userId: inboundEmail.userId,
-          action: "CONTACT_CREATED_FROM_EMAIL",
-          entityType: "CONTACT",
-          entityId: contact.id,
-          metadata: {
-            email: normalized,
-            source: "gmail",
-            inboundEmailId: inboundEmail.id,
-          },
-        });
+        // await logAction({
+        //   userId: inboundEmail.userId,
+        //   action: "CONTACT_CREATED_FROM_EMAIL",
+        //   entityType: "CONTACT",
+        //   entityId: contact.id,
+        //   metadata: {
+        //     email: normalized,
+        //     source: "gmail",
+        //     inboundEmailId: inboundEmail.id,
+        //   },
+        // });
       } catch (createError: any) {
         // Handle unique constraint violation (race condition)
         if (createError.code === 'P2002') {
@@ -227,18 +227,18 @@ export async function linkEmailToCrm(inboundEmail: {
           console.log(`[GMAIL → CRM] Created brand: ${brandName} (${brand.id})`);
 
           // Audit log: Brand created from email
-          await logAction({
-            userId: inboundEmail.userId,
-            action: "BRAND_CREATED_FROM_EMAIL",
-            entityType: "BRAND",
-            entityId: brand.id,
-            metadata: {
-              brandName,
-              domain,
-              source: "gmail",
-              inboundEmailId: inboundEmail.id,
-            },
-          });
+          // await logAction({
+          //   userId: inboundEmail.userId,
+          //   action: "BRAND_CREATED_FROM_EMAIL",
+          //   entityType: "BRAND",
+          //   entityId: brand.id,
+          //   metadata: {
+          //     brandName,
+          //     domain,
+          //     source: "gmail",
+          //     inboundEmailId: inboundEmail.id,
+          //   },
+          // });
         } catch (createError: any) {
           // Handle unique constraint violation (race condition)
           if (createError.code === 'P2002') {

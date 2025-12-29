@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { 
   getCalendarEvents, 
   createCalendarEvent, 
+  updateCalendarEvent,
   deleteCalendarEvent,
   syncGoogleCalendar 
 } from "../services/calendarClient.js";
@@ -387,16 +388,7 @@ export function CalendarBoard({
 
       if (activeEventId) {
         // Update existing event
-        const response = await fetch(`/api/calendar/events/${activeEventId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-        
-        if (!response.ok) {
-          throw new Error("Failed to update event");
-        }
+        await updateCalendarEvent(activeEventId, payload);
       } else {
         // Create new event
         await createCalendarEvent(payload);

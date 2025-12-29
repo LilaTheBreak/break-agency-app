@@ -381,7 +381,7 @@ export function AdminUsersPage() {
       {/* Add User Modal - Simple overlay for quick user creation */}
       {modalMode === "add" && editingUser ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-brand-black/20 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-[36px] border border-brand-black/10 bg-brand-white p-8 text-left text-brand-black shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+          <div className="w-full max-w-lg rounded-[36px] border border-brand-black/10 bg-white p-8 text-left text-brand-black shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
             <h3 className="font-display text-3xl uppercase">Add user</h3>
             <input
               type="email"
@@ -436,7 +436,7 @@ export function AdminUsersPage() {
       {/* Not Implemented Modal */}
       {showNotImplementedModal && notImplementedFeature && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-black/50 backdrop-blur-sm">
-          <div className="relative max-w-lg w-full mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl">
+          <div className="relative max-w-lg w-full mx-4 rounded-3xl border border-brand-black/10 bg-white p-8 shadow-2xl">
             <button
               onClick={() => setShowNotImplementedModal(false)}
               className="absolute right-6 top-6 text-brand-black/40 hover:text-brand-black"

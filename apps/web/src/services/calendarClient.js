@@ -29,6 +29,18 @@ export async function createCalendarEvent(payload) {
   return response.json();
 }
 
+export async function updateCalendarEvent(eventId, payload) {
+  const response = await apiFetch(`/api/calendar/events/${eventId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Failed to update event" }));
+    throw new Error(errorData.error);
+  }
+  return response.json();
+}
+
 export async function deleteCalendarEvent(eventId) {
   const response = await apiFetch(`/api/calendar/events/${eventId}`, {
     method: "DELETE",

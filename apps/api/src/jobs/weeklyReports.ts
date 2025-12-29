@@ -25,7 +25,6 @@ export async function generateWeeklyReports() {
     //     aiSummary: insights?.summary || ""
     //   }
     // });
-  */
 
     if (user.email) {
       await sendTemplatedEmail({
@@ -40,4 +39,5 @@ export async function generateWeeklyReports() {
       }).catch(() => null);
     }
   }
+  */
 }

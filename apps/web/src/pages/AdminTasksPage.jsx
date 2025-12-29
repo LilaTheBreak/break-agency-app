@@ -143,9 +143,9 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
       
       <div 
         ref={modalRef}
-        className="relative w-full max-w-[920px] max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-black/10 bg-brand-white shadow-[0_35px_120px_rgba(0,0,0,0.25)]"
+        className="relative w-full max-w-[920px] max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-black/10 bg-white shadow-[0_35px_120px_rgba(0,0,0,0.25)]"
       >
-        <div className="sticky top-0 z-10 bg-brand-white border-b border-brand-black/5 px-6 pt-6 pb-4">
+        <div className="sticky top-0 z-10 bg-white border-b border-brand-black/5 px-6 pt-6 pb-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{subtitle}</p>
@@ -160,7 +160,7 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
         </div>
         
         {footer && (
-          <div className="sticky bottom-0 z-10 bg-brand-white border-t border-brand-black/5 px-6 py-4">
+          <div className="sticky bottom-0 z-10 bg-white border-t border-brand-black/5 px-6 py-4">
             {footer}
           </div>
         )}

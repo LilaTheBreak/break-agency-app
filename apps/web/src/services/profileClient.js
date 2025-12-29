@@ -52,7 +52,7 @@ export async function fetchProfile(email) {
     return { ...DEFAULT_PROFILE };
   }
   try {
-    const response = await apiFetch(`/profiles/${encodeURIComponent(email)}`);
+    const response = await apiFetch(`/api/profiles/${encodeURIComponent(email)}`);
     const data = await handleResponse(response);
     return mergeWithStatic(email, data.profile);
   } catch (error) {
@@ -70,7 +70,7 @@ export async function saveProfile(email, payload) {
     status: payload.status ?? payload.accountType ?? null
   });
   try {
-    const response = await apiFetch(`/profiles/${encodeURIComponent(email)}`, {
+    const response = await apiFetch(`/api/profiles/${encodeURIComponent(email)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body

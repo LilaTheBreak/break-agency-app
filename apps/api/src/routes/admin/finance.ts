@@ -3,6 +3,7 @@ import { requireAuth } from "../../middleware/auth.js";
 import prisma from "../../lib/prisma.js";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { generateId } from "../../lib/utils.js";
 
 const router = Router();
 
@@ -150,6 +151,30 @@ router.post("/invoices", async (req: Request, res: Response) => {
       }
     });
 
+    // Audit logging
+    try {
+      await prisma.auditLog.create({
+        data: {
+          id: generateId(),
+          userId: req.user?.id || "system",
+          action: "INVOICE_CREATED",
+          entityType: "INVOICE",
+          entityId: invoice.id,
+          metadata: {
+            dealId: invoice.dealId,
+            brandId: invoice.brandId,
+            invoiceNumber: invoice.invoiceNumber,
+            amount: invoice.amount,
+            currency: invoice.currency,
+            status: invoice.status
+          },
+          createdAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error("[Audit] Failed to log invoice creation:", error);
+    }
+
     res.status(201).json(invoice);
   } catch (error) {
     console.error("Error creating invoice:", error);
@@ -245,6 +270,30 @@ router.patch("/invoices/:id", async (req: Request, res: Response) => {
       }
     });
 
+    // Audit logging for status changes
+    if (parsed.data.status && existing?.status && existing.status !== parsed.data.status) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            id: generateId(),
+            userId: req.user?.id || "system",
+            action: "INVOICE_STATUS_UPDATED",
+            entityType: "INVOICE",
+            entityId: invoice.id,
+            metadata: {
+              previousStatus: existing.status,
+              newStatus: parsed.data.status,
+              dealId: invoice.dealId,
+              amount: invoice.amount
+            },
+            createdAt: new Date()
+          }
+        });
+      } catch (error) {
+        console.error("[Audit] Failed to log invoice status update:", error);
+      }
+    }
+
     res.json(invoice);
   } catch (error) {
     console.error("Error updating invoice:", error);
@@ -293,6 +342,29 @@ router.post("/invoices/:id/mark-paid", async (req: Request, res: Response) => {
         createdBy: req.user?.id
       }
     });
+
+    // Audit logging
+    try {
+      await prisma.auditLog.create({
+        data: {
+          id: generateId(),
+          userId: req.user?.id || "system",
+          action: "INVOICE_MARKED_PAID",
+          entityType: "INVOICE",
+          entityId: invoice.id,
+          metadata: {
+            amount: invoice.amount,
+            currency: invoice.currency,
+            method: method || "manual",
+            dealId: invoice.dealId,
+            paidAt: invoice.paidAt
+          },
+          createdAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error("[Audit] Failed to log invoice payment:", error);
+    }
 
     res.json({ success: true, invoice });
   } catch (error) {
@@ -369,6 +441,30 @@ router.post("/payouts", async (req: Request, res: Response) => {
         createdBy: req.user?.id
       }
     });
+
+    // Audit logging
+    try {
+      await prisma.auditLog.create({
+        data: {
+          id: generateId(),
+          userId: req.user?.id || "system",
+          action: "PAYOUT_CREATED",
+          entityType: "PAYOUT",
+          entityId: payout.id,
+          metadata: {
+            creatorId: payout.creatorId,
+            dealId: payout.dealId,
+            brandId: payout.brandId,
+            amount: payout.amount,
+            currency: payout.currency,
+            status: payout.status
+          },
+          createdAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error("[Audit] Failed to log payout creation:", error);
+    }
 
     res.status(201).json(payout);
   } catch (error) {
@@ -519,6 +615,30 @@ router.post("/payouts/:id/mark-paid", async (req: Request, res: Response) => {
       }
     });
 
+    // Audit logging
+    try {
+      await prisma.auditLog.create({
+        data: {
+          id: generateId(),
+          userId: req.user?.id || "system",
+          action: "PAYOUT_MARKED_PAID",
+          entityType: "PAYOUT",
+          entityId: payout.id,
+          metadata: {
+            creatorId: payout.creatorId,
+            dealId: payout.dealId,
+            amount: payout.amount,
+            currency: payout.currency,
+            method: method || "manual",
+            paidAt: payout.paidAt
+          },
+          createdAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error("[Audit] Failed to log payout payment:", error);
+    }
+
     res.json({ success: true, payout });
   } catch (error) {
     console.error("Error marking payout as paid:", error);
@@ -568,6 +688,30 @@ router.post("/reconciliation", async (req: Request, res: Response) => {
         createdBy: req.user?.id
       }
     });
+
+    // Audit logging
+    try {
+      await prisma.auditLog.create({
+        data: {
+          id: generateId(),
+          userId: req.user?.id || "system",
+          action: "FINANCE_RECONCILIATION_CREATED",
+          entityType: "FINANCE_RECONCILIATION",
+          entityId: reconciliation.id,
+          metadata: {
+            type: reconciliation.type,
+            referenceId: reconciliation.referenceId,
+            amount: reconciliation.amount,
+            currency: reconciliation.currency,
+            method: reconciliation.method,
+            confirmedAt: reconciliation.confirmedAt
+          },
+          createdAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error("[Audit] Failed to log reconciliation:", error);
+    }
 
     res.status(201).json(reconciliation);
   } catch (error) {

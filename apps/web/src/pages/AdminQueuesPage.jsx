@@ -499,7 +499,7 @@ export function AdminQueuesPage() {
       </section>
       {modalOpen && formState ? (
         <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-[36px] border border-brand-black/15 bg-brand-white p-8 text-left text-brand-black shadow-[0_40px_120px_rgba(0,0,0,0.35)]">
+          <div className="w-full max-w-2xl rounded-[36px] border border-brand-black/15 bg-white p-8 text-left text-brand-black shadow-[0_40px_120px_rgba(0,0,0,0.35)]">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-display text-3xl uppercase">

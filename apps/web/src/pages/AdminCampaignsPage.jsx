@@ -84,7 +84,7 @@ function ModalFrame({ open, title, subtitle, onClose, footer, children }) {
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute left-1/2 top-1/2 w-[min(720px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-[0_35px_120px_rgba(0,0,0,0.25)]">
+      <div className="absolute left-1/2 top-1/2 w-[min(720px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-brand-black/10 bg-white p-6 shadow-[0_35px_120px_rgba(0,0,0,0.25)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">{subtitle}</p>

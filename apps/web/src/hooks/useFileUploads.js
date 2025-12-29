@@ -9,7 +9,7 @@ export function useFileUploads() {
     setLoading(true);
     setError("");
     try {
-      const res = await apiFetch("/files/upload-url", {
+      const res = await apiFetch("/api/files/upload-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename, contentType })
@@ -29,7 +29,7 @@ export function useFileUploads() {
     setLoading(true);
     setError("");
     try {
-      const res = await apiFetch("/files/confirm", {
+      const res = await apiFetch("/api/files/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileKey, filename, type })
@@ -49,7 +49,7 @@ export function useFileUploads() {
     setLoading(true);
     setError("");
     try {
-      const res = await apiFetch("/files");
+      const res = await apiFetch("/api/files");
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.message || "Unable to list files");
       return payload.files || [];
@@ -62,7 +62,7 @@ export function useFileUploads() {
   }, []);
 
   const getDownloadUrl = useCallback(async (id) => {
-    const res = await apiFetch(`/files/${encodeURIComponent(id)}/download`);
+    const res = await apiFetch(`/api/files/${encodeURIComponent(id)}/download`);
     const payload = await res.json();
     if (!res.ok) throw new Error(payload?.message || "Unable to get download URL");
     return payload.url;

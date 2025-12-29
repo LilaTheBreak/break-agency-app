@@ -2,6 +2,7 @@ import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/requireRole.js";
+import { generateId } from "../lib/utils.js";
 
 const router = Router();
 
@@ -254,6 +255,13 @@ router.patch("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { role, onboarding_status, admin_notes } = req.body;
+    const adminUserId = (req as any).user?.id || "system";
+
+    // Get current user state for audit logging
+    const currentUser = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true }
+    });
 
     const updateData: any = { updatedAt: new Date() };
 
@@ -273,6 +281,30 @@ router.patch("/users/:id", async (req, res) => {
         admin_notes: true
       }
     });
+
+    // Audit log role changes
+    if (role && currentUser?.role && currentUser.role !== role) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            id: generateId(),
+            userId: adminUserId,
+            action: "USER_ROLE_CHANGED",
+            entityType: "USER",
+            entityId: user.id,
+            metadata: {
+              previousRole: currentUser.role,
+              newRole: role,
+              targetUserId: user.id,
+              targetUserEmail: user.email
+            },
+            createdAt: new Date()
+          }
+        });
+      } catch (error) {
+        console.error("[Audit] Failed to log role change:", error);
+      }
+    }
 
     res.json({ success: true, user });
   } catch (error) {

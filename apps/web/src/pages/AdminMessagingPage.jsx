@@ -284,7 +284,7 @@ function ThreadModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-brand-black/30 p-4">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[36px] border border-brand-black/15 bg-brand-white p-8 text-left text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[36px] border border-brand-black/15 bg-white p-8 text-left text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="font-display text-3xl uppercase">{thread.subject}</h3>

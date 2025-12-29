@@ -125,7 +125,7 @@ export function Modal({
     >
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} rounded-3xl border border-brand-black/10 bg-brand-white shadow-[0_20px_60px_rgba(0,0,0,0.3)] ${className}`}
+        className={`relative w-full ${sizeClasses[size]} rounded-3xl border border-brand-black/10 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)] ${className}`}
       >
         {/* Header */}
         {title && (

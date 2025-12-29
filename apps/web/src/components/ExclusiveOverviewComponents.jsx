@@ -53,7 +53,7 @@ export function FirstTimeWelcome({ onComplete, onSkip, basePath = "/exclusive" }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-[36px] border border-brand-black/10 bg-brand-white p-8 shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+      <div className="w-full max-w-lg rounded-[36px] border border-brand-black/10 bg-white p-8 shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
         <div className="text-center">
           <div className="text-6xl mb-4">{currentStep.icon}</div>
           <h2 className="font-display text-3xl uppercase text-brand-black">

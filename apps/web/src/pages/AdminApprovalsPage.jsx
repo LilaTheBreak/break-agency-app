@@ -30,12 +30,13 @@ export function AdminApprovalsPage({ session }) {
   const [filterType, setFilterType] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Real approval counts from backend
-  const [contentCount, setContentCount] = useState(0);
-  const [invoiceCount, setInvoiceCount] = useState(0);
-  const [contractCount, setContractCount] = useState(0);
-  const [briefCount, setBriefCount] = useState(0);
-  const [loadingCounts, setLoadingCounts] = useState(true);
+  // Approval type counts from Approval model
+  const [typeCounts, setTypeCounts] = useState({
+    Content: 0,
+    Finance: 0,
+    Contract: 0,
+    Brief: 0
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -71,135 +72,57 @@ export function AdminApprovalsPage({ session }) {
     fetchData();
   }, [filterStatus, filterType, searchQuery]);
 
-  // Fetch real approval counts from various endpoints
+  // Calculate approval type counts from loaded approvals
   useEffect(() => {
-    async function fetchCounts() {
-      try {
-        setLoadingCounts(true);
-        
-        // Fetch content queue count
-        try {
-          const contentRes = await apiFetch("/api/queues?status=pending");
-          if (contentRes.ok) {
-            const contentType = contentRes.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              const contentData = await contentRes.json();
-              setContentCount(Array.isArray(contentData) ? contentData.length : 0);
-            } else {
-              console.warn("Content queue returned non-JSON response");
-              setContentCount(0);
-            }
-          } else {
-            console.warn("Content queue returned status:", contentRes.status);
-            setContentCount(0);
-          }
-        } catch (err) {
-          console.error("Could not fetch content count:", err);
-          setContentCount(0);
+    if (!loading && !error && Array.isArray(approvals)) {
+      const counts = {
+        Content: 0,
+        Finance: 0,
+        Contract: 0,
+        Brief: 0
+      };
+      
+      approvals.forEach(approval => {
+        if (approval.status === "PENDING" && counts[approval.type] !== undefined) {
+          counts[approval.type]++;
         }
-
-        // Fetch invoice count (unpaid/pending)
-        try {
-          const invoiceRes = await apiFetch("/api/admin/finance/invoices?status=Due");
-          if (invoiceRes.ok) {
-            const contentType = invoiceRes.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              const invoiceData = await invoiceRes.json();
-              setInvoiceCount(Array.isArray(invoiceData) ? invoiceData.length : 0);
-            } else {
-              console.warn("Invoice endpoint returned non-JSON response");
-              setInvoiceCount(0);
-            }
-          } else {
-            console.warn("Invoice endpoint returned status:", invoiceRes.status);
-            setInvoiceCount(0);
-          }
-        } catch (err) {
-          console.error("Could not fetch invoice count:", err);
-          setInvoiceCount(0);
-        }
-
-        // Fetch contract count (unsigned)
-        try {
-          const contractRes = await apiFetch("/api/contracts?status=pending");
-          if (contractRes.ok) {
-            const contentType = contractRes.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              const contractData = await contractRes.json();
-              setContractCount(Array.isArray(contractData) ? contractData.length : 0);
-            } else {
-              console.warn("Contract endpoint returned non-JSON response");
-              setContractCount(0);
-            }
-          } else {
-            console.warn("Contract endpoint returned status:", contractRes.status);
-            setContractCount(0);
-          }
-        } catch (err) {
-          console.error("Could not fetch contract count:", err);
-          setContractCount(0);
-        }
-
-        // Fetch brief count (draft/review)
-        try {
-          const briefRes = await apiFetch("/api/briefs?status=draft");
-          if (briefRes.ok) {
-            const contentType = briefRes.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-              const briefData = await briefRes.json();
-              setBriefCount(Array.isArray(briefData) ? briefData.length : 0);
-            } else {
-              console.warn("Brief endpoint returned non-JSON response");
-              setBriefCount(0);
-            }
-          } else {
-            console.warn("Brief endpoint returned status:", briefRes.status);
-            setBriefCount(0);
-          }
-        } catch (err) {
-          console.error("Could not fetch brief count:", err);
-          setBriefCount(0);
-        }
-      } catch (err) {
-        console.error("Error fetching approval counts:", err);
-      } finally {
-        setLoadingCounts(false);
-      }
+      });
+      
+      setTypeCounts(counts);
     }
-    fetchCounts();
-  }, []);
+  }, [approvals, loading, error]);
 
   const APPROVAL_SECTIONS = [
     {
       title: "Content approvals",
-      description: "Stills, cuts, and copy waiting for brand sign-off.",
-      count: contentCount,
-      cta: "Open content queue",
-      action: () => navigate("/admin/queues"),
+      description: "Content pending approval from the Approval system.",
+      count: typeCounts.Content,
+      cta: "Filter content approvals",
+      action: () => setFilterType("Content"),
       enabled: true
     },
     {
-      title: "Invoice approvals",
-      description: "Invoices, payouts, and reconciliations needing finance review.",
-      count: invoiceCount,
-      cta: "Review invoices",
-      action: () => navigate("/admin/finance"),
+      title: "Finance approvals",
+      description: "Financial items pending approval.",
+      count: typeCounts.Finance,
+      cta: "Filter finance approvals",
+      action: () => setFilterType("Finance"),
       enabled: true
     },
     {
       title: "Contract approvals",
-      description: "Signed agreements, NDAs, and compliance docs tied to deals.",
-      count: contractCount,
-      cta: "Go to contracts",
-      action: () => navigate("/admin/documents"),
+      description: "Contracts pending sign-off.",
+      count: typeCounts.Contract,
+      cta: "Filter contract approvals",
+      action: () => setFilterType("Contract"),
       enabled: true
     },
     {
-      title: "Campaign & brief approvals",
-      description: "Briefs, scopes, and creative direction that need a go/no-go.",
-      count: briefCount,
-      cta: "Review briefs",
-      action: () => navigate("/admin/campaigns"),
+      title: "Brief approvals",
+      description: "Briefs and campaigns pending approval.",
+      count: typeCounts.Brief,
+      cta: "Filter brief approvals",
+      action: () => setFilterType("Brief"),
       enabled: true
     }
   ];
@@ -417,8 +340,10 @@ export function AdminApprovalsPage({ session }) {
               </p>
               <p className="text-sm text-brand-black/70">{section.description}</p>
               
-              {loadingCounts ? (
+              {loading ? (
                 <p className="mt-3 text-sm text-brand-black/50">Loading...</p>
+              ) : error ? (
+                <p className="mt-3 text-sm text-brand-red/70">Error loading approvals</p>
               ) : section.count === 0 ? (
                 <p className="mt-3 text-sm text-brand-black/50">No approvals pending</p>
               ) : (
@@ -562,7 +487,7 @@ export function AdminApprovalsPage({ session }) {
 
       {modalOpen && formState ? (
         <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-[36px] border border-brand-black/15 bg-brand-white p-8 text-left text-brand-black shadow-[0_40px_120px_rgba(0,0,0,0.35)]">
+          <div className="w-full max-w-2xl rounded-[36px] border border-brand-black/15 bg-white p-8 text-left text-brand-black shadow-[0_40px_120px_rgba(0,0,0,0.35)]">
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="font-display text-3xl uppercase">

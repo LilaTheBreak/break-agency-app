@@ -97,11 +97,25 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
     
     console.log("[INTEGRATION] Gmail inbox sync completed", {
       userId: req.user!.id,
-      messagesSynced: stats.messagesSynced || 0,
+      imported: stats.imported,
+      contactsCreated: stats.contactsCreated,
+      brandsCreated: stats.brandsCreated,
       timestamp: new Date().toISOString()
     });
     
-    res.json({ message: "Gmail inbox sync completed.", ...stats });
+    res.json({ 
+      message: "Gmail inbox sync completed.", 
+      success: true,
+      stats: {
+        imported: stats.imported,
+        updated: stats.updated,
+        skipped: stats.skipped,
+        failed: stats.failed,
+        contactsCreated: stats.contactsCreated,
+        brandsCreated: stats.brandsCreated,
+        linkErrors: stats.linkErrors,
+      }
+    });
   } catch (error) {
     console.error("[INTEGRATION] Gmail inbox sync failed", {
       userId: req.user!.id,

@@ -1662,7 +1662,7 @@ function SectionCard({ kicker, title, subtitle, children, onEdit, editLabel = "E
 function EditModal({ title, children, onClose, onSave, saveLabel = "Save" }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-      <div className="w-full max-w-2xl rounded-[32px] border border-brand-black/15 bg-brand-white p-6 text-brand-black shadow-[0_35px_80px_rgba(0,0,0,0.4)]">
+      <div className="w-full max-w-2xl rounded-[32px] border border-brand-black/15 bg-white p-6 text-brand-black shadow-[0_35px_80px_rgba(0,0,0,0.4)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h4 className="font-display text-2xl uppercase">{title}</h4>
           <button
@@ -3083,7 +3083,7 @@ function ExclusiveSettings({ basePath = "/exclusive" }) {
 function Modal({ title, children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-[32px] border border-brand-black/15 bg-brand-white p-6 text-brand-black shadow-[0_35px_80px_rgba(0,0,0,0.4)]">
+      <div className="w-full max-w-lg rounded-[32px] border border-brand-black/15 bg-white p-6 text-brand-black shadow-[0_35px_80px_rgba(0,0,0,0.4)]">
         <div className="mb-4 flex items-center justify-between">
           <h4 className="font-display text-2xl uppercase">{title}</h4>
           <button type="button" onClick={onClose} className="text-xs uppercase tracking-[0.3em] text-brand-black/60">

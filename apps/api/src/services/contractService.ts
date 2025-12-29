@@ -5,6 +5,32 @@ import { pdfGenerationService } from "./pdfGenerationService.js";
 import { generateId } from "../lib/utils.js";
 
 /**
+ * Log contract action to AuditLog
+ */
+async function logContractAction(
+  userId: string,
+  action: string,
+  contractId: string,
+  metadata?: any
+) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        id: generateId(),
+        userId,
+        action,
+        entityType: "CONTRACT",
+        entityId: contractId,
+        metadata: metadata || {},
+        createdAt: new Date()
+      }
+    });
+  } catch (error) {
+    console.error("[Audit] Failed to log contract action:", error);
+  }
+}
+
+/**
  * Create contract from deal using template
  */
 export async function createFromDeal(dealId: string) {
@@ -143,7 +169,7 @@ export async function upload(id: string, fileUrl: string) {
   return contract;
 }
 
-export async function send(id: string) {
+export async function send(id: string, userId: string = "system") {
   const contract = await prisma.contract.update({
     where: { id },
     data: { status: "sent", sentAt: new Date() }
@@ -153,16 +179,25 @@ export async function send(id: string) {
     contractId: contract.id
   });
 
+  // Audit logging
+  await logContractAction(userId, "CONTRACT_SENT", contract.id, {
+    dealId: contract.dealId,
+    status: "sent",
+    sentAt: contract.sentAt
+  });
+
   return contract;
 }
 
-export async function sign(id: string, signer: string) {
+export async function sign(id: string, signer: string, userId: string = "system") {
   let data: any = {};
   let eventType: string = "";
+  let auditAction: string = "";
 
   if (signer === "talent") {
     data.talentSignedAt = new Date();
     eventType = "contract_signed_talent";
+    auditAction = "CONTRACT_SIGNED_TALENT";
     
     // Check if brand already signed
     const existing = await prisma.contract.findUnique({ where: { id } });
@@ -170,12 +205,14 @@ export async function sign(id: string, signer: string) {
       data.status = "fully_signed";
       data.fullySignedAt = new Date();
       eventType = "contract_fully_signed";
+      auditAction = "CONTRACT_FULLY_SIGNED";
     } else {
       data.status = "partially_signed";
     }
   } else if (signer === "brand") {
     data.brandSignedAt = new Date();
     eventType = "contract_signed_brand";
+    auditAction = "CONTRACT_SIGNED_BRAND";
     
     // Check if talent already signed
     const existing = await prisma.contract.findUnique({ where: { id } });
@@ -183,6 +220,7 @@ export async function sign(id: string, signer: string) {
       data.status = "fully_signed";
       data.fullySignedAt = new Date();
       eventType = "contract_fully_signed";
+      auditAction = "CONTRACT_FULLY_SIGNED";
     } else {
       data.status = "partially_signed";
     }
@@ -199,6 +237,16 @@ export async function sign(id: string, signer: string) {
     contractId: contract.id
   });
 
+  // Audit logging
+  await logContractAction(userId, auditAction, contract.id, {
+    dealId: contract.dealId,
+    signer,
+    status: contract.status,
+    talentSignedAt: contract.talentSignedAt,
+    brandSignedAt: contract.brandSignedAt,
+    fullySignedAt: contract.fullySignedAt
+  });
+
   // If fully signed, update deal
   if (contract.status === "fully_signed") {
     await prisma.deal.update({
@@ -212,7 +260,7 @@ export async function sign(id: string, signer: string) {
   return contract;
 }
 
-export async function finalise(id: string) {
+export async function finalise(id: string, userId: string = "system") {
   const contract = await prisma.contract.update({
     where: { id },
     data: { 
@@ -226,6 +274,13 @@ export async function finalise(id: string) {
 
   await addTimelineEntry(contract.dealId || "no_deal_id", "contract_fully_signed", {
     contractId: contract.id
+  });
+
+  // Audit logging
+  await logContractAction(userId, "CONTRACT_FINALIZED", contract.id, {
+    dealId: contract.dealId,
+    status: "fully_signed",
+    fullySignedAt: contract.fullySignedAt
   });
 
   // Update deal

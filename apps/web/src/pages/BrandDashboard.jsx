@@ -21,31 +21,6 @@ import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage
 // Creator roster - guarded by feature flag CREATOR_ROSTER_ENABLED
 const CREATOR_ROSTER = [];
 
-const CAMPAIGN_REPORTS = [
-  { label: "Reach", value: "4.1M", delta: "+14%", context: "Paid + organic" },
-  { label: "Engagement rate", value: "5.2%", delta: "+0.8%", context: "30-day blended" },
-  { label: "Conversions", value: "2,341", delta: "+18%", context: "Attributed checkouts" }
-];
-
-const ANALYTICS_METRICS = [
-  { label: "Reach", value: "4.1M", context: "30-day blended", delta: "+14%" },
-  { label: "Engagement rate", value: "5.2%", context: "Creators + brand surface", delta: "+0.8%" },
-  { label: "Revenue", value: "£320K", context: "Retainer YTD", delta: "+18%" },
-  { label: "Conversion lift", value: "+18%", context: "Versus control", delta: "+3pts" }
-];
-
-const ANALYTICS_SIGNALS = [
-  { label: "Inbox health", value: "92%", context: "Replies within SLA" },
-  { label: "Social velocity", value: "1.8x", context: "Posts vs. baseline" },
-  { label: "Deliverables due", value: "14", context: "Next 7 days" }
-];
-
-const POD_EFFICIENCY = [
-  { pod: "Luxury pod", efficiency: "92% SLA", cycle: "6.2 days", utilization: "88%" },
-  { pod: "Fintech pod", efficiency: "89% SLA", cycle: "5.4 days", utilization: "81%" },
-  { pod: "UGC pod", efficiency: "95% SLA", cycle: "4.1 days", utilization: "76%" }
-];
-
 
 const BRAND_NAV_LINKS = (basePath) => [
   { label: "Overview", to: `${basePath}`, end: true },
@@ -141,11 +116,7 @@ function BrandOverviewSection({ session }) {
       { label: "Active Campaigns", value: metricsData.activeCampaigns?.toString() || "0", context: "Currently running" },
       { label: "Win Rate", value: metricsData.winRate || "0%", context: "Opportunity success" },
       { label: "Avg Deal Value", value: metricsData.avgDealValue || "£0", context: "Per campaign" }
-    ] : [
-      { label: "Reach", value: "4.1M", context: "Paid + organic" },
-      { label: "Engagement rate", value: "5.2%", context: "30-day blended" },
-      { label: "Conversion lift", value: "+18%", context: "Versus control" }
-    ]
+    ] : []
   };
 
   return (
@@ -802,11 +773,7 @@ function BrandFinancialSection() {
 
 function BrandMessagesSection() {
   const navigate = useNavigate();
-  const threads = [
-    { subject: "Budget approval", contact: "brand@client.com", status: "Awaiting finance sign-off" },
-    { subject: "Creator roster feedback", contact: "mo@thebreakco.com", status: "Reply drafted" },
-    { subject: "Legal addendum", contact: "legal@breakagency.com", status: "Needs signature" }
-  ];
+  const threads = [];
 
   return (
     <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">

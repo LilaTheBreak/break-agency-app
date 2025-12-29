@@ -6,8 +6,10 @@ const router = Router();
 
 /**
  * GET /api/dashboard/revenue-breakdown
+ *
+ * Mounted under /api/dashboard in routes/index.ts
  */
-router.get("/api/dashboard/revenue-breakdown", requireAuth, async (req: Request, res: Response) => {
+router.get("/revenue-breakdown", requireAuth, async (req: Request, res: Response) => {
   try {
     // 1. Revenue YTD
     const startOfYear = new Date(new Date().getFullYear(), 0, 1);
