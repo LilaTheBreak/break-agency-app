@@ -7,7 +7,7 @@
  * Legal: Only scrapes publicly accessible HTML, no gated content or personal data.
  */
 
-import * as cheerio from "cheerio";
+import { load } from "cheerio";
 import { URL } from "url";
 
 export interface EnrichmentResult {
@@ -52,7 +52,7 @@ function normalizeUrl(url: string): string {
 /**
  * Extracts social media links from HTML
  */
-function extractSocialLinks($: cheerio.CheerioAPI): EnrichmentResult["socialLinks"] {
+function extractSocialLinks($: ReturnType<typeof load>): EnrichmentResult["socialLinks"] {
   const links: EnrichmentResult["socialLinks"] = {};
   
   // Find all links
@@ -106,7 +106,7 @@ function extractSocialLinks($: cheerio.CheerioAPI): EnrichmentResult["socialLink
 /**
  * Finds logo URL using multiple heuristics
  */
-function findLogoUrl($: cheerio.CheerioAPI, baseUrl: string): string | undefined {
+function findLogoUrl($: ReturnType<typeof load>, baseUrl: string): string | undefined {
   const base = new URL(baseUrl);
   
   // Priority 1: Open Graph image
@@ -192,7 +192,7 @@ function findLogoUrl($: cheerio.CheerioAPI, baseUrl: string): string | undefined
 /**
  * Extracts about/description text
  */
-function extractAbout($: cheerio.CheerioAPI): string | undefined {
+function extractAbout($: ReturnType<typeof load>): string | undefined {
   // Try meta description first
   const metaDesc = $('meta[name="description"]').attr("content");
   if (metaDesc && metaDesc.trim().length > 20) {
@@ -220,7 +220,7 @@ function extractAbout($: cheerio.CheerioAPI): string | undefined {
 /**
  * Attempts to infer industry from content
  */
-function inferIndustry($: cheerio.CheerioAPI, brandName: string): string | undefined {
+function inferIndustry($: ReturnType<typeof load>, brandName: string): string | undefined {
   const text = $("body").text().toLowerCase();
   const name = brandName.toLowerCase();
   
@@ -307,7 +307,7 @@ export async function enrichBrandFromUrl(websiteUrl: string, existingBrandName?:
       const html = await response.text();
       
       // Parse HTML
-      const $ = cheerio.load(html);
+      const $ = load(html);
       
       // Extract data
       const brandName = $('meta[property="og:site_name"]').attr("content")?.trim() ||
