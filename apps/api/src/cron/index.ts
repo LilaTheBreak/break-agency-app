@@ -158,14 +158,14 @@ export function registerCronJobs() {
       }
     });
     
-    // Instagram sync (every 10 mins)
-    cron.schedule("*/10 * * * *", async () => {
-      try {
-        await syncInstagram();
-      } catch (err) {
-        console.error("Instagram DM sync failed", err);
-      }
-    });
+    // Instagram sync (every 10 mins) - DISABLED: social schema models removed
+    // cron.schedule("*/10 * * * *", async () => {
+    //   try {
+    //     await syncInstagram();
+    //   } catch (err) {
+    //     console.error("Instagram DM sync failed", err);
+    //   }
+    // });
     
     // WhatsApp sync (every 10 mins)
     cron.schedule("*/10 * * * *", async () => {
