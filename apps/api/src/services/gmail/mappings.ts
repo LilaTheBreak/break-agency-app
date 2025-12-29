@@ -55,11 +55,29 @@ export function mapGmailMessageToDb(
   inboxMessageData: InboxMessageUpdateInput;
   inboundEmailData: InboundEmailCreateInput;
 } {
+  // Safety checks
+  if (!message.id) {
+    throw new Error("Gmail message missing id");
+  }
+  if (!message.threadId) {
+    throw new Error("Gmail message missing threadId");
+  }
+  
   const headers = message.payload?.headers || [];
   const { bodyHtml, bodyText } = parseBody(message.payload);
 
   const dateHeader = getHeader(headers, "Date");
-  const messageDate = dateHeader ? new Date(dateHeader) : new Date();
+  let messageDate: Date;
+  try {
+    messageDate = dateHeader ? new Date(dateHeader) : new Date();
+    // Validate date
+    if (Number.isNaN(messageDate.getTime())) {
+      messageDate = new Date();
+    }
+  } catch (dateError) {
+    console.warn(`[GMAIL MAPPING] Failed to parse date "${dateHeader}", using current date`);
+    messageDate = new Date();
+  }
 
   const fromHeader = getHeader(headers, "From");
   const toHeader = getHeader(headers, "To");

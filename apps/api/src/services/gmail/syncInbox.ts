@@ -163,14 +163,29 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
       throw fetchError; // Re-throw to be caught by outer catch
     }
 
-    const existingGmailIds = new Set(
-      (
-        await prisma.inboundEmail.findMany({
-          where: { gmailId: { in: gmailMessages.map((m) => m.id!) } },
-          select: { gmailId: true }
-        })
-      ).map((e) => e.gmailId)
-    );
+    // Get existing email IDs to check for duplicates
+    // Handle empty array case to avoid Prisma errors
+    const existingGmailIds = new Set<string>();
+    if (gmailMessages.length > 0) {
+      const gmailIds = gmailMessages.map((m) => m.id!).filter(Boolean);
+      if (gmailIds.length > 0) {
+        try {
+          const existingEmails = await prisma.inboundEmail.findMany({
+            where: { gmailId: { in: gmailIds } },
+            select: { gmailId: true }
+          });
+          existingEmails.forEach((e) => {
+            if (e.gmailId) existingGmailIds.add(e.gmailId);
+          });
+        } catch (dbError) {
+          console.error(`[GMAIL SYNC] Failed to check existing emails for user ${userId}:`, {
+            error: dbError instanceof Error ? dbError.message : String(dbError),
+            gmailIdsCount: gmailIds.length,
+          });
+          // Continue with sync even if we can't check duplicates
+        }
+      }
+    }
 
     for (const gmailMessage of gmailMessages) {
       if (!gmailMessage.id || !gmailMessage.threadId) {
@@ -183,30 +198,51 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
         continue;
       }
 
-      const { inboxMessageData, inboundEmailData } = mapGmailMessageToDb(gmailMessage, userId);
+      let inboxMessageData, inboundEmailData;
+      try {
+        const mapped = mapGmailMessageToDb(gmailMessage, userId);
+        inboxMessageData = mapped.inboxMessageData;
+        inboundEmailData = mapped.inboundEmailData;
+      } catch (mapError) {
+        console.error(`[GMAIL SYNC] Failed to map message ${gmailMessage.id} for user ${userId}:`, {
+          error: mapError instanceof Error ? mapError.message : String(mapError),
+          messageId: gmailMessage.id,
+        });
+        stats.failed++;
+        continue;
+      }
 
       let createdEmail: any = null;
-      await prisma.$transaction(async (tx) => {
-        const thread = await tx.inboxMessage.upsert({
-          where: { threadId: inboxMessageData.threadId },
-          update: inboxMessageData,
-          create: { ...inboxMessageData, userId }
+      try {
+        await prisma.$transaction(async (tx) => {
+          const thread = await tx.inboxMessage.upsert({
+            where: { threadId: inboxMessageData.threadId },
+            update: inboxMessageData,
+            create: { ...inboxMessageData, userId }
+          });
+          
+          // Use upsert to handle race conditions (concurrent syncs)
+          createdEmail = await tx.inboundEmail.upsert({
+            where: { gmailId: gmailMessage.id! },
+            update: {
+              subject: inboundEmailData.subject,
+              snippet: inboundEmailData.snippet,
+              body: inboundEmailData.body,
+              inboxMessageId: thread.id,
+            },
+            create: { ...inboundEmailData, inboxMessageId: thread.id },
+          });
         });
-        
-        // Use upsert to handle race conditions (concurrent syncs)
-        createdEmail = await tx.inboundEmail.upsert({
-          where: { gmailId: gmailMessage.id! },
-          update: {
-            subject: inboundEmailData.subject,
-            snippet: inboundEmailData.snippet,
-            body: inboundEmailData.body,
-            inboxMessageId: thread.id,
-          },
-          create: { ...inboundEmailData, inboxMessageId: thread.id },
+        stats.imported++;
+      } catch (txError) {
+        console.error(`[GMAIL SYNC] Transaction failed for message ${gmailMessage.id} for user ${userId}:`, {
+          error: txError instanceof Error ? txError.message : String(txError),
+          messageId: gmailMessage.id,
+          threadId: gmailMessage.threadId,
         });
-      });
-
-      stats.imported++;
+        stats.failed++;
+        continue; // Continue with next message instead of failing entire sync
+      }
 
       // Link email to CRM (contact + brand) and classify
       if (createdEmail) {
@@ -261,14 +297,21 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     }
 
     // Update last synced timestamp and clear errors
-    await prisma.gmailToken.update({
-      where: { userId },
-      data: { 
-        lastSyncedAt: new Date(),
-        lastError: null,
-        lastErrorAt: null,
-      },
-    });
+    try {
+      await prisma.gmailToken.update({
+        where: { userId },
+        data: { 
+          lastSyncedAt: new Date(),
+          lastError: null,
+          lastErrorAt: null,
+        },
+      });
+    } catch (updateError) {
+      // Log but don't fail sync if token update fails (token might have been deleted)
+      console.warn(`[GMAIL SYNC] Failed to update GmailToken lastSyncedAt for user ${userId}:`, {
+        error: updateError instanceof Error ? updateError.message : String(updateError),
+      });
+    }
 
     // Audit log: Gmail sync completed
     // await logAction({

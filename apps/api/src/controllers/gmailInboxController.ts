@@ -118,10 +118,14 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
       }
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     console.error("[INTEGRATION] Gmail inbox sync failed", {
       userId: req.user!.id,
-      error: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
+      error: errorMessage,
+      errorStack,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
       timestamp: new Date().toISOString()
     });
     
@@ -138,7 +142,9 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
     if (error instanceof Error && (
       error.message.includes("invalid_grant") ||
       error.message.includes("Token has been expired") ||
-      error.message.includes("invalid_client")
+      error.message.includes("invalid_client") ||
+      error.message.includes("unauthorized") ||
+      error.message.includes("access_denied")
     )) {
       res.status(401).json({
         error: "gmail_auth_expired",
@@ -147,6 +153,38 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
       return;
     }
     
-    next(error);
+    // Handle database errors
+    if (error instanceof Error && (
+      error.message.includes("Unique constraint") ||
+      error.message.includes("Foreign key constraint") ||
+      error.message.includes("Record to update not found")
+    )) {
+      console.error("[INTEGRATION] Database error during Gmail sync:", errorMessage);
+      res.status(500).json({
+        error: "database_error",
+        message: "A database error occurred during sync. Please try again."
+      });
+      return;
+    }
+    
+    // Handle Google API errors
+    if (error instanceof Error && (
+      error.message.includes("quota") ||
+      error.message.includes("rate limit") ||
+      error.message.includes("403") ||
+      error.message.includes("429")
+    )) {
+      res.status(503).json({
+        error: "gmail_api_limit",
+        message: "Gmail API rate limit exceeded. Please try again in a few minutes."
+      });
+      return;
+    }
+    
+    // Generic error response (don't expose internal details)
+    res.status(500).json({
+      error: "sync_failed",
+      message: "Gmail sync failed. Please try again or contact support if the issue persists."
+    });
   }
 }
