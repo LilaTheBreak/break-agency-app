@@ -417,6 +417,11 @@ model CrmBrand {
   updatedAt            DateTime
   lifecycleStage       String?
   logo                 String?
+  logoUrl              String?           // Auto-imported logo URL
+  about                String?           // Enriched about text
+  socialLinks          Json?             // { instagram, linkedin, tiktok, etc. }
+  enrichedAt           DateTime?         // When enrichment was last run
+  enrichmentSource     String?           // e.g. "website", "manual"
   primaryContactId     String?
   relationshipStrength String?
   CrmBrandContact      CrmBrandContact[]
