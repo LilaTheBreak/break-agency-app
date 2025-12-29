@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import * as inboxService from "../services/gmail/inboxService.js";
 import { syncInboxForUser } from "../services/gmail/syncInbox.js";
+import { GmailNotConnectedError } from "../services/gmail/tokens.js";
 import prisma from "../lib/prisma.js";
 
 async function checkTokenAndHandleError(userId: string, res: Response): Promise<boolean> {
@@ -120,8 +121,32 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
     console.error("[INTEGRATION] Gmail inbox sync failed", {
       userId: req.user!.id,
       error: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
+    
+    // Handle Gmail not connected error specifically
+    if (error instanceof GmailNotConnectedError) {
+      res.status(404).json({
+        error: "gmail_not_connected",
+        message: "Gmail account is not connected. Please authenticate to continue."
+      });
+      return;
+    }
+    
+    // Handle OAuth errors specifically
+    if (error instanceof Error && (
+      error.message.includes("invalid_grant") ||
+      error.message.includes("Token has been expired") ||
+      error.message.includes("invalid_client")
+    )) {
+      res.status(401).json({
+        error: "gmail_auth_expired",
+        message: "Gmail authentication has expired. Please reconnect your Gmail account."
+      });
+      return;
+    }
+    
     next(error);
   }
 }
