@@ -209,14 +209,23 @@ if (!credentialValidation.valid) {
 
 const app = express();
 
-// CRITICAL: Production frontend MUST be in allowed origins
-// If FRONTEND_ORIGIN not set in Railway, add production domain to defaults
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 
-  process.env.WEB_APP_URL || 
-  "https://www.tbctbctbc.online,http://localhost:5173,http://localhost:3000";
+// CRITICAL: Combine FRONTEND_ORIGIN and WEB_APP_URL to support both
+// Railway has FRONTEND_ORIGIN set to Vercel preview URL
+// WEB_APP_URL has the actual production custom domains
+const frontendOriginRaw = process.env.FRONTEND_ORIGIN || "";
+const webAppUrlRaw = process.env.WEB_APP_URL || "";
+const defaultOrigins = "https://www.tbctbctbc.online,http://localhost:5173,http://localhost:3000";
 
-// Support multiple origins (comma-separated)
-const allowedOrigins = FRONTEND_ORIGIN.split(',').map(o => o.trim());
+// Combine all origins from both env vars plus defaults
+const combinedOrigins = [frontendOriginRaw, webAppUrlRaw, defaultOrigins]
+  .filter(Boolean)
+  .join(',');
+
+const allowedOrigins = combinedOrigins
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean) // Remove empty strings
+  .filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
 
 // Validate each origin is a valid URL
 allowedOrigins.forEach((origin, index) => {
