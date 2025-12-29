@@ -44,7 +44,8 @@ export default function DealsDashboard() {
   const allTalents = useMemo(() => {
     const list = [];
     deals.forEach((d) => {
-      (d.talentProfiles || []).forEach((t) => {
+      const safeProfiles = Array.isArray(d.talentProfiles) ? d.talentProfiles : [];
+      safeProfiles.forEach((t) => {
         if (t && !list.find((x) => x.id === t.id)) list.push(t);
       });
     });

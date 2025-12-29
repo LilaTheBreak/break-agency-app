@@ -281,13 +281,15 @@ export function OutreachRecordsPanel({
 
   const brandById = useMemo(() => {
     const map = new Map();
-    (brands || []).forEach((b) => map.set(b.id, b));
+    const safeBrands = Array.isArray(brands) ? brands : [];
+    safeBrands.forEach((b) => map.set(b.id, b));
     return map;
   }, [brands]);
 
   const contactById = useMemo(() => {
     const map = new Map();
-    (contacts || []).forEach((c) => map.set(c.id, c));
+    const safeContacts = Array.isArray(contacts) ? contacts : [];
+    safeContacts.forEach((c) => map.set(c.id, c));
     return map;
   }, [contacts]);
 
@@ -436,7 +438,8 @@ export function OutreachRecordsPanel({
 
   const availableContacts = useMemo(() => {
     if (!draft.brandId) return [];
-    return (contacts || []).filter((c) => c.brandId === draft.brandId);
+    const safeContacts = Array.isArray(contacts) ? contacts : [];
+    return safeContacts.filter((c) => c.brandId === draft.brandId);
   }, [contacts, draft.brandId]);
 
   const selectedBrand = selected?.brandId ? brandById.get(selected.brandId) : null;
@@ -743,7 +746,7 @@ export function OutreachRecordsPanel({
                 className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black outline-none focus:border-brand-black/30"
               >
                 <option value="">Select brand…</option>
-                {(brands || []).map((b) => (
+                {(Array.isArray(brands) ? brands : []).map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.brandName}
                   </option>

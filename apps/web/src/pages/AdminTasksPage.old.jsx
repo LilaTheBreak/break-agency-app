@@ -240,14 +240,35 @@ export function AdminTasksPage() {
   const events = useMemo(() => readCrmEvents(), []);
   const contracts = useMemo(() => readCrmContracts(), []);
 
-  const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
-  const dealById = useMemo(() => new Map((deals || []).map((d) => [d.id, d])), [deals]);
-  const campaignById = useMemo(() => new Map((campaigns || []).map((c) => [c.id, c])), [campaigns]);
-  const eventById = useMemo(() => new Map((events || []).map((e) => [e.id, e])), [events]);
-  const contractById = useMemo(() => new Map((contracts || []).map((c) => [c.id, c])), [contracts]);
+  const brandById = useMemo(() => {
+    const safeBrands = Array.isArray(brands) ? brands : [];
+    return new Map(safeBrands.map((b) => [b.id, b]));
+  }, [brands]);
+  const dealById = useMemo(() => {
+    const safeDeals = Array.isArray(deals) ? deals : [];
+    return new Map(safeDeals.map((d) => [d.id, d]));
+  }, [deals]);
+  const campaignById = useMemo(() => {
+    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    return new Map(safeCampaigns.map((c) => [c.id, c]));
+  }, [campaigns]);
+  const eventById = useMemo(() => {
+    const safeEvents = Array.isArray(events) ? events : [];
+    return new Map(safeEvents.map((e) => [e.id, e]));
+  }, [events]);
+  const contractById = useMemo(() => {
+    const safeContracts = Array.isArray(contracts) ? contracts : [];
+    return new Map(safeContracts.map((c) => [c.id, c]));
+  }, [contracts]);
 
-  const brandOptions = useMemo(() => ["All brands", ...(brands || []).map((b) => b.brandName || b.name)], [brands]);
-  const owners = useMemo(() => ["All owners", ...new Set((tasks || []).map((task) => task.owner).filter(Boolean))], [tasks]);
+  const brandOptions = useMemo(() => {
+    const safeBrands = Array.isArray(brands) ? brands : [];
+    return ["All brands", ...safeBrands.map((b) => b.brandName || b.name)];
+  }, [brands]);
+  const owners = useMemo(() => {
+    const safeTasks = Array.isArray(tasks) ? tasks : [];
+    return ["All owners", ...new Set(safeTasks.map((task) => task.owner).filter(Boolean))];
+  }, [tasks]);
 
   // Load tasks from API
   useEffect(() => {
@@ -281,7 +302,8 @@ export function AdminTasksPage() {
   });
 
   const visibleTasks = useMemo(() => {
-    return (tasks || []).filter((task) => {
+    const safeTasks = Array.isArray(tasks) ? tasks : [];
+    return safeTasks.filter((task) => {
       const matchesSearch =
         !search ||
         (task.title || "").toLowerCase().includes(search.toLowerCase()) ||
