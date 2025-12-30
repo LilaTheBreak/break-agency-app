@@ -24,16 +24,16 @@ const CREATOR_ROSTER = [];
 
 
 const BRAND_NAV_LINKS = (basePath) => [
-  { label: "Overview", to: `${basePath}`, end: true },
-  { label: "My Profile", to: `${basePath}/profile` },
-  { label: "Socials", to: `${basePath}/socials` },
+  { label: "Overview", to: `${basePath}`, end: true }, // Keep first - primary entry point
   { label: "Campaigns", to: `${basePath}/campaigns` },
-  { label: "Opportunities", to: `${basePath}/opportunities` },
   { label: "Contracts", to: `${basePath}/contracts` },
+  { label: "Email Opportunities", to: `/creator/opportunities` },
   { label: "Financials", to: `${basePath}/financials` },
   { label: "Messages", to: `${basePath}/messages` },
-  { label: "Email Opportunities", to: `/creator/opportunities` },
-  { label: "Settings", to: `${basePath}/settings` }
+  { label: "My Profile", to: `${basePath}/profile` },
+  { label: "Opportunities", to: `${basePath}/opportunities` },
+  { label: "Settings", to: `${basePath}/settings` }, // Keep last - standard placement
+  { label: "Socials", to: `${basePath}/socials` }
 ];
 
 export default function BrandDashboardLayout({ basePath = "/brand/dashboard", session }) {

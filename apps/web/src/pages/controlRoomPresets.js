@@ -13,21 +13,16 @@ export const CONTROL_ROOM_PRESETS = {
         title: "Overview",
         copy: "Snapshot of adoption, usage, and alerts for the last 7 days.",
         to: "/admin/dashboard"
-      },
+      }, // Keep first - primary entry point
       {
-        title: "Queues",
-        copy: "Incoming approvals, onboarding, and support requests awaiting routing.",
-        to: "/admin/queues"
+        title: "Activity",
+        copy: "Recent platform activity and audit logs.",
+        to: "/admin/activity"
       },
       {
         title: "Approvals",
         copy: "White-glove review of contracts, briefs, and payments before they go live.",
         to: "/admin/approvals"
-      },
-      {
-        title: "Users",
-        copy: "Audit creator, brand, and manager accounts. Impersonate or edit roles quickly.",
-        to: "/admin/users"
       },
       {
         title: "Brands",
@@ -40,11 +35,6 @@ export const CONTROL_ROOM_PRESETS = {
         to: "/admin/campaigns"
       },
       {
-        title: "Events",
-        copy: "Track brand dinners, trips, panels, and previews with prep + follow-up in context.",
-        to: "/admin/events"
-      },
-      {
         title: "Deals",
         copy: "The commercial spine. Every deal belongs to a brand and anchors work and follow-through.",
         to: "/admin/deals"
@@ -55,14 +45,9 @@ export const CONTROL_ROOM_PRESETS = {
         to: "/admin/documents"
       },
       {
-        title: "Outreach",
-        copy: "Track outbound to brands + creators with Gmail-linked follow-ups and opportunities.",
-        to: "/admin/outreach"
-      },
-      {
-        title: "Messaging",
-        copy: "Internal inbox mirroring creator comms. Filter by persona or queue.",
-        to: "/admin/messaging"
+        title: "Events",
+        copy: "Track brand dinners, trips, panels, and previews with prep + follow-up in context.",
+        to: "/admin/events"
       },
       {
         title: "Finance",
@@ -70,10 +55,30 @@ export const CONTROL_ROOM_PRESETS = {
         to: "/admin/finance"
       },
       {
+        title: "Messaging",
+        copy: "Internal inbox mirroring creator comms. Filter by persona or queue.",
+        to: "/admin/messaging"
+      },
+      {
+        title: "Outreach",
+        copy: "Track outbound to brands + creators with Gmail-linked follow-ups and opportunities.",
+        to: "/admin/outreach"
+      },
+      {
+        title: "Queues",
+        copy: "Incoming approvals, onboarding, and support requests awaiting routing.",
+        to: "/admin/queues"
+      },
+      {
+        title: "Users",
+        copy: "Audit creator, brand, and manager accounts. Impersonate or edit roles quickly.",
+        to: "/admin/users"
+      },
+      {
         title: "Settings",
         copy: "Access control, integrations, outbound comms, and admin notes.",
         to: "/admin/settings"
-      }
+      } // Keep last - standard placement
     ]
   },
   exclusive: {
@@ -81,15 +86,15 @@ export const CONTROL_ROOM_PRESETS = {
     title: "Exclusive Talent Control Room",
     subtitle: "",
     tabs: [
-      { label: "Overview", anchor: "#exclusive-overview", default: true },
-      { label: "My Profile", anchor: "#exclusive-profile" },
-      { label: "Socials", anchor: "#exclusive-socials" },
+      { label: "Overview", anchor: "#exclusive-overview", default: true }, // Keep first - default tab
       { label: "Campaigns", anchor: "#exclusive-campaigns" },
-      { label: "Opportunities", anchor: "#exclusive-opportunities" },
+      { label: "Contracts", anchor: "#exclusive-contracts" },
       { label: "Financials", anchor: "#exclusive-financials" },
       { label: "Messages", anchor: "#exclusive-messages" },
-      { label: "Contracts", anchor: "#exclusive-contracts" },
-      { label: "Settings", anchor: "#exclusive-settings" }
+      { label: "My Profile", anchor: "#exclusive-profile" },
+      { label: "Opportunities", anchor: "#exclusive-opportunities" },
+      { label: "Settings", anchor: "#exclusive-settings" }, // Keep last - standard placement
+      { label: "Socials", anchor: "#exclusive-socials" }
     ],
     metrics: [
       { label: "Active campaigns", value: "8", sub: "Live creator projects" },
@@ -118,13 +123,13 @@ export const CONTROL_ROOM_PRESETS = {
     title: "Talent Control Room",
     subtitle: "See what a vetted creator experiences — briefs, revenue, and automations in one place.",
     tabs: [
-      { label: "Overview", anchor: "#creator-overview", default: true },
-      { label: "Campaigns", anchor: "#creator-campaigns" },
-      { label: "Opportunities", anchor: "#creator-opportunities" },
+      { label: "Overview", anchor: "#creator-overview", default: true }, // Keep first - default tab
+      { label: "Account", anchor: "#creator-account" },
       { label: "Agent", anchor: "#creator-agent" },
-      { label: "Messages", anchor: "#creator-messages" },
+      { label: "Campaigns", anchor: "#creator-campaigns" },
       { label: "Contracts", anchor: "#creator-contracts" },
-      { label: "Account", anchor: "#creator-account" }
+      { label: "Messages", anchor: "#creator-messages" },
+      { label: "Opportunities", anchor: "#creator-opportunities" }
     ],
     metrics: [
       { label: "Active campaigns", value: "6", sub: "Deliverables due this week" },
@@ -142,10 +147,10 @@ export const CONTROL_ROOM_PRESETS = {
       ]
     },
     quickLinks: [
-      { title: "Campaign pipeline", copy: "View every signed brief with budgets, deliverables, and chat." },
-      { title: "Opportunities", copy: "Public + priority briefs filtered to your markets and platforms." },
       { title: "AI agent", copy: "Prep responses, rate cards, and trackers via natural language." },
-      { title: "Finance", copy: "Invoices sent, payouts pending, compliance docs on file." }
+      { title: "Campaign pipeline", copy: "View every signed brief with budgets, deliverables, and chat." },
+      { title: "Finance", copy: "Invoices sent, payouts pending, compliance docs on file." },
+      { title: "Opportunities", copy: "Public + priority briefs filtered to your markets and platforms." }
     ]
   },
   ugc: {
@@ -153,12 +158,12 @@ export const CONTROL_ROOM_PRESETS = {
     title: "UGC Talent Control Room",
     subtitle: "The lightweight console for UGC creators shipping briefs via the public board.",
     tabs: [
-      "Overview",
+      "Overview", // Keep first - primary entry point
       { label: "Briefs", to: "/ugc/briefs" },
-      { label: "Tools", to: "/ugc/tools" },
-      { label: "Finance", to: "/ugc/finance" },
       { label: "Education", to: "/resource-hub" },
-      { label: "Messages", to: "/ugc/messages" }
+      { label: "Finance", to: "/ugc/finance" },
+      { label: "Messages", to: "/ugc/messages" },
+      { label: "Tools", to: "/ugc/tools" }
     ],
     opportunities: [
       {
@@ -242,7 +247,7 @@ export const CONTROL_ROOM_PRESETS = {
       { title: "Content locker", copy: "Deliverables, references, and edit histories in one feed." },
       { title: "Education", copy: "Micro lessons on pricing, rights, logistics, and compliance." },
       { title: "Messaging", copy: "Creator <> ops dialogue with templates + escalation paths." }
-    ]
+    ] // Already alphabetized
   },
   founder: {
     role: "founder",
@@ -251,14 +256,14 @@ export const CONTROL_ROOM_PRESETS = {
     orientation:
       "This is your strategic home. Use this space to review audience signals, see how strategy is evolving, and understand what The Break is focused on for you.",
     tabs: [
-      { label: "Overview", anchor: "#founder-overview", default: true },
-      { label: "Strategy", anchor: "#founder-strategy" },
-      { label: "Offers & Revenue", anchor: "#founder-offers" },
+      { label: "Overview", anchor: "#founder-overview", default: true }, // Keep first - default tab
       { label: "Content & Distribution", anchor: "#founder-content" },
+      { label: "Offers & Revenue", anchor: "#founder-offers" },
       { label: "Projects", anchor: "#founder-projects" },
-      { label: "Sessions & Support", anchor: "#founder-sessions" },
       { label: "Resources", anchor: "#founder-resources" },
-      { label: "Account", anchor: "#founder-account" }
+      { label: "Sessions & Support", anchor: "#founder-sessions" },
+      { label: "Strategy", anchor: "#founder-strategy" },
+      { label: "Account", anchor: "#founder-account" } // Keep last - standard placement
     ],
     metrics: [
       { label: "Current focus", value: "Audience → Offer", sub: "Active strategy phase" },
@@ -380,10 +385,10 @@ export const CONTROL_ROOM_PRESETS = {
       ]
     },
     quickLinks: [
-      { title: "Strategy", copy: "Narrative, ICP, offer stack, GTM direction, and notes." },
-      { title: "Offers & revenue", copy: "Live offers, pricing guidance, and partnership ideas." },
       { title: "Content & distribution", copy: "Platform focus, monthly talking points, and CTAs." },
-      { title: "Sessions & support", copy: "Book calls, drop async questions, and review notes." }
+      { title: "Offers & revenue", copy: "Live offers, pricing guidance, and partnership ideas." },
+      { title: "Sessions & support", copy: "Book calls, drop async questions, and review notes." },
+      { title: "Strategy", copy: "Narrative, ICP, offer stack, GTM direction, and notes." }
     ]
   },
   brand: {
@@ -391,12 +396,12 @@ export const CONTROL_ROOM_PRESETS = {
     title: "Brand Control Room",
     subtitle: "Campaign controls, creator match, contracts, messaging, and reporting in one lane.",
     tabs: [
-      { label: "Overview", anchor: "#brand-overview", default: true },
+      { label: "Overview", anchor: "#brand-overview", default: true }, // Keep first - default tab
+      { label: "Account", anchor: "#brand-account" }, // Keep last - standard placement
       { label: "Campaigns", anchor: "#brand-campaigns" },
       { label: "Creators", anchor: "#brand-creators" },
-      { label: "Reports", anchor: "#brand-reports" },
       { label: "Messages", anchor: "#brand-messages" },
-      { label: "Account", anchor: "#brand-account" }
+      { label: "Reports", anchor: "#brand-reports" }
     ],
     metrics: [
       { label: "Live campaigns", value: "8", sub: "Running this week" },
@@ -415,8 +420,8 @@ export const CONTROL_ROOM_PRESETS = {
     },
     quickLinks: [
       { title: "Campaign pipeline", copy: "Status, spend, and conversations per brief." },
-      { title: "Creator match", copy: "Filters for geography, platforms, and compliance signals." },
       { title: "Contracts & invoices", copy: "Templates with guardrails for legal + finance." },
+      { title: "Creator match", copy: "Filters for geography, platforms, and compliance signals." },
       { title: "Insights", copy: "Performance dashboards, lift studies, and recaps." }
     ]
   }

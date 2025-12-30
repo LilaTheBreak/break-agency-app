@@ -1099,21 +1099,20 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           Control room
                         </p>
                         {[
-                          { to: "/admin/dashboard", label: "Overview" },
+                          { to: "/admin/dashboard", label: "Overview" }, // Keep first - primary entry point
                           { to: "/admin/activity", label: "Activity" },
-                          { to: "/admin/queues", label: "Queues" },
-                          { to: "/admin/outreach", label: "Outreach" },
+                          { to: "/admin/approvals", label: "Approvals" },
+                          { to: "/admin/brands", label: "Brands" },
                           { to: "/admin/campaigns", label: "Campaigns" },
-                          { to: "/admin/events", label: "Events" },
                           { to: "/admin/deals", label: "Deals" },
                           { to: "/admin/documents", label: "Documents / Contracts" },
-                          { to: "/admin/approvals", label: "Approvals" },
-                          { to: "/admin/users", label: "Users" },
-                          { to: "/admin/brands", label: "Brands" },
-                          { to: "/admin/messaging", label: "Messaging" },
-                          { to: "/admin/resources", label: "Resources" },
+                          { to: "/admin/events", label: "Events" },
                           { to: "/admin/finance", label: "Finance" },
-                          { to: "/admin/settings", label: "Settings" }
+                          { to: "/admin/messaging", label: "Messaging" },
+                          { to: "/admin/outreach", label: "Outreach" },
+                          { to: "/admin/queues", label: "Queues" },
+                          { to: "/admin/resources", label: "Resources" },
+                          { to: "/admin/settings", label: "Settings" } // Keep last - standard placement
                         ].map((item) => (
                           <Link
                             key={item.to}

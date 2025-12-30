@@ -6,7 +6,7 @@ import { getRecentInbox, getGmailStatus, syncGmailInbox } from "../services/inbo
 import { useGmailAuth } from "../hooks/useGmailAuth.js";
 import toast from "react-hot-toast";
 
-const FILTERS = ["All", "Creators", "Brands", "Talent Managers", "External"];
+const FILTERS = ["All", "Brands", "Creators", "External", "Talent Managers"]; // Alphabetized, "All" kept first
 const ACCEPTED_ATTACHMENTS = ".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.mp4,.mov,.xlsx,.csv";
 
 export function AdminMessagingPage() {

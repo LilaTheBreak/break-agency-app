@@ -3,14 +3,14 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { isFeatureEnabled } from "../config/features.js";
 
 const ROLE_OPTIONS = [
-  { value: "SUPERADMIN", label: "Super Admin", description: "Full platform control" },
+  { value: "SUPERADMIN", label: "Super Admin", description: "Full platform control" }, // Keep first - highest privilege
   { value: "ADMIN", label: "Admin", description: "Manage users & content" },
-  { value: "CREATOR", label: "Creator", description: "Content creator" },
-  { value: "UGC", label: "UGC", description: "UGC creator" },
   { value: "BRAND", label: "Brand", description: "Brand partner" },
+  { value: "CREATOR", label: "Creator", description: "Content creator" },
+  { value: "EXCLUSIVE_TALENT", label: "Exclusive Talent", description: "VIP creator" },
   { value: "FOUNDER", label: "Founder", description: "Startup founder" },
   { value: "TALENT_MANAGER", label: "Talent Manager", description: "External manager" },
-  { value: "EXCLUSIVE_TALENT", label: "Exclusive Talent", description: "VIP creator" }
+  { value: "UGC", label: "UGC", description: "UGC creator" }
 ];
 
 const STATUS_OPTIONS = [

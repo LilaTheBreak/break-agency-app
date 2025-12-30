@@ -1,18 +1,18 @@
 export const ADMIN_NAV_LINKS = [
-  { label: "Overview", to: "/admin/dashboard" },
+  { label: "Overview", to: "/admin/dashboard" }, // Keep first - primary entry point
   { label: "Activity", to: "/admin/activity" },
-  { label: "Tasks", to: "/admin/tasks" },
-  { label: "Calendar", to: "/admin/calendar" },
-  { label: "Queues", to: "/admin/queues" },
   { label: "Approvals", to: "/admin/approvals" },
-  { label: "Documents / Contracts", to: "/admin/documents" },
-  { label: "Users", to: "/admin/users" },
   { label: "Brands", to: "/admin/brands" },
-  { label: "Outreach", to: "/admin/outreach" },
+  { label: "Calendar", to: "/admin/calendar" },
   { label: "Campaigns", to: "/admin/campaigns" },
-  { label: "Events", to: "/admin/events" },
   { label: "Deals", to: "/admin/deals" },
-  { label: "Messaging", to: "/admin/messaging" },
+  { label: "Documents / Contracts", to: "/admin/documents" },
+  { label: "Events", to: "/admin/events" },
   { label: "Finance", to: "/admin/finance" },
-  { label: "Settings", to: "/admin/settings" }
+  { label: "Messaging", to: "/admin/messaging" },
+  { label: "Outreach", to: "/admin/outreach" },
+  { label: "Queues", to: "/admin/queues" },
+  { label: "Tasks", to: "/admin/tasks" },
+  { label: "Users", to: "/admin/users" },
+  { label: "Settings", to: "/admin/settings" } // Keep last - standard placement
 ];
