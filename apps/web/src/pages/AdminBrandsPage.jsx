@@ -743,6 +743,7 @@ export function AdminBrandsPage({ session }) {
   }, [brands, query, statusFilter]);
 
   const selectedBrand = useMemo(() => {
+    if (!drawerBrandId) return null;
     const safeBrands = Array.isArray(brands) ? brands : [];
     return safeBrands.find((b) => b && b.id === drawerBrandId) || null;
   }, [brands, drawerBrandId]);
@@ -793,6 +794,34 @@ export function AdminBrandsPage({ session }) {
     },
     [contacts, contactDrawerId]
   );
+
+  // Ensure all state variables are always arrays (safety net)
+  useEffect(() => {
+    if (!Array.isArray(campaigns)) {
+      console.warn('[BRANDS PAGE] campaigns is not an array, resetting to []');
+      setCampaigns([]);
+    }
+    if (!Array.isArray(events)) {
+      console.warn('[BRANDS PAGE] events is not an array, resetting to []');
+      setEvents([]);
+    }
+    if (!Array.isArray(deals)) {
+      console.warn('[BRANDS PAGE] deals is not an array, resetting to []');
+      setDeals([]);
+    }
+    if (!Array.isArray(contracts)) {
+      console.warn('[BRANDS PAGE] contracts is not an array, resetting to []');
+      setContracts([]);
+    }
+    if (!Array.isArray(contacts)) {
+      console.warn('[BRANDS PAGE] contacts is not an array, resetting to []');
+      setContacts([]);
+    }
+    if (!Array.isArray(brands)) {
+      console.warn('[BRANDS PAGE] brands is not an array, resetting to []');
+      setBrands([]);
+    }
+  }, [campaigns, events, deals, contracts, contacts, brands]);
 
   useEffect(() => {
     if (!drawerBrandId) return;
