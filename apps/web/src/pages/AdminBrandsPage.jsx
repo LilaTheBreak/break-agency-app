@@ -780,96 +780,120 @@ export function AdminBrandsPage({ session }) {
     }
   };
 
+  // Ensure state is always an array before useMemo hooks
+  const safeBrandsState = useMemo(() => {
+    if (Array.isArray(brands)) return brands;
+    console.warn('[BRANDS PAGE] brands state is not an array, using []', { brands, type: typeof brands });
+    return [];
+  }, [brands]);
+  const safeCampaignsState = useMemo(() => {
+    if (Array.isArray(campaigns)) return campaigns;
+    console.warn('[BRANDS PAGE] campaigns state is not an array, using []', { campaigns, type: typeof campaigns });
+    return [];
+  }, [campaigns]);
+  const safeEventsState = useMemo(() => {
+    if (Array.isArray(events)) return events;
+    console.warn('[BRANDS PAGE] events state is not an array, using []', { events, type: typeof events });
+    return [];
+  }, [events]);
+  const safeDealsState = useMemo(() => {
+    if (Array.isArray(deals)) return deals;
+    console.warn('[BRANDS PAGE] deals state is not an array, using []', { deals, type: typeof deals });
+    return [];
+  }, [deals]);
+  const safeContractsState = useMemo(() => {
+    if (Array.isArray(contracts)) return contracts;
+    console.warn('[BRANDS PAGE] contracts state is not an array, using []', { contracts, type: typeof contracts });
+    return [];
+  }, [contracts]);
+  const safeContactsState = useMemo(() => {
+    if (Array.isArray(contacts)) return contacts;
+    console.warn('[BRANDS PAGE] contacts state is not an array, using []', { contacts, type: typeof contacts });
+    return [];
+  }, [contacts]);
+
   const filtered = useMemo(() => {
     try {
       const q = query.trim().toLowerCase();
-      const safeBrands = Array.isArray(brands) ? brands : [];
-      return safeBrands
+      return safeBrandsState
         .filter((b) => b && (statusFilter === "All" ? true : b.status === statusFilter))
         .filter((b) => (q ? `${b.brandName || ""} ${b.website || ""} ${b.industry || ""}`.toLowerCase().includes(q) : true))
         .sort((a, b) => (b.lastActivityAt || b.createdAt || "").localeCompare(a.lastActivityAt || a.createdAt || ""));
     } catch (error) {
-      console.error('[BRANDS PAGE] Error in filtered useMemo:', error, { brands, query, statusFilter });
+      console.error('[BRANDS PAGE] Error in filtered useMemo:', error, { brands: safeBrandsState, query, statusFilter });
       return [];
     }
-  }, [brands, query, statusFilter]);
+  }, [safeBrandsState, query, statusFilter]);
 
   const selectedBrand = useMemo(() => {
     if (!drawerBrandId) return null;
-    const safeBrands = Array.isArray(brands) ? brands : [];
-    return safeBrands.find((b) => b && b.id === drawerBrandId) || null;
-  }, [brands, drawerBrandId]);
+    return safeBrandsState.find((b) => b && b.id === drawerBrandId) || null;
+  }, [safeBrandsState, drawerBrandId]);
   const brandCampaigns = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
-      return safeCampaigns
+      return safeCampaignsState
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
     } catch (error) {
       console.error('[BRANDS PAGE] Error in brandCampaigns useMemo:', error);
       return [];
     }
-  }, [campaigns, selectedBrand]);
+  }, [safeCampaignsState, selectedBrand]);
   const brandEvents = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const safeEvents = Array.isArray(events) ? events : [];
-      return safeEvents
+      return safeEventsState
         .filter((e) => e && e.brandId === selectedBrand.id)
         .sort((a, b) => String(b.startDateTime || "").localeCompare(String(a.startDateTime || "")));
     } catch (error) {
       console.error('[BRANDS PAGE] Error in brandEvents useMemo:', error);
       return [];
     }
-  }, [events, selectedBrand]);
+  }, [safeEventsState, selectedBrand]);
   const brandDeals = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const safeDeals = Array.isArray(deals) ? deals : [];
-      return safeDeals
+      return safeDealsState
         .filter((d) => d && d.brandId === selectedBrand.id)
         .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
     } catch (error) {
       console.error('[BRANDS PAGE] Error in brandDeals useMemo:', error);
       return [];
     }
-  }, [deals, selectedBrand]);
+  }, [safeDealsState, selectedBrand]);
   const brandContracts = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const safeContracts = Array.isArray(contracts) ? contracts : [];
-      return safeContracts
+      return safeContractsState
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
     } catch (error) {
-      console.error('[BRANDS PAGE] Error in brandContracts useMemo:', error, { contracts, selectedBrand });
+      console.error('[BRANDS PAGE] Error in brandContracts useMemo:', error, { contracts: safeContractsState, selectedBrand });
       return [];
     }
-  }, [contracts, selectedBrand]);
+  }, [safeContractsState, selectedBrand]);
   const brandContacts = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const safeContacts = Array.isArray(contacts) ? contacts : [];
-      return safeContacts
+      return safeContactsState
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => {
           if (Boolean(b.primaryContact) !== Boolean(a.primaryContact)) return b.primaryContact ? 1 : -1;
           return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(`${b.lastName || ""} ${b.firstName || ""}`);
         });
     } catch (error) {
-      console.error('[BRANDS PAGE] Error in brandContacts useMemo:', error, { contacts, selectedBrand });
+      console.error('[BRANDS PAGE] Error in brandContacts useMemo:', error, { contacts: safeContactsState, selectedBrand });
       return [];
     }
-  }, [contacts, selectedBrand]);
+  }, [safeContactsState, selectedBrand]);
 
   const [contactDrawerId, setContactDrawerId] = useState("");
   const selectedContact = useMemo(
     () => {
-      const safeContacts = Array.isArray(contacts) ? contacts : [];
-      return safeContacts.find((c) => c && c.id === contactDrawerId) || null;
+      return safeContactsState.find((c) => c && c.id === contactDrawerId) || null;
     },
-    [contacts, contactDrawerId]
+    [safeContactsState, contactDrawerId]
   );
 
   // Ensure all state variables are always arrays (safety net)
@@ -1187,14 +1211,10 @@ export function AdminBrandsPage({ session }) {
 
   const getLinkedObjectsSummary = (brand) => {
     if (!brand) return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
-    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
-    const safeDeals = Array.isArray(deals) ? deals : [];
-    const safeEvents = Array.isArray(events) ? events : [];
-    const safeContracts = Array.isArray(contracts) ? contracts : [];
-    const campaignCount = safeCampaigns.filter(c => c && c.brandId === brand.id).length;
-    const dealCount = safeDeals.filter(d => d && d.brandId === brand.id).length;
-    const eventCount = safeEvents.filter(e => e && e.brandId === brand.id).length;
-    const contractCount = safeContracts.filter(c => c && c.brandId === brand.id).length;
+    const campaignCount = safeCampaignsState.filter(c => c && c.brandId === brand.id).length;
+    const dealCount = safeDealsState.filter(d => d && d.brandId === brand.id).length;
+    const eventCount = safeEventsState.filter(e => e && e.brandId === brand.id).length;
+    const contractCount = safeContractsState.filter(c => c && c.brandId === brand.id).length;
     const outreachCount = brand._count?.OutreachRecords || 0;
     return {
       total: campaignCount + dealCount + eventCount + contractCount + outreachCount,
