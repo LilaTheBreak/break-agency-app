@@ -952,17 +952,29 @@ export function AdminBrandsPage({ session }) {
 
   useEffect(() => {
     if (!drawerBrandId) return;
-    // Load related data from API
-    const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
-      fetchCampaigns(),
-      fetchEvents(),
-      fetchDeals(),
-      fetchContracts(),
-    ]);
-    safeSetCampaigns(campaignsData);
-    safeSetEvents(eventsData);
-    safeSetDeals(dealsData);
-    safeSetContracts(contractsData);
+    // Load related data from API when drawer opens
+    async function loadRelatedData() {
+      try {
+        const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
+          fetchCampaigns({ brandId: drawerBrandId }),
+          fetchEvents({ brandId: drawerBrandId }),
+          fetchDeals({ brandId: drawerBrandId }),
+          fetchContracts({ brandId: drawerBrandId }),
+        ]);
+        safeSetCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
+        safeSetEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
+        safeSetDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
+        safeSetContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
+      } catch (error) {
+        console.error("Failed to load related data:", error);
+        // Ensure arrays are set even on error
+        safeSetCampaigns([]);
+        safeSetEvents([]);
+        safeSetDeals([]);
+        safeSetContracts([]);
+      }
+    }
+    loadRelatedData();
   }, [drawerBrandId]);
   const [contactEditorOpen, setContactEditorOpen] = useState(false);
   const [contactEditorMode, setContactEditorMode] = useState("create"); // create | edit

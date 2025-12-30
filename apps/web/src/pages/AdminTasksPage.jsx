@@ -225,11 +225,11 @@ export function AdminTasksPage() {
   // Data sources
   const [users, setUsers] = useState([]);
   const [talents, setTalents] = useState([]);
-  const brands = useMemo(() => safeRead(BRANDS_STORAGE_KEY, []), []);
-  const deals = useMemo(() => readCrmDeals(), []);
-  const campaigns = useMemo(() => readCrmCampaigns(), []);
-  const events = useMemo(() => readCrmEvents(), []);
-  const contracts = useMemo(() => readCrmContracts(), []);
+  const [brands, setBrands] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [contracts, setContracts] = useState([]);
 
   const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
   const brandOptions = useMemo(() => ["All brands", ...(brands || []).map((b) => b.brandName || b.name)], [brands]);
@@ -256,6 +256,33 @@ export function AdminTasksPage() {
 
     loadUsers();
     loadTalents();
+    
+    // Load CRM data from API
+    async function loadCrmData() {
+      try {
+        const [dealsData, campaignsData, eventsData, contractsData, brandsData] = await Promise.all([
+          fetchDeals(),
+          fetchCampaigns(),
+          fetchEvents(),
+          fetchContracts(),
+          fetchBrands(),
+        ]);
+        setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
+        setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
+        setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
+        setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
+        setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
+      } catch (error) {
+        console.error("Failed to load CRM data:", error);
+        // Ensure arrays are set even on error
+        setDeals([]);
+        setCampaigns([]);
+        setEvents([]);
+        setContracts([]);
+        setBrands([]);
+      }
+    }
+    loadCrmData();
   }, []);
 
   // Load tasks from API
