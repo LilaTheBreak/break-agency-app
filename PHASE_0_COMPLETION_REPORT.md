@@ -110,12 +110,15 @@ All broken, placeholder, and stub endpoints have been removed or updated to retu
 - `apps/api/src/routes/outreachLeads.ts` - Returns 410
 - `apps/api/src/routes/insights.ts` - Weekly reports route returns 410
 - `apps/api/src/controllers/contractController.ts` - Upload endpoint returns 410
+- `apps/api/src/routes/dealIntelligence.ts` - Returns 410
+- `apps/api/src/controllers/socialController.ts` - All routes return 410
 
 ### Frontend
 - `apps/web/src/services/briefVersionsClient.js` - Functions throw errors
 - `apps/web/src/services/financeClient.js` - Xero functions throw errors
-- `apps/web/src/pages/AdminFinancePage.jsx` - Removed Xero connection UI
+- `apps/web/src/pages/AdminFinancePage.jsx` - Removed Xero connection UI, removed sync button
 - `apps/web/src/pages/CreatorInsights.jsx` - Removed weekly reports call
+- `apps/web/src/components/VersionHistoryCard.jsx` - Updated to handle briefs removal
 
 ---
 
