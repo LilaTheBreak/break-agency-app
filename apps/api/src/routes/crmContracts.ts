@@ -2,6 +2,8 @@ import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
+import { logError } from "../lib/logger.js";
 
 const router = express.Router();
 
@@ -32,9 +34,12 @@ router.get("/", requireAuth, async (req, res) => {
 
     res.json({ contracts: contracts || [] });
   } catch (error) {
-    console.error("Error fetching contracts:", error);
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json({ contracts: [] });
+    // Phase 4: Fail loudly - no empty arrays on error
+    logError("Failed to fetch contracts", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch contracts",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -223,13 +228,22 @@ router.patch("/:id", requireAuth, async (req, res) => {
     });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Add audit log for sensitive operation
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_CONTRACT_UPDATED",
-        metadata: { contractId: contract.id, contractName: contract.contractName, changes: Object.keys(updateData) }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_CONTRACT_UPDATED",
+          metadata: { contractId: contract.id, contractName: contract.contractName, changes: Object.keys(updateData) }
+        }),
+        logAuditEvent(req as any, {
+          action: "CONTRACT_UPDATED",
+          entityType: "Contract",
+          entityId: contract.id,
+          metadata: { contractName: contract.contractName, changes: Object.keys(updateData) }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
@@ -254,20 +268,33 @@ router.delete("/:id", requireAuth, async (req, res) => {
     await prisma.contract.delete({ where: { id } });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Log destructive action
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_CONTRACT_DELETED",
-        metadata: { contractId: contract.id, contractName: contract.contractName }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_CONTRACT_DELETED",
+          metadata: { contractId: contract.id, contractName: contract.contractName }
+        }),
+        logDestructiveAction(req as any, {
+          action: "CONTRACT_DELETED",
+          entityType: "Contract",
+          entityId: contract.id,
+          metadata: { contractName: contract.contractName }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
     res.json({ success: true });
   } catch (error) {
-    console.error("Error deleting contract:", error);
-    res.status(500).json({ error: "Failed to delete contract" });
+    // Phase 4: Fail loudly
+    logError("Failed to delete contract", error, { contractId: req.params.id, userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to delete contract",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

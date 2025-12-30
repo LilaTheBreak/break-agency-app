@@ -2,6 +2,8 @@ import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
+import { logError } from "../lib/logger.js";
 
 const router = express.Router();
 
@@ -30,9 +32,12 @@ router.get("/", requireAuth, async (req, res) => {
 
     res.json(deals || []);
   } catch (error) {
-    console.error("[crmDeals] Error fetching deals:", error);
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json([]);
+    // Phase 4: Fail loudly - no empty arrays on error
+    logError("Failed to fetch deals", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch deals",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -59,9 +64,15 @@ router.get("/:id", requireAuth, async (req, res) => {
 
     res.json(deal);
   } catch (error) {
-    console.error("[crmDeals] Error fetching deal:", error);
-    // Return 404 instead of 500 for missing deals
-    res.status(404).json({ error: "Deal not found" });
+    // Phase 4: Fail loudly - explicit error handling
+    logError("Failed to fetch deal", error, { dealId: id, userId: req.user?.id });
+    if (error instanceof Error && error.message.includes("not found")) {
+      return res.status(404).json({ error: "Deal not found" });
+    }
+    res.status(500).json({ 
+      error: "Failed to fetch deal",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -112,13 +123,22 @@ router.post("/", requireAuth, async (req, res) => {
     });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Add audit log for sensitive operation
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_DEAL_CREATED",
-        metadata: { dealId: deal.id, dealName: deal.dealName, brandId: deal.brandId }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_DEAL_CREATED",
+          metadata: { dealId: deal.id, dealName: deal.dealName, brandId: deal.brandId }
+        }),
+        logAuditEvent(req as any, {
+          action: "DEAL_CREATED",
+          entityType: "Deal",
+          entityId: deal.id,
+          metadata: { dealName: deal.dealName, brandId: deal.brandId, estimatedValue: deal.estimatedValue }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
@@ -166,13 +186,22 @@ router.patch("/:id", requireAuth, async (req, res) => {
     });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Add audit log for sensitive operation
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_DEAL_UPDATED",
-        metadata: { dealId: deal.id, dealName: deal.dealName, changes: Object.keys(updateData) }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_DEAL_UPDATED",
+          metadata: { dealId: deal.id, dealName: deal.dealName, changes: Object.keys(updateData) }
+        }),
+        logAuditEvent(req as any, {
+          action: "DEAL_UPDATED",
+          entityType: "Deal",
+          entityId: deal.id,
+          metadata: { dealName: deal.dealName, changes: Object.keys(updateData) }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
@@ -188,14 +217,46 @@ router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Phase 4: Get deal info before deletion for audit logging
+    const deal = await prisma.deal.findUnique({ 
+      where: { id },
+      select: { id: true, dealName: true, brandId: true }
+    });
+    if (!deal) {
+      return res.status(404).json({ error: "Deal not found" });
+    }
+
     await prisma.deal.delete({
       where: { id },
     });
 
+    // Phase 4: Log destructive action
+    try {
+      await Promise.all([
+        logDestructiveAction(req as any, {
+          action: "DEAL_DELETED",
+          entityType: "Deal",
+          entityId: deal.id,
+          metadata: { dealName: deal.dealName, brandId: deal.brandId }
+        }),
+        logAdminActivity(req as any, {
+          event: "CRM_DEAL_DELETED",
+          metadata: { dealId: deal.id, dealName: deal.dealName }
+        })
+      ]);
+    } catch (logError) {
+      console.error("Failed to log destructive action:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.json({ success: true });
   } catch (error) {
-    console.error("[crmDeals] Error deleting deal:", error);
-    res.status(500).json({ error: "Failed to delete deal" });
+    // Phase 4: Fail loudly
+    logError("Failed to delete deal", error, { dealId: req.params.id, userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to delete deal",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

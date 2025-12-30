@@ -57,11 +57,15 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       return res.json(pendingContent);
     }
     
-    // Default: return empty array for any other status
+    // Default: return empty array for any other status (legitimate empty state)
     return res.json([]);
   } catch (err) {
+    // Phase 4: Fail loudly - no empty arrays on error
     console.error("Error fetching queue items:", err);
-    return res.json([]); // Graceful fallback
+    return res.status(500).json({ 
+      error: "Failed to fetch queue items",
+      message: err instanceof Error ? err.message : "Unknown error"
+    });
   }
 });
 

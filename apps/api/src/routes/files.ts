@@ -10,13 +10,16 @@ import {
 } from "../services/fileService.js";
 import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 import { safeEnv } from "../utils/safeEnv.js";
+import { requireAuth } from "../middleware/auth.js";
+import { logAuditEvent, logDestructiveAction } from "../lib/auditLogger.js";
+import { logError } from "../lib/logger.js";
 // import slackClient from "../integrations/slack/slackClient.js";
 
 const router = Router();
 const bucket = safeEnv("S3_BUCKET", "local-bucket");
 const region = safeEnv("S3_REGION", "us-east-1");
 
-router.get("/", requireUser, async (req, res, next) => {
+router.get("/", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.user!;
     const folder = typeof req.query.folder === "string" ? req.query.folder : undefined;
@@ -32,7 +35,7 @@ router.get("/", requireUser, async (req, res, next) => {
   }
 });
 
-router.post("/upload-url", requireUser, async (req, res, next) => {
+router.post("/upload-url", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.user!;
     const { filename, contentType } = req.body ?? {};
@@ -46,7 +49,7 @@ router.post("/upload-url", requireUser, async (req, res, next) => {
   }
 });
 
-router.post("/upload", requireUser, async (req, res, next) => {
+router.post("/upload", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.user!;
     const { filename, content, folder } = req.body ?? {};
@@ -129,7 +132,7 @@ router.post("/upload", requireUser, async (req, res, next) => {
   }
 });
 
-router.post("/confirm", requireUser, async (req, res, next) => {
+router.post("/confirm", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.user!;
     const { fileKey, filename, type } = req.body ?? {};
@@ -143,7 +146,7 @@ router.post("/confirm", requireUser, async (req, res, next) => {
   }
 });
 
-router.get("/:id/download", requireUser, async (req, res, next) => {
+router.get("/:id/download", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.user!;
     const userIsAdmin = checkIsAdmin(currentUser);
@@ -154,7 +157,7 @@ router.get("/:id/download", requireUser, async (req, res, next) => {
   }
 });
 
-router.delete("/:id", requireUser, async (req, res) => {
+router.delete("/:id", requireAuth, async (req, res) => {
   const currentUser = req.user!;
   const file = await prisma.file.findUnique({ where: { id: req.params.id } });
   if (!file) {
@@ -169,7 +172,7 @@ router.delete("/:id", requireUser, async (req, res) => {
   res.json({ success: true });
 });
 
-function requireUser(req: Request, res: Response, next: NextFunction) {
+// Phase 4: Removed requireUser - using requireAuth directly for consistency
   if (!req.user?.id) {
     return res.status(401).json({ error: true, message: "Authentication required" });
   }

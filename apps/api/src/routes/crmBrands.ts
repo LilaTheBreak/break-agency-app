@@ -2,8 +2,9 @@ import { Router, type Request, type Response } from "express";
 import { randomUUID } from "crypto";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
-import { logDestructiveAction } from "../lib/auditLogger.js";
+import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { enrichBrandFromUrl } from "../services/brandEnrichment.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
@@ -388,8 +389,12 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error("[CRM BRANDS] Error deleting brand:", error);
-    res.status(500).json({ error: "Failed to delete brand" });
+    // Phase 4: Fail loudly
+    logError("Failed to delete brand", error, { brandId: req.params.id, userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to delete brand",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

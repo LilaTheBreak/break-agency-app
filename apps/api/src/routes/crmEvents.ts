@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
@@ -38,9 +40,12 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json(events || []);
   } catch (error) {
-    console.error("Error fetching CRM events:", error);
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json([]);
+    // Phase 4: Fail loudly - no empty arrays on error
+    logError("Failed to fetch CRM events", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch CRM events",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -210,13 +215,22 @@ router.patch("/:id", async (req: Request, res: Response) => {
     });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Add audit log for sensitive operation
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_EVENT_UPDATED",
-        metadata: { eventId: updated.id, eventName: updated.eventName, changes: Object.keys(updateData) }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_EVENT_UPDATED",
+          metadata: { eventId: updated.id, eventName: updated.eventName, changes: Object.keys(updateData) }
+        }),
+        logAuditEvent(req as any, {
+          action: "EVENT_UPDATED",
+          entityType: "CrmTask",
+          entityId: updated.id,
+          metadata: { eventName: updated.eventName, changes: Object.keys(updateData) }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
@@ -243,20 +257,33 @@ router.delete("/:id", async (req: Request, res: Response) => {
     await prisma.crmTask.delete({ where: { id } });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Log destructive action
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_EVENT_DELETED",
-        metadata: { eventId: existing.id, eventName: existing.eventName }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_EVENT_DELETED",
+          metadata: { eventId: existing.id, eventName: existing.eventName }
+        }),
+        logDestructiveAction(req as any, {
+          action: "EVENT_DELETED",
+          entityType: "CrmTask",
+          entityId: existing.id,
+          metadata: { eventName: existing.eventName }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting CRM event:", error);
-    res.status(500).json({ error: "Failed to delete event" });
+    // Phase 4: Fail loudly
+    logError("Failed to delete CRM event", error, { eventId: req.params.id, userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to delete event",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

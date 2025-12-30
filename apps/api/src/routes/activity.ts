@@ -1,16 +1,13 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth.js";
+import { requireRole } from "../middleware/requireRole.js";
 import prisma from "../lib/prisma.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
-router.get("/api/activity", requireAuth, async (req: Request, res: Response) => {
-  // Check single role field (not roles array)
-  const userRole = req.user?.role || "";
-  if (userRole !== "ADMIN" && userRole !== "SUPERADMIN") {
-    return res.status(200).json([]); // Return empty array instead of 403
-  }
-
+// Phase 4: Use requireRole instead of manual check, fail loudly on error
+router.get("/api/activity", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 5;
 
@@ -25,9 +22,12 @@ router.get("/api/activity", requireAuth, async (req: Request, res: Response) => 
     });
     res.json(activity);
   } catch (error) {
-    console.error("Activity feed error:", error);
-    // Return empty array on error - don't crash dashboard
-    res.status(200).json([]);
+    // Phase 4: Fail loudly - no empty arrays on error
+    logError("Failed to fetch activity feed", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch activity feed",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

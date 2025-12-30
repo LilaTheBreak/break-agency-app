@@ -2,6 +2,8 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
@@ -40,9 +42,12 @@ router.get("/", async (req, res) => {
 
     res.json(campaigns || []);
   } catch (error) {
-    console.error("Error fetching campaigns:", error);
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json([]);
+    // Phase 4: Fail loudly - no empty arrays on error
+    logError("Failed to fetch campaigns", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch campaigns",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -232,13 +237,22 @@ router.patch("/:id", async (req, res) => {
     });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Add audit log for sensitive operation
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_CAMPAIGN_UPDATED",
-        metadata: { campaignId: campaign.id, campaignName: campaign.campaignName, changes: Object.keys(updateData) }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_CAMPAIGN_UPDATED",
+          metadata: { campaignId: campaign.id, campaignName: campaign.campaignName, changes: Object.keys(updateData) }
+        }),
+        logAuditEvent(req as any, {
+          action: "CAMPAIGN_UPDATED",
+          entityType: "CrmCampaign",
+          entityId: campaign.id,
+          metadata: { campaignName: campaign.campaignName, changes: Object.keys(updateData) }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
@@ -268,20 +282,33 @@ router.delete("/:id", async (req, res) => {
     });
 
     // Phase 2: Log to AdminActivity for activity feed
+    // Phase 4: Log destructive action
     try {
-      await logAdminActivity(req as any, {
-        event: "CRM_CAMPAIGN_DELETED",
-        metadata: { campaignId: campaign.id, campaignName: campaign.campaignName }
-      });
+      await Promise.all([
+        logAdminActivity(req as any, {
+          event: "CRM_CAMPAIGN_DELETED",
+          metadata: { campaignId: campaign.id, campaignName: campaign.campaignName }
+        }),
+        logDestructiveAction(req as any, {
+          action: "CAMPAIGN_DELETED",
+          entityType: "CrmCampaign",
+          entityId: campaign.id,
+          metadata: { campaignName: campaign.campaignName }
+        })
+      ]);
     } catch (logError) {
-      console.error("Failed to log admin activity:", logError);
+      console.error("Failed to log activity/audit:", logError);
       // Don't fail the request if logging fails
     }
 
     res.json({ success: true, message: "Campaign deleted" });
   } catch (error) {
-    console.error("Error deleting campaign:", error);
-    res.status(500).json({ error: "Failed to delete campaign" });
+    // Phase 4: Fail loudly
+    logError("Failed to delete campaign", error, { campaignId: req.params.id, userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to delete campaign",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

@@ -505,7 +505,12 @@ router.get("/wellness-history", async (req, res) => {
     const history = await prisma.wellnessCheckin.findMany({ where: { creatorId: creator.id }, orderBy: { createdAt: "desc" }, take: limit });
     res.json(history);
   } catch (error) {
-    res.json([]);
+    // Phase 4: Fail loudly - no empty arrays on error
+    console.error("Error fetching wellness history:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch wellness history",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
