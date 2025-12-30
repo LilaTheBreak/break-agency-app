@@ -42,15 +42,19 @@
 
 ## Files Changed
 
-### Backend Routes (9 files)
+### Backend Routes (13 files)
 - `apps/api/src/routes/briefs.ts` - All routes return 410
 - `apps/api/src/routes/admin/finance.ts` - Xero routes return 410
 - `apps/api/src/routes/contracts.ts` - Sign routes return 410
 - `apps/api/src/routes/outreachLeads.ts` - Returns 410
 - `apps/api/src/routes/insights.ts` - Weekly reports route returns 410
 - `apps/api/src/routes/dealIntelligence.ts` - All routes return 410
+- `apps/api/src/routes/dashboardAggregator.ts` - Returns 410
+- `apps/api/src/routes/auth/tiktok.ts` - Returns 410
 - `apps/api/src/controllers/contractController.ts` - Upload endpoint returns 410
 - `apps/api/src/controllers/socialController.ts` - All routes return 410
+- `apps/api/src/controllers/campaignAutoController.ts` - Preview and debug return 410
+- `apps/api/src/controllers/bundlesController.ts` - 2 routes return 410
 
 ### Frontend (5 files)
 - `apps/web/src/services/briefVersionsClient.js` - Functions throw errors
@@ -68,6 +72,10 @@
 - Contract upload: 501 → 410
 - Deal intelligence: 501 → 410 (3 routes)
 - Social controller: 501 → 410 (5 routes)
+- Dashboard aggregator: 501 → 410
+- Campaign auto preview/debug: 501 → 410 (2 routes)
+- TikTok OAuth: 501 → 410
+- Bundles: 501 → 410 (2 routes)
 - **Note:** `truthLayerExamples.js` left as-is (examples file, not mounted in production)
 
 ### ✅ No Stub Providers
