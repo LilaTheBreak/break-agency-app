@@ -596,50 +596,6 @@ export function AdminBrandsPage({ session }) {
   const ownerDefault =
     session?.name?.split(" ")?.[0] || session?.email?.split("@")?.[0]?.split(".")?.[0] || "Admin";
 
-  // Wrapper functions to ensure state is always an array
-  const safeSetBrands = (value) => {
-    const safe = Array.isArray(value) ? value : [];
-    setBrands(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set brands to non-array:', { value, type: typeof value });
-    }
-  };
-  const safeSetContacts = (value) => {
-    const safe = Array.isArray(value) ? value : [];
-    setContacts(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set contacts to non-array:', { value, type: typeof value });
-    }
-  };
-  const safeSetCampaigns = (value) => {
-    const safe = Array.isArray(value) ? value : [];
-    setCampaigns(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set campaigns to non-array:', { value, type: typeof value });
-    }
-  };
-  const safeSetEvents = (value) => {
-    const safe = Array.isArray(value) ? value : [];
-    setEvents(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set events to non-array:', { value, type: typeof value });
-    }
-  };
-  const safeSetDeals = (value) => {
-    const safe = Array.isArray(value) ? value : [];
-    setDeals(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set deals to non-array:', { value, type: typeof value });
-    }
-  };
-  const safeSetContracts = (value) => {
-    const safe = Array.isArray(value) ? value : [];
-    setContracts(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set contracts to non-array:', { value, type: typeof value });
-    }
-  };
-
   const [brands, setBrands] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [brandToDelete, setBrandToDelete] = useState(null);
