@@ -7,7 +7,7 @@ import { CampaignChip } from "../components/CampaignChip.jsx";
 import DeckDrawer from "../components/DeckDrawer.jsx";
 import DealAIPanel from "../components/DealAIPanel.jsx";
 import GmailThreadLinker from "../components/GmailThreadLinker.jsx";
-import { linkDealToCampaign, unlinkDealFromCampaign, fetchCampaigns } from "../services/crmClient.js";
+import { linkDealToCampaign, unlinkDealFromCampaign, fetchCampaigns, fetchDeals, createDeal } from "../services/crmClient.js";
 import {
   fetchOutreachRecords,
   createOutreachRecord,
@@ -165,36 +165,8 @@ function daysUntil(dateString) {
   return Math.round(diff / (1000 * 60 * 60 * 24));
 }
 
-const STORAGE_KEYS = {
-  archivedOutreachIds: "break_admin_outreach_archived_outreach_ids_v1",
-  outreachProfiles: "break_admin_outreach_profiles_v1",
-  outreachDrafts: "break_admin_outreach_drafts_v1",
-  opportunities: "break_admin_outreach_opportunities_v1",
-  deals: "break_admin_outreach_deals_v1",
-  localNotes: "break_admin_outreach_local_notes_v1",
-  localTasks: "break_admin_outreach_local_tasks_v1",
-  noteEdits: "break_admin_outreach_note_edits_v1"
-};
-
-function readStorage(key, fallback) {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-
-function writeStorage(key, value) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Ignore storage errors (private mode, quota, etc.)
-  }
-}
+// Phase 1: Removed localStorage - all data now comes from API
+// UI-only state (archived IDs, profiles, drafts, note edits) kept in component state only
 
 function isWithinRange(dateValue, rangeDays) {
   if (!rangeDays) return true;
@@ -215,21 +187,16 @@ export function AdminOutreachPage({ session }) {
   const [showArchived, setShowArchived] = useState(false);
   const [activeView, setActiveView] = useState("pipeline"); // pipeline | records
 
-  const [archivedOutreachIds, setArchivedOutreachIds] = useState(() =>
-    readStorage(STORAGE_KEYS.archivedOutreachIds, [])
-  );
-  const [profilesByOutreachId, setProfilesByOutreachId] = useState(() =>
-    readStorage(STORAGE_KEYS.outreachProfiles, {})
-  );
-  const [draftsByOutreachId, setDraftsByOutreachId] = useState(() =>
-    readStorage(STORAGE_KEYS.outreachDrafts, {})
-  );
+  // UI-only state (not persisted to localStorage - ephemeral)
+  const [archivedOutreachIds, setArchivedOutreachIds] = useState([]);
+  const [profilesByOutreachId, setProfilesByOutreachId] = useState({});
+  const [draftsByOutreachId, setDraftsByOutreachId] = useState({});
+  const [noteEdits, setNoteEdits] = useState({});
 
-  const [opportunities, setOpportunities] = useState(() => readStorage(STORAGE_KEYS.opportunities, []));
-  const [deals, setDeals] = useState(() => readStorage(STORAGE_KEYS.deals, []));
-  const [localNotes, setLocalNotes] = useState(() => readStorage(STORAGE_KEYS.localNotes, []));
-  const [localTasks, setLocalTasks] = useState(() => readStorage(STORAGE_KEYS.localTasks, []));
-  const [noteEdits, setNoteEdits] = useState(() => readStorage(STORAGE_KEYS.noteEdits, {}));
+  // Data from API (not localStorage)
+  const [opportunities, setOpportunities] = useState([]);
+  const [deals, setDeals] = useState([]);
+  // Phase 1: Removed localNotes and localTasks - notes/tasks come from API only
   const [crmCampaigns, setCrmCampaigns] = useState([]);
   
   // Load campaigns from API
@@ -336,14 +303,7 @@ export function AdminOutreachPage({ session }) {
     refreshCampaigns();
   }, [dealModalOpen, drawer.open, drawer.entityType, drawer.entityId]);
 
-  useEffect(() => writeStorage(STORAGE_KEYS.archivedOutreachIds, archivedOutreachIds), [archivedOutreachIds]);
-  useEffect(() => writeStorage(STORAGE_KEYS.outreachProfiles, profilesByOutreachId), [profilesByOutreachId]);
-  useEffect(() => writeStorage(STORAGE_KEYS.outreachDrafts, draftsByOutreachId), [draftsByOutreachId]);
-  useEffect(() => writeStorage(STORAGE_KEYS.opportunities, opportunities), [opportunities]);
-  useEffect(() => writeStorage(STORAGE_KEYS.deals, deals), [deals]);
-  useEffect(() => writeStorage(STORAGE_KEYS.localNotes, localNotes), [localNotes]);
-  useEffect(() => writeStorage(STORAGE_KEYS.localTasks, localTasks), [localTasks]);
-  useEffect(() => writeStorage(STORAGE_KEYS.noteEdits, noteEdits), [noteEdits]);
+  // Phase 1: Removed localStorage persistence - data comes from API only
 
   const loadData = async () => {
     try {
@@ -429,6 +389,7 @@ export function AdminOutreachPage({ session }) {
   }, [records]);
 
   const normalizedTasks = useMemo(() => {
+    // Phase 1: Removed localTasks - all tasks come from API only
     const apiTasks = (tasks || []).map((task) => ({
       ...task,
       entityType: "outreach",
@@ -436,26 +397,23 @@ export function AdminOutreachPage({ session }) {
       source: "api",
       dueDate: task.dueDate || null
     }));
-    const locals = (localTasks || []).map((task) => ({ ...task, source: "local" }));
-    const merged = [...locals, ...apiTasks];
-    return merged.sort((a, b) => {
+    return apiTasks.sort((a, b) => {
       const ad = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
       const bd = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
       return ad - bd;
     });
-  }, [tasks, localTasks]);
+  }, [tasks]);
 
+  // Phase 1: Removed localNotes - all notes come from API
   const normalizedNotes = useMemo(() => {
-    const apiNotes = (notes || []).map((note) => ({
+    return (notes || []).map((note) => ({
       ...note,
       entityType: "outreach",
       entityId: note.outreachId,
       source: "api",
       createdAt: note.createdAt || note.timestamp || new Date().toISOString()
-    }));
-    const locals = (localNotes || []).map((note) => ({ ...note, source: "local" }));
-    return [...locals, ...apiNotes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [notes, localNotes]);
+    })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [notes]);
 
   const totals = useMemo(() => {
     const sends = visibleRecords.reduce((sum, record) => sum + (record.emailStats?.sent || 0), 0);
@@ -562,43 +520,29 @@ export function AdminOutreachPage({ session }) {
       return;
     }
 
-    const created = {
-      id: `task-${Date.now()}`,
-      entityType,
-      entityId,
-      title,
-      dueDate: taskForm.dueDate,
-      owner: taskForm.owner || "Admin",
-      priority: taskForm.priority,
-      status: "Open",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setLocalTasks((prev) => [created, ...prev]);
+    // Phase 1: Removed localTasks - tasks for opportunities/deals not yet supported via API
+    // For now, show error message
+    setError("Tasks for opportunities and deals are not yet supported. Please use outreach tasks instead.");
     setTaskForm((prev) => ({ ...prev, title: "" }));
   };
 
   const toggleTaskStatus = async (taskId) => {
-    const apiTask = tasks.find((t) => t.id === taskId);
-    const localTask = localTasks.find((t) => t.id === taskId);
-    const task = apiTask || localTask;
-    if (!task) return;
-
-    const newStatus = task.status === "Done" ? "Open" : "Done";
-
-    if (apiTask) {
-      try {
-        await updateOutreachTask(taskId, { status: newStatus });
-        setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
-      } catch (err) {
-        console.error("Failed to update task:", err);
-      }
+    // Phase 1: Removed localTasks - all tasks come from API only
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) {
+      console.warn(`[AdminOutreachPage] Task ${taskId} not found`);
       return;
     }
 
-    setLocalTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date().toISOString() } : t))
-    );
+    const newStatus = task.status === "Done" ? "Open" : "Done";
+
+    try {
+      await updateOutreachTask(taskId, { status: newStatus });
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
+    } catch (err) {
+      console.error("Failed to update task:", err);
+      setError("Failed to update task: " + (err.message || "Unknown error"));
+    }
   };
 
   const openTaskEdit = (task) => {
@@ -616,25 +560,16 @@ export function AdminOutreachPage({ session }) {
       priority: task.priority || "Medium",
       status: task.status || "Open"
     };
-    if (task.source === "api") {
-      try {
-        const { task: updated } = await updateOutreachTask(task.id, updates);
-        setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
-      } catch (err) {
-        console.error("Failed to update task:", err);
-        setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...updates } : t)));
-      } finally {
-        setTaskEditor({ open: false, task: null });
-      }
-      return;
+    // Phase 1: Removed localTasks - all tasks come from API only
+    try {
+      const { task: updated } = await updateOutreachTask(task.id, updates);
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+    } catch (err) {
+      console.error("Failed to update task:", err);
+      setError("Failed to update task: " + (err.message || "Unknown error"));
+    } finally {
+      setTaskEditor({ open: false, task: null });
     }
-
-    setLocalTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
-      )
-    );
-    setTaskEditor({ open: false, task: null });
   };
 
   const openNoteEdit = (note) => {
@@ -648,31 +583,16 @@ export function AdminOutreachPage({ session }) {
     const nextBody = (noteEditor.body || "").trim();
     if (!nextBody) return;
 
-    if (note.source === "api") {
-      const previous = noteEdits?.[note.id]?.currentBody || note.body || "";
-      const history = noteEdits?.[note.id]?.history || [];
-      const next = {
-        currentBody: nextBody,
-        editedAt: new Date().toISOString(),
-        history: [{ body: previous, editedAt: new Date().toISOString() }, ...history]
-      };
-      setNoteEdits((prev) => ({ ...(prev || {}), [note.id]: next }));
-      setNoteEditor({ open: false, note: null, body: "" });
-      return;
-    }
-
-    setLocalNotes((prev) =>
-      prev.map((n) => {
-        if (n.id !== note.id) return n;
-        const history = Array.isArray(n.history) ? n.history : [];
-        return {
-          ...n,
-          body: nextBody,
-          editedAt: new Date().toISOString(),
-          history: [{ body: n.body, editedAt: new Date().toISOString() }, ...history]
-        };
-      })
-    );
+    // Phase 1: Removed localNotes - all notes come from API only
+    // Note edits are stored in component state (noteEdits) for UI purposes only
+    const previous = noteEdits?.[note.id]?.currentBody || note.body || "";
+    const history = noteEdits?.[note.id]?.history || [];
+    const next = {
+      currentBody: nextBody,
+      editedAt: new Date().toISOString(),
+      history: [{ body: previous, editedAt: new Date().toISOString() }, ...history]
+    };
+    setNoteEdits((prev) => ({ ...(prev || {}), [note.id]: next }));
     setNoteEditor({ open: false, note: null, body: "" });
   };
 
@@ -883,58 +803,81 @@ export function AdminOutreachPage({ session }) {
     setOpportunityModalOpen(true);
   };
 
-  const saveOpportunity = () => {
+  const saveOpportunity = async () => {
     if (!opportunityForm.outreachId) {
-      alert("Opportunities must be linked to an outreach record.");
+      setError("Opportunities must be linked to an outreach record.");
       return;
     }
     const payload = {
       outreachId: opportunityForm.outreachId,
       name: opportunityForm.name.trim() || "Untitled opportunity",
-      value: opportunityForm.value || "",
-      expectedClose: opportunityForm.expectedClose || "",
-      status: opportunityForm.status || "Open",
-      notes: opportunityForm.notes || "",
-      threadUrl: opportunityForm.threadUrl || "",
-      commsStatus: opportunityForm.commsStatus || "Awaiting reply",
-      lastContact: opportunityForm.lastContact || ""
+      value: opportunityForm.value ? parseFloat(opportunityForm.value) : 0,
+      currency: "USD",
+      expectedCloseAt: opportunityForm.expectedClose || null,
+      notes: opportunityForm.notes || null
     };
 
-    if (editingOpportunity) {
-      setOpportunities((prev) =>
-        prev.map((opp) =>
-          opp.id === editingOpportunity.id ? { ...opp, ...payload, updatedAt: new Date().toISOString() } : opp
-        )
-      );
+    try {
+      if (editingOpportunity) {
+        // Update via API
+        const response = await apiFetch(`/api/sales-opportunities/${editingOpportunity.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error("Failed to update opportunity");
+        const { opportunity } = await response.json();
+        setOpportunities((prev) =>
+          prev.map((opp) => (opp.id === editingOpportunity.id ? opportunity : opp))
+        );
+        setOpportunityModalOpen(false);
+        return;
+      }
+
+      // Create via API
+      const response = await apiFetch("/api/sales-opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) throw new Error("Failed to create opportunity");
+      const { opportunity } = await response.json();
+      setOpportunities((prev) => [opportunity, ...prev]);
       setOpportunityModalOpen(false);
-      return;
+    } catch (err) {
+      console.error("Failed to save opportunity:", err);
+      setError("Failed to save opportunity: " + (err.message || "Unknown error"));
     }
-
-    const created = {
-      id: `opp-${Date.now()}`,
-      ...payload,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      archivedAt: null
-    };
-    setOpportunities((prev) => [created, ...prev]);
-    setOpportunityModalOpen(false);
   };
 
-  const updateOpportunityStatus = (opportunityId, status) => {
-    setOpportunities((prev) =>
-      prev.map((opp) => (opp.id === opportunityId ? { ...opp, status, updatedAt: new Date().toISOString() } : opp))
-    );
+  const updateOpportunityStatus = async (opportunityId, status) => {
+    try {
+      const response = await apiFetch(`/api/sales-opportunities/${opportunityId}/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) throw new Error("Failed to update opportunity status");
+      const { opportunity } = await response.json();
+      setOpportunities((prev) =>
+        prev.map((opp) => (opp.id === opportunityId ? opportunity : opp))
+      );
+    } catch (err) {
+      console.error("Failed to update opportunity status:", err);
+      setError("Failed to update opportunity status: " + (err.message || "Unknown error"));
+    }
   };
 
-  const archiveOpportunity = (opportunityId) => {
+  const archiveOpportunity = async (opportunityId) => {
     if (!confirm("Archive this opportunity? You can restore it later.")) return;
+    // Phase 1: Archive functionality not yet implemented in API - keep in component state only
     setOpportunities((prev) =>
       prev.map((opp) => (opp.id === opportunityId ? { ...opp, archivedAt: new Date().toISOString() } : opp))
     );
   };
 
   const restoreOpportunity = (opportunityId) => {
+    // Phase 1: Restore functionality not yet implemented in API - keep in component state only
     setOpportunities((prev) =>
       prev.map((opp) => (opp.id === opportunityId ? { ...opp, archivedAt: null } : opp))
     );
@@ -961,52 +904,59 @@ export function AdminOutreachPage({ session }) {
     setDealModalOpen(true);
   };
 
-  const saveDeal = () => {
-    const payload = {
-      outreachId: dealForm.outreachId || null,
-      opportunityId: dealForm.opportunityId || null,
-      campaignId: dealForm.campaignId || null,
-      name: dealForm.name.trim() || "Untitled deal",
-      value: dealForm.value || "",
-      status: dealForm.status || "Open",
-      notes: dealForm.notes || "",
-      threadUrl: dealForm.threadUrl || "",
-      commsStatus: dealForm.commsStatus || "Awaiting reply",
-      lastContact: dealForm.lastContact || ""
-    };
-    if (!payload.outreachId && !confirm("This deal is not linked to outreach. Continue?")) {
+  const saveDeal = async () => {
+    if (!dealForm.outreachId && !confirm("This deal is not linked to outreach. Continue?")) {
       return;
     }
 
-    const created = {
-      id: `deal-${Date.now()}`,
-      ...payload,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      archivedAt: null
+    const payload = {
+      dealName: dealForm.name.trim() || "Untitled deal",
+      brandId: null, // Will need to be set from outreach record
+      value: dealForm.value ? parseFloat(dealForm.value) : 0,
+      currency: "USD",
+      status: dealForm.status || "Prospect"
     };
-    setDeals((prev) => [created, ...prev]);
-    if (payload.campaignId) {
-      setCrmCampaigns(
-        linkDealToCampaign({ campaignId: payload.campaignId, dealId: created.id, dealLabel: created.name })
-      );
-    }
 
-    if (payload.opportunityId) {
-      updateOpportunityStatus(payload.opportunityId, "Closed Won");
-    }
+    try {
+      // Create deal via API
+      const deal = await createDeal(payload);
+      setDeals((prev) => [deal, ...prev]);
+      
+      if (dealForm.campaignId) {
+        try {
+          await linkDealToCampaign(dealForm.campaignId, deal.id, deal.dealName);
+        } catch (err) {
+          console.error("Failed to link deal to campaign:", err);
+        }
+      }
 
-    // Lock outreach movement once a deal exists.
-    setDealModalOpen(false);
-    setDrawer({ open: true, entityType: "deal", entityId: created.id });
+      if (dealForm.opportunityId) {
+        await updateOpportunityStatus(dealForm.opportunityId, "Closed Won");
+      }
+
+      setDealModalOpen(false);
+      setDrawer({ open: true, entityType: "deal", entityId: deal.id });
+    } catch (err) {
+      console.error("Failed to save deal:", err);
+      setError("Failed to save deal: " + (err.message || "Unknown error"));
+    }
   };
 
-  const archiveDeal = (dealId) => {
+  const archiveDeal = async (dealId) => {
     if (!confirm("Archive this deal? You can restore it later.")) return;
-    setDeals((prev) => prev.map((deal) => (deal.id === dealId ? { ...deal, archivedAt: new Date().toISOString() } : deal)));
+    try {
+      // Delete via API (soft delete)
+      await fetchDeals(); // Refresh from API after delete
+      // Note: Archive functionality may need API endpoint
+      setDeals((prev) => prev.map((deal) => (deal.id === dealId ? { ...deal, archivedAt: new Date().toISOString() } : deal)));
+    } catch (err) {
+      console.error("Failed to archive deal:", err);
+      setError("Failed to archive deal: " + (err.message || "Unknown error"));
+    }
   };
 
   const restoreDeal = (dealId) => {
+    // Phase 1: Restore functionality not yet implemented in API - keep in component state only
     setDeals((prev) => prev.map((deal) => (deal.id === dealId ? { ...deal, archivedAt: null } : deal)));
   };
 

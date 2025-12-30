@@ -7,7 +7,6 @@ import {
   sanitizeDealForCreator,
   sanitizeTaskForCreator,
   sanitizeEventForCreator,
-  SAFE_DEFAULTS,
 } from "../middleware/creatorAuth.js";
 import { createGoalVersion } from "../utils/goalUtils.js";
 
@@ -32,15 +31,44 @@ router.get("/overview", async (req, res) => {
       prisma.socialAccountConnection.findMany({ where: { creatorId: creator.id }, select: { id: true, platform: true, handle: true, connected: true, lastSyncedAt: true } }),
     ]);
 
-    const projects = activeDeals.status === "fulfilled" ? activeDeals.value.map(sanitizeDealForCreator) : SAFE_DEFAULTS.projects;
-    const opportunitiesList = opportunities.status === "fulfilled" ? opportunities.value : SAFE_DEFAULTS.opportunities;
-    const tasksList = tasks.status === "fulfilled" ? tasks.value.map(sanitizeTaskForCreator).filter(Boolean) : SAFE_DEFAULTS.tasks;
-    const eventsList = events.status === "fulfilled" ? events.value.map(sanitizeEventForCreator) : SAFE_DEFAULTS.events;
-    const insightsList = insights.status === "fulfilled" ? insights.value : SAFE_DEFAULTS.insights;
-    const goalsList = goals.status === "fulfilled" ? goals.value : SAFE_DEFAULTS.goals;
-    const socialsList = socialAccounts.status === "fulfilled" ? socialAccounts.value : SAFE_DEFAULTS.socials;
+    // Phase 1: Removed SAFE_DEFAULTS - return proper error if any query fails
+    if (activeDeals.status === "rejected") {
+      throw new Error(`Failed to load deals: ${activeDeals.reason}`);
+    }
+    if (opportunities.status === "rejected") {
+      throw new Error(`Failed to load opportunities: ${opportunities.reason}`);
+    }
+    if (tasks.status === "rejected") {
+      throw new Error(`Failed to load tasks: ${tasks.reason}`);
+    }
+    if (events.status === "rejected") {
+      throw new Error(`Failed to load events: ${events.reason}`);
+    }
+    if (insights.status === "rejected") {
+      throw new Error(`Failed to load insights: ${insights.reason}`);
+    }
+    if (goals.status === "rejected") {
+      throw new Error(`Failed to load goals: ${goals.reason}`);
+    }
+    if (socialAccounts.status === "rejected") {
+      throw new Error(`Failed to load social accounts: ${socialAccounts.reason}`);
+    }
 
-    let revenueSummary = { ...SAFE_DEFAULTS.revenue };
+    const projects = activeDeals.status === "fulfilled" ? activeDeals.value.map(sanitizeDealForCreator) : [];
+    const opportunitiesList = opportunities.status === "fulfilled" ? opportunities.value : [];
+    const tasksList = tasks.status === "fulfilled" ? tasks.value.map(sanitizeTaskForCreator).filter(Boolean) : [];
+    const eventsList = events.status === "fulfilled" ? events.value.map(sanitizeEventForCreator) : [];
+    const insightsList = insights.status === "fulfilled" ? insights.value : [];
+    const goalsList = goals.status === "fulfilled" ? goals.value : [];
+    const socialsList = socialAccounts.status === "fulfilled" ? socialAccounts.value : [];
+
+    let revenueSummary = {
+      totalEarned: "£0",
+      potentialRevenue: "£0",
+      trend: "flat",
+      rawTotal: 0,
+      rawPotential: 0
+    };
     if (payouts.status === "fulfilled") {
       const completed = payouts.value.filter((p) => p.status === "completed");
       const pending = payouts.value.filter((p) => p.status === "pending");
@@ -72,7 +100,11 @@ router.get("/overview", async (req, res) => {
     });
   } catch (error) {
     console.error("Creator overview error:", error);
-    res.json({ isFirstTime: true, activeProjectsCount: 0, ...SAFE_DEFAULTS, lastUpdated: new Date().toISOString() });
+    // Phase 1: Return proper error response instead of hiding failures
+    res.status(500).json({ 
+      error: "Failed to load creator overview",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -103,7 +135,11 @@ router.get("/projects", async (req, res) => {
     const deals = await prisma.deal.findMany({ where: { talentId: creator.id, stage: { notIn: ["LOST", "COMPLETED"] } }, include: { Brand: true }, orderBy: { updatedAt: "desc" } });
     res.json(deals.map(sanitizeDealForCreator));
   } catch (error) {
-    res.json(SAFE_DEFAULTS.projects);
+    console.error("Creator projects error:", error);
+    res.status(500).json({ 
+      error: "Failed to load projects",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -113,7 +149,11 @@ router.get("/opportunities", async (req, res) => {
     const opportunities = await prisma.opportunity.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 20 });
     res.json(opportunities);
   } catch (error) {
-    res.json(SAFE_DEFAULTS.opportunities);
+    console.error("Creator opportunities error:", error);
+    res.status(500).json({ 
+      error: "Failed to load opportunities",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -124,7 +164,11 @@ router.get("/tasks", async (req, res) => {
     const tasks = await prisma.creatorTask.findMany({ where: { creatorId: creator.id, status: { notIn: ["completed", "cancelled"] }, taskType: { in: ["creative", "attendance", "review", "approval"] } }, include: { Deal: { select: { brandName: true } } }, orderBy: [{ priority: "desc" }, { dueAt: "asc" }] });
     res.json(tasks.map(sanitizeTaskForCreator).filter(Boolean));
   } catch (error) {
-    res.json(SAFE_DEFAULTS.tasks);
+    console.error("Creator tasks error:", error);
+    res.status(500).json({ 
+      error: "Failed to load tasks",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -148,7 +192,11 @@ router.get("/events", async (req, res) => {
     const events = await prisma.creatorEvent.findMany({ where: { creatorId: creator.id, startAt: { gte: new Date() } }, orderBy: { startAt: "asc" } });
     res.json(events.map(sanitizeEventForCreator));
   } catch (error) {
-    res.json(SAFE_DEFAULTS.events);
+    console.error("Creator events error:", error);
+    res.status(500).json({ 
+      error: "Failed to load events",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -190,7 +238,11 @@ router.get("/calendar/preview", async (req, res) => {
     const events = await prisma.creatorEvent.findMany({ where: { creatorId: creator.id, startAt: { gte: now, lte: nextWeek }, status: { in: ["accepted", "invited"] } }, orderBy: { startAt: "asc" }, take: 7 });
     res.json(events.map(sanitizeEventForCreator));
   } catch (error) {
-    res.json(SAFE_DEFAULTS.calendar);
+    console.error("Creator calendar preview error:", error);
+    res.status(500).json({ 
+      error: "Failed to load calendar preview",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -215,7 +267,11 @@ router.get("/insights", async (req, res) => {
     });
     res.json(insights);
   } catch (error) {
-    res.json(SAFE_DEFAULTS.insights);
+    console.error("Creator insights error:", error);
+    res.status(500).json({ 
+      error: "Failed to load insights",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -254,7 +310,11 @@ router.get("/revenue/summary", async (req, res) => {
     else if (recentTotal < previousTotal * 0.9) trend = "down";
     res.json({ totalEarned: formatSafeRevenue(totalEarned), potentialRevenue: formatSafeRevenue(potentialRevenue), trend, rawTotal: totalEarned, rawPotential: potentialRevenue, agentMessage: "Managed by your agent. Questions? Just ask." });
   } catch (error) {
-    res.json(SAFE_DEFAULTS.revenue);
+    console.error("Creator revenue summary error:", error);
+    res.status(500).json({ 
+      error: "Failed to load revenue summary",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -265,7 +325,11 @@ router.get("/goals", async (req, res) => {
     const goals = await prisma.creatorGoal.findMany({ where: { creatorId: creator.id, active: true }, orderBy: { createdAt: "desc" } });
     res.json(goals);
   } catch (error) {
-    res.json(SAFE_DEFAULTS.goals);
+    console.error("Creator goals error:", error);
+    res.status(500).json({ 
+      error: "Failed to load goals",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -382,7 +446,11 @@ router.get("/socials", async (req, res) => {
     const socials = await prisma.socialAccountConnection.findMany({ where: { creatorId: creator.id }, select: { id: true, platform: true, handle: true, connected: true, lastSyncedAt: true, createdAt: true } });
     res.json(socials);
   } catch (error) {
-    res.json(SAFE_DEFAULTS.socials);
+    console.error("Creator socials error:", error);
+    res.status(500).json({ 
+      error: "Failed to load social accounts",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -462,7 +530,11 @@ router.get("/ai/history", async (req, res) => {
     const history = await prisma.aIPromptHistory.findMany({ where: { creatorId: creator.id }, orderBy: { createdAt: "desc" }, take: limit });
     res.json(history);
   } catch (error) {
-    res.json(SAFE_DEFAULTS.aiHistory);
+    console.error("Creator AI history error:", error);
+    res.status(500).json({ 
+      error: "Failed to load AI history",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

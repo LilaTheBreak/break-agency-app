@@ -17,22 +17,8 @@ import {
   fetchTaskUsers,
   fetchTaskTalents 
 } from "../services/crmTasksClient.js";
-import { fetchDeals, fetchCampaigns, fetchEvents, fetchContracts } from "../services/crmClient.js";
+import { fetchDeals, fetchCampaigns, fetchEvents, fetchContracts, fetchBrands } from "../services/crmClient.js";
 import { useAuth } from "../context/AuthContext.jsx";
-
-const BRANDS_STORAGE_KEY = "break_admin_brands_v1";
-
-function safeRead(key, fallback) {
-  try {
-    if (typeof window === "undefined") return fallback;
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return parsed ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
 
 function nowIso() {
   return new Date().toISOString();
@@ -251,6 +237,7 @@ export function AdminTasksPage() {
         setTalents(data);
       } catch (err) {
         console.error("Failed to load talents:", err);
+        setError("Failed to load talents");
       }
     };
 
@@ -274,7 +261,8 @@ export function AdminTasksPage() {
         setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
       } catch (error) {
         console.error("Failed to load CRM data:", error);
-        // Ensure arrays are set even on error
+        setError("Failed to load CRM data: " + (error.message || "Unknown error"));
+        // Set empty arrays on error - UI will show error state
         setDeals([]);
         setCampaigns([]);
         setEvents([]);
