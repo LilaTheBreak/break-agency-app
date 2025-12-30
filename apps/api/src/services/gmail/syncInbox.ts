@@ -443,5 +443,19 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
       ? `${stats.imported} imported, ${stats.skipped} skipped (duplicates/malformed), ${stats.failed} failed (hard errors)`
       : `${stats.imported} imported, ${stats.skipped} skipped (duplicates/malformed)`,
   });
+  
+  // Log warning if all messages failed - this suggests a systemic issue
+  if (stats.failed > 0 && stats.imported === 0 && stats.skipped === 0) {
+    console.error(`[GMAIL SYNC] ⚠️ WARNING: All ${stats.failed} messages failed for user ${userId}. This suggests a systemic issue (mapping errors, DB constraints, etc.). Check logs above for details.`);
+  }
+  
+  // Log warning if high failure rate
+  if (stats.failed > 0 && totalProcessed > 0) {
+    const failureRate = (stats.failed / totalProcessed) * 100;
+    if (failureRate > 50) {
+      console.error(`[GMAIL SYNC] ⚠️ WARNING: High failure rate (${failureRate.toFixed(1)}%) for user ${userId}. ${stats.failed}/${totalProcessed} messages failed.`);
+    }
+  }
+  
   return stats;
 }
