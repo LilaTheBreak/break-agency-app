@@ -787,7 +787,6 @@ export function AdminFinancePage() {
           <div className="sticky top-3 z-10 flex flex-wrap items-center gap-2 rounded-3xl border border-brand-black/10 bg-brand-white/95 p-2 backdrop-blur">
             <ActionButton label="Add Invoice" onClick={() => openModal("add-invoice")} />
             <ActionButton label="Add Payout" onClick={() => openModal("add-payout")} />
-            {/* Upload Document button hidden - S3 not configured (see FILE_UPLOAD_ENABLED flag) */}
             <ActionButton
               label={xeroButtonLabel}
               onClick={syncXero}

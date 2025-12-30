@@ -117,12 +117,11 @@ export const features = {
 
   /**
    * File Upload
-   * UNLOCK WHEN:
-   * - S3/Cloudflare R2/storage backend configured
-   * - File upload API tested
-   * - File validation implemented
+   * Enabled when S3/Cloudflare R2 storage is configured via environment variables:
+   * - S3_BUCKET, S3_REGION, S3_ACCESS_KEY, S3_SECRET_KEY
+   * - For Cloudflare R2: also set S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
    */
-  FILE_UPLOAD_ENABLED: false,
+  FILE_UPLOAD_ENABLED: true,
 
   /**
    * Opportunities/Briefs

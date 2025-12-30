@@ -1,17 +1,37 @@
 import prisma from "../lib/prisma.js";
+import { buildObjectKey, createPresignedUploadUrl } from "../lib/s3.js";
+import { safeEnv } from "../utils/safeEnv.js";
+
+const bucket = safeEnv("S3_BUCKET", "local-bucket");
+const region = safeEnv("S3_REGION", "us-east-1");
+const endpoint = process.env.S3_ENDPOINT || undefined;
+const forcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true";
+
+function buildFileUrl(key: string): string {
+  if (endpoint && forcePathStyle) {
+    // Cloudflare R2 or S3-compatible with path-style
+    return `${endpoint}/${bucket}/${key}`;
+  } else if (endpoint) {
+    // Custom endpoint (virtual-hosted style)
+    return `${endpoint}/${key}`;
+  } else {
+    // Standard S3
+    return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+  }
+}
 
 export async function requestUploadUrl(userId: string, filename: string, contentType: string) {
-  const key = `uploads/${userId || "anon"}-${Date.now()}-${filename}`;
-  // Stub: in real flow return signed URL
+  const key = buildObjectKey(userId, filename);
+  const uploadUrl = await createPresignedUploadUrl(key, contentType);
   return {
-    uploadUrl: `https://example.com/${key}`,
+    uploadUrl,
     fileKey: key,
     contentType
   };
 }
 
 export async function confirmUpload(userId: string, fileKey: string, filename: string, type: string) {
-  const url = `https://example.com/${fileKey}`;
+  const url = buildFileUrl(fileKey);
   const file = await prisma.file.create({
     data: {
       userId,
@@ -40,24 +60,39 @@ export async function getDownloadUrl(fileId: string, requesterId: string, isAdmi
   if (file.userId && file.userId !== requesterId && !isAdmin) {
     throw new Error("Forbidden");
   }
-  return { url: file.url || `https://example.com/${file.key}` };
+  // Return existing URL or build from key
+  return { url: file.url || buildFileUrl(file.key) };
 }
 
+import { createPresignedDownloadUrl } from "../lib/s3.js";
+
 export async function getPresignedUrl(key: string) {
-  console.log("[S3 STUB] getPresignedUrl", key);
+  const url = await createPresignedDownloadUrl(key);
   return {
-    url: `https://stub-s3.local/${key}`,
+    url,
     fields: {}
   };
 }
 
 export async function uploadFileToS3(key: string, fileBuffer: Buffer, mimeType: string) {
-  console.log("[S3 STUB] uploadFileToS3", { key, mimeType });
-  return `https://stub-s3.local/${key}`;
+  const { s3 } = await import("../lib/s3.js");
+  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const bucket = safeEnv("S3_BUCKET", "local-bucket");
+  
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: mimeType
+    })
+  );
+  
+  return buildFileUrl(key);
 }
 
 export async function saveUploadedFile(userId: string | null, file: Express.Multer.File) {
-  const key = `uploads/${userId || "anon"}-${Date.now()}-${file.originalname}`;
+  const key = buildObjectKey(userId || "anon", file.originalname);
   const url = await uploadFileToS3(key, file.buffer, file.mimetype);
 
   const record = await prisma.file.create({
@@ -66,7 +101,8 @@ export async function saveUploadedFile(userId: string | null, file: Express.Mult
       key,
       url,
       filename: file.originalname,
-      type: file.mimetype
+      type: file.mimetype,
+      size: file.size
     }
   });
 

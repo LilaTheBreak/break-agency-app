@@ -14,6 +14,7 @@ import { safeEnv } from "../utils/safeEnv.js";
 
 const router = Router();
 const bucket = safeEnv("S3_BUCKET", "local-bucket");
+const region = safeEnv("S3_REGION", "us-east-1");
 
 router.get("/", requireUser, async (req, res, next) => {
   try {
@@ -81,7 +82,20 @@ router.post("/upload", requireUser, async (req, res, next) => {
       );
       
       // Generate public or signed URL
-      const url = `https://${bucket}.s3.amazonaws.com/${key}`;
+      // Support both standard S3 and R2 endpoints
+      const endpoint = process.env.S3_ENDPOINT;
+      const forcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true";
+      let url: string;
+      if (endpoint && forcePathStyle) {
+        // Cloudflare R2 or S3-compatible with path-style
+        url = `${endpoint}/${bucket}/${key}`;
+      } else if (endpoint) {
+        // Custom endpoint (virtual-hosted style)
+        url = `${endpoint}/${key}`;
+      } else {
+        // Standard S3
+        url = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+      }
       
       // Save file record to database
       const file = await prisma.file.create({
@@ -102,24 +116,12 @@ router.post("/upload", requireUser, async (req, res, next) => {
     } catch (s3Error) {
       console.error("[FILE_UPLOAD] S3 Error:", s3Error);
       
-      // Fallback: save stub URL if S3 fails (for development/testing)
-      const stubUrl = `https://stub-s3.local/${key}`;
-      const file = await prisma.file.create({
-        data: {
-          id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          updatedAt: new Date(),
-          userId: currentUser.id,
-          key,
-          url: stubUrl,
-          filename,
-          type: contentType,
-          folder: folder || null,
-          size
-        }
+      // Return error - don't create stub records in production
+      return res.status(500).json({ 
+        error: true, 
+        message: "File upload to storage failed. Please check storage configuration.",
+        details: s3Error instanceof Error ? s3Error.message : String(s3Error)
       });
-      
-      console.warn("[FILE_UPLOAD] S3 upload failed, created stub record");
-      res.json({ file, warning: "File metadata saved but upload to storage failed" });
     }
   } catch (err) {
     console.error("[FILE_UPLOAD] Error:", err);
