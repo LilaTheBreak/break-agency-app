@@ -172,6 +172,18 @@ export const features = {
   USER_IMPERSONATION_ENABLED: false, // Security-sensitive, not implemented
   USER_PASSWORD_RESET_ENABLED: false, // Password reset API not implemented
   USER_FORCE_LOGOUT_ENABLED: false, // Force logout API not implemented
+
+  /**
+   * Phase 5: Advanced Features & Power Tools
+   * All features are optional, independently deployable, and disabled by default.
+   * These are "power tools" for advanced users, not core product features.
+   */
+  GLOBAL_SEARCH_ENABLED: false, // Phase 5: Global search across entities
+  TRENDING_CONTENT_ENABLED: false, // Phase 5: Trending content feed
+  ADVANCED_ANALYTICS_ENABLED: false, // Phase 5: Backend analytics aggregation
+  SLACK_INTEGRATION_ENABLED: false, // Phase 5: Slack notifications integration
+  NOTION_INTEGRATION_ENABLED: false, // Phase 5: Notion sync integration
+  GOOGLE_DRIVE_INTEGRATION_ENABLED: false, // Phase 5: Google Drive file linking
 };
 
 /**
