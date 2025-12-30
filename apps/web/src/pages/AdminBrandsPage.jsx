@@ -1314,6 +1314,33 @@ export function AdminBrandsPage({ session }) {
     setEnrichmentSuggestion(null);
   };
 
+  // Final safety check before render - ensure all state is valid
+  if (!Array.isArray(brands) || !Array.isArray(contacts) || !Array.isArray(campaigns) || !Array.isArray(events) || !Array.isArray(deals) || !Array.isArray(contracts)) {
+    console.error('[BRANDS PAGE] Invalid state detected before render:', {
+      brands: Array.isArray(brands),
+      contacts: Array.isArray(contacts),
+      campaigns: Array.isArray(campaigns),
+      events: Array.isArray(events),
+      deals: Array.isArray(deals),
+      contracts: Array.isArray(contracts)
+    });
+    // Force reset all state to arrays
+    if (!Array.isArray(brands)) safeSetBrands([]);
+    if (!Array.isArray(contacts)) safeSetContacts([]);
+    if (!Array.isArray(campaigns)) safeSetCampaigns([]);
+    if (!Array.isArray(events)) safeSetEvents([]);
+    if (!Array.isArray(deals)) safeSetDeals([]);
+    if (!Array.isArray(contracts)) safeSetContracts([]);
+    // Return loading state while we fix the state
+    return (
+      <DashboardShell title="Brands" subtitle="Track brands as long-lived CRM entities — without login assumptions." role="admin" navLinks={ADMIN_NAV_LINKS}>
+        <div className="flex items-center justify-center p-12">
+          <p className="text-sm text-brand-black/60">Loading brands...</p>
+        </div>
+      </DashboardShell>
+    );
+  }
+
   return (
     <DashboardShell title="Brands" subtitle="Track brands as long-lived CRM entities — without login assumptions." role="admin" navLinks={ADMIN_NAV_LINKS}>
       <div className="space-y-6">
