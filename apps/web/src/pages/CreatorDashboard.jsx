@@ -44,6 +44,8 @@ export function CreatorDashboard({ session }) {
 }
 
 function CreatorRevenueSection() {
+  const { data: revenueData, loading: revenueLoading, error: revenueError } = useRevenue('Month');
+  
   return (
     <section id="creator-overview" className="mt-6 space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -52,10 +54,40 @@ function CreatorRevenueSection() {
           <h3 className="font-display text-3xl uppercase">Momentum trackers</h3>
         </div>
       </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
-        <p className="text-sm font-semibold text-brand-black/70">Revenue tracking coming soon</p>
-        <p className="mt-2 text-xs text-brand-black/50">Revenue metrics, audience growth, and deal analytics will be available once the tracking system is fully implemented.</p>
-      </div>
+      {revenueLoading ? (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-black/20 border-t-brand-black mx-auto"></div>
+          <p className="mt-4 text-sm text-brand-black/60">Loading revenue data...</p>
+        </div>
+      ) : revenueError ? (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm font-semibold text-brand-black/70">Unable to load revenue data</p>
+          <p className="mt-2 text-xs text-brand-black/50">Revenue tracking will be available once deals are created and tracked in the system.</p>
+        </div>
+      ) : revenueData && (revenueData.current || revenueData.projected || revenueData.total) ? (
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Current revenue</p>
+            <p className="mt-2 font-display text-2xl uppercase text-brand-black">{revenueData.current || "£0"}</p>
+            <p className="mt-1 text-xs text-brand-black/50">Paid earnings</p>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Projected</p>
+            <p className="mt-2 font-display text-2xl uppercase text-brand-black">{revenueData.projected || "£0"}</p>
+            <p className="mt-1 text-xs text-brand-black/50">In pipeline</p>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Total pipeline</p>
+            <p className="mt-2 font-display text-2xl uppercase text-brand-black">{revenueData.total || "£0"}</p>
+            <p className="mt-1 text-xs text-brand-black/50">{revenueData.trend || "—"}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-sm font-semibold text-brand-black/70">No revenue data yet</p>
+          <p className="mt-2 text-xs text-brand-black/50">Revenue metrics will appear once deals are created and payments are tracked.</p>
+        </div>
+      )}
     </section>
   );
 }

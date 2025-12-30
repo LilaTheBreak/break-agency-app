@@ -382,8 +382,12 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
             {metrics.map((metric) => (
               <div key={metric.label} className="rounded-3xl border border-brand-black/10 bg-brand-linen/80 p-5">
                 <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{metric.label}</p>
-                <p className="mt-2 font-display text-4xl uppercase text-brand-black">{metric.value}</p>
-                <p className="text-sm text-brand-black/60">{metric.sub}</p>
+                <p className="mt-2 font-display text-4xl uppercase text-brand-black">
+                  {metric.value === "—" ? "0" : metric.value}
+                </p>
+                <p className="text-sm text-brand-black/60">
+                  {metric.value === "—" ? "No data available" : metric.sub}
+                </p>
               </div>
             ))}
           </section>

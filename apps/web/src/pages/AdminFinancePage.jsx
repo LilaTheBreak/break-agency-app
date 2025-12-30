@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { Badge } from "../components/Badge.jsx";
+import { FeatureGate, DisabledNotice } from "../components/FeatureGate.jsx";
+import { isFeatureEnabled } from "../config/features.js";
 
 const STORAGE_KEYS = {
   payouts: "break_admin_finance_payouts_v1",
@@ -787,11 +789,16 @@ export function AdminFinancePage() {
           <div className="sticky top-3 z-10 flex flex-wrap items-center gap-2 rounded-3xl border border-brand-black/10 bg-brand-white/95 p-2 backdrop-blur">
             <ActionButton label="Add Invoice" onClick={() => openModal("add-invoice")} />
             <ActionButton label="Add Payout" onClick={() => openModal("add-payout")} />
-            <ActionButton
-              label={xeroButtonLabel}
-              onClick={syncXero}
-              disabled={!xero.connected}
-            />
+            <FeatureGate feature="XERO_INTEGRATION_ENABLED" mode="button">
+              <ActionButton
+                label={xeroButtonLabel}
+                onClick={syncXero}
+                disabled={!xero.connected || !isFeatureEnabled('XERO_INTEGRATION_ENABLED')}
+              />
+            </FeatureGate>
+            {!isFeatureEnabled('XERO_INTEGRATION_ENABLED') && (
+              <DisabledNotice feature="XERO_INTEGRATION_ENABLED" />
+            )}
           </div>
         </div>
 

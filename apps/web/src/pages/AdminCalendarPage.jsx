@@ -644,17 +644,53 @@ export function CalendarBoard({
         </div>
       </section>
 
-      {/* Calendar Sync - Coming Soon Notice */}
-      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-linen/30 p-6">
-        <div>
-          <h3 className="font-display text-2xl uppercase">Calendar sync</h3>
-          <p className="mt-2 text-sm text-brand-black/60">
-            External calendar sync (Google, Outlook, Apple) is in development. For now, create events manually within Break.
-          </p>
-          <p className="mt-1 text-xs text-brand-black/40">
-            Coming soon: Automatic two-way sync with your external calendars.
-          </p>
+      {/* Calendar Sync - Google Calendar Available, Others Coming Soon */}
+      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Calendar sync</p>
+            <h3 className="font-display text-2xl uppercase">External calendars</h3>
+          </div>
         </div>
+        <div className="mt-4 space-y-3">
+          {/* Google Calendar - Available */}
+          <div className="flex items-center justify-between rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-sm font-semibold text-brand-black">Google Calendar</p>
+                <p className="text-xs text-brand-black/60">
+                  {connectedProviders.google ? "Connected" : "Available to connect"}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleSyncGoogleCalendar}
+              disabled={syncing || connectedProviders.google}
+              className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {syncing ? "Syncing..." : connectedProviders.google ? "Connected" : "Connect"}
+            </button>
+          </div>
+          
+          {/* Microsoft/Apple/iCal - Coming Soon */}
+          {CAL_PROVIDERS.filter(p => p.id !== 'google').map((provider) => (
+            <div key={provider.id} className="flex items-center justify-between rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4 opacity-60">
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-brand-black">{provider.label}</p>
+                  <p className="text-xs text-brand-black/60">Coming soon</p>
+                </div>
+              </div>
+              <span className="rounded-full border border-brand-black/20 bg-brand-white/50 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/50">
+                Not available
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-brand-black/50">
+          Google Calendar sync is available now. Microsoft 365, Apple Calendar, and iCal feeds are coming soon.
+        </p>
       </section>
 
       <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
