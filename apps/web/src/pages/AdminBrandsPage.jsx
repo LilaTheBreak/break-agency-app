@@ -748,32 +748,52 @@ export function AdminBrandsPage({ session }) {
     return safeBrands.find((b) => b && b.id === drawerBrandId) || null;
   }, [brands, drawerBrandId]);
   const brandCampaigns = useMemo(() => {
-    if (!selectedBrand) return [];
-    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
-    return safeCampaigns
-      .filter((c) => c && c.brandId === selectedBrand.id)
-      .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    if (!selectedBrand || !selectedBrand.id) return [];
+    try {
+      const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+      return safeCampaigns
+        .filter((c) => c && c.brandId === selectedBrand.id)
+        .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    } catch (error) {
+      console.error('[BRANDS PAGE] Error in brandCampaigns useMemo:', error);
+      return [];
+    }
   }, [campaigns, selectedBrand]);
   const brandEvents = useMemo(() => {
-    if (!selectedBrand) return [];
-    const safeEvents = Array.isArray(events) ? events : [];
-    return safeEvents
-      .filter((e) => e && e.brandId === selectedBrand.id)
-      .sort((a, b) => String(b.startDateTime || "").localeCompare(String(a.startDateTime || "")));
+    if (!selectedBrand || !selectedBrand.id) return [];
+    try {
+      const safeEvents = Array.isArray(events) ? events : [];
+      return safeEvents
+        .filter((e) => e && e.brandId === selectedBrand.id)
+        .sort((a, b) => String(b.startDateTime || "").localeCompare(String(a.startDateTime || "")));
+    } catch (error) {
+      console.error('[BRANDS PAGE] Error in brandEvents useMemo:', error);
+      return [];
+    }
   }, [events, selectedBrand]);
   const brandDeals = useMemo(() => {
-    if (!selectedBrand) return [];
-    const safeDeals = Array.isArray(deals) ? deals : [];
-    return safeDeals
-      .filter((d) => d && d.brandId === selectedBrand.id)
-      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    if (!selectedBrand || !selectedBrand.id) return [];
+    try {
+      const safeDeals = Array.isArray(deals) ? deals : [];
+      return safeDeals
+        .filter((d) => d && d.brandId === selectedBrand.id)
+        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    } catch (error) {
+      console.error('[BRANDS PAGE] Error in brandDeals useMemo:', error);
+      return [];
+    }
   }, [deals, selectedBrand]);
   const brandContracts = useMemo(() => {
-    if (!selectedBrand) return [];
-    const safeContracts = Array.isArray(contracts) ? contracts : [];
-    return safeContracts
-      .filter((c) => c && c.brandId === selectedBrand.id)
-      .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
+    if (!selectedBrand || !selectedBrand.id) return [];
+    try {
+      const safeContracts = Array.isArray(contracts) ? contracts : [];
+      return safeContracts
+        .filter((c) => c && c.brandId === selectedBrand.id)
+        .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
+    } catch (error) {
+      console.error('[BRANDS PAGE] Error in brandContracts useMemo:', error);
+      return [];
+    }
   }, [contracts, selectedBrand]);
   const brandContacts = useMemo(() => {
     if (!selectedBrand) return [];
