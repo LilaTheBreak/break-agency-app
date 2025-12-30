@@ -65,8 +65,6 @@ export async function getDownloadUrl(fileId: string, requesterId: string, isAdmi
   return { url: file.url || buildFileUrl(file.key) };
 }
 
-import { createPresignedDownloadUrl } from "../lib/s3.js";
-
 export async function getPresignedUrl(key: string) {
   const url = await createPresignedDownloadUrl(key);
   return {
