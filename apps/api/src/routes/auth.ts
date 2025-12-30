@@ -25,12 +25,15 @@ const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events"
 ];
 
+import { getFrontendUrl } from "../config/frontendUrl.js";
+
+// Support comma-separated origins for CORS, but use canonical URL for redirects
 const FRONTEND_ORIGIN_RAW =
   process.env.FRONTEND_ORIGIN ||
   process.env.WEB_APP_URL ||
   "http://localhost:5173";
 
-// Support comma-separated origins, use first for redirects
+// Support comma-separated origins, use first for redirects (legacy, for CORS)
 const FRONTEND_ORIGIN = FRONTEND_ORIGIN_RAW.split(',')[0].trim();
 
 const DEFAULT_TEST_ADMIN_EMAIL = "lila@thebreakco.com";
@@ -223,10 +226,15 @@ router.get("/google/callback", async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         sessionUserRole: sessionUser.role,
-        redirectUrl: urlWithToken
+        redirectUrl: urlWithToken,
+        frontendUrl: getFrontendUrl()
       });
     } else {
-      console.log("[INFO] OAuth redirect completed", { role: user.role });
+      console.log("[INFO] OAuth redirect completed", { 
+        role: user.role,
+        redirectUrl: urlWithToken,
+        frontendUrl: getFrontendUrl()
+      });
     }
     res.redirect(urlWithToken);
   } catch (error) {
@@ -462,7 +470,7 @@ router.post("/forgot-password", authRateLimiter, async (req: Request, res: Respo
     });
 
     // Send reset email
-    const resetUrl = `${FRONTEND_ORIGIN}/reset-password?token=${resetToken}`;
+    const resetUrl = `${getFrontendUrl()}/reset-password?token=${resetToken}`;
     
     await sendEmail({
       to: user.email,
@@ -732,7 +740,9 @@ router.post("/onboarding/submit", requireAuth, async (req: Request, res: Respons
 --------------------------------------------------------- */
 function buildPostAuthRedirect(user: SessionUser): string {
   try {
-    const url = new URL(FRONTEND_ORIGIN);
+    // Use canonical frontend URL (never preview URLs in production)
+    const frontendUrl = getFrontendUrl();
+    const url = new URL(frontendUrl);
     const role = user.role;
     const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
     const onboardingComplete =
@@ -753,7 +763,8 @@ function buildPostAuthRedirect(user: SessionUser): string {
     url.pathname = "/dashboard";
     return url.toString();
   } catch {
-    return `${FRONTEND_ORIGIN}/dashboard`;
+    // Fallback to canonical frontend URL
+    return `${getFrontendUrl()}/dashboard`;
   }
 }
 

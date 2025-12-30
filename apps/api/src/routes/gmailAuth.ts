@@ -5,12 +5,9 @@ import { google } from "googleapis";
 import { googleConfig } from "../config/env.js";
 import { refreshAccessToken } from "../integrations/gmail/googleAuth.js";
 import { requireAuth } from "../middleware/auth.js";
+import { getFrontendUrl } from "../config/frontendUrl.js";
 
 const router = Router();
-
-// Support comma-separated origins for CORS, but only use first for redirects
-const FRONTEND_ORIGIN_RAW = process.env.FRONTEND_ORIGIN || process.env.WEB_APP_URL || "http://localhost:5173";
-const FRONTEND_ORIGIN = FRONTEND_ORIGIN_RAW.split(',')[0].trim();
 
 // GET /api/gmail/auth/status - Check if Gmail is connected
 router.get("/status", requireAuth, async (req, res) => {
@@ -168,7 +165,7 @@ router.get("/callback", async (req, res) => {
       
       // This might happen if user has already granted access before
       // and Google didn't prompt for consent again
-      const errorRedirect = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_error=missing_refresh_token`;
+      const errorRedirect = `${getFrontendUrl().replace(/\/$/, "")}/admin/inbox?gmail_error=missing_refresh_token`;
       console.log(`[GMAIL CALLBACK] Redirecting to error URL:`, errorRedirect);
       return res.redirect(302, errorRedirect);
     }
@@ -216,7 +213,7 @@ router.get("/callback", async (req, res) => {
         console.error(`[GMAIL CALLBACK] Initial sync failed for user ${userId}:`, syncError);
       });
     
-    const redirectUrl = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
+    const redirectUrl = `${getFrontendUrl().replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
     console.log(`[GMAIL CALLBACK] Redirecting to:`, redirectUrl);
     res.redirect(302, redirectUrl);
   } catch (error) {
@@ -241,7 +238,7 @@ router.get("/callback", async (req, res) => {
       }
     }
     
-    const errorRedirect = `${FRONTEND_ORIGIN.replace(/\/$/, "")}/admin/inbox?gmail_error=${errorMessage}`;
+    const errorRedirect = `${getFrontendUrl().replace(/\/$/, "")}/admin/inbox?gmail_error=${errorMessage}`;
     console.log(`[GMAIL CALLBACK] Redirecting to error URL:`, errorRedirect);
     res.redirect(302, errorRedirect);
   }
