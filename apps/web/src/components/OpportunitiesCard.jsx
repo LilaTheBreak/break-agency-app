@@ -45,11 +45,6 @@ export function OpportunitiesCard({ session, role }) {
     : isBrand
     ? "/brand/dashboard/opportunities"
     : "/admin/opportunities";
-  
-  // Note: Routes verified in App.jsx:
-  // - /creator/opportunities (line 454)
-  // - /admin/opportunities (line 845)
-  // - /brand/dashboard/opportunities (BrandOpportunitiesPage component)
 
   // Check feature flag first
   if (!isFeatureEnabled(featureFlag)) {
@@ -84,12 +79,13 @@ export function OpportunitiesCard({ session, role }) {
         const response = await apiFetch(apiEndpoint);
         
         if (!response.ok) {
-          // Don't throw for 404/403 - just show empty state
-          if (response.status === 404 || response.status === 403) {
+          // Graceful degradation for expected errors - show empty state instead of error
+          if (response.status === 404 || response.status === 403 || response.status === 503) {
             setOpportunities([]);
             setLoading(false);
             return;
           }
+          // Only throw for unexpected errors (500, etc.)
           throw new Error(`Failed to fetch opportunities: ${response.status}`);
         }
 
