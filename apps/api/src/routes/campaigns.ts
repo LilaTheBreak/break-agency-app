@@ -5,6 +5,7 @@ import { SessionUser } from "../lib/session.js"; // Import SessionUser type
 import { z } from "zod";
 import { isSuperAdmin, isAdmin, isManager } from "../lib/roleHelpers.js";
 import { logError } from "../lib/logger.js";
+import { sendSuccess, sendList, sendEmptyList } from "../utils/apiResponse.js";
 
 const router = Router();
 
@@ -105,12 +106,11 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     
     // Format and return
     const formatted = campaigns.map((campaign) => formatCampaign(campaign));
-    res.status(200).json({ campaigns: formatted || [] });
+    sendList(res, formatted || []);
   } catch (error) {
-    // Always return 200 with empty array on error - never crash dashboard
+    // Always return empty list on error - never crash dashboard
     logError("Failed to fetch campaigns", error, { userId: req.user?.id, targetId });
-    // Defensive: ensure we always return valid structure
-    res.status(200).json({ campaigns: [] });
+    sendEmptyList(res);
   }
 });
 

@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { logError } from '../lib/logger.js';
 import prisma from '../lib/prisma.js';
+import { sendList, sendEmptyList } from '../utils/apiResponse.js';
 
 const router = express.Router();
 
@@ -38,11 +39,11 @@ router.get('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN',
         }
       }
     });
-    res.json(opportunities || []);
+    sendList(res, opportunities || []);
   } catch (error) {
     logError('Error fetching opportunities', error, { userId: req.user?.id });
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json([]);
+    // Return empty list on error - graceful degradation
+    sendEmptyList(res);
   }
 });
 

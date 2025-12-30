@@ -7,6 +7,7 @@ import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
 import { logAdminActivity } from "../../lib/adminActivityLogger.js";
 import { logAuditEvent } from "../../lib/auditLogger.js";
 import { logError } from "../../lib/logger.js";
+import { sendSuccess, sendList, sendEmptyList } from "../../utils/apiResponse.js";
 
 const router = Router();
 
@@ -135,11 +136,11 @@ router.get("/", async (req: Request, res: Response) => {
       })
     );
 
-    res.json({ talents: talentsWithMetrics || [] });
+    sendList(res, talentsWithMetrics || []);
   } catch (error) {
     logError("Failed to fetch talent list", error, { userId: req.user?.id });
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json({ talents: [] });
+    // Return empty list on error - graceful degradation
+    sendEmptyList(res);
   }
 });
 

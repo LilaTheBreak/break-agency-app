@@ -4,6 +4,7 @@ import prisma from "../lib/prisma.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
+import { sendList, sendEmptyList, handleApiError } from "../utils/apiResponse.js";
 
 const router = Router();
 
@@ -38,11 +39,11 @@ router.get("/", async (req: Request, res: Response) => {
       },
     });
 
-    res.json(events || []);
+    sendList(res, events || []);
   } catch (error) {
-    // Graceful degradation: return empty array instead of 500
     logError("Failed to fetch CRM events", error, { userId: req.user?.id });
-    res.status(200).json([]);
+    // Return empty list on error (graceful degradation for list endpoints)
+    sendEmptyList(res);
   }
 });
 

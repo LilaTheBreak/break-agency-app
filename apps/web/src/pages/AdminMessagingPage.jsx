@@ -118,18 +118,26 @@ export function AdminMessagingPage() {
         const failedCount = stats.failed || 0;
         
         // Use backend summary if available, otherwise build custom message
+        // CRITICAL: Only show success if there were no failures
         if (summary) {
           if (failedCount > 0) {
+            // Show error if there were failures
             toast.error(summary, { duration: 5000 });
           } else if (syncedCount > 0) {
+            // Show success only if emails were actually synced
             toast.success(summary);
+          } else if (skippedCount > 0) {
+            // Show info (not success) if only skipped (already synced)
+            toast.success(summary); // Backend summary handles this correctly
           } else {
-            toast.success(summary);
+            // No emails processed - show info, not success
+            toast.success(summary); // Backend summary handles this correctly
           }
         } else {
           // Fallback to building message from stats
           if (syncedCount > 0) {
             if (failedCount > 0) {
+              // CRITICAL: Show error if there were failures, even if some succeeded
               toast.error(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}${failedCount > 0 ? `, ${failedCount} failed` : ''}`, { duration: 5000 });
             } else {
               toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} already synced)` : ''}`);

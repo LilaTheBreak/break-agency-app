@@ -4,6 +4,7 @@ import prisma from "../lib/prisma.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
+import { sendSuccess, sendList, sendEmptyList, handleApiError } from "../utils/apiResponse.js";
 
 const router = express.Router();
 
@@ -32,11 +33,11 @@ router.get("/", requireAuth, async (req, res) => {
       },
     });
 
-    res.json({ contracts: contracts || [] });
+    sendList(res, contracts || []);
   } catch (error) {
-    // Graceful degradation: return empty array instead of 500
     logError("Failed to fetch contracts", error, { userId: req.user?.id });
-    res.status(200).json({ contracts: [] });
+    // Return empty list on error (graceful degradation for list endpoints)
+    sendEmptyList(res);
   }
 });
 
