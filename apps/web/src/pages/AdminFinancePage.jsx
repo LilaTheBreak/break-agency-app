@@ -1373,8 +1373,11 @@ export function AdminFinancePage() {
           subtitle="No automation. Just connection status and manual sync entry points."
           loading={false}
         >
-          <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-4">
-            {xero.connected ? (
+          {!isFeatureEnabled('XERO_INTEGRATION_ENABLED') ? (
+            <DisabledNotice feature="XERO_INTEGRATION_ENABLED" />
+          ) : (
+            <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-4">
+              {xero.connected ? (
               <>
                 <p className="font-semibold text-brand-black">Connected</p>
                 <p className="mt-1 text-sm text-brand-black/70">
