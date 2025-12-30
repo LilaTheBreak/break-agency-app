@@ -734,12 +734,17 @@ export function AdminBrandsPage({ session }) {
   };
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const safeBrands = Array.isArray(brands) ? brands : [];
-    return safeBrands
-      .filter((b) => b && (statusFilter === "All" ? true : b.status === statusFilter))
-      .filter((b) => (q ? `${b.brandName || ""} ${b.website || ""} ${b.industry || ""}`.toLowerCase().includes(q) : true))
-      .sort((a, b) => (b.lastActivityAt || b.createdAt || "").localeCompare(a.lastActivityAt || a.createdAt || ""));
+    try {
+      const q = query.trim().toLowerCase();
+      const safeBrands = Array.isArray(brands) ? brands : [];
+      return safeBrands
+        .filter((b) => b && (statusFilter === "All" ? true : b.status === statusFilter))
+        .filter((b) => (q ? `${b.brandName || ""} ${b.website || ""} ${b.industry || ""}`.toLowerCase().includes(q) : true))
+        .sort((a, b) => (b.lastActivityAt || b.createdAt || "").localeCompare(a.lastActivityAt || a.createdAt || ""));
+    } catch (error) {
+      console.error('[BRANDS PAGE] Error in filtered useMemo:', error, { brands, query, statusFilter });
+      return [];
+    }
   }, [brands, query, statusFilter]);
 
   const selectedBrand = useMemo(() => {
@@ -791,19 +796,24 @@ export function AdminBrandsPage({ session }) {
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
     } catch (error) {
-      console.error('[BRANDS PAGE] Error in brandContracts useMemo:', error);
+      console.error('[BRANDS PAGE] Error in brandContracts useMemo:', error, { contracts, selectedBrand });
       return [];
     }
   }, [contracts, selectedBrand]);
   const brandContacts = useMemo(() => {
-    if (!selectedBrand) return [];
-    const safeContacts = Array.isArray(contacts) ? contacts : [];
-    return safeContacts
-      .filter((c) => c && c.brandId === selectedBrand.id)
-      .sort((a, b) => {
-        if (Boolean(b.primaryContact) !== Boolean(a.primaryContact)) return b.primaryContact ? 1 : -1;
-        return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(`${b.lastName || ""} ${b.firstName || ""}`);
-      });
+    if (!selectedBrand || !selectedBrand.id) return [];
+    try {
+      const safeContacts = Array.isArray(contacts) ? contacts : [];
+      return safeContacts
+        .filter((c) => c && c.brandId === selectedBrand.id)
+        .sort((a, b) => {
+          if (Boolean(b.primaryContact) !== Boolean(a.primaryContact)) return b.primaryContact ? 1 : -1;
+          return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(`${b.lastName || ""} ${b.firstName || ""}`);
+        });
+    } catch (error) {
+      console.error('[BRANDS PAGE] Error in brandContacts useMemo:', error, { contacts, selectedBrand });
+      return [];
+    }
   }, [contacts, selectedBrand]);
 
   const [contactDrawerId, setContactDrawerId] = useState("");
