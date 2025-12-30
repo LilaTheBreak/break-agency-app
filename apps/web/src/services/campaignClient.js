@@ -24,9 +24,13 @@ export async function fetchUserCampaigns({ session, userId }) {
   }
   
   const data = await response.json();
+  // API now returns array directly, but handle both formats for backward compatibility
   // Defensive: Ensure campaigns is always an array
+  if (Array.isArray(data)) {
+    return { campaigns: data };
+  }
   return {
-    campaigns: Array.isArray(data.campaigns) ? data.campaigns : [],
+    campaigns: Array.isArray(data.campaigns) ? data.campaigns : (Array.isArray(data.data) ? data.data : []),
     ...data
   };
 }

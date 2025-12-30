@@ -58,16 +58,19 @@ export function sendError(
 
 /**
  * Send a list response (array)
+ * NOTE: For backward compatibility, list endpoints return arrays directly, not wrapped
+ * This can be changed to use sendSuccess in the future if frontend is updated
  */
 export function sendList<T>(res: Response, items: T[], status: number = 200): void {
-  sendSuccess(res, items, status);
+  res.status(status).json(items || []);
 }
 
 /**
  * Send an empty list response
+ * NOTE: Returns empty array directly for backward compatibility
  */
 export function sendEmptyList(res: Response, status: number = 200): void {
-  sendList(res, [], status);
+  res.status(status).json([]);
 }
 
 /**
