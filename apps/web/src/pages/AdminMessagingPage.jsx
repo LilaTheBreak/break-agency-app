@@ -547,11 +547,9 @@ function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, sy
             ))}
           </>
         ) : emails.length === 0 ? (
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-6 text-center">
-            <div className="text-center py-6">
-              <p className="text-sm font-medium text-brand-black/80 mb-1">No inbound emails yet</p>
-              <p className="text-xs text-brand-black/60">Sync your Gmail inbox to see emails here.</p>
-            </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-8 text-center">
+            <p className="text-sm font-medium text-brand-black/80 mb-1">No inbound emails yet</p>
+            <p className="text-xs text-brand-black/60">Sync your Gmail inbox to see emails here.</p>
           </div>
         ) : (
           emails.map((email) => <EmailRow key={email.id} email={email} />)
