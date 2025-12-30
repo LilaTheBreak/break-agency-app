@@ -19,6 +19,163 @@ const requireAdmin = (req: Request, res: Response, next: Function) => {
 router.use(requireAuth, requireAdmin);
 
 // ============================================================================
+// PHASE 2 - FINANCE ANALYTICS AGGREGATION
+// ============================================================================
+
+// GET /api/admin/finance/analytics - Backend aggregation for finance analytics
+router.get("/analytics", async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, creatorId, brandId, dealId, status } = req.query;
+
+    // Build filter conditions
+    const invoiceWhere: any = {};
+    const payoutWhere: any = {};
+
+    if (startDate || endDate) {
+      const dateFilter: any = {};
+      if (startDate) dateFilter.gte = new Date(startDate as string);
+      if (endDate) dateFilter.lte = new Date(endDate as string);
+      invoiceWhere.issuedAt = dateFilter;
+      payoutWhere.createdAt = dateFilter;
+    }
+
+    if (brandId) {
+      invoiceWhere.brandId = brandId;
+      payoutWhere.brandId = brandId;
+    }
+
+    if (dealId) {
+      invoiceWhere.dealId = dealId;
+      payoutWhere.dealId = dealId;
+    }
+
+    if (creatorId) {
+      payoutWhere.creatorId = creatorId;
+    }
+
+    if (status) {
+      invoiceWhere.status = status;
+      payoutWhere.status = status;
+    }
+
+    // Fetch all invoices and payouts
+    const [invoices, payouts] = await Promise.all([
+      prisma.invoice.findMany({ where: invoiceWhere }),
+      prisma.payout.findMany({ where: payoutWhere })
+    ]);
+
+    // Phase 2: Backend aggregation for cash flow series (by month)
+    const cashFlowSeries = new Map<string, { month: string; in: number; out: number }>();
+    invoices.forEach((inv) => {
+      const date = inv.issuedAt || inv.createdAt;
+      if (!date) return;
+      const month = new Date(date).toISOString().slice(0, 7); // YYYY-MM
+      const current = cashFlowSeries.get(month) || { month, in: 0, out: 0 };
+      if (inv.status === "paid") {
+        current.in += inv.amount;
+      }
+      cashFlowSeries.set(month, current);
+    });
+    payouts.forEach((p) => {
+      const date = p.createdAt || p.paidAt;
+      if (!date) return;
+      const month = new Date(date).toISOString().slice(0, 7); // YYYY-MM
+      const current = cashFlowSeries.get(month) || { month, in: 0, out: 0 };
+      if (p.status === "paid") {
+        current.out += p.amount;
+      }
+      cashFlowSeries.set(month, current);
+    });
+    const cashFlowArray = Array.from(cashFlowSeries.values())
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-6); // Last 6 months
+
+    // Phase 2: Backend aggregation for payouts by creator
+    const payoutsByCreatorMap = new Map<string, number>();
+    payouts.forEach((p) => {
+      const creator = p.creatorId || "Unknown";
+      const current = payoutsByCreatorMap.get(creator) || 0;
+      payoutsByCreatorMap.set(creator, current + p.amount);
+    });
+    const payoutsByCreator = Array.from(payoutsByCreatorMap.entries())
+      .map(([creator, total]) => ({ creator, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6);
+
+    // Phase 2: Backend aggregation for invoices by status
+    const invoicesByStatus = ["overdue", "due", "paid"].map((status) => {
+      const total = invoices
+        .filter((i) => i.status === status)
+        .reduce((sum, i) => sum + i.amount, 0);
+      return { status, total };
+    });
+
+    // Phase 2: Backend aggregation for snapshot
+    const cashIn = invoices
+      .filter((i) => i.status === "paid")
+      .reduce((sum, i) => sum + i.amount, 0);
+    const cashOut = payouts
+      .filter((p) => p.status === "paid")
+      .reduce((sum, p) => sum + p.amount, 0);
+    const receivables = invoices
+      .filter((i) => i.status !== "paid")
+      .reduce((sum, i) => sum + i.amount, 0);
+    const liabilities = payouts
+      .filter((p) => p.status !== "paid")
+      .reduce((sum, p) => sum + p.amount, 0);
+    const net = cashIn - cashOut;
+
+    // Phase 2: Backend aggregation for attention items
+    const overdueInvoices = invoices.filter((inv) => inv.status === "overdue");
+    const delayedPayouts = payouts.filter((p) => {
+      if (p.status === "paid") return false;
+      if (!p.createdAt) return false;
+      const daysSince = Math.floor((Date.now() - new Date(p.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+      return daysSince > 7; // More than 7 days old
+    });
+
+    res.json({
+      cashFlowSeries: cashFlowArray,
+      payoutsByCreator,
+      invoicesByStatus,
+      snapshot: {
+        cashIn,
+        cashOut,
+        receivables,
+        liabilities,
+        net
+      },
+      attention: {
+        overdueInvoices: overdueInvoices.length,
+        delayedPayouts: delayedPayouts.length,
+        items: [
+          ...overdueInvoices.map((inv) => ({
+            id: `att-inv-${inv.id}`,
+            type: "invoice",
+            label: `Overdue invoice ${inv.invoiceNumber}`,
+            amount: inv.amount,
+            dueDate: inv.dueAt
+          })),
+          ...delayedPayouts.map((p) => ({
+            id: `att-pay-${p.id}`,
+            type: "payout",
+            label: "Delayed payout",
+            amount: p.amount,
+            createdAt: p.createdAt
+          }))
+        ]
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching finance analytics:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch finance analytics",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+// ============================================================================
 // PHASE 3.1 - FINANCE SUMMARY & METRICS
 // ============================================================================
 

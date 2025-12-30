@@ -1,6 +1,7 @@
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import { logAdminActivity } from "../lib/adminActivityLogger.js";
 
 const router = express.Router();
 
@@ -110,6 +111,17 @@ router.post("/", requireAuth, async (req, res) => {
       },
     });
 
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_DEAL_CREATED",
+        metadata: { dealId: deal.id, dealName: deal.dealName, brandId: deal.brandId }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.status(201).json(deal);
   } catch (error) {
     console.error("[crmDeals] Error creating deal:", error);
@@ -152,6 +164,17 @@ router.patch("/:id", requireAuth, async (req, res) => {
         },
       },
     });
+
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_DEAL_UPDATED",
+        metadata: { dealId: deal.id, dealName: deal.dealName, changes: Object.keys(updateData) }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
 
     res.json(deal);
   } catch (error) {

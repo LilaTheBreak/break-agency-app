@@ -1,6 +1,7 @@
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import { logAdminActivity } from "../lib/adminActivityLogger.js";
 
 const router = express.Router();
 
@@ -139,6 +140,17 @@ router.post("/", requireAuth, async (req, res) => {
       },
     });
 
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_CONTRACT_CREATED",
+        metadata: { contractId: contract.id, contractName: contract.contractName, brandId: contract.brandId }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.status(201).json({ contract });
   } catch (error) {
     console.error("Error creating contract:", error);
@@ -210,6 +222,17 @@ router.patch("/:id", requireAuth, async (req, res) => {
       },
     });
 
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_CONTRACT_UPDATED",
+        metadata: { contractId: contract.id, contractName: contract.contractName, changes: Object.keys(updateData) }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.json({ contract });
   } catch (error) {
     console.error("Error updating contract:", error);
@@ -222,7 +245,24 @@ router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Get contract info before deletion for logging
+    const contract = await prisma.contract.findUnique({ where: { id } });
+    if (!contract) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+
     await prisma.contract.delete({ where: { id } });
+
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_CONTRACT_DELETED",
+        metadata: { contractId: contract.id, contractName: contract.contractName }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
 
     res.json({ success: true });
   } catch (error) {

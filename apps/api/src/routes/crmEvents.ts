@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import { logAdminActivity } from "../lib/adminActivityLogger.js";
 
 const router = Router();
 
@@ -133,6 +134,17 @@ router.post("/", async (req: Request, res: Response) => {
       },
     });
 
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_EVENT_CREATED",
+        metadata: { eventId: event.id, eventName: event.eventName, brandId: event.brandId }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.status(201).json(event);
   } catch (error) {
     console.error("Error creating CRM event:", error);
@@ -197,6 +209,17 @@ router.patch("/:id", async (req: Request, res: Response) => {
       },
     });
 
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_EVENT_UPDATED",
+        metadata: { eventId: updated.id, eventName: updated.eventName, changes: Object.keys(updateData) }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.json(updated);
   } catch (error) {
     console.error("Error updating CRM event:", error);
@@ -218,6 +241,17 @@ router.delete("/:id", async (req: Request, res: Response) => {
     }
 
     await prisma.crmTask.delete({ where: { id } });
+
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_EVENT_DELETED",
+        metadata: { eventId: existing.id, eventName: existing.eventName }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
 
     res.status(204).send();
   } catch (error) {

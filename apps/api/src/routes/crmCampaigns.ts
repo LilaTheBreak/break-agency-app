@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import { logAdminActivity } from "../lib/adminActivityLogger.js";
 
 const router = Router();
 
@@ -142,6 +143,17 @@ router.post("/", async (req, res) => {
       },
     });
 
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_CAMPAIGN_CREATED",
+        metadata: { campaignId: campaign.id, campaignName: campaign.campaignName, brandId: campaign.brandId }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.status(201).json(campaign);
   } catch (error) {
     console.error("Error creating campaign:", error);
@@ -219,6 +231,17 @@ router.patch("/:id", async (req, res) => {
       },
     });
 
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_CAMPAIGN_UPDATED",
+        metadata: { campaignId: campaign.id, campaignName: campaign.campaignName, changes: Object.keys(updateData) }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
+
     res.json(campaign);
   } catch (error) {
     console.error("Error updating campaign:", error);
@@ -234,9 +257,26 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Get campaign info before deletion for logging
+    const campaign = await prisma.crmCampaign.findUnique({ where: { id } });
+    if (!campaign) {
+      return res.status(404).json({ error: "Campaign not found" });
+    }
+
     await prisma.crmCampaign.delete({
       where: { id },
     });
+
+    // Phase 2: Log to AdminActivity for activity feed
+    try {
+      await logAdminActivity(req as any, {
+        event: "CRM_CAMPAIGN_DELETED",
+        metadata: { campaignId: campaign.id, campaignName: campaign.campaignName }
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+      // Don't fail the request if logging fails
+    }
 
     res.json({ success: true, message: "Campaign deleted" });
   } catch (error) {
