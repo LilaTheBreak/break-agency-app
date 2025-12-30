@@ -1,4 +1,5 @@
-const STORAGE_KEY = "break_admin_crm_events_v1";
+// Phase 1: Removed localStorage functions - all CRUD operations now use API via crmClient.js
+// This file now only contains utility functions and constants
 
 export const EVENT_TYPES = [
   "Brand event",
@@ -11,42 +12,6 @@ export const EVENT_TYPES = [
 ];
 
 export const EVENT_STATUSES = ["Planned", "Confirmed", "Completed", "Cancelled"];
-
-function safeJsonParse(raw, fallback) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-
-export function readCrmEvents() {
-  if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  const parsed = safeJsonParse(raw, []);
-  return Array.isArray(parsed) ? parsed : [];
-}
-
-export function writeCrmEvents(events) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.isArray(events) ? events : []));
-}
-
-export function upsertCrmEvent(nextEvent) {
-  const events = readCrmEvents();
-  const exists = events.some((e) => e.id === nextEvent.id);
-  const updated = exists ? events.map((e) => (e.id === nextEvent.id ? nextEvent : e)) : [nextEvent, ...events];
-  writeCrmEvents(updated);
-  return updated;
-}
-
-export function deleteCrmEvent(eventId) {
-  const events = readCrmEvents();
-  const updated = events.filter((e) => e.id !== eventId);
-  writeCrmEvents(updated);
-  return updated;
-}
 
 export function formatEventDateTimeRange({ startDateTime, endDateTime }) {
   const format = (value) => {

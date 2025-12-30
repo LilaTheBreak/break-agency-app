@@ -17,11 +17,10 @@ import {
   isWonStatus,
   validateDeal
 } from "../lib/crmDeals.js";
-import { formatEventDateTimeRange, readCrmEvents } from "../lib/crmEvents.js";
-import { readCrmCampaigns } from "../lib/crmCampaigns.js";
-import { fetchDeals, createDeal, updateDeal, deleteDeal } from "../services/crmClient.js";
+import { formatEventDateTimeRange } from "../lib/crmEvents.js";
+import { fetchDeals, createDeal, updateDeal, deleteDeal, fetchEvents, fetchCampaigns, fetchContracts } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase, clearLocalStorageData } from "../lib/crmMigration.js";
-import { computeExpiryRisk, formatContractEndDate, readCrmContracts } from "../lib/crmContracts.js";
+import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
 
 const BRANDS_STORAGE_KEY = "break_admin_brands_v1";
 
@@ -233,9 +232,9 @@ export function AdminDealsPage({ session }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [deals, setDeals] = useState([]);
-  const [events, setEvents] = useState(() => readCrmEvents());
-  const [campaigns, setCampaigns] = useState(() => readCrmCampaigns());
-  const [contracts, setContracts] = useState(() => readCrmContracts());
+  const [events, setEvents] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [contracts, setContracts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [drawerId, setDrawerId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -253,22 +252,37 @@ export function AdminDealsPage({ session }) {
   const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
   const campaignById = useMemo(() => new Map((campaigns || []).map((c) => [c.id, c])), [campaigns]);
 
-  // Check for localStorage migration
-  useEffect(() => {
-    const data = checkForLocalStorageData();
-    if (data.deals > 0) {
-      setMigrationData(data);
-    }
-  }, []);
-
-  // Load deals from API
+  // Load data from API
   const loadDeals = async () => {
     try {
       setLoading(true);
-      const data = await fetchDeals();
-      setDeals(data);
+      const [dealsData, eventsData, campaignsData, contractsData, brandsData] = await Promise.all([
+        fetchDeals(),
+        fetchEvents(),
+        fetchCampaigns(),
+        fetchContracts(),
+        fetchBrands(),
+      ]);
+      // Defensive: Handle different response shapes
+      setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
+      setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
+      setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
+      setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
+      setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
+      
+      // Check for localStorage migration
+      const migrationCheck = await checkForLocalStorageData();
+      if (migrationCheck.hasData && migrationCheck.counts.deals > 0) {
+        setMigrationData(migrationCheck);
+      }
     } catch (err) {
-      console.error("Failed to load deals:", err);
+      console.error("Failed to load data:", err);
+      // Ensure arrays are set even on error
+      setDeals([]);
+      setEvents([]);
+      setCampaigns([]);
+      setContracts([]);
+      setBrands([]);
     } finally {
       setLoading(false);
     }
@@ -309,10 +323,8 @@ export function AdminDealsPage({ session }) {
 
   useEffect(() => {
     if (!drawerId && !createOpen) return;
+    // Refresh all data from API when drawer opens
     loadDeals();
-    setEvents(readCrmEvents());
-    setCampaigns(readCrmCampaigns());
-    setContracts(readCrmContracts());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerId, createOpen]);
 

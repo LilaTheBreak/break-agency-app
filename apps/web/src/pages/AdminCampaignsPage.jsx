@@ -8,12 +8,14 @@ import { EventChip } from "../components/EventChip.jsx";
 import { DealChip } from "../components/DealChip.jsx";
 import { ContractChip } from "../components/ContractChip.jsx";
 import { CAMPAIGN_TYPES, CAMPAIGN_STATUSES, formatCampaignDateRange } from "../lib/crmCampaigns.js";
-import { formatEventDateTimeRange, readCrmEvents } from "../lib/crmEvents.js";
-import { readCrmDeals } from "../lib/crmDeals.js";
-import { computeExpiryRisk, formatContractEndDate, readCrmContracts } from "../lib/crmContracts.js";
+import { formatEventDateTimeRange } from "../lib/crmEvents.js";
+import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
 import {
   fetchBrands,
   fetchCampaigns,
+  fetchEvents,
+  fetchDeals,
+  fetchContracts,
   createCampaign as createCampaignAPI,
   updateCampaign as updateCampaignAPI,
   deleteCampaign as deleteCampaignAPI,
@@ -205,9 +207,9 @@ export function AdminCampaignsPage({ session }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [events, setEvents] = useState(() => readCrmEvents());
-  const [deals, setDeals] = useState(() => readCrmDeals());
-  const [contracts, setContracts] = useState(() => readCrmContracts());
+  const [events, setEvents] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [drawerId, setDrawerId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -224,13 +226,19 @@ export function AdminCampaignsPage({ session }) {
           setMigrationNeeded(true);
         }
         
-        const [campaignsData, brandsData] = await Promise.all([
+        const [campaignsData, brandsData, eventsData, dealsData, contractsData] = await Promise.all([
           fetchCampaigns(),
           fetchBrands(),
+          fetchEvents(),
+          fetchDeals(),
+          fetchContracts(),
         ]);
         // Defensive: Handle different response shapes
         setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
         setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
+        setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
+        setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
+        setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
       } catch (error) {
         console.error("Failed to load data:", error);
         // Ensure arrays are set even on error
@@ -245,12 +253,24 @@ export function AdminCampaignsPage({ session }) {
 
   const refreshData = async () => {
     try {
-      const campaignsData = await fetchCampaigns();
+      const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
+        fetchCampaigns(),
+        fetchEvents(),
+        fetchDeals(),
+        fetchContracts(),
+      ]);
       // Defensive: Handle different response shapes
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
+      setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
+      setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
+      setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
     } catch (error) {
-      console.error("Failed to refresh campaigns:", error);
-      setCampaigns([]); // Ensure campaigns is always an array on error
+      console.error("Failed to refresh data:", error);
+      // Ensure all are arrays on error
+      setCampaigns([]);
+      setEvents([]);
+      setDeals([]);
+      setContracts([]);
     }
   };
 
@@ -345,9 +365,8 @@ export function AdminCampaignsPage({ session }) {
 
   useEffect(() => {
     if (!drawerId) return;
-    setEvents(readCrmEvents());
-    setDeals(readCrmDeals());
-    setContracts(readCrmContracts());
+    // Refresh related data from API
+    refreshData();
   }, [drawerId]);
 
   const openDrawer = (id) => {
@@ -663,23 +682,19 @@ export function AdminCampaignsPage({ session }) {
         actions={
           selectedCampaign ? (
             <TextButton
-              onClick={() => {
-                const duplicated = {
-                  ...selectedCampaign,
-                  id: `camp-${Date.now()}`,
-                  campaignName: `${selectedCampaign.campaignName} (copy)`,
-                  createdAt: nowIso(),
-                  updatedAt: nowIso(),
-                  linkedDealIds: [],
-                  linkedTalentIds: [],
-                  linkedTaskIds: [],
-                  linkedOutreachIds: [],
-                  linkedEventIds: [],
-                  activity: [{ at: nowIso(), label: "Campaign created" }]
-                };
-                const updated = upsertCrmCampaign(duplicated);
-                setCampaigns(updated);
-                openDrawer(duplicated.id);
+              onClick={async () => {
+                try {
+                  const duplicated = await createCampaignAPI({
+                    ...selectedCampaign,
+                    id: undefined, // Let API generate new ID
+                    campaignName: `${selectedCampaign.campaignName} (Copy)`,
+                  });
+                  await refreshData();
+                  openDrawer(duplicated.id);
+                } catch (error) {
+                  console.error("Failed to duplicate campaign:", error);
+                  alert("Failed to duplicate campaign. Please try again.");
+                }
               }}
             >
               Duplicate
@@ -1111,26 +1126,42 @@ export function AdminCampaignsPage({ session }) {
                   <p className="mt-1 text-sm text-brand-black/60">Campaigns are local-only for now.</p>
                 </div>
                 <TextButton
-                  onClick={() => {
-                    const updated = deleteCrmCampaign(selectedCampaign.id);
-                    setCampaigns(updated);
-                    closeDrawer();
+                  onClick={async () => {
+                    if (!confirm(`Delete campaign "${selectedCampaign.campaignName}"? This cannot be undone.`)) return;
+                    try {
+                      await deleteCampaignAPI(selectedCampaign.id);
+                      await refreshData();
+                      closeDrawer();
+                    } catch (error) {
+                      console.error("Failed to delete campaign:", error);
+                      alert("Failed to delete campaign. Please try again.");
+                    }
                   }}
                 >
                   Delete campaign
                 </TextButton>
               </div>
               <p className="mt-3 text-xs text-brand-black/50">
-                No backend persistence yet. This is saved in your browser storage.
+                Campaigns are persisted in the database. Changes are saved automatically.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <TextButton
-                  onClick={() => {
-                    writeCrmCampaigns(campaigns);
-                    alert("Campaigns saved to local storage.");
+                  onClick={async () => {
+                    try {
+                      const duplicated = await createCampaignAPI({
+                        ...selectedCampaign,
+                        id: undefined, // Let API generate new ID
+                        campaignName: `${selectedCampaign.campaignName} (Copy)`,
+                      });
+                      await refreshData();
+                      setDrawerId(duplicated.id);
+                    } catch (error) {
+                      console.error("Failed to duplicate campaign:", error);
+                      alert("Failed to duplicate campaign. Please try again.");
+                    }
                   }}
                 >
-                  Save now
+                  Duplicate
                 </TextButton>
               </div>
             </section>

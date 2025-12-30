@@ -1,4 +1,5 @@
-const STORAGE_KEY = "break_admin_crm_contracts_v1";
+// Phase 1: Removed localStorage functions - all CRUD operations now use API via crmClient.js
+// This file now only contains utility functions and constants
 
 export const CONTRACT_TYPES = [
   "Brand partnership",
@@ -12,42 +13,6 @@ export const CONTRACT_TYPES = [
 export const CONTRACT_STATUSES = ["Draft", "Sent", "Signed", "Active", "Completed", "Expired", "Cancelled"];
 
 export const RENEWAL_TYPES = ["Fixed term", "Auto-renew", "One-off"];
-
-function safeJsonParse(raw, fallback) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-
-export function readCrmContracts() {
-  if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  const parsed = safeJsonParse(raw, []);
-  return Array.isArray(parsed) ? parsed : [];
-}
-
-export function writeCrmContracts(contracts) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.isArray(contracts) ? contracts : []));
-}
-
-export function upsertCrmContract(nextContract) {
-  const contracts = readCrmContracts();
-  const exists = contracts.some((c) => c.id === nextContract.id);
-  const updated = exists ? contracts.map((c) => (c.id === nextContract.id ? nextContract : c)) : [nextContract, ...contracts];
-  writeCrmContracts(updated);
-  return updated;
-}
-
-export function deleteCrmContract(contractId) {
-  const contracts = readCrmContracts();
-  const updated = contracts.filter((c) => c.id !== contractId);
-  writeCrmContracts(updated);
-  return updated;
-}
 
 export function validateContract(contract) {
   const errors = [];
