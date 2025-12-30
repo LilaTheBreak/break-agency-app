@@ -95,17 +95,24 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     // Fetch campaigns
     const campaigns = await prisma.brandCampaign.findMany({
       where: whereClause,
-      include: { CampaignBrandPivot: true },
+      include: { 
+        CampaignBrandPivot: true 
+      },
       orderBy: { createdAt: "desc" },
       take: 25
+    }).catch((err) => {
+      // Handle database errors gracefully
+      console.error("[CAMPAIGNS] Database query error:", err);
+      return [];
     });
     
     // Format and return
     const formatted = campaigns.map((campaign) => formatCampaign(campaign));
-    res.status(200).json({ campaigns: formatted });
+    res.status(200).json({ campaigns: formatted || [] });
   } catch (error) {
     // Always return 200 with empty array on error - never crash dashboard
     console.error("[CAMPAIGNS] Fetch error:", error);
+    // Defensive: ensure we always return valid structure
     res.status(200).json({ campaigns: [] });
   }
 });

@@ -1,10 +1,11 @@
 import express from 'express';
-import { PrismaClient, DealStage } from '@prisma/client';
+import { DealStage } from '@prisma/client';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { logError } from '../lib/logger.js';
+import prisma from '../lib/prisma.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Get all active opportunities (public)
 router.get('/public', async (req, res) => {
@@ -37,10 +38,11 @@ router.get('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN',
         }
       }
     });
-    res.json(opportunities);
+    res.json(opportunities || []);
   } catch (error) {
-    console.error('Error fetching opportunities:', error);
-    res.status(500).json({ error: 'Failed to fetch opportunities' });
+    logError('Error fetching opportunities', error, { userId: req.user?.id });
+    // Return empty array instead of 500 - graceful degradation
+    res.status(200).json([]);
   }
 });
 
