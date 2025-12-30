@@ -100,7 +100,7 @@ export function AdminSettingsPage() {
   return (
     <DashboardShell
       title="Settings"
-      subtitle="Placeholder surface for configuring roles, integrations, and outbound comms."
+      subtitle="Configure roles, integrations, and outbound communications."
       navLinks={ADMIN_NAV_LINKS}
     >
       <section className="space-y-4">

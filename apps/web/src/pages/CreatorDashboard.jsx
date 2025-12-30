@@ -653,7 +653,7 @@ function SubmissionDetailPanel({ submission, session }) {
       </div>
       <div>
         <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Captions</p>
-        <p className="mt-1 text-sm text-brand-black/80">{submission.captions || "—"}</p>
+        <p className="mt-1 text-sm text-brand-black/80">{submission.captions || "No captions"}</p>
       </div>
       <div>
         <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Links</p>
