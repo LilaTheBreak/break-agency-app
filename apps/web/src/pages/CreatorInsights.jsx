@@ -9,8 +9,9 @@ export default function CreatorInsightsPage({ userId }) {
   useEffect(() => {
     if (!userId) return;
     getInsights(userId).then(setInsights).catch(() => undefined);
-    getWeeklyReports(userId).then(setReports).catch(() => undefined);
-  }, [userId, getInsights, getWeeklyReports]);
+    // Weekly reports feature removed - endpoint returns 410
+    // getWeeklyReports(userId).then(setReports).catch(() => undefined);
+  }, [userId, getInsights]);
 
   return (
     <div className="space-y-6 p-6">
@@ -42,12 +43,7 @@ export default function CreatorInsightsPage({ userId }) {
 
       <section className="rounded-xl bg-white p-5 shadow">
         <h2 className="mb-3 text-lg font-semibold">Weekly Reports</h2>
-        {reports.map((r) => (
-          <div key={r.id} className="border-b py-3">
-            <p className="text-sm font-medium">{new Date(r.weekStart).toDateString()}</p>
-            <p className="text-xs text-gray-600">{r.aiSummary}</p>
-          </div>
-        ))}
+        <p className="text-sm text-brand-black/60">Weekly reports feature is not yet available.</p>
       </section>
     </div>
   );

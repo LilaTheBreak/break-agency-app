@@ -19,11 +19,12 @@ router.post("/:userId/generate", async (req, res) => {
   res.json(data);
 });
 
-router.get("/:userId/weekly", async (req, res) => {
-  // REMOVED: creatorWeeklyReport model does not exist in schema.prisma
-  return res.status(501).json({ 
-    error: "Weekly reports feature not implemented",
-    message: "CreatorWeeklyReport model does not exist in database schema" 
+router.get("/:userId/weekly", async (_req, res) => {
+  // REMOVED: Weekly reports feature not implemented - CreatorWeeklyReport model does not exist
+  res.status(410).json({ 
+    error: "Weekly reports feature removed",
+    message: "This feature is not yet implemented. CreatorWeeklyReport model does not exist in database schema.",
+    alternative: "Use /api/insights/:userId for creator insights"
   });
 });
 

@@ -1,16 +1,14 @@
 import { Router } from "express";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-/**
- * Placeholder router for Outreach Leads
- * Prevents server crashes until the real service is implemented.
- */
-router.get("/", async (_req, res) => {
-  res.json({
-    ok: true,
-    message: "Outreach Leads route is not implemented yet",
-    data: [],
+// REMOVED: Outreach Leads feature not implemented
+router.get("/", requireAuth, async (_req, res) => {
+  res.status(410).json({ 
+    error: "Outreach Leads feature removed",
+    message: "This feature is not yet implemented and has been removed.",
+    alternative: "Use /api/outreach/records for outreach management"
   });
 });
 

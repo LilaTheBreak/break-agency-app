@@ -1,7 +1,9 @@
 import { apiFetch } from "./apiClient.js";
 
 export async function fetchBriefVersions({ briefId }) {
-  const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/versions`);
+  // REMOVED: Briefs feature not implemented - endpoint returns 410
+  throw new Error("Briefs feature is not available. Use opportunities instead.");
+  // const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/versions`);
   if (response.status === 404) {
     return { versions: [] };
   }
@@ -13,7 +15,9 @@ export async function fetchBriefVersions({ briefId }) {
 }
 
 export async function createBriefVersion({ briefId, data }) {
-  const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/version`, {
+  // REMOVED: Briefs feature not implemented - endpoint returns 410
+  throw new Error("Briefs feature is not available. Use opportunities instead.");
+  // const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/version`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -28,7 +32,9 @@ export async function createBriefVersion({ briefId, data }) {
 }
 
 export async function restoreBriefVersion({ versionId }) {
-  const response = await apiFetch(`/briefs/restore/${encodeURIComponent(versionId)}`, {
+  // REMOVED: Briefs feature not implemented - endpoint returns 410
+  throw new Error("Briefs feature is not available. Use opportunities instead.");
+  // const response = await apiFetch(`/briefs/restore/${encodeURIComponent(versionId)}`, {
     method: "POST"
   });
   if (!response.ok) {

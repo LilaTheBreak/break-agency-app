@@ -885,33 +885,21 @@ router.post("/xero/connect", async (req: Request, res: Response) => {
 });
 
 router.post("/xero/sync", async (_req: Request, res: Response) => {
-  try {
-    // Update last synced timestamp
-    await prisma.xeroConnection.updateMany({
-      data: {
-        lastSyncedAt: new Date()
-      }
-    });
-
-    res.json({ success: true, message: "Xero sync initiated" });
-  } catch (error) {
-    console.error("Error syncing Xero:", error);
-    res.status(500).json({ error: "Failed to sync Xero" });
-  }
+  // REMOVED: Placeholder sync endpoint - only updated timestamp, no real sync
+  res.status(410).json({ 
+    error: "Xero sync endpoint removed",
+    message: "This endpoint was a placeholder and has been removed. Xero integration is not yet implemented.",
+    alternative: "Use manual invoice tracking until Xero integration is complete"
+  });
 });
 
-router.get("/xero/invoice/:id", async (req: Request, res: Response) => {
-  try {
-    // Placeholder for Xero invoice fetch
-    // In real implementation, this would call Xero API
-    res.json({ 
-      message: "Xero integration not yet implemented",
-      invoiceId: req.params.id
-    });
-  } catch (error) {
-    console.error("Error fetching Xero invoice:", error);
-    res.status(500).json({ error: "Failed to fetch Xero invoice" });
-  }
+router.get("/xero/invoice/:id", async (_req: Request, res: Response) => {
+  // REMOVED: Placeholder invoice fetch endpoint - no real Xero API integration
+  res.status(410).json({ 
+    error: "Xero invoice endpoint removed",
+    message: "This endpoint was a placeholder and has been removed. Xero integration is not yet implemented.",
+    alternative: "Use manual invoice tracking until Xero integration is complete"
+  });
 });
 
 export default router;

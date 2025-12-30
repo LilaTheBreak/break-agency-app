@@ -33,10 +33,24 @@ router.post("/:id/upload", contractController.uploadContract);
 router.post("/:id/send", contractController.sendContract);
 
 // POST /api/contracts/:id/sign/talent - Talent signs the contract
-router.post("/:id/sign/talent", contractController.signContract);
+// REMOVED: E-signature feature uses stub providers - disabled until real providers are implemented
+router.post("/:id/sign/talent", requireAuth, async (_req, res) => {
+  res.status(410).json({ 
+    error: "E-signature feature removed",
+    message: "This feature uses stub providers and has been removed. E-signature integration is not yet implemented.",
+    alternative: "Use manual signature tracking until e-signature providers are configured"
+  });
+});
 
 // POST /api/contracts/:id/sign/brand - Brand signs the contract
-router.post("/:id/sign/brand", contractController.signContract);
+// REMOVED: E-signature feature uses stub providers - disabled until real providers are implemented
+router.post("/:id/sign/brand", requireAuth, async (_req, res) => {
+  res.status(410).json({ 
+    error: "E-signature feature removed",
+    message: "This feature uses stub providers and has been removed. E-signature integration is not yet implemented.",
+    alternative: "Use manual signature tracking until e-signature providers are configured"
+  });
+});
 
 // POST /api/contracts/:id/finalise - Finalise the contract
 router.post("/:id/finalise", contractController.finaliseContract);
