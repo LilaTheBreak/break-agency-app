@@ -13,8 +13,7 @@
     "skipLibCheck": true,
     "noEmitOnError": false,
     "sourceMap": false,
-    "allowJs": true,
-    "suppressImplicitAnyIndexErrors": true
+    "allowJs": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

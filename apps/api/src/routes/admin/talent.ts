@@ -4,7 +4,8 @@ import { requireRole } from "../../middleware/requireRole.js";
 import prisma from "../../lib/prisma.js";
 import { z } from "zod";
 import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
-import { logAdminActivity, logAuditEvent } from "../../lib/auditLogger.js";
+import { logAdminActivity } from "../../lib/adminActivityLogger.js";
+import { logAuditEvent } from "../../lib/auditLogger.js";
 import { logError } from "../../lib/logger.js";
 
 const router = Router();
@@ -340,7 +341,7 @@ router.post("/", async (req: Request, res: Response) => {
     });
 
     // Log admin activity
-    await logAdminActivity(req as any, {
+    await logAdminActivity(req, {
       event: "TALENT_CREATED",
       metadata: {
         talentId: talent.id,
@@ -407,7 +408,7 @@ router.put("/:id", async (req: Request, res: Response) => {
     });
 
     // Log admin activity
-    await logAdminActivity(req as any, {
+    await logAdminActivity(req, {
       event: "TALENT_UPDATED",
       metadata: {
         talentId: id,
