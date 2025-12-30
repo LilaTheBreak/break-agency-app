@@ -172,11 +172,4 @@ router.delete("/:id", requireAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// Phase 4: Removed requireUser - using requireAuth directly for consistency
-  if (!req.user?.id) {
-    return res.status(401).json({ error: true, message: "Authentication required" });
-  }
-  next();
-}
-
 export default router;
