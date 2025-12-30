@@ -50,7 +50,8 @@
 - `apps/api/src/routes/insights.ts` - Weekly reports route returns 410
 - `apps/api/src/routes/dealIntelligence.ts` - All routes return 410
 - `apps/api/src/routes/dashboardAggregator.ts` - Returns 410
-- `apps/api/src/routes/auth/tiktok.ts` - Returns 410
+- `apps/api/src/routes/auth/tiktok.ts` - Returns 410 (when not configured)
+- `apps/api/src/routes/auth/instagram.ts` - Returns 410 (when not configured)
 - `apps/api/src/controllers/contractController.ts` - Upload endpoint returns 410
 - `apps/api/src/controllers/socialController.ts` - All routes return 410
 - `apps/api/src/controllers/campaignAutoController.ts` - Preview and debug return 410
@@ -74,7 +75,8 @@
 - Social controller: 501 → 410 (5 routes)
 - Dashboard aggregator: 501 → 410
 - Campaign auto preview/debug: 501 → 410 (2 routes)
-- TikTok OAuth: 501 → 410
+- TikTok OAuth: 501 → 410 (when not configured)
+- Instagram OAuth: 501 → 410 (when not configured)
 - Bundles: 501 → 410 (2 routes)
 - **Note:** `truthLayerExamples.js` left as-is (examples file, not mounted in production)
 
