@@ -596,6 +596,50 @@ export function AdminBrandsPage({ session }) {
   const ownerDefault =
     session?.name?.split(" ")?.[0] || session?.email?.split("@")?.[0]?.split(".")?.[0] || "Admin";
 
+  // Wrapper functions to ensure state is always an array
+  const safeSetBrands = (value) => {
+    const safe = Array.isArray(value) ? value : [];
+    setBrands(safe);
+    if (!Array.isArray(value) && value !== null && value !== undefined) {
+      console.warn('[BRANDS PAGE] Attempted to set brands to non-array:', { value, type: typeof value });
+    }
+  };
+  const safeSetContacts = (value) => {
+    const safe = Array.isArray(value) ? value : [];
+    setContacts(safe);
+    if (!Array.isArray(value) && value !== null && value !== undefined) {
+      console.warn('[BRANDS PAGE] Attempted to set contacts to non-array:', { value, type: typeof value });
+    }
+  };
+  const safeSetCampaigns = (value) => {
+    const safe = Array.isArray(value) ? value : [];
+    setCampaigns(safe);
+    if (!Array.isArray(value) && value !== null && value !== undefined) {
+      console.warn('[BRANDS PAGE] Attempted to set campaigns to non-array:', { value, type: typeof value });
+    }
+  };
+  const safeSetEvents = (value) => {
+    const safe = Array.isArray(value) ? value : [];
+    setEvents(safe);
+    if (!Array.isArray(value) && value !== null && value !== undefined) {
+      console.warn('[BRANDS PAGE] Attempted to set events to non-array:', { value, type: typeof value });
+    }
+  };
+  const safeSetDeals = (value) => {
+    const safe = Array.isArray(value) ? value : [];
+    setDeals(safe);
+    if (!Array.isArray(value) && value !== null && value !== undefined) {
+      console.warn('[BRANDS PAGE] Attempted to set deals to non-array:', { value, type: typeof value });
+    }
+  };
+  const safeSetContracts = (value) => {
+    const safe = Array.isArray(value) ? value : [];
+    setContracts(safe);
+    if (!Array.isArray(value) && value !== null && value !== undefined) {
+      console.warn('[BRANDS PAGE] Attempted to set contracts to non-array:', { value, type: typeof value });
+    }
+  };
+
   const [brands, setBrands] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [brandToDelete, setBrandToDelete] = useState(null);
@@ -666,8 +710,8 @@ export function AdminBrandsPage({ session }) {
         // Defensive: ensure arrays are always arrays, even if API returns unexpected shape
         const safeBrands = Array.isArray(brandsResult.brands) ? brandsResult.brands : [];
         const safeContacts = Array.isArray(contactsResult.contacts) ? contactsResult.contacts : [];
-        setBrands(safeBrands);
-        setContacts(safeContacts);
+        safeSetBrands(safeBrands);
+        safeSetContacts(safeContacts);
       } catch (error) {
         console.error("[CRM] Critical error loading brands:", error);
         alert('Failed to load CRM data. Please refresh the page.');
@@ -698,8 +742,8 @@ export function AdminBrandsPage({ session }) {
       // Defensive: ensure arrays are always arrays
       const safeBrands = Array.isArray(brandsResult.brands) ? brandsResult.brands : [];
       const safeContacts = Array.isArray(contactsResult.contacts) ? contactsResult.contacts : [];
-      setBrands(safeBrands);
-      setContacts(safeContacts);
+      safeSetBrands(safeBrands);
+      safeSetContacts(safeContacts);
       setMigrationNeeded(false);
     } catch (error) {
       console.error("[CRM] Migration failed:", error);
@@ -728,8 +772,8 @@ export function AdminBrandsPage({ session }) {
       // Defensive: ensure arrays are always arrays
       const safeBrands = Array.isArray(brandsResult.brands) ? brandsResult.brands : (Array.isArray(brands) ? brands : []);
       const safeContacts = Array.isArray(contactsResult.contacts) ? contactsResult.contacts : (Array.isArray(contacts) ? contacts : []);
-      setBrands(safeBrands);
-      setContacts(safeContacts);
+      safeSetBrands(safeBrands);
+      safeSetContacts(safeContacts);
     } catch (error) {
       console.error("[CRM] Unexpected error refreshing data:", error);
     }
@@ -831,27 +875,27 @@ export function AdminBrandsPage({ session }) {
   useEffect(() => {
     if (!Array.isArray(campaigns)) {
       console.warn('[BRANDS PAGE] campaigns is not an array, resetting to []', { campaigns, type: typeof campaigns, isArray: Array.isArray(campaigns) });
-      setCampaigns([]);
+      safeSetCampaigns([]);
     }
     if (!Array.isArray(events)) {
       console.warn('[BRANDS PAGE] events is not an array, resetting to []', { events, type: typeof events, isArray: Array.isArray(events) });
-      setEvents([]);
+      safeSetEvents([]);
     }
     if (!Array.isArray(deals)) {
       console.warn('[BRANDS PAGE] deals is not an array, resetting to []', { deals, type: typeof deals, isArray: Array.isArray(deals) });
-      setDeals([]);
+      safeSetDeals([]);
     }
     if (!Array.isArray(contracts)) {
       console.warn('[BRANDS PAGE] contracts is not an array, resetting to []', { contracts, type: typeof contracts, isArray: Array.isArray(contracts) });
-      setContracts([]);
+      safeSetContracts([]);
     }
     if (!Array.isArray(contacts)) {
       console.warn('[BRANDS PAGE] contacts is not an array, resetting to []', { contacts, type: typeof contacts, isArray: Array.isArray(contacts) });
-      setContacts([]);
+      safeSetContacts([]);
     }
     if (!Array.isArray(brands)) {
       console.warn('[BRANDS PAGE] brands is not an array, resetting to []', { brands, type: typeof brands, isArray: Array.isArray(brands) });
-      setBrands([]);
+      safeSetBrands([]);
     }
   }, [campaigns, events, deals, contracts, contacts, brands]);
 
@@ -861,10 +905,10 @@ export function AdminBrandsPage({ session }) {
     const eventsData = readCrmEvents();
     const dealsData = readCrmDeals();
     const contractsData = readCrmContracts();
-    setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
-    setEvents(Array.isArray(eventsData) ? eventsData : []);
-    setDeals(Array.isArray(dealsData) ? dealsData : []);
-    setContracts(Array.isArray(contractsData) ? contractsData : []);
+    safeSetCampaigns(campaignsData);
+    safeSetEvents(eventsData);
+    safeSetDeals(dealsData);
+    safeSetContracts(contractsData);
   }, [drawerBrandId]);
   const [contactEditorOpen, setContactEditorOpen] = useState(false);
   const [contactEditorMode, setContactEditorMode] = useState("create"); // create | edit
