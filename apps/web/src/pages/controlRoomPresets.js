@@ -70,6 +70,16 @@ export const CONTROL_ROOM_PRESETS = {
         to: "/admin/queues"
       },
       {
+        title: "Tasks",
+        copy: "Task management and workflow tracking.",
+        to: "/admin/tasks"
+      },
+      {
+        title: "Talent",
+        copy: "Manage talent profiles, representation types, and relationships.",
+        to: "/admin/talent"
+      },
+      {
         title: "Users",
         copy: "Audit creator, brand, and manager accounts. Impersonate or edit roles quickly.",
         to: "/admin/users"

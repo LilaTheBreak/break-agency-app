@@ -22,6 +22,11 @@ const STATUS_OPTIONS = ["Awaiting response", "Accepted", "Tentative", "Declined"
 
 // Import MEETING_SUMMARIES from constants to ensure it's available globally
 import { MEETING_SUMMARIES } from "../constants/meetingSummaries.js";
+
+// Ensure MEETING_SUMMARIES is available globally as fallback
+if (typeof window !== "undefined" && !window.MEETING_SUMMARIES) {
+  window.MEETING_SUMMARIES = MEETING_SUMMARIES;
+}
 const TYPE_FILTERS = [
   { id: "content", label: "Content calendar" },
   { id: "meeting", label: "Meetings" },

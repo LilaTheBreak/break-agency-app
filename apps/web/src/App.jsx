@@ -1112,6 +1112,9 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           { to: "/admin/outreach", label: "Outreach" },
                           { to: "/admin/queues", label: "Queues" },
                           { to: "/admin/resources", label: "Resources" },
+                          { to: "/admin/tasks", label: "Tasks" },
+                          { to: "/admin/talent", label: "Talent" }, // New Talent Management menu
+                          { to: "/admin/users", label: "Users" },
                           { to: "/admin/settings", label: "Settings" } // Keep last - standard placement
                         ].map((item) => (
                           <Link

@@ -456,7 +456,9 @@ export function AdminTasksPage() {
           .slice(0, 10);
         setSuggested(normalized);
       } catch (error) {
-        console.error("Failed to load suggested tasks from Gmail:", error);
+        // Don't log error to console - listGmailMessages already handles errors gracefully
+        // Only set error state for UI feedback
+        setSuggestedError("Gmail messages unavailable. Connect Gmail or sync your inbox to see suggested tasks.");
         
         // Provide more helpful error messages
         let errorMessage = "Unable to load email suggestions.";

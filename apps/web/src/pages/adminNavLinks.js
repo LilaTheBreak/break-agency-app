@@ -13,6 +13,7 @@ export const ADMIN_NAV_LINKS = [
   { label: "Outreach", to: "/admin/outreach" },
   { label: "Queues", to: "/admin/queues" },
   { label: "Tasks", to: "/admin/tasks" },
+  { label: "Talent", to: "/admin/talent" }, // New Talent Management menu
   { label: "Users", to: "/admin/users" },
   { label: "Settings", to: "/admin/settings" } // Keep last - standard placement
 ];
