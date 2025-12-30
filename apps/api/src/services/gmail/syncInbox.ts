@@ -25,10 +25,10 @@ async function fetchRecentMessages(gmail: gmailV1.Gmail): Promise<gmailV1.Schema
   try {
     console.log(`[GMAIL SYNC] Listing messages from Gmail API (query: "in:inbox", maxResults: 100)...`);
     listResponse = await gmail.users.messages.list({
-      userId: "me",
-      maxResults: 100, // Fetch more messages to ensure comprehensive sync
-      q: "in:inbox"
-    });
+    userId: "me",
+    maxResults: 100, // Fetch more messages to ensure comprehensive sync
+    q: "in:inbox"
+  });
     console.log(`[GMAIL SYNC] Gmail API list response:`, {
       resultSizeEstimate: listResponse.data.resultSizeEstimate,
       messagesCount: listResponse.data.messages?.length || 0,
@@ -182,20 +182,32 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
       console.log(`[GMAIL SYNC] Checking for duplicates: ${gmailIds.length} message IDs for user ${userId}`);
       if (gmailIds.length > 0) {
         try {
-          const existingEmails = await prisma.inboundEmail.findMany({
-            where: { gmailId: { in: gmailIds } },
-            select: { gmailId: true }
-          });
-          existingEmails.forEach((e) => {
-            if (e.gmailId) existingGmailIds.add(e.gmailId);
-          });
-          console.log(`[GMAIL SYNC] Found ${existingGmailIds.size} existing emails (duplicates) for user ${userId}`);
+          // Prisma has a limit on `in` queries (typically 1000), but we're only fetching 100 messages
+          // Split into chunks if needed for safety (though 100 should be fine)
+          const chunkSize = 100;
+          for (let i = 0; i < gmailIds.length; i += chunkSize) {
+            const chunk = gmailIds.slice(i, i + chunkSize);
+            const existingEmails = await prisma.inboundEmail.findMany({
+              where: { 
+                gmailId: { in: chunk },
+                userId: userId // Also filter by userId for safety
+              },
+          select: { gmailId: true }
+            });
+            existingEmails.forEach((e) => {
+              if (e.gmailId) existingGmailIds.add(e.gmailId);
+            });
+          }
+          console.log(`[GMAIL SYNC] Found ${existingGmailIds.size} existing emails (duplicates) for user ${userId} out of ${gmailIds.length} checked`);
         } catch (dbError) {
           console.error(`[GMAIL SYNC] Failed to check existing emails for user ${userId}:`, {
             error: dbError instanceof Error ? dbError.message : String(dbError),
+            errorCode: (dbError as any)?.code,
             gmailIdsCount: gmailIds.length,
+            stack: dbError instanceof Error ? dbError.stack?.substring(0, 500) : undefined,
           });
           // Continue with sync even if we can't check duplicates
+          // Duplicates will be caught by P2002 errors during insert
         }
       }
     } else {
@@ -240,25 +252,25 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
 
       let createdEmail: any = null;
       try {
-        await prisma.$transaction(async (tx) => {
-          const thread = await tx.inboxMessage.upsert({
-            where: { threadId: inboxMessageData.threadId },
-            update: inboxMessageData,
-            create: { ...inboxMessageData, userId }
-          });
-          
-          // Use upsert to handle race conditions (concurrent syncs)
-          createdEmail = await tx.inboundEmail.upsert({
-            where: { gmailId: gmailMessage.id! },
-            update: {
-              subject: inboundEmailData.subject,
-              snippet: inboundEmailData.snippet,
-              body: inboundEmailData.body,
-              inboxMessageId: thread.id,
-            },
-            create: { ...inboundEmailData, inboxMessageId: thread.id },
-          });
+      await prisma.$transaction(async (tx) => {
+        const thread = await tx.inboxMessage.upsert({
+          where: { threadId: inboxMessageData.threadId },
+          update: inboxMessageData,
+          create: { ...inboxMessageData, userId }
         });
+        
+        // Use upsert to handle race conditions (concurrent syncs)
+        createdEmail = await tx.inboundEmail.upsert({
+          where: { gmailId: gmailMessage.id! },
+          update: {
+            subject: inboundEmailData.subject,
+            snippet: inboundEmailData.snippet,
+            body: inboundEmailData.body,
+            inboxMessageId: thread.id,
+          },
+          create: { ...inboundEmailData, inboxMessageId: thread.id },
+        });
+      });
         stats.imported++;
         if (stats.imported % 10 === 0 || stats.imported === 1) {
           console.log(`[GMAIL SYNC] Imported ${stats.imported} message${stats.imported !== 1 ? 's' : ''} so far for user ${userId}...`);
@@ -266,13 +278,28 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
       } catch (txError: any) {
         const errorCode = txError?.code;
         const errorMessage = txError instanceof Error ? txError.message : String(txError);
+        const errorName = txError?.name || '';
+        const meta = txError?.meta || {};
         
         // Check if this is a duplicate key error (P2002) - should be skipped, not failed
-        if (errorCode === 'P2002') {
-          console.warn(`[GMAIL SYNC] Duplicate key error for message ${gmailMessage.id} (likely race condition) - skipping:`, {
+        // Prisma can return P2002 for unique constraint violations
+        // Also check error message for duplicate/unique constraint keywords
+        const isDuplicateError = 
+          errorCode === 'P2002' ||
+          errorCode === '23505' || // PostgreSQL unique violation
+          errorMessage.toLowerCase().includes('unique constraint') ||
+          errorMessage.toLowerCase().includes('duplicate key') ||
+          errorMessage.toLowerCase().includes('already exists') ||
+          (meta?.target && Array.isArray(meta.target) && meta.target.includes('gmailId'));
+        
+        if (isDuplicateError) {
+          console.warn(`[GMAIL SYNC] Duplicate key error for message ${gmailMessage.id} (likely race condition or duplicate) - skipping:`, {
             messageId: gmailMessage.id,
             threadId: gmailMessage.threadId,
-            constraint: txError?.meta?.target,
+            errorCode,
+            errorName,
+            constraint: meta?.target,
+            errorMessage: errorMessage.substring(0, 200), // Truncate for logging
           });
           stats.skipped++; // Duplicate key = soft failure, count as skipped
           continue;
@@ -284,7 +311,9 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           messageId: gmailMessage.id,
           threadId: gmailMessage.threadId,
           errorCode,
-          constraint: txError?.meta?.target,
+          errorName,
+          constraint: meta?.target,
+          stack: txError instanceof Error ? txError.stack?.substring(0, 500) : undefined,
         });
         stats.failed++;
         continue; // Continue with next message instead of failing entire sync
@@ -344,14 +373,14 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
 
     // Update last synced timestamp and clear errors
     try {
-      await prisma.gmailToken.update({
-        where: { userId },
-        data: { 
-          lastSyncedAt: new Date(),
-          lastError: null,
-          lastErrorAt: null,
-        },
-      });
+    await prisma.gmailToken.update({
+      where: { userId },
+      data: { 
+        lastSyncedAt: new Date(),
+        lastError: null,
+        lastErrorAt: null,
+      },
+    });
     } catch (updateError) {
       // Log but don't fail sync if token update fails (token might have been deleted)
       console.warn(`[GMAIL SYNC] Failed to update GmailToken lastSyncedAt for user ${userId}:`, {
