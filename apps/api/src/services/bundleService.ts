@@ -60,7 +60,7 @@ export async function update(bundleId: string, data: {
   });
 }
 
-export async function delete(bundleId: string) {
+export async function deleteBundle(bundleId: string) {
   await prisma.bundle.delete({
     where: { id: bundleId }
   });

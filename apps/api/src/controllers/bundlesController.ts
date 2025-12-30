@@ -96,7 +96,7 @@ export async function deleteBundle(req: Request, res: Response, next: NextFuncti
     }
 
     const { id } = req.params;
-    const deleted = await bundleService.delete(id);
+    const deleted = await bundleService.deleteBundle(id);
     if (!deleted) {
       return res.status(404).json({ ok: false, error: "Bundle not found" });
     }
