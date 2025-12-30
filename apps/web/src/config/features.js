@@ -125,12 +125,9 @@ export const features = {
 
   /**
    * Opportunities/Briefs
-   * UNLOCK WHEN:
-   * - Brief submission API implemented
-   * - Application workflow built
-   * - Admin review interface functional
+   * ✅ Unlocked: API implemented and tested
    */
-  BRIEF_APPLICATIONS_ENABLED: false,
+  BRIEF_APPLICATIONS_ENABLED: true,
   
   /**
    * Advanced Features
@@ -153,12 +150,12 @@ export const features = {
   // Brand Dashboard sections
   CREATOR_ROSTER_ENABLED: true, // ✅ Unlocked: Roster management system implemented
   BRAND_SOCIAL_ANALYTICS_ENABLED: false, // Social analytics schema removed
-  BRAND_OPPORTUNITIES_ENABLED: false, // Opportunities API incomplete
+  BRAND_OPPORTUNITIES_ENABLED: true, // ✅ Unlocked: Opportunities API complete
   BRAND_CREATOR_MATCHES_ENABLED: true, // ✅ Unlocked: Transparent fit scoring implemented
 
   // Creator Dashboard sections
-  CREATOR_OPPORTUNITIES_ENABLED: false, // Creator opportunities API incomplete
-  CREATOR_SUBMISSIONS_ENABLED: false, // Submissions API not yet implemented
+  CREATOR_OPPORTUNITIES_ENABLED: true, // ✅ Unlocked: Creator opportunities API complete
+  CREATOR_SUBMISSIONS_ENABLED: true, // ✅ Unlocked: Submissions API implemented
   
   // Exclusive Talent Dashboard sections
   EXCLUSIVE_TASKS_ENABLED: true, // Task management API functional

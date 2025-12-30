@@ -8,6 +8,7 @@ import { stripeClient, handleStripeEvent } from "../services/stripeService.js";
 import { sendTemplatedEmail } from "../services/email/emailClient.js";
 import { logError } from "../lib/logger.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireRole } from "../middleware/requireRole.js";
 
 const router = Router();
 
@@ -68,6 +69,65 @@ router.post("/invoice", requireAuth, async (req: Request, res: Response) => {
     return res.json({ invoiceId: invoice.id, hostedInvoiceUrl: invoice.hosted_invoice_url });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create invoice";
+    return res.status(400).json({ error: true, message });
+  }
+});
+
+const payoutSchema = z.object({
+  amount: z.number().int().positive(),
+  currency: z.string().default("usd"),
+  destination: z.string().min(1), // Stripe account ID or bank account ID
+  metadata: z.record(z.any()).optional(),
+  description: z.string().optional()
+});
+
+// POST /api/payments/payout - Create a Stripe payout (admin only)
+router.post("/payout", requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN']), async (req: Request, res: Response) => {
+  if (!stripeClient) {
+    return res.status(503).json({ error: true, message: "Stripe not configured" });
+  }
+  try {
+    const payload = payoutSchema.parse(req.body ?? {});
+    
+    // Create payout in Stripe
+    const payout = await stripeClient.payouts.create({
+      amount: payload.amount,
+      currency: payload.currency,
+      destination: payload.destination,
+      metadata: {
+        ...payload.metadata,
+        userId: req.user?.id || "system",
+        createdBy: req.user?.id || "system"
+      },
+      description: payload.description || `Payout for ${req.user?.id || "user"}`
+    });
+
+    // Create payout record in database
+    const payoutRecord = await prisma.payout.create({
+      data: {
+        id: `payout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId: req.user?.id || null,
+        referenceId: payout.id,
+        creatorId: payload.metadata?.creatorId || req.user?.id || "",
+        dealId: payload.metadata?.dealId || "",
+        brandId: payload.metadata?.brandId || null,
+        amount: payout.amount / 100, // Stripe amounts are in cents
+        currency: payout.currency,
+        status: payout.status === "paid" ? "paid" : "pending",
+        paidAt: payout.arrival_date ? new Date(payout.arrival_date * 1000) : null,
+        createdBy: req.user?.id || null,
+        updatedAt: new Date()
+      }
+    });
+
+    return res.json({ 
+      payout: payoutRecord,
+      stripePayoutId: payout.id,
+      status: payout.status
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create payout";
+    logError("Failed to create Stripe payout", error);
     return res.status(400).json({ error: true, message });
   }
 });
