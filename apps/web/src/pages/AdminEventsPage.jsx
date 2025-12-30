@@ -13,9 +13,8 @@ import {
   isPastEvent,
   isUpcomingEvent
 } from "../lib/crmEvents.js";
-import { fetchEvents, createEvent, updateEvent, deleteEvent } from "../services/crmClient.js";
+import { fetchEvents, createEvent, updateEvent, deleteEvent, fetchDeals, fetchCampaigns, fetchBrands } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase, clearLocalStorageData } from "../lib/crmMigration.js";
-import { fetchDeals, fetchEvents, fetchCampaigns, fetchBrands } from "../services/crmClient.js";
 
 const BRANDS_STORAGE_KEY = "break_admin_brands_v1";
 

@@ -1,8 +1,9 @@
 {
   "buildCommand": "cd apps/web && pnpm build",
   "outputDirectory": "apps/web/dist",
-  "installCommand": "npm install -g pnpm@8.15.8",
+  "installCommand": "npm install -g pnpm@8.15.8 && pnpm install",
   "framework": "vite",
+  "nodeVersion": "22.x",
   "env": {
     "VITE_API_URL": "https://breakagencyapi-production.up.railway.app"
   },

@@ -1463,6 +1463,7 @@ export function AdminFinancePage() {
               </>
             )}
           </div>
+          )}
         </FinanceCard>
 
         <FinanceCard

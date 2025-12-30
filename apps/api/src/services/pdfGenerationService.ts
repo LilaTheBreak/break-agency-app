@@ -186,10 +186,18 @@ export class PDFGenerationService {
     const filepath = join(this.uploadsDir, filename);
 
     // Launch headless browser
-    const browser = await puppeteer.launch({
+    // In production, use system Chrome if available, or skip browser download
+    const launchOptions: any = {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    };
+
+    // Use system Chrome if PUPPETEER_EXECUTABLE_PATH is set, otherwise use bundled
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    const browser = await puppeteer.launch(launchOptions);
 
     try {
       const page = await browser.newPage();
@@ -230,10 +238,19 @@ export class PDFGenerationService {
     const filename = `${contractId}.pdf`;
     const filepath = join(this.uploadsDir, filename);
 
-    const browser = await puppeteer.launch({
+    // Launch headless browser
+    // In production, use system Chrome if available, or skip browser download
+    const launchOptions: any = {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    };
+
+    // Use system Chrome if PUPPETEER_EXECUTABLE_PATH is set, otherwise use bundled
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    const browser = await puppeteer.launch(launchOptions);
 
     try {
       const page = await browser.newPage();

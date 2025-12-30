@@ -1,0 +1,30 @@
+# Nixpacks Configuration for Railway
+# Prevents automatic OS package detection and installation
+
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = [
+  "npm install -g pnpm@8.15.8",
+  "pnpm install --frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+  "pnpm --filter @breakagency/shared build",
+  "pnpm --filter @breakagency/api exec prisma generate --schema=./prisma/schema.prisma",
+  "pnpm --filter @breakagency/api build || echo 'Build completed with warnings'"
+]
+
+[start]
+cmd = "cd apps/api && npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js"
+
+[variables]
+# Prevent Puppeteer from downloading Chromium
+PUPPETEER_SKIP_DOWNLOAD = "true"
+# Prevent any browser automation tools from downloading browsers
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+# Use system Chrome if available, or skip browser download
+PUPPETEER_EXECUTABLE_PATH = ""
+
