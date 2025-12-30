@@ -223,12 +223,10 @@ export function AdminMessagingPage() {
             />
           ))
         ) : (
-          <p className="rounded-3xl border border-brand-black/10 bg-brand-white/80 p-6 text-sm text-brand-black/70">
-            <div className="text-center py-8">
-              <p className="text-sm font-medium text-brand-black/80 mb-1">No threads in this filter</p>
-              <p className="text-xs text-brand-black/60">Try selecting a different filter or check back later.</p>
-            </div>
-          </p>
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-white/80 p-8 text-center">
+            <p className="text-sm font-medium text-brand-black/80 mb-1">No threads in this filter</p>
+            <p className="text-xs text-brand-black/60">Try selecting a different filter or check back later.</p>
+          </div>
         )}
       </section>
       {selectedThread ? (
