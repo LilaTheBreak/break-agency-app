@@ -204,15 +204,18 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
 
     console.log(`[GMAIL SYNC] Processing ${gmailMessages.length} messages for user ${userId}...`);
     for (const gmailMessage of gmailMessages) {
+      // Skip messages missing required fields (soft failure - malformed Gmail response)
       if (!gmailMessage.id || !gmailMessage.threadId) {
         console.warn(`[GMAIL SYNC] Skipping message missing id or threadId for user ${userId}:`, {
           hasId: !!gmailMessage.id,
           hasThreadId: !!gmailMessage.threadId,
+          messageId: gmailMessage.id || 'unknown',
         });
-        stats.failed++;
+        stats.skipped++; // Changed from failed to skipped - this is a soft failure
         continue;
       }
 
+      // Skip duplicates (already imported)
       if (existingGmailIds.has(gmailMessage.id)) {
         stats.skipped++;
         continue;
@@ -224,9 +227,12 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
         inboxMessageData = mapped.inboxMessageData;
         inboundEmailData = mapped.inboundEmailData;
       } catch (mapError) {
+        // Mapping errors are hard failures - message structure is invalid
         console.error(`[GMAIL SYNC] Failed to map message ${gmailMessage.id} for user ${userId}:`, {
           error: mapError instanceof Error ? mapError.message : String(mapError),
           messageId: gmailMessage.id,
+          threadId: gmailMessage.threadId,
+          reason: 'mapping_error',
         });
         stats.failed++;
         continue;
@@ -257,12 +263,28 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
         if (stats.imported % 10 === 0 || stats.imported === 1) {
           console.log(`[GMAIL SYNC] Imported ${stats.imported} message${stats.imported !== 1 ? 's' : ''} so far for user ${userId}...`);
         }
-      } catch (txError) {
+      } catch (txError: any) {
+        const errorCode = txError?.code;
+        const errorMessage = txError instanceof Error ? txError.message : String(txError);
+        
+        // Check if this is a duplicate key error (P2002) - should be skipped, not failed
+        if (errorCode === 'P2002') {
+          console.warn(`[GMAIL SYNC] Duplicate key error for message ${gmailMessage.id} (likely race condition) - skipping:`, {
+            messageId: gmailMessage.id,
+            threadId: gmailMessage.threadId,
+            constraint: txError?.meta?.target,
+          });
+          stats.skipped++; // Duplicate key = soft failure, count as skipped
+          continue;
+        }
+        
+        // All other transaction errors are hard failures
         console.error(`[GMAIL SYNC] Transaction failed for message ${gmailMessage.id} for user ${userId}:`, {
-          error: txError instanceof Error ? txError.message : String(txError),
+          error: errorMessage,
           messageId: gmailMessage.id,
           threadId: gmailMessage.threadId,
-          errorCode: (txError as any)?.code,
+          errorCode,
+          constraint: txError?.meta?.target,
         });
         stats.failed++;
         continue; // Continue with next message instead of failing entire sync

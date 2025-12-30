@@ -116,12 +116,19 @@ export function AdminMessagingPage() {
         const skippedCount = stats.skipped || 0;
         const failedCount = stats.failed || 0;
         
+        // Only show failures if there are actual hard failures (not soft failures like duplicates)
         if (syncedCount > 0) {
-          toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} already synced)` : ''}`);
+          if (failedCount > 0) {
+            toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}${failedCount > 0 ? `, ${failedCount} failed` : ''}`, { duration: 5000 });
+          } else {
+            toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} already synced)` : ''}`);
+          }
         } else if (skippedCount > 0) {
           toast.success(`All emails up to date (${skippedCount} already synced)`);
+        } else if (failedCount > 0) {
+          toast.error(`Sync completed with ${failedCount} error${failedCount !== 1 ? 's' : ''}. Please check logs.`, { duration: 6000 });
         } else {
-          toast.success(`Sync completed${failedCount > 0 ? ` — ${failedCount} failed` : ' — no new emails'}`);
+          toast.success('Sync completed — no new emails');
         }
       } else {
         setInboxError(result.message || "Sync failed");
