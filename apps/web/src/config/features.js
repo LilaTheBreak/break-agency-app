@@ -96,7 +96,7 @@ export const features = {
    */
   CONTRACT_GENERATION_ENABLED: true, // ✅ Unlocked: Template system & PDF generation ready
   CONTRACT_MANUAL_TRACKING_ENABLED: true, // ✅ Unlocked: Manual signature workflow
-  CONTRACT_SIGNING_ENABLED: false, // E-signature integration not yet implemented
+  CONTRACT_SIGNING_ENABLED: true, // ✅ Phase 5: E-signature routes implemented (uses native provider by default)
   
   /**
    * Deliverables Management
@@ -159,7 +159,7 @@ export const features = {
   
   // Exclusive Talent Dashboard sections
   EXCLUSIVE_TASKS_ENABLED: true, // Task management API functional
-  EXCLUSIVE_SOCIAL_ANALYTICS_ENABLED: true, // Social analytics schema exists
+  EXCLUSIVE_SOCIAL_ANALYTICS_ENABLED: true, // ✅ Phase 5: Social sync infrastructure enabled (requires platform credentials)
   EXCLUSIVE_TRENDING_CONTENT_ENABLED: false, // Trending content API not implemented (defer to post-launch)
   EXCLUSIVE_OPPORTUNITIES_ENABLED: true, // Opportunities API functional
   EXCLUSIVE_FINANCIAL_SUMMARY_ENABLED: true, // Financial summary API functional
@@ -178,7 +178,7 @@ export const features = {
    * All features are optional, independently deployable, and disabled by default.
    * These are "power tools" for advanced users, not core product features.
    */
-  GLOBAL_SEARCH_ENABLED: false, // Phase 5: Global search across entities
+  GLOBAL_SEARCH_ENABLED: true, // ✅ Phase 5: Global search implemented
   TRENDING_CONTENT_ENABLED: false, // Phase 5: Trending content feed
   ADVANCED_ANALYTICS_ENABLED: false, // Phase 5: Backend analytics aggregation
   SLACK_INTEGRATION_ENABLED: false, // Phase 5: Slack notifications integration

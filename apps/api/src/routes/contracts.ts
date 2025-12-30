@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import * as contractController from "../controllers/contractController.js";
+import prisma from "../lib/prisma.js";
 
 const router = Router();
 
@@ -33,23 +34,103 @@ router.post("/:id/upload", contractController.uploadContract);
 router.post("/:id/send", contractController.sendContract);
 
 // POST /api/contracts/:id/sign/talent - Talent signs the contract
-// REMOVED: E-signature feature uses stub providers - disabled until real providers are implemented
-router.post("/:id/sign/talent", requireAuth, async (_req, res) => {
-  res.status(410).json({ 
-    error: "E-signature feature removed",
-    message: "This feature uses stub providers and has been removed. E-signature integration is not yet implemented.",
-    alternative: "Use manual signature tracking until e-signature providers are configured"
-  });
+// Phase 5: Implemented e-signature using existing providers
+router.post("/:id/sign/talent", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const contract = await prisma.contract.findUnique({ 
+      where: { id },
+      include: { Deal: { select: { talentId: true } } }
+    });
+    
+    if (!contract) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+    
+    if (!contract.pdfUrl) {
+      return res.status(400).json({ error: "Contract PDF missing" });
+    }
+
+    // Phase 5: Use existing initiateSignature function
+    const { initiateSignature } = await import("../services/signature/orchestrator.js");
+    const result = await initiateSignature({
+      ...contract,
+      terms: contract.terms || {},
+      userId: contract.Deal?.talentId || req.user?.id || ""
+    });
+
+    // Update contract status
+    await prisma.contract.update({
+      where: { id },
+      data: { 
+        status: "pending_signature",
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      envelopeId: result.envelopeId,
+      requestId: result.requestId,
+      message: "Signature request sent to talent"
+    });
+  } catch (error) {
+    console.error("Error initiating talent signature:", error);
+    res.status(500).json({ 
+      error: "Failed to initiate signature",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });
 
 // POST /api/contracts/:id/sign/brand - Brand signs the contract
-// REMOVED: E-signature feature uses stub providers - disabled until real providers are implemented
-router.post("/:id/sign/brand", requireAuth, async (_req, res) => {
-  res.status(410).json({ 
-    error: "E-signature feature removed",
-    message: "This feature uses stub providers and has been removed. E-signature integration is not yet implemented.",
-    alternative: "Use manual signature tracking until e-signature providers are configured"
-  });
+// Phase 5: Implemented e-signature using existing providers
+router.post("/:id/sign/brand", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const contract = await prisma.contract.findUnique({ 
+      where: { id },
+      include: { Brand: { select: { id: true, name: true } } }
+    });
+    
+    if (!contract) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+    
+    if (!contract.pdfUrl) {
+      return res.status(400).json({ error: "Contract PDF missing" });
+    }
+
+    // Phase 5: Use existing initiateSignature function
+    const { initiateSignature } = await import("../services/signature/orchestrator.js");
+    const result = await initiateSignature({
+      ...contract,
+      terms: contract.terms || {},
+      userId: contract.brandId || req.user?.id || ""
+    });
+
+    // Update contract status
+    await prisma.contract.update({
+      where: { id },
+      data: { 
+        status: "pending_signature",
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      envelopeId: result.envelopeId,
+      requestId: result.requestId,
+      message: "Signature request sent to brand"
+    });
+  } catch (error) {
+    console.error("Error initiating brand signature:", error);
+    res.status(500).json({ 
+      error: "Failed to initiate signature",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });
 
 // POST /api/contracts/:id/finalise - Finalise the contract

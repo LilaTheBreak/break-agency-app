@@ -488,7 +488,11 @@ app.use("/api/deliverables", deliverablesRouter);
 
 // New contract and deliverable workflow (manual-first, with templates and file upload)
 import deliverablesV2Router from "./routes/deliverables-v2.js";
+
+// Phase 5: Global Search
+import searchRouter from "./routes/search.js";
 app.use("/api/deliverables-v2", deliverablesV2Router);
+app.use("/api/search", searchRouter);
 
 // ------------------------------------------------------
 // CAMPAIGNS
