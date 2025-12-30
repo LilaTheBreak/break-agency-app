@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { isFeatureEnabled } from "../config/features.js";
+import { ComingSoon } from "../components/ComingSoon.jsx";
 // Fallback icon set to avoid external dependency
 const makeIcon = (glyph) => (props) => (
   <span aria-hidden="true" {...props}>
@@ -70,6 +72,19 @@ const statusConfig = {
 };
 
 export default function EmailOpportunities() {
+  // Gate this feature - opportunities API is not yet fully wired
+  if (!isFeatureEnabled('CREATOR_OPPORTUNITIES_ENABLED')) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <ComingSoon
+          feature="CREATOR_OPPORTUNITIES_ENABLED"
+          title="Email Opportunities"
+          description="Automatically scan and classify brand opportunities from your Gmail inbox"
+        />
+      </div>
+    );
+  }
+
   const [opportunities, setOpportunities] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);

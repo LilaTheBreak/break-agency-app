@@ -60,11 +60,11 @@ export function AdminSettingsPage() {
           alert("Failed to get Google Calendar OAuth URL");
         }
       } else if (serviceName === "Slack") {
-        alert("Slack integration coming soon");
+        alert("Slack integration is not yet available. This feature is coming soon.");
       } else if (serviceName === "Notion") {
-        alert("Notion integration coming soon");
+        alert("Notion integration is not yet available. This feature is coming soon.");
       } else if (serviceName === "Google Drive") {
-        alert("Google Drive integration coming soon");
+        alert("Google Drive integration is not yet available. This feature is coming soon.");
       }
     } catch (error) {
       console.error(`Failed to connect ${serviceName}:`, error);
@@ -163,33 +163,43 @@ export function AdminSettingsPage() {
           </p>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             {[
-              { name: "Slack", defaultStatus: "Connected to #ops-control-room" },
-              { name: "Notion", defaultStatus: "Connected to Runbooks workspace" },
-              { name: "Google Drive", defaultStatus: "Not connected" },
-              { name: "Gmail", defaultStatus: "Not connected" },
-              { name: "Google Calendar", defaultStatus: "Not connected" }
+              { name: "Gmail", defaultStatus: "Not connected", available: true },
+              { name: "Google Calendar", defaultStatus: "Not connected", available: true },
+              { name: "Slack", defaultStatus: "Coming soon", available: false },
+              { name: "Notion", defaultStatus: "Coming soon", available: false },
+              { name: "Google Drive", defaultStatus: "Coming soon", available: false }
             ].map((integration) => {
               const isConnected = integrationStatuses[integration.name];
               const isLoading = loading[integration.name];
+              const isAvailable = integration.available;
               const displayStatus = isConnected 
-                ? integration.defaultStatus.replace("Not connected", "Connected")
+                ? "Connected"
                 : integration.defaultStatus;
 
               return (
-                <div key={integration.name} className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+                <div key={integration.name} className={`space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 ${!isAvailable ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-brand-black">{integration.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-brand-black">{integration.name}</span>
+                      {!isAvailable && (
+                        <span className="text-[0.6rem] uppercase tracking-[0.2em] text-brand-black/50 bg-brand-black/5 px-2 py-0.5 rounded-full">Coming soon</span>
+                      )}
+                    </div>
                     <button 
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (!isAvailable) {
+                          alert(`${integration.name} integration is not yet available. This feature is coming soon.`);
+                          return;
+                        }
                         isConnected ? handleDisconnect(integration.name) : handleConnect(integration.name);
                       }}
-                      disabled={isLoading}
+                      disabled={isLoading || !isAvailable}
                       className="rounded-xl border border-brand-black/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isLoading ? "..." : (isConnected ? "Disconnect" : "Connect")}
+                      {isLoading ? "..." : (isConnected ? "Disconnect" : (isAvailable ? "Connect" : "Coming soon"))}
                     </button>
                   </div>
                   <p className="text-xs text-brand-black/60">{displayStatus}</p>

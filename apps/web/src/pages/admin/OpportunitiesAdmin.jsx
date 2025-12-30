@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { isFeatureEnabled } from '../../config/features.js';
+import { ComingSoon } from '../../components/ComingSoon.jsx';
 
 export function OpportunitiesAdmin() {
+  // Gate this feature - opportunities API is not yet fully wired
+  if (!isFeatureEnabled('BRAND_OPPORTUNITIES_ENABLED')) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-16">
+        <ComingSoon
+          feature="BRAND_OPPORTUNITIES_ENABLED"
+          title="Opportunities Marketplace"
+          description="Post briefs and get matched with creators based on AI-powered fit analysis"
+        />
+      </div>
+    );
+  }
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

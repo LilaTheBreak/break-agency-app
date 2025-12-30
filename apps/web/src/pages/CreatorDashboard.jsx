@@ -53,8 +53,8 @@ function CreatorRevenueSection() {
         </div>
       </div>
       <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
-        <p className="text-sm text-brand-black/60">Metrics not yet available</p>
-        <p className="mt-2 text-xs text-brand-black/40">Revenue tracking, audience growth, and deal metrics will appear once your campaigns are live</p>
+        <p className="text-sm font-semibold text-brand-black/70">Revenue tracking coming soon</p>
+        <p className="mt-2 text-xs text-brand-black/50">Revenue metrics, audience growth, and deal analytics will be available once the tracking system is fully implemented.</p>
       </div>
     </section>
   );
@@ -83,19 +83,23 @@ function CreatorEmailOpportunitiesSection() {
       <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-purple-200 bg-white p-4">
           <p className="text-xs text-brand-black/60 mb-1">Event Invites</p>
-          <p className="text-2xl font-bold text-purple-600">—</p>
+          <p className="text-2xl font-bold text-purple-600">0</p>
+          <p className="text-xs text-brand-black/40 mt-1">Coming soon</p>
         </div>
         <div className="rounded-2xl border border-blue-200 bg-white p-4">
           <p className="text-xs text-brand-black/60 mb-1">Brand Opportunities</p>
-          <p className="text-2xl font-bold text-blue-600">—</p>
+          <p className="text-2xl font-bold text-blue-600">0</p>
+          <p className="text-xs text-brand-black/40 mt-1">Coming soon</p>
         </div>
         <div className="rounded-2xl border border-green-200 bg-white p-4">
           <p className="text-xs text-brand-black/60 mb-1">Collaborations</p>
-          <p className="text-2xl font-bold text-green-600">—</p>
+          <p className="text-2xl font-bold text-green-600">0</p>
+          <p className="text-xs text-brand-black/40 mt-1">Coming soon</p>
         </div>
         <div className="rounded-2xl border border-orange-200 bg-white p-4">
           <p className="text-xs text-brand-black/60 mb-1">Inbound Interest</p>
-          <p className="text-2xl font-bold text-orange-600">—</p>
+          <p className="text-2xl font-bold text-orange-600">0</p>
+          <p className="text-xs text-brand-black/40 mt-1">Coming soon</p>
         </div>
       </div>
       <div className="rounded-2xl border border-brand-black/10 bg-white p-6">

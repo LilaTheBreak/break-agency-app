@@ -24,12 +24,9 @@ export default function UgcMessagesPage() {
           ))}
         </div>
         <div className="space-y-4 rounded-[32px] border border-brand-black/10 bg-brand-white p-6 shadow-[0_30px_80px_rgba(0,0,0,0.08)]">
-          <p className="text-sm uppercase tracking-[0.35em] text-brand-black/60">Placeholder</p>
-          <p className="text-sm text-brand-black/70">
-            Your messages will surface here as soon as creators, brands, or Ops ping your inbox. This area will eventually show actionable cards with filters for operations updates, brand brief changes, and support alerts.
-          </p>
-          <p className="text-sm text-brand-black/70">
-            Need a higher signal? Keep your profile current so AI can route the right messages faster.
+          <p className="text-sm font-semibold text-brand-black/70">Messages coming soon</p>
+          <p className="text-sm text-brand-black/60">
+            The message center is being built. Once available, you'll see messages from operations, brands, and support here with filters to help you focus on what needs action.
           </p>
         </div>
       </section>

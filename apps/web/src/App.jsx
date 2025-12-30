@@ -986,11 +986,8 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   const isPublicResource = location.pathname.startsWith("/resource-hub");
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(() => [
-    { id: "notif-1", title: "New message", detail: "Brand replied to your thread.", read: false, to: "/admin/messaging" },
-    { id: "notif-2", title: "Contract awaiting signature", detail: "UGC Spring Campaign", read: false, to: "/admin/contracts" },
-    { id: "notif-3", title: "Task due today", detail: "Review storyboard edits", read: true, to: "/admin/tasks" }
-  ]);
+  // Notifications system not yet implemented - using empty array until API is ready
+  const [notifications, setNotifications] = useState(() => []);
   const isAdmin = session?.role === 'ADMIN' || session?.role === 'SUPERADMIN';
 
   useEffect(() => {
