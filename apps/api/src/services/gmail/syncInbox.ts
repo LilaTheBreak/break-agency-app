@@ -400,6 +400,7 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     throw error;
   }
 
+  const totalProcessed = stats.imported + stats.skipped + stats.failed;
   console.log(`[GMAIL SYNC] Sync complete for user ${userId}:`, {
     imported: stats.imported,
     updated: stats.updated,
@@ -408,7 +409,10 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
     contactsCreated: stats.contactsCreated,
     brandsCreated: stats.brandsCreated,
     linkErrors: stats.linkErrors,
-    totalProcessed: stats.imported + stats.skipped + stats.failed,
+    totalProcessed,
+    summary: stats.failed > 0 
+      ? `${stats.imported} imported, ${stats.skipped} skipped (duplicates/malformed), ${stats.failed} failed (hard errors)`
+      : `${stats.imported} imported, ${stats.skipped} skipped (duplicates/malformed)`,
   });
   return stats;
 }
