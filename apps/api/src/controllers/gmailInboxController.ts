@@ -104,9 +104,21 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
       timestamp: new Date().toISOString()
     });
     
+    // Build summary message
+    const totalProcessed = stats.imported + stats.skipped + stats.failed;
+    let summary = "";
+    if (totalProcessed === 0) {
+      summary = "No new messages to sync";
+    } else if (stats.failed > 0) {
+      summary = `${stats.imported} imported, ${stats.skipped} skipped (duplicates), ${stats.failed} failed (errors)`;
+    } else {
+      summary = `${stats.imported} imported, ${stats.skipped} skipped (duplicates)`;
+    }
+    
     res.json({ 
       message: "Gmail inbox sync completed.", 
       success: true,
+      summary,
       stats: {
         imported: stats.imported,
         updated: stats.updated,
@@ -167,16 +179,27 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
       return;
     }
     
-    // Handle Google API errors
+    // Handle Google API errors (return 200 OK with error details, not 503)
     if (error instanceof Error && (
       error.message.includes("quota") ||
       error.message.includes("rate limit") ||
       error.message.includes("403") ||
       error.message.includes("429")
     )) {
-      res.status(503).json({
+      res.status(200).json({
+        success: false,
         error: "gmail_api_limit",
-        message: "Gmail API rate limit exceeded. Please try again in a few minutes."
+        message: "Gmail API rate limit exceeded. Please try again in a few minutes.",
+        summary: "0 imported, 0 skipped, 0 failed (rate limit)",
+        stats: {
+          imported: 0,
+          updated: 0,
+          skipped: 0,
+          failed: 0,
+          contactsCreated: 0,
+          brandsCreated: 0,
+          linkErrors: 0,
+        }
       });
       return;
     }

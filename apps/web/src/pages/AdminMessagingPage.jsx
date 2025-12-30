@@ -110,18 +110,30 @@ export function AdminMessagingPage() {
         if (inboxResult.success) {
           setInboxEmails(inboxResult.data || []);
         }
-        // Success feedback - use stats from backend
+        // Success feedback - use summary from backend if available, otherwise build from stats
         const stats = result.stats || {};
+        const summary = result.summary;
         const syncedCount = stats.imported || 0;
         const skippedCount = stats.skipped || 0;
         const failedCount = stats.failed || 0;
         
-        // Only show failures if there are actual hard failures (not soft failures like duplicates)
-        if (syncedCount > 0) {
+        // Use backend summary if available, otherwise build custom message
+        if (summary) {
           if (failedCount > 0) {
-            toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}${failedCount > 0 ? `, ${failedCount} failed` : ''}`, { duration: 5000 });
+            toast.error(summary, { duration: 5000 });
+          } else if (syncedCount > 0) {
+            toast.success(summary);
           } else {
-            toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} already synced)` : ''}`);
+            toast.success(summary);
+          }
+        } else {
+          // Fallback to building message from stats
+          if (syncedCount > 0) {
+            if (failedCount > 0) {
+              toast.error(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}${failedCount > 0 ? `, ${failedCount} failed` : ''}`, { duration: 5000 });
+            } else {
+              toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} already synced)` : ''}`);
+            }
           }
         } else if (skippedCount > 0) {
           toast.success(`All emails up to date (${skippedCount} already synced)`);

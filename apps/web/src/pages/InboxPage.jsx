@@ -77,8 +77,21 @@ function InboxConnected({ user }) {
     try {
       setSyncing(true);
       setError(null);
-      await syncGmailInbox();
-      toast.success('Gmail sync completed');
+      const result = await syncGmailInbox();
+      
+      if (result.success && result.stats) {
+        const { imported, skipped, failed } = result.stats;
+        if (failed > 0) {
+          toast.error(`Sync completed: ${imported} imported, ${skipped} skipped, ${failed} failed`, { duration: 5000 });
+        } else if (imported > 0) {
+          toast.success(`Sync completed: ${imported} imported${skipped > 0 ? `, ${skipped} skipped (duplicates)` : ''}`);
+        } else {
+          toast.success(result.summary || 'Sync completed - no new messages');
+        }
+      } else {
+        toast.success(result.summary || 'Gmail sync completed');
+      }
+      
       await fetchData(); // Reload messages after sync
     } catch (err) {
       setError(err.message || "Failed to sync Gmail");

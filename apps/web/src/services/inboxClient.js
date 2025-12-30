@@ -42,10 +42,22 @@ export const syncGmailInbox = async () => {
   try {
     const response = await apiFetch("/api/gmail/inbox/sync", { method: "POST" });
     if (!response.ok) {
-      return { success: false, message: "Sync failed" };
+      // Try to get error details from response
+      let errorMessage = "Sync failed";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        // If response isn't JSON, use default message
+      }
+      return { success: false, message: errorMessage };
     }
     const data = await response.json();
-    return { success: true, ...data };
+    // Return full response including stats and summary
+    return { 
+      success: data.success !== false, // Handle case where success: false but 200 OK
+      ...data 
+    };
   } catch (error) {
     return { success: false, message: error.message || "Network error" };
   }
