@@ -446,13 +446,15 @@ function Drawer({ open, title, onClose, children, actions }) {
 
 function EmptyState({ onAdd }) {
   return (
-    <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-10 text-center">
-      <p className="font-display text-3xl uppercase text-brand-black">No brands yet</p>
-      <p className="mt-3 text-sm text-brand-black/70">
-        Add a brand to track deals, outreach, and campaigns — even if they never log in.
-      </p>
-      <div className="mt-6 flex justify-center">
-        <PrimaryButton onClick={onAdd}>Add brand</PrimaryButton>
+    <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
+      <div className="mx-auto max-w-md">
+        <p className="font-display text-2xl uppercase text-brand-black">Start building your brand network</p>
+        <p className="mt-3 text-sm leading-relaxed text-brand-black/70">
+          Add your first brand to track partnerships, deals, and campaigns. Brands are long-lived CRM entities that persist even without login.
+        </p>
+        <div className="mt-8 flex justify-center">
+          <PrimaryButton onClick={onAdd}>Add your first brand</PrimaryButton>
+        </div>
       </div>
     </div>
   );
@@ -1217,14 +1219,14 @@ export function AdminBrandsPage({ session }) {
             <div>
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Brands</p>
               <h2 className="font-display text-3xl uppercase text-brand-black">Brand CRM</h2>
-              <p className="mt-1 text-sm text-brand-black/70">
-                Store every brand you work with (or have worked with) and link them across deals, outreach, and finance.
+              <p className="mt-2 text-sm leading-relaxed text-brand-black/70">
+                Track every brand relationship — past, present, and future. Link brands to deals, campaigns, and contacts for complete visibility.
               </p>
             </div>
             <PrimaryButton onClick={openCreate}>Add brand</PrimaryButton>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-linen/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-linen/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 focus-within:border-brand-red/30 focus-within:ring-2 focus-within:ring-brand-red/10 transition-colors">
               <span className="text-brand-black/60">Search</span>
               <input
                 value={query}
@@ -1233,12 +1235,12 @@ export function AdminBrandsPage({ session }) {
                 className="w-56 bg-transparent text-xs uppercase tracking-[0.3em] text-brand-black outline-none placeholder:text-brand-black/30"
               />
             </label>
-            <label className="flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-linen/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70">
+            <label className="flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-linen/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 focus-within:border-brand-red/30 focus-within:ring-2 focus-within:ring-brand-red/10 transition-colors">
               <span className="text-brand-black/60">Status</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-xs uppercase tracking-[0.3em] text-brand-black outline-none"
+                className="bg-transparent text-xs uppercase tracking-[0.3em] text-brand-black outline-none cursor-pointer"
               >
                 {["All", ...BRAND_STATUSES].map((s) => (
                   <option key={s} value={s}>
@@ -1247,14 +1249,17 @@ export function AdminBrandsPage({ session }) {
                 ))}
               </select>
             </label>
-            <TextButton
-              onClick={() => {
-                setQuery("");
-                setStatusFilter("All");
-              }}
-            >
-              Reset
-            </TextButton>
+            {(query || statusFilter !== "All") && (
+              <TextButton
+                onClick={() => {
+                  setQuery("");
+                  setStatusFilter("All");
+                }}
+                className="text-xs"
+              >
+                Clear filters
+              </TextButton>
+            )}
           </div>
         </section>
 
@@ -1546,9 +1551,10 @@ export function AdminBrandsPage({ session }) {
                 </div>
               </div>
               {brandCampaigns.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-                  <p className="text-sm text-brand-black/70">
-                    No campaigns yet. Group deals, talent, and events into campaigns to manage activations clearly.
+                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-5">
+                  <p className="text-sm font-medium text-brand-black/80 mb-1">No campaigns yet</p>
+                  <p className="text-xs text-brand-black/60 leading-relaxed">
+                    Group deals, talent, and events into campaigns to manage activations clearly.
                   </p>
                 </div>
               ) : (
@@ -1604,9 +1610,10 @@ export function AdminBrandsPage({ session }) {
                 </div>
               </div>
               {brandDeals.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-                  <p className="text-sm text-brand-black/70">
-                    No deals yet. Deals are how revenue flows through the platform — every deal belongs to a brand.
+                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-5">
+                  <p className="text-sm font-medium text-brand-black/80 mb-1">No deals yet</p>
+                  <p className="text-xs text-brand-black/60 leading-relaxed">
+                    Deals are how revenue flows through the platform — every deal belongs to a brand.
                   </p>
                 </div>
               ) : (
@@ -1660,12 +1667,13 @@ export function AdminBrandsPage({ session }) {
                 </div>
               </div>
               {brandContracts.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-                  <p className="text-sm text-brand-black/70">
-                    No contracts yet. Contracts link deals, brands, and talent — and power renewals and tasks later.
+                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-5">
+                  <p className="text-sm font-medium text-brand-black/80 mb-1">No contracts yet</p>
+                  <p className="text-xs text-brand-black/60 leading-relaxed mb-2">
+                    Contracts link deals, brands, and talent — and power renewals and tasks later.
                   </p>
-                  <p className="mt-2 text-xs text-brand-black/50">
-                    Contracts require a linked deal; you can create a deal first, then attach the contract.
+                  <p className="text-xs text-brand-black/50 leading-relaxed">
+                    Contracts require a linked deal; create a deal first, then attach the contract.
                   </p>
                 </div>
               ) : (
@@ -1730,9 +1738,10 @@ export function AdminBrandsPage({ session }) {
                 </div>
               </div>
               {brandEvents.length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-                  <p className="text-sm text-brand-black/70">
-                    No events yet. Add brand moments to keep prep, attendance, and follow-up calm and visible.
+                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-5">
+                  <p className="text-sm font-medium text-brand-black/80 mb-1">No events yet</p>
+                  <p className="text-xs text-brand-black/60 leading-relaxed">
+                    Add brand moments to keep prep, attendance, and follow-up calm and visible.
                   </p>
                 </div>
               ) : (
@@ -1822,9 +1831,10 @@ export function AdminBrandsPage({ session }) {
                 </div>
               </div>
               {(Array.isArray(brandContacts) ? brandContacts : []).length === 0 ? (
-                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
-                  <p className="text-sm text-brand-black/70">
-                    No contacts yet. Add marketing, partnerships, PR, founders, or assistants so outreach and deals stay contextual.
+                <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-5">
+                  <p className="text-sm font-medium text-brand-black/80 mb-1">No contacts yet</p>
+                  <p className="text-xs text-brand-black/60 leading-relaxed">
+                    Add marketing, partnerships, PR, founders, or assistants so outreach and deals stay contextual.
                   </p>
                 </div>
               ) : (

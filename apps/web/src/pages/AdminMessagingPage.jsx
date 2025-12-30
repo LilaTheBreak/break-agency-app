@@ -4,6 +4,7 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { useMessaging } from "../context/messaging.js";
 import { getRecentInbox, getGmailStatus, syncGmailInbox } from "../services/inboxClient.js";
 import { useGmailAuth } from "../hooks/useGmailAuth.js";
+import toast from "react-hot-toast";
 
 const FILTERS = ["All", "Creators", "Brands", "Talent Managers", "External"];
 const ACCEPTED_ATTACHMENTS = ".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.mp4,.mov,.xlsx,.csv";
@@ -116,11 +117,11 @@ export function AdminMessagingPage() {
         const failedCount = stats.failed || 0;
         
         if (syncedCount > 0) {
-          alert(`✓ Successfully synced ${syncedCount} email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} skipped as duplicates)` : ''}`);
+          toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} already synced)` : ''}`);
         } else if (skippedCount > 0) {
-          alert(`✓ Sync completed: ${skippedCount} email${skippedCount !== 1 ? 's' : ''} already synced (no new emails)`);
+          toast.success(`All emails up to date (${skippedCount} already synced)`);
         } else {
-          alert(`✓ Sync completed: No new emails found${failedCount > 0 ? ` (${failedCount} failed)` : ''}`);
+          toast.success(`Sync completed${failedCount > 0 ? ` — ${failedCount} failed` : ' — no new emails'}`);
         }
       } else {
         setInboxError(result.message || "Sync failed");
@@ -223,7 +224,10 @@ export function AdminMessagingPage() {
           ))
         ) : (
           <p className="rounded-3xl border border-brand-black/10 bg-brand-white/80 p-6 text-sm text-brand-black/70">
-            No threads in this filter yet.
+            <div className="text-center py-8">
+              <p className="text-sm font-medium text-brand-black/80 mb-1">No threads in this filter</p>
+              <p className="text-xs text-brand-black/60">Try selecting a different filter or check back later.</p>
+            </div>
           </p>
         )}
       </section>
@@ -530,7 +534,7 @@ function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, sy
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
             </svg>
           )}
-          {syncing ? "Syncing..." : "Sync Gmail"}
+          {syncing ? "Syncing inbox..." : "Sync inbox"}
         </button>
       </div>
 
@@ -546,7 +550,10 @@ function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, sy
           </>
         ) : emails.length === 0 ? (
           <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-6 text-center">
-            <p className="text-sm text-brand-black/60">No inbound emails yet.</p>
+            <div className="text-center py-6">
+              <p className="text-sm font-medium text-brand-black/80 mb-1">No inbound emails yet</p>
+              <p className="text-xs text-brand-black/60">Sync your Gmail inbox to see emails here.</p>
+            </div>
           </div>
         ) : (
           emails.map((email) => <EmailRow key={email.id} email={email} />)

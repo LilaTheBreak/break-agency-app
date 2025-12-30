@@ -85,7 +85,10 @@ export default function DealsDashboard() {
         </div>
         {draftError ? <p className="text-sm text-brand-red">{draftError}</p> : null}
         {drafts.length === 0 ? (
-          <p className="text-sm text-brand-black/60">No drafts yet.</p>
+          <div className="text-center py-6">
+            <p className="text-sm font-medium text-brand-black/80 mb-1">No drafts yet</p>
+            <p className="text-xs text-brand-black/60">AI-generated deal drafts will appear here after you sync your Gmail inbox.</p>
+          </div>
         ) : (
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             {drafts.map((draft) => (

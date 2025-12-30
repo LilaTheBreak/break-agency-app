@@ -24,9 +24,9 @@ function InboxDisconnected() {
 
   return (
     <div className="text-center rounded-3xl border border-brand-black/10 bg-brand-white p-8">
-      <h3 className="font-display text-2xl uppercase">Connect Your Inbox</h3>
-      <p className="mt-2 text-sm text-brand-black/70">
-        Link your Gmail account to allow Break's AI to scan for opportunities, draft replies, and manage your deal flow automatically.
+      <h3 className="font-display text-2xl uppercase text-brand-black">Connect Your Inbox</h3>
+      <p className="mt-3 text-sm leading-relaxed text-brand-black/70 max-w-md mx-auto">
+        Link your Gmail account to automatically scan for opportunities, draft replies, and manage your deal flow.
       </p>
       {!isInboxEnabled && <DisabledNotice feature={INBOX_SCANNING_ENABLED} />}
       <FeatureGate feature={INBOX_SCANNING_ENABLED} mode="button">

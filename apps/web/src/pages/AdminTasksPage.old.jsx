@@ -649,7 +649,10 @@ export function AdminTasksPage() {
         {suggestedLoading ? (
           <p className="text-sm text-brand-black/60">Scanning synced inbox for actions…</p>
         ) : suggested.length === 0 ? (
-          <p className="text-sm text-brand-black/60">No suggestions yet. Sync Gmail to see recommended tasks.</p>
+          <div className="text-center py-6">
+            <p className="text-sm font-medium text-brand-black/80 mb-1">No suggestions yet</p>
+            <p className="text-xs text-brand-black/60">Sync your Gmail inbox to see recommended tasks based on your emails.</p>
+          </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {suggested.map((item) => (
