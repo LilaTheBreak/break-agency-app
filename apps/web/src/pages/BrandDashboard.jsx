@@ -16,6 +16,7 @@ import { useRevenue, useMetrics } from "../hooks/useAnalytics.js";
 import { LineChart as RechartsLineChart } from "../components/charts/index.js";
 import { isFeatureEnabled } from "../config/features.js";
 import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
+import { OpportunitiesCard } from "../components/OpportunitiesCard.jsx";
 import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 
 // Creator roster - guarded by feature flag CREATOR_ROSTER_ENABLED
@@ -912,6 +913,7 @@ function BrandSettingsSection() {
         </div>
       </div>
     </section>
+    </>
   );
 }
 

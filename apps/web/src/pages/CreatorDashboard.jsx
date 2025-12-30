@@ -21,6 +21,7 @@ import { getContact } from "../lib/crmContacts.js";
 import { useNavigate } from "react-router-dom";
 import { isFeatureEnabled } from "../config/features.js";
 import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
+import { OpportunitiesCard } from "../components/OpportunitiesCard.jsx";
 import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 
 export function CreatorDashboard({ session }) {
@@ -32,6 +33,7 @@ export function CreatorDashboard({ session }) {
   return (
     <ControlRoomView config={CONTROL_ROOM_PRESETS.talent} session={activeSession}>
       <CreatorRevenueSection />
+      <OpportunitiesCard session={activeSession} role={activeSession?.role} />
       <CreatorEmailOpportunitiesSection />
       <CreatorOpportunitiesSection />
       <CreatorCampaignsPanel session={activeSession} />

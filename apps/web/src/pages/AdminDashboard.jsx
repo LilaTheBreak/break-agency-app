@@ -7,6 +7,7 @@ import { AdminActivityFeed } from "../components/AdminActivityFeed.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import PendingUsersApproval from "../components/admin/PendingUsersApproval.jsx";
 import { ResourceManager } from "../components/admin/ResourceManager.jsx";
+import { OpportunitiesCard } from "../components/OpportunitiesCard.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js"; // This hook will be wired up later
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
@@ -28,6 +29,7 @@ export function AdminDashboard({ session }) {
       <PendingUsersApproval />
       <ResourceManager />
       <AdminActivityFeed />
+      <OpportunitiesCard session={activeSession} role={activeSession?.role} />
       <AdminCampaignsPanel session={activeSession} />
       <AdminAuditTable />
     </ControlRoomView>
