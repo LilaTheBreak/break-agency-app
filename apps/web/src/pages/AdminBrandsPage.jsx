@@ -600,10 +600,22 @@ export function AdminBrandsPage({ session }) {
   const [enriching, setEnriching] = useState(false);
   const [enrichmentSuggestion, setEnrichmentSuggestion] = useState(null);
   const [contacts, setContacts] = useState([]);
-  const [campaigns, setCampaigns] = useState(() => readCrmCampaigns());
-  const [events, setEvents] = useState(() => readCrmEvents());
-  const [deals, setDeals] = useState(() => readCrmDeals());
-  const [contracts, setContracts] = useState(() => readCrmContracts());
+  const [campaigns, setCampaigns] = useState(() => {
+    const data = readCrmCampaigns();
+    return Array.isArray(data) ? data : [];
+  });
+  const [events, setEvents] = useState(() => {
+    const data = readCrmEvents();
+    return Array.isArray(data) ? data : [];
+  });
+  const [deals, setDeals] = useState(() => {
+    const data = readCrmDeals();
+    return Array.isArray(data) ? data : [];
+  });
+  const [contracts, setContracts] = useState(() => {
+    const data = readCrmContracts();
+    return Array.isArray(data) ? data : [];
+  });
   const [loading, setLoading] = useState(true);
   const [migrationNeeded, setMigrationNeeded] = useState(false);
   const [query, setQuery] = useState("");
@@ -649,8 +661,11 @@ export function AdminBrandsPage({ session }) {
 
         console.log('[CRM] Initial brands loaded:', brandsResult.brands?.length || 0);
         console.log('[CRM] Initial contacts loaded:', contactsResult.contacts?.length || 0);
-        setBrands(brandsResult.brands || []);
-        setContacts(contactsResult.contacts || []);
+        // Defensive: ensure arrays are always arrays, even if API returns unexpected shape
+        const safeBrands = Array.isArray(brandsResult.brands) ? brandsResult.brands : [];
+        const safeContacts = Array.isArray(contactsResult.contacts) ? contactsResult.contacts : [];
+        setBrands(safeBrands);
+        setContacts(safeContacts);
       } catch (error) {
         console.error("[CRM] Critical error loading brands:", error);
         alert('Failed to load CRM data. Please refresh the page.');
@@ -678,8 +693,11 @@ export function AdminBrandsPage({ session }) {
         return { contacts: [] };
       });
       
-      setBrands(brandsResult.brands || []);
-      setContacts(contactsResult.contacts || []);
+      // Defensive: ensure arrays are always arrays
+      const safeBrands = Array.isArray(brandsResult.brands) ? brandsResult.brands : [];
+      const safeContacts = Array.isArray(contactsResult.contacts) ? contactsResult.contacts : [];
+      setBrands(safeBrands);
+      setContacts(safeContacts);
       setMigrationNeeded(false);
     } catch (error) {
       console.error("[CRM] Migration failed:", error);
@@ -705,8 +723,11 @@ export function AdminBrandsPage({ session }) {
       
       console.log('[CRM] Fetched brands:', brandsResult.brands?.length || 0);
       console.log('[CRM] Fetched contacts:', contactsResult.contacts?.length || 0);
-      setBrands(brandsResult.brands || []);
-      setContacts(contactsResult.contacts || []);
+      // Defensive: ensure arrays are always arrays
+      const safeBrands = Array.isArray(brandsResult.brands) ? brandsResult.brands : (Array.isArray(brands) ? brands : []);
+      const safeContacts = Array.isArray(contactsResult.contacts) ? contactsResult.contacts : (Array.isArray(contacts) ? contacts : []);
+      setBrands(safeBrands);
+      setContacts(safeContacts);
     } catch (error) {
       console.error("[CRM] Unexpected error refreshing data:", error);
     }
@@ -721,7 +742,10 @@ export function AdminBrandsPage({ session }) {
       .sort((a, b) => (b.lastActivityAt || b.createdAt || "").localeCompare(a.lastActivityAt || a.createdAt || ""));
   }, [brands, query, statusFilter]);
 
-  const selectedBrand = useMemo(() => brands.find((b) => b.id === drawerBrandId) || null, [brands, drawerBrandId]);
+  const selectedBrand = useMemo(() => {
+    const safeBrands = Array.isArray(brands) ? brands : [];
+    return safeBrands.find((b) => b && b.id === drawerBrandId) || null;
+  }, [brands, drawerBrandId]);
   const brandCampaigns = useMemo(() => {
     if (!selectedBrand) return [];
     const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
@@ -772,10 +796,14 @@ export function AdminBrandsPage({ session }) {
 
   useEffect(() => {
     if (!drawerBrandId) return;
-    setCampaigns(readCrmCampaigns());
-    setEvents(readCrmEvents());
-    setDeals(readCrmDeals());
-    setContracts(readCrmContracts());
+    const campaignsData = readCrmCampaigns();
+    const eventsData = readCrmEvents();
+    const dealsData = readCrmDeals();
+    const contractsData = readCrmContracts();
+    setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
+    setEvents(Array.isArray(eventsData) ? eventsData : []);
+    setDeals(Array.isArray(dealsData) ? dealsData : []);
+    setContracts(Array.isArray(contractsData) ? contractsData : []);
   }, [drawerBrandId]);
   const [contactEditorOpen, setContactEditorOpen] = useState(false);
   const [contactEditorMode, setContactEditorMode] = useState("create"); // create | edit
