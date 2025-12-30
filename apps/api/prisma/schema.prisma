@@ -1514,6 +1514,121 @@ model BrandSavedTalent {
   @@index([talentId])
 }
 
+// Phase 5: BrandBrief model for briefs feature
+model BrandBrief {
+  id             String      @id
+  brandId        String
+  title          String
+  description    String?
+  deliverables   String[]
+  budget         String?
+  deadline       DateTime?
+  status         String      @default("draft") // draft, published, closed
+  createdBy      String
+  versionHistory Json[]      @default([])
+  metadata       Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  BriefMatch     BriefMatch[]
+
+  @@index([brandId])
+  @@index([status])
+  @@index([createdBy])
+}
+
+// Phase 5: BriefMatch model for matching briefs to creators
+model BriefMatch {
+  id        String     @id
+  briefId   String
+  creatorId String
+  matchScore Float
+  status    String     @default("pending") // pending, accepted, rejected
+  notes     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Brief     BrandBrief @relation(fields: [briefId], references: [id], onDelete: Cascade)
+
+  @@unique([briefId, creatorId])
+  @@index([briefId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+// Phase 5: OutreachLead model
+model OutreachLead {
+  id                  String   @id
+  brandName           String
+  contactName         String?
+  contactEmail        String?
+  contactPhone        String?
+  website             String?
+  industry            String?
+  status              String   @default("new") // new, contacted, qualified, converted, lost
+  source              String?
+  notes               String?
+  convertedToOutreachId String?
+  createdBy           String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdBy])
+  @@index([convertedToOutreachId])
+}
+
+// Phase 5: CreatorWeeklyReport model
+model CreatorWeeklyReport {
+  id            String    @id
+  creatorId     String
+  weekStartDate DateTime
+  weekEndDate   DateTime
+  summary       String?
+  metrics       Json?
+  highlights    String[]
+  challenges    String[]
+  nextWeekGoals String[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([creatorId, weekStartDate])
+  @@index([creatorId])
+  @@index([weekStartDate])
+}
+
+// Phase 5: DealIntelligence model
+model DealIntelligence {
+  id             String   @id
+  dealId         String   @unique
+  summary        String?
+  riskFlags      String[]
+  performanceNotes String[]
+  insights       Json?
+  generatedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([dealId])
+}
+
+// Phase 5: Bundle model
+model Bundle {
+  id          String   @id
+  name        String
+  description String?
+  priceMin    Float?
+  priceMax    Float?
+  deliverables Json?
+  dealId      String?
+  creatorId   String?
+  status      String   @default("active") // active, archived
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([dealId])
+  @@index([creatorId])
+  @@index([status])
+}
+
 model CreatorFitScore {
   id                 String   @id
   brandId            String

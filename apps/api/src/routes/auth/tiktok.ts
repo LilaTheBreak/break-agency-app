@@ -25,12 +25,24 @@ if (!isConfigured) {
  * Initiate TikTok OAuth flow
  */
 router.get('/connect', requireAuth, (req: Request, res: Response) => {
+  // Phase 5: Feature flag check
+  const enabled = process.env.TIKTOK_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({
+      success: false,
+      error: 'TikTok integration is disabled',
+      message: 'This feature is currently disabled. Contact an administrator to enable it.',
+      code: 'FEATURE_DISABLED'
+    });
+  }
+
   if (!isConfigured) {
-    // REMOVED: TikTok OAuth not implemented
-    return res.status(410).json({ 
+    // Phase 5: Return clear error when not configured (not 410 Gone)
+    return res.status(400).json({ 
       success: false, 
       error: 'TikTok OAuth not configured',
-      message: 'TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, and TIKTOK_REDIRECT_URI must be set'
+      message: 'TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, and TIKTOK_REDIRECT_URI must be set',
+      code: 'NOT_CONFIGURED'
     });
   }
 

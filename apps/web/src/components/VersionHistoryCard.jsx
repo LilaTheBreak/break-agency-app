@@ -46,18 +46,16 @@ export function VersionHistoryCard({
       await createBriefVersion({ briefId, data: serializedData });
       await load();
     } catch (err) {
-      // Briefs feature removed - endpoint returns 410
-      setError("Briefs feature is not available. Use opportunities instead.");
+      setError(err.message || "Failed to create version");
     }
   };
 
   const handleRestore = async (versionId) => {
     try {
-      await restoreBriefVersion({ versionId });
+      await restoreBriefVersion({ versionId, briefId });
       await load();
     } catch (err) {
-      // Briefs feature removed - endpoint returns 410
-      setError("Briefs feature is not available. Use opportunities instead.");
+      setError(err.message || "Failed to restore version");
     }
   };
 

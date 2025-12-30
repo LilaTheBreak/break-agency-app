@@ -5,17 +5,17 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { Badge } from "../components/Badge.jsx";
 import { FeatureGate, DisabledNotice } from "../components/FeatureGate.jsx";
 import { isFeatureEnabled } from "../config/features.js";
+import {
+  fetchFinanceSummary,
+  fetchCashFlow,
+  fetchPayouts,
+  fetchInvoices,
+  fetchPayoutsByCreator,
+  fetchAttentionItems,
+  fetchFinanceAnalytics
+} from "../services/financeClient.js";
 
-const STORAGE_KEYS = {
-  payouts: "break_admin_finance_payouts_v1",
-  invoices: "break_admin_finance_invoices_v1",
-  cashIn: "break_admin_finance_cash_in_v1",
-  cleared: "break_admin_finance_cleared_v1",
-  documents: "break_admin_finance_documents_v1",
-  timeline: "break_admin_finance_timeline_v1",
-  nextActions: "break_admin_finance_next_actions_v1",
-  xero: "break_admin_finance_xero_v1"
-};
+// Phase 5: Removed STORAGE_KEYS - all data comes from API
 
 const DATE_RANGES = [
   { label: "Last 7 days", value: 7 },
@@ -31,25 +31,7 @@ const ANALYTICS_TABS = [
   { id: "monthly-trend", label: "Monthly Trend" }
 ];
 
-function readStorage(key, fallback) {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-
-function writeStorage(key, value) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
-  }
-}
+// Phase 5: Removed readStorage and writeStorage - all data comes from API
 
 function createId(prefix) {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -370,14 +352,21 @@ const SEED = {
 export function AdminFinancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [payouts, setPayouts] = useState(() => readStorage(STORAGE_KEYS.payouts, SEED.payouts));
-  const [invoices, setInvoices] = useState(() => readStorage(STORAGE_KEYS.invoices, SEED.invoices));
-  const [cashInRisks, setCashInRisks] = useState(() => readStorage(STORAGE_KEYS.cashIn, SEED.cashIn));
-  const [cleared, setCleared] = useState(() => readStorage(STORAGE_KEYS.cleared, SEED.cleared));
-  const [documents, setDocuments] = useState(() => readStorage(STORAGE_KEYS.documents, SEED.documents));
-  const [timeline, setTimeline] = useState(() => readStorage(STORAGE_KEYS.timeline, SEED.timeline));
-  const [nextActions, setNextActions] = useState(() => readStorage(STORAGE_KEYS.nextActions, SEED.nextActions));
-  const [xero, setXero] = useState(() => readStorage(STORAGE_KEYS.xero, SEED.xero));
+  // Phase 5: All state initialized as empty - data comes from API
+  const [payouts, setPayouts] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [cashFlow, setCashFlow] = useState([]);
+  const [attentionItems, setAttentionItems] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  
+  // Legacy state (to be removed or migrated to API)
+  const [cashInRisks, setCashInRisks] = useState([]);
+  const [cleared, setCleared] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [timeline, setTimeline] = useState([]);
+  const [nextActions, setNextActions] = useState([]);
+  const [xero, setXero] = useState({ connected: false, lastSyncAt: null });
 
   const [dateRange, setDateRange] = useState(30);
   const [creatorFilter, setCreatorFilter] = useState("All");
@@ -386,16 +375,18 @@ export function AdminFinancePage() {
   const [statusFilter, setStatusFilter] = useState("All");
 
   const [loadingBySection, setLoadingBySection] = useState({
-    snapshot: false,
-    payouts: false,
-    invoices: false,
-    cashIn: false,
-    cleared: false,
-    documents: false,
-    timeline: false,
-    nextActions: false,
-    analytics: false
+    snapshot: true,
+    payouts: true,
+    invoices: true,
+    cashIn: false, // Legacy - to be removed
+    cleared: false, // Legacy - to be removed
+    documents: false, // Legacy - to be removed
+    timeline: false, // Legacy - to be removed
+    nextActions: false, // Legacy - to be removed
+    analytics: true
   });
+  
+  const [error, setError] = useState(null);
 
   const [toast, setToast] = useState(null);
   const toastTimeoutRef = useRef(null);
@@ -407,14 +398,7 @@ export function AdminFinancePage() {
 
   const [modal, setModal] = useState({ type: null, payload: null });
 
-  useEffect(() => writeStorage(STORAGE_KEYS.payouts, payouts), [payouts]);
-  useEffect(() => writeStorage(STORAGE_KEYS.invoices, invoices), [invoices]);
-  useEffect(() => writeStorage(STORAGE_KEYS.cashIn, cashInRisks), [cashInRisks]);
-  useEffect(() => writeStorage(STORAGE_KEYS.cleared, cleared), [cleared]);
-  useEffect(() => writeStorage(STORAGE_KEYS.documents, documents), [documents]);
-  useEffect(() => writeStorage(STORAGE_KEYS.timeline, timeline), [timeline]);
-  useEffect(() => writeStorage(STORAGE_KEYS.nextActions, nextActions), [nextActions]);
-  useEffect(() => writeStorage(STORAGE_KEYS.xero, xero), [xero]);
+  // Phase 5: Removed all writeStorage useEffect hooks - data is persisted in database
 
   const showToast = (message) => {
     setToast(message);
@@ -422,34 +406,91 @@ export function AdminFinancePage() {
     toastTimeoutRef.current = window.setTimeout(() => setToast(null), 3000);
   };
 
+  // Phase 5: Fetch all finance data from API
   useEffect(() => {
-    setLoadingBySection((prev) => ({
-      ...prev,
-      snapshot: true,
-      payouts: true,
-      invoices: true,
-      cashIn: true,
-      cleared: true,
-      documents: true,
-      timeline: true,
-      nextActions: true,
-      analytics: true
-    }));
-    const timeout = window.setTimeout(() => {
-      setLoadingBySection((prev) => ({
-        ...prev,
-        snapshot: false,
-        payouts: false,
-        invoices: false,
-        cashIn: false,
-        cleared: false,
-        documents: false,
-        timeline: false,
-        nextActions: false,
-        analytics: false
-      }));
-    }, 250);
-    return () => window.clearTimeout(timeout);
+    let cancelled = false;
+    
+    const loadFinanceData = async () => {
+      try {
+        setError(null);
+        setLoadingBySection((prev) => ({
+          ...prev,
+          snapshot: true,
+          payouts: true,
+          invoices: true,
+          analytics: true
+        }));
+
+        // Build filters
+        const filters = {
+          ...(dateRange ? { 
+            startDate: new Date(Date.now() - dateRange * 24 * 60 * 60 * 1000).toISOString(),
+            endDate: new Date().toISOString()
+          } : {}),
+          ...(creatorFilter !== "All" ? { creatorId: creatorFilter } : {}),
+          ...(brandFilter !== "All" ? { brandId: brandFilter } : {}),
+          ...(dealFilter !== "All" ? { dealId: dealFilter } : {}),
+          ...(statusFilter !== "All" ? { status: statusFilter } : {})
+        };
+
+        // Fetch all finance data in parallel
+        const [summaryRes, payoutsRes, invoicesRes, cashFlowRes, attentionRes, analyticsRes] = await Promise.all([
+          fetchFinanceSummary(filters).catch(err => ({ error: err.message })),
+          fetchPayouts(filters).catch(err => ({ error: err.message, payouts: [] })),
+          fetchInvoices(filters).catch(err => ({ error: err.message, invoices: [] })),
+          fetchCashFlow(filters).catch(err => ({ error: err.message, cashFlow: [] })),
+          fetchAttentionItems().catch(err => ({ error: err.message, items: [] })),
+          fetchFinanceAnalytics(filters).catch(err => ({ error: err.message }))
+        ]);
+
+        if (cancelled) return;
+
+        // Update state with API responses
+        if (!summaryRes.error) {
+          setSummary(summaryRes);
+        }
+        if (!payoutsRes.error) {
+          setPayouts(payoutsRes.payouts || []);
+        }
+        if (!invoicesRes.error) {
+          setInvoices(invoicesRes.invoices || []);
+        }
+        if (!cashFlowRes.error) {
+          setCashFlow(cashFlowRes.cashFlow || []);
+        }
+        if (!attentionRes.error) {
+          setAttentionItems(attentionRes.items || []);
+        }
+        if (!analyticsRes.error) {
+          setAnalytics(analyticsRes);
+        }
+
+        // Set error if any critical endpoint failed
+        if (summaryRes.error || payoutsRes.error || invoicesRes.error) {
+          setError("Failed to load some finance data. Please refresh the page.");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || "Failed to load finance data");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingBySection((prev) => ({
+            ...prev,
+            snapshot: false,
+            payouts: false,
+            invoices: false,
+            analytics: false
+          }));
+        }
+      }
+    };
+
+    loadFinanceData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [dateRange, creatorFilter, brandFilter, dealFilter, statusFilter]);
 
   const creators = useMemo(() => {

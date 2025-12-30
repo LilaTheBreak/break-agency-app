@@ -25,12 +25,24 @@ if (!isConfigured) {
  * Initiate Instagram OAuth flow
  */
 router.get('/connect', requireAuth, (req: Request, res: Response) => {
+  // Phase 5: Feature flag check
+  const enabled = process.env.INSTAGRAM_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({
+      success: false,
+      error: 'Instagram integration is disabled',
+      message: 'This feature is currently disabled. Contact an administrator to enable it.',
+      code: 'FEATURE_DISABLED'
+    });
+  }
+
   if (!isConfigured) {
-    // REMOVED: Instagram OAuth not configured
-    return res.status(410).json({ 
+    // Phase 5: Return clear error when not configured (not 410 Gone)
+    return res.status(400).json({ 
       success: false, 
       error: 'Instagram OAuth not configured',
-      message: 'INSTAGRAM_CLIENT_ID, INSTAGRAM_CLIENT_SECRET, and INSTAGRAM_REDIRECT_URI must be set'
+      message: 'INSTAGRAM_CLIENT_ID, INSTAGRAM_CLIENT_SECRET, and INSTAGRAM_REDIRECT_URI must be set',
+      code: 'NOT_CONFIGURED'
     });
   }
 

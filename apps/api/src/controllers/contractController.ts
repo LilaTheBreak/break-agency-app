@@ -130,12 +130,63 @@ export async function uploadContract(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  // REMOVED: Contract upload endpoint not implemented
-  res.status(410).json({ 
-    error: "Contract upload endpoint removed",
-    message: "This endpoint is not yet implemented and has been removed.",
-    alternative: "Use /api/files/upload for file uploads, then link to contracts manually"
-  });
+  try {
+    const enabled = process.env.CONTRACT_UPLOAD_ENABLED === "true";
+    if (!enabled) {
+      return res.status(503).json({
+        error: "Contract upload feature is disabled",
+        message: "This feature is currently disabled. Contact an administrator to enable it.",
+        code: "FEATURE_DISABLED"
+      });
+    }
+
+    const { id } = req.params;
+    const { fileUrl, fileKey } = req.body;
+
+    if (!fileUrl && !fileKey) {
+      return res.status(400).json({ 
+        error: "fileUrl or fileKey is required" 
+      });
+    }
+
+    // Verify contract exists
+    const contract = await prisma.contract.findUnique({
+      where: { id }
+    });
+
+    if (!contract) {
+      return res.status(404).json({ 
+        error: "Contract not found" 
+      });
+    }
+
+    // If fileKey provided, construct URL from S3/R2
+    let finalFileUrl = fileUrl;
+    if (fileKey && !fileUrl) {
+      // Use fileService to build URL
+      const fileService = await import("../services/fileService.js");
+      // Note: buildFileUrl is not exported, use getDownloadUrl or construct manually
+      const endpoint = process.env.S3_ENDPOINT;
+      const bucket = process.env.S3_BUCKET;
+      const region = process.env.S3_REGION || "us-east-1";
+      const forcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true";
+      
+      if (endpoint && forcePathStyle) {
+        finalFileUrl = `${endpoint}/${bucket}/${fileKey}`;
+      } else if (endpoint) {
+        finalFileUrl = `${endpoint}/${fileKey}`;
+      } else {
+        finalFileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${fileKey}`;
+      }
+    }
+
+    // Update contract with file URL
+    const updated = await contractService.upload(id, finalFileUrl);
+
+    res.json({ contract: updated });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function sendContract(

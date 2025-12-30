@@ -4,6 +4,8 @@ import prisma from "../../lib/prisma.js";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { generateId } from "../../lib/utils.js";
+import { logError } from "../../lib/logger.js";
+import { logAuditEvent } from "../../lib/auditLogger.js";
 
 const router = Router();
 
@@ -19,7 +21,398 @@ const requireAdmin = (req: Request, res: Response, next: Function) => {
 router.use(requireAuth, requireAdmin);
 
 // ============================================================================
-// PHASE 2 - FINANCE ANALYTICS AGGREGATION
+// PHASE 5: COMPREHENSIVE FINANCE API ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/admin/finance/summary
+ * Get finance summary (snapshot metrics)
+ */
+router.get("/summary", async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, creatorId, brandId, dealId } = req.query;
+
+    // Build filter conditions
+    const invoiceWhere: any = {};
+    const payoutWhere: any = {};
+
+    if (startDate || endDate) {
+      const dateFilter: any = {};
+      if (startDate) dateFilter.gte = new Date(startDate as string);
+      if (endDate) dateFilter.lte = new Date(endDate as string);
+      invoiceWhere.issuedAt = dateFilter;
+      payoutWhere.createdAt = dateFilter;
+    }
+
+    if (brandId) {
+      invoiceWhere.brandId = brandId;
+      payoutWhere.brandId = brandId;
+    }
+
+    if (dealId) {
+      invoiceWhere.dealId = dealId;
+      payoutWhere.dealId = dealId;
+    }
+
+    if (creatorId) {
+      payoutWhere.creatorId = creatorId;
+    }
+
+    // Fetch invoices and payouts
+    const [invoices, payouts] = await Promise.all([
+      prisma.invoice.findMany({ where: invoiceWhere }),
+      prisma.payout.findMany({ where: payoutWhere })
+    ]);
+
+    // Calculate metrics server-side
+    const total_cash_in = invoices
+      .filter(i => i.status === 'paid')
+      .reduce((sum, i) => sum + i.amount, 0);
+
+    const total_cash_out = payouts
+      .filter(p => p.status === 'paid')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const outstanding_receivables = invoices
+      .filter(i => ['sent', 'due', 'overdue'].includes(i.status))
+      .reduce((sum, i) => sum + i.amount, 0);
+
+    const outstanding_liabilities = payouts
+      .filter(p => ['pending', 'approved', 'scheduled'].includes(p.status))
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const net_position = total_cash_in - total_cash_out;
+
+    res.json({
+      total_cash_in,
+      total_cash_out,
+      net_position,
+      outstanding_liabilities,
+      outstanding_receivables,
+      currency: "USD" // Default currency - could be enhanced to support multi-currency
+    });
+  } catch (error) {
+    logError("Failed to fetch finance summary", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch finance summary",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+/**
+ * GET /api/admin/finance/cashflow
+ * Get cash flow time-series data
+ */
+router.get("/cashflow", async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate, months = "6" } = req.query;
+
+    // Build date filter
+    const invoiceWhere: any = {};
+    const payoutWhere: any = {};
+
+    if (startDate || endDate) {
+      const dateFilter: any = {};
+      if (startDate) dateFilter.gte = new Date(startDate as string);
+      if (endDate) dateFilter.lte = new Date(endDate as string);
+      invoiceWhere.issuedAt = dateFilter;
+      payoutWhere.createdAt = dateFilter;
+    }
+
+    // Fetch invoices and payouts
+    const [invoices, payouts] = await Promise.all([
+      prisma.invoice.findMany({ where: invoiceWhere }),
+      prisma.payout.findMany({ where: payoutWhere })
+    ]);
+
+    // Aggregate by month
+    const cashFlowSeries = new Map<string, { month: string; in: number; out: number }>();
+    
+    invoices.forEach((inv) => {
+      const date = inv.issuedAt || inv.createdAt;
+      if (!date) return;
+      const month = new Date(date).toISOString().slice(0, 7); // YYYY-MM
+      const current = cashFlowSeries.get(month) || { month, in: 0, out: 0 };
+      if (inv.status === "paid") {
+        current.in += inv.amount;
+      }
+      cashFlowSeries.set(month, current);
+    });
+
+    payouts.forEach((p) => {
+      const date = p.createdAt || p.paidAt;
+      if (!date) return;
+      const month = new Date(date).toISOString().slice(0, 7); // YYYY-MM
+      const current = cashFlowSeries.get(month) || { month, in: 0, out: 0 };
+      if (p.status === "paid") {
+        current.out += p.amount;
+      }
+      cashFlowSeries.set(month, current);
+    });
+
+    const cashFlowArray = Array.from(cashFlowSeries.values())
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-parseInt(months as string) || 6);
+
+    res.json({ cashFlow: cashFlowArray });
+  } catch (error) {
+    logError("Failed to fetch cash flow", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch cash flow",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+/**
+ * GET /api/admin/finance/payouts
+ * Get all payouts with optional filters
+ */
+router.get("/payouts", async (req: Request, res: Response) => {
+  try {
+    const { creatorId, dealId, brandId, status, limit = "100" } = req.query;
+
+    const where: any = {};
+    if (creatorId) where.creatorId = creatorId;
+    if (dealId) where.dealId = dealId;
+    if (brandId) where.brandId = brandId;
+    if (status) where.status = status;
+
+    const payouts = await prisma.payout.findMany({
+      where,
+      take: parseInt(limit as string),
+      orderBy: { createdAt: "desc" },
+      include: {
+        Deal: {
+          select: {
+            id: true,
+            dealName: true
+          }
+        },
+        Talent: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        Brand: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    // Transform to match frontend format
+    const transformed = payouts.map(p => ({
+      id: p.id,
+      creator: p.Talent?.name || `Creator ${p.creatorId.slice(0, 8)}`,
+      creatorId: p.creatorId,
+      dealId: p.dealId,
+      dealName: p.Deal?.dealName || "Unknown Deal",
+      amount: `${p.currency || "USD"}${p.amount.toFixed(2)}`,
+      status: p.status === "paid" ? "Paid" : p.status === "pending" ? "Scheduled" : "Awaiting approval",
+      expectedDate: p.expectedPayoutAt ? p.expectedPayoutAt.toISOString().split("T")[0] : null,
+      createdAt: p.createdAt.toISOString(),
+      paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+      proofDocIds: [] // Would need to link documents if that model exists
+    }));
+
+    res.json({ payouts: transformed });
+  } catch (error) {
+    logError("Failed to fetch payouts", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch payouts",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+/**
+ * GET /api/admin/finance/invoices
+ * Get all invoices with optional filters
+ */
+router.get("/invoices", async (req: Request, res: Response) => {
+  try {
+    const { dealId, brandId, status, limit = "100" } = req.query;
+
+    const where: any = {};
+    if (dealId) where.dealId = dealId;
+    if (brandId) where.brandId = brandId;
+    if (status) {
+      // Map frontend status to database status
+      const statusMap: Record<string, string> = {
+        "Paid": "paid",
+        "Due": "due",
+        "Overdue": "overdue",
+        "Sent": "sent"
+      };
+      where.status = statusMap[status as string] || status;
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where,
+      take: parseInt(limit as string),
+      orderBy: { createdAt: "desc" },
+      include: {
+        Deal: {
+          select: {
+            id: true,
+            dealName: true
+          }
+        },
+        Brand: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    // Transform to match frontend format
+    const transformed = invoices.map(inv => ({
+      id: inv.id,
+      brand: inv.Brand?.name || "Unknown Brand",
+      brandId: inv.brandId,
+      ref: inv.invoiceNumber,
+      dealId: inv.dealId,
+      dealName: inv.Deal?.dealName || "Unknown Deal",
+      amount: `${inv.currency || "USD"}${inv.amount.toFixed(2)}`,
+      status: inv.status === "paid" ? "Paid" : 
+              inv.status === "overdue" ? "Overdue" :
+              inv.status === "due" ? "Due" : "Sent",
+      dueDate: inv.dueAt ? inv.dueAt.toISOString().split("T")[0] : null,
+      createdAt: inv.createdAt.toISOString(),
+      paidAt: inv.paidAt ? inv.paidAt.toISOString() : null,
+      xeroId: null, // Would need XeroConnection model if implemented
+      docIds: [] // Would need to link documents if that model exists
+    }));
+
+    res.json({ invoices: transformed });
+  } catch (error) {
+    logError("Failed to fetch invoices", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch invoices",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+/**
+ * GET /api/admin/finance/by-creator
+ * Get aggregated revenue per creator
+ */
+router.get("/by-creator", async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const payoutWhere: any = {};
+    if (startDate || endDate) {
+      const dateFilter: any = {};
+      if (startDate) dateFilter.gte = new Date(startDate as string);
+      if (endDate) dateFilter.lte = new Date(endDate as string);
+      payoutWhere.createdAt = dateFilter;
+    }
+
+    const payouts = await prisma.payout.findMany({
+      where: payoutWhere,
+      include: {
+        Talent: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
+
+    // Aggregate by creator
+    const byCreator = new Map<string, { creator: string; creatorId: string; total: number }>();
+    
+    payouts.forEach(p => {
+      const creatorId = p.creatorId;
+      const creator = p.Talent?.name || `Creator ${creatorId.slice(0, 8)}`;
+      const current = byCreator.get(creatorId) || { creator, creatorId, total: 0 };
+      current.total += p.amount;
+      byCreator.set(creatorId, current);
+    });
+
+    const result = Array.from(byCreator.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 20); // Top 20 creators
+
+    res.json({ byCreator: result });
+  } catch (error) {
+    logError("Failed to fetch payouts by creator", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch payouts by creator",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+/**
+ * GET /api/admin/finance/attention
+ * Get attention items (overdue invoices, delayed payouts)
+ */
+router.get("/attention", async (req: Request, res: Response) => {
+  try {
+    const [overdueInvoices, delayedPayouts] = await Promise.all([
+      prisma.invoice.findMany({
+        where: { status: "overdue" },
+        include: {
+          Deal: { select: { dealName: true } },
+          Brand: { select: { name: true } }
+        }
+      }),
+      prisma.payout.findMany({
+        where: {
+          status: { not: "paid" },
+          expectedPayoutAt: { lt: new Date() }
+        },
+        include: {
+          Talent: { select: { name: true } },
+          Deal: { select: { dealName: true } }
+        }
+      })
+    ]);
+
+    const items = [
+      ...overdueInvoices.map(inv => ({
+        id: `att-inv-${inv.id}`,
+        type: "invoice",
+        label: `Overdue invoice ${inv.invoiceNumber}`,
+        detail: `${inv.Brand?.name || "Unknown"} · ${inv.currency}${inv.amount} · due ${inv.dueAt.toISOString().split("T")[0]}`,
+        link: { type: "invoice", id: inv.id },
+        amount: inv.amount,
+        dueDate: inv.dueAt
+      })),
+      ...delayedPayouts.map(p => ({
+        id: `att-pay-${p.id}`,
+        type: "payout",
+        label: "Delayed payout",
+        detail: `${p.Talent?.name || "Unknown"} · ${p.currency}${p.amount} · expected ${p.expectedPayoutAt?.toISOString().split("T")[0] || "N/A"}`,
+        link: { type: "payout", id: p.id },
+        amount: p.amount,
+        expectedDate: p.expectedPayoutAt
+      }))
+    ];
+
+    res.json({ items });
+  } catch (error) {
+    logError("Failed to fetch attention items", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch attention items",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+// ============================================================================
+// EXISTING ENDPOINTS (keeping for backward compatibility)
 // ============================================================================
 
 // GET /api/admin/finance/analytics - Backend aggregation for finance analytics
@@ -167,7 +560,7 @@ router.get("/analytics", async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error("Error fetching finance analytics:", error);
+    logError("Error fetching finance analytics", error, { userId: req.user?.id });
     res.status(500).json({ 
       error: "Failed to fetch finance analytics",
       message: error instanceof Error ? error.message : "Unknown error"
@@ -176,90 +569,7 @@ router.get("/analytics", async (req: Request, res: Response) => {
 });
 
 // ============================================================================
-// PHASE 3.1 - FINANCE SUMMARY & METRICS
-// ============================================================================
-
-router.get("/summary", async (req: Request, res: Response) => {
-  try {
-    const { startDate, endDate, creatorId, brandId, dealId, status } = req.query;
-
-    // Build filter conditions
-    const invoiceWhere: any = {};
-    const payoutWhere: any = {};
-
-    if (startDate || endDate) {
-      const dateFilter: any = {};
-      if (startDate) dateFilter.gte = new Date(startDate as string);
-      if (endDate) dateFilter.lte = new Date(endDate as string);
-      invoiceWhere.issuedAt = dateFilter;
-      payoutWhere.createdAt = dateFilter;
-    }
-
-    if (brandId) {
-      invoiceWhere.brandId = brandId;
-      payoutWhere.brandId = brandId;
-    }
-
-    if (dealId) {
-      invoiceWhere.dealId = dealId;
-      payoutWhere.dealId = dealId;
-    }
-
-    if (creatorId) {
-      payoutWhere.creatorId = creatorId;
-    }
-
-    if (status) {
-      invoiceWhere.status = status;
-      payoutWhere.status = status;
-    }
-
-    // Calculate metrics
-    const [invoices, payouts] = await Promise.all([
-      prisma.invoice.findMany({ where: invoiceWhere }),
-      prisma.payout.findMany({ where: payoutWhere })
-    ]);
-
-    const total_cash_in = invoices
-      .filter(i => i.status === 'paid')
-      .reduce((sum, i) => sum + i.amount, 0);
-
-    const total_cash_out = payouts
-      .filter(p => p.status === 'paid')
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const outstanding_receivables = invoices
-      .filter(i => ['sent', 'due', 'overdue'].includes(i.status))
-      .reduce((sum, i) => sum + i.amount, 0);
-
-    const outstanding_liabilities = payouts
-      .filter(p => ['pending', 'approved', 'scheduled'].includes(p.status))
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const net_position = total_cash_in - total_cash_out;
-
-    res.json({
-      total_cash_in,
-      total_cash_out,
-      net_position,
-      outstanding_liabilities,
-      outstanding_receivables
-    });
-  } catch (error) {
-    console.error("Error fetching finance summary:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch finance summary",
-      total_cash_in: 0,
-      total_cash_out: 0,
-      net_position: 0,
-      outstanding_liabilities: 0,
-      outstanding_receivables: 0
-    });
-  }
-});
-
-// ============================================================================
-// PHASE 3.2 - INVOICES APIs
+// INVOICES APIs
 // ============================================================================
 
 const InvoiceCreateSchema = z.object({
@@ -295,77 +605,29 @@ router.post("/invoices", async (req: Request, res: Response) => {
       }
     });
 
-    // Log activity
-    await prisma.financeActivityLog.create({
-      data: {
-        id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        actionType: "invoice_created",
-        referenceType: "invoice",
-        referenceId: invoice.id,
-        amount: invoice.amount,
-        currency: invoice.currency,
-        createdBy: req.user?.id
-      }
-    });
-
     // Audit logging
     try {
-      await prisma.auditLog.create({
-        data: {
-          id: generateId(),
-          userId: req.user?.id || "system",
-          action: "INVOICE_CREATED",
-          entityType: "INVOICE",
-          entityId: invoice.id,
-          metadata: {
-            dealId: invoice.dealId,
-            brandId: invoice.brandId,
-            invoiceNumber: invoice.invoiceNumber,
-            amount: invoice.amount,
-            currency: invoice.currency,
-            status: invoice.status
-          },
-          createdAt: new Date()
+      await logAuditEvent(req as any, {
+        action: "INVOICE_CREATED",
+        entityType: "Invoice",
+        entityId: invoice.id,
+        metadata: {
+          dealId: invoice.dealId,
+          brandId: invoice.brandId,
+          invoiceNumber: invoice.invoiceNumber,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          status: invoice.status
         }
       });
-    } catch (error) {
-      console.error("[Audit] Failed to log invoice creation:", error);
+    } catch (logError) {
+      console.error("[Audit] Failed to log invoice creation:", logError);
     }
 
     res.status(201).json(invoice);
   } catch (error) {
-    console.error("Error creating invoice:", error);
+    logError("Error creating invoice", error, { userId: req.user?.id });
     res.status(500).json({ error: "Failed to create invoice" });
-  }
-});
-
-router.get("/invoices", async (req: Request, res: Response) => {
-  try {
-    const { dealId, brandId, status, limit = "50" } = req.query;
-
-    const where: any = {};
-    if (dealId) where.dealId = dealId;
-    if (brandId) where.brandId = brandId;
-    if (status) where.status = status;
-
-    const invoices = await prisma.invoice.findMany({
-      where,
-      take: parseInt(limit as string),
-      orderBy: { createdAt: "desc" },
-      include: {
-        Deal: {
-          include: {
-            Brand: true,
-            Talent: true
-          }
-        }
-      }
-    });
-
-    res.json(invoices || []);
-  } catch (error) {
-    console.error("Error fetching invoices:", error);
-    res.json([]);
   }
 });
 
@@ -387,21 +649,9 @@ router.get("/invoices/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Invoice not found" });
     }
 
-    // Fetch related documents and activity logs manually
-    const [documents, activityLogs] = await Promise.all([
-      prisma.financeDocument.findMany({
-        where: { linkedType: "invoice", linkedId: invoice.id },
-        orderBy: { uploadedAt: "desc" }
-      }),
-      prisma.financeActivityLog.findMany({
-        where: { referenceType: "invoice", referenceId: invoice.id },
-        orderBy: { createdAt: "desc" }
-      })
-    ]);
-
-    res.json({ ...invoice, Documents: documents, ActivityLogs: activityLogs });
+    res.json(invoice);
   } catch (error) {
-    console.error("Error fetching invoice:", error);
+    logError("Error fetching invoice", error, { invoiceId: req.params.id });
     res.status(500).json({ error: "Failed to fetch invoice" });
   }
 });
@@ -430,30 +680,25 @@ router.patch("/invoices/:id", async (req: Request, res: Response) => {
     // Audit logging for status changes
     if (parsed.data.status && existing?.status && existing.status !== parsed.data.status) {
       try {
-        await prisma.auditLog.create({
-          data: {
-            id: generateId(),
-            userId: req.user?.id || "system",
-            action: "INVOICE_STATUS_UPDATED",
-            entityType: "INVOICE",
-            entityId: invoice.id,
-            metadata: {
-              previousStatus: existing.status,
-              newStatus: parsed.data.status,
-              dealId: invoice.dealId,
-              amount: invoice.amount
-            },
-            createdAt: new Date()
+        await logAuditEvent(req as any, {
+          action: "INVOICE_STATUS_UPDATED",
+          entityType: "Invoice",
+          entityId: invoice.id,
+          metadata: {
+            previousStatus: existing.status,
+            newStatus: parsed.data.status,
+            dealId: invoice.dealId,
+            amount: invoice.amount
           }
         });
-      } catch (error) {
-        console.error("[Audit] Failed to log invoice status update:", error);
+      } catch (logError) {
+        console.error("[Audit] Failed to log invoice status update:", logError);
       }
     }
 
     res.json(invoice);
   } catch (error) {
-    console.error("Error updating invoice:", error);
+    logError("Error updating invoice", error, { invoiceId: req.params.id });
     res.status(500).json({ error: "Failed to update invoice" });
   }
 });
@@ -472,86 +717,65 @@ router.post("/invoices/:id/mark-paid", async (req: Request, res: Response) => {
       }
     });
 
-    // Create reconciliation record
-    await prisma.financeReconciliation.create({
-      data: {
-        id: `rec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: "invoice_payment",
-        referenceId: invoice.id,
-        amount: amount || invoice.amount,
-        currency: invoice.currency,
-        method: method || "manual",
-        notes: notes || null,
-        confirmedAt: new Date(),
-        createdBy: req.user?.id || ""
-      }
-    });
-
-    // Log activity
-    await prisma.financeActivityLog.create({
-      data: {
-        id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        actionType: "payment_received",
-        referenceType: "invoice",
-        referenceId: invoice.id,
-        amount: invoice.amount,
-        currency: invoice.currency,
-        createdBy: req.user?.id
-      }
-    });
-
     // Audit logging
     try {
-      await prisma.auditLog.create({
-        data: {
-          id: generateId(),
-          userId: req.user?.id || "system",
-          action: "INVOICE_MARKED_PAID",
-          entityType: "INVOICE",
-          entityId: invoice.id,
-          metadata: {
-            amount: invoice.amount,
-            currency: invoice.currency,
-            method: method || "manual",
-            dealId: invoice.dealId,
-            paidAt: invoice.paidAt
-          },
-          createdAt: new Date()
+      await logAuditEvent(req as any, {
+        action: "INVOICE_MARKED_PAID",
+        entityType: "Invoice",
+        entityId: invoice.id,
+        metadata: {
+          dealId: invoice.dealId,
+          amount: amount || invoice.amount,
+          method: method || "manual",
+          notes
         }
       });
-    } catch (error) {
-      console.error("[Audit] Failed to log invoice payment:", error);
+    } catch (logError) {
+      console.error("[Audit] Failed to log invoice payment:", logError);
     }
 
-    res.json({ success: true, invoice });
+    res.json(invoice);
   } catch (error) {
-    console.error("Error marking invoice as paid:", error);
+    logError("Error marking invoice as paid", error, { invoiceId: req.params.id });
     res.status(500).json({ error: "Failed to mark invoice as paid" });
   }
 });
 
 router.post("/invoices/:id/send-reminder", async (req: Request, res: Response) => {
   try {
-    // Log activity (actual email sending would be implemented separately)
-    await prisma.financeActivityLog.create({
-      data: {
-        id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        actionType: "reminder_sent",
-        referenceType: "invoice",
-        referenceId: req.params.id,
-        createdBy: req.user?.id
-      }
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: req.params.id }
     });
+
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // TODO: Implement email reminder logic
+    // For now, just log the action
+    try {
+      await logAuditEvent(req as any, {
+        action: "INVOICE_REMINDER_SENT",
+        entityType: "Invoice",
+        entityId: invoice.id,
+        metadata: {
+          invoiceNumber: invoice.invoiceNumber,
+          amount: invoice.amount
+        }
+      });
+    } catch (logError) {
+      console.error("[Audit] Failed to log reminder:", logError);
+    }
 
     res.json({ success: true, message: "Reminder sent" });
   } catch (error) {
-    console.error("Error sending reminder:", error);
+    logError("Error sending invoice reminder", error, { invoiceId: req.params.id });
     res.status(500).json({ error: "Failed to send reminder" });
   }
 });
 
 // ============================================================================
-// PHASE 3.3 - PAYOUTS APIs
+// PAYOUTS APIs
 // ============================================================================
 
 const PayoutCreateSchema = z.object({
@@ -561,12 +785,6 @@ const PayoutCreateSchema = z.object({
   amount: z.number().positive(),
   currency: z.string().default("USD"),
   status: z.enum(["pending", "approved", "scheduled", "paid"]).default("pending"),
-  expectedPayoutAt: z.string().transform(s => new Date(s)).optional(),
-});
-
-const PayoutUpdateSchema = z.object({
-  amount: z.number().positive().optional(),
-  status: z.enum(["pending", "approved", "scheduled", "paid"]).optional(),
   expectedPayoutAt: z.string().transform(s => new Date(s)).optional(),
 });
 
@@ -580,88 +798,34 @@ router.post("/payouts", async (req: Request, res: Response) => {
     const payout = await prisma.payout.create({
       data: {
         id: `payout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        updatedAt: new Date(),
         ...parsed.data,
-        createdBy: req.user?.id
-      }
-    });
-
-    // Log activity
-    await prisma.financeActivityLog.create({
-      data: {
-        id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        actionType: "payout_created",
-        referenceType: "payout",
-        referenceId: payout.id,
-        amount: payout.amount,
-        currency: payout.currency,
-        createdBy: req.user?.id
+        createdBy: req.user?.id || null,
+        updatedAt: new Date()
       }
     });
 
     // Audit logging
     try {
-      await prisma.auditLog.create({
-        data: {
-          id: generateId(),
-          userId: req.user?.id || "system",
-          action: "PAYOUT_CREATED",
-          entityType: "PAYOUT",
-          entityId: payout.id,
-          metadata: {
-            creatorId: payout.creatorId,
-            dealId: payout.dealId,
-            brandId: payout.brandId,
-            amount: payout.amount,
-            currency: payout.currency,
-            status: payout.status
-          },
-          createdAt: new Date()
+      await logAuditEvent(req as any, {
+        action: "PAYOUT_CREATED",
+        entityType: "Payout",
+        entityId: payout.id,
+        metadata: {
+          creatorId: payout.creatorId,
+          dealId: payout.dealId,
+          amount: payout.amount,
+          currency: payout.currency,
+          status: payout.status
         }
       });
-    } catch (error) {
-      console.error("[Audit] Failed to log payout creation:", error);
+    } catch (logError) {
+      console.error("[Audit] Failed to log payout creation:", logError);
     }
 
     res.status(201).json(payout);
   } catch (error) {
-    console.error("Error creating payout:", error);
+    logError("Error creating payout", error, { userId: req.user?.id });
     res.status(500).json({ error: "Failed to create payout" });
-  }
-});
-
-router.get("/payouts", async (req: Request, res: Response) => {
-  try {
-    const { dealId, creatorId, brandId, status, limit = "50" } = req.query;
-
-    const where: any = {};
-    if (dealId) where.dealId = dealId;
-    if (creatorId) where.creatorId = creatorId;
-    if (brandId) where.brandId = brandId;
-    if (status) where.status = status;
-
-    const payouts = await prisma.payout.findMany({
-      where,
-      take: parseInt(limit as string),
-      orderBy: { createdAt: "desc" },
-      include: {
-        Deal: {
-          include: {
-            Brand: true
-          }
-        },
-        Talent: {
-          include: {
-            User: true
-          }
-        }
-      }
-    });
-
-    res.json(payouts || []);
-  } catch (error) {
-    console.error("Error fetching payouts:", error);
-    res.json([]);
   }
 });
 
@@ -672,12 +836,8 @@ router.get("/payouts/:id", async (req: Request, res: Response) => {
       include: {
         Deal: {
           include: {
-            Brand: true
-          }
-        },
-        Talent: {
-          include: {
-            User: true
+            Brand: true,
+            Talent: true
           }
         }
       }
@@ -687,47 +847,10 @@ router.get("/payouts/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Payout not found" });
     }
 
-    // Fetch related documents and activity logs manually
-    const [documents, activityLogs] = await Promise.all([
-      prisma.financeDocument.findMany({
-        where: { linkedType: "payout", linkedId: payout.id },
-        orderBy: { uploadedAt: "desc" }
-      }),
-      prisma.financeActivityLog.findMany({
-        where: { referenceType: "payout", referenceId: payout.id },
-        orderBy: { createdAt: "desc" }
-      })
-    ]);
-
-    res.json({ ...payout, Documents: documents, ActivityLogs: activityLogs });
-  } catch (error) {
-    console.error("Error fetching payout:", error);
-    res.status(500).json({ error: "Failed to fetch payout" });
-  }
-});
-
-router.patch("/payouts/:id", async (req: Request, res: Response) => {
-  try {
-    const parsed = PayoutUpdateSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
-    }
-
-    // Prevent updates to paid payouts (immutable once paid)
-    const existing = await prisma.payout.findUnique({ where: { id: req.params.id } });
-    if (existing?.status === "paid") {
-      return res.status(403).json({ error: "Cannot modify paid payouts" });
-    }
-
-    const payout = await prisma.payout.update({
-      where: { id: req.params.id },
-      data: parsed.data
-    });
-
     res.json(payout);
   } catch (error) {
-    console.error("Error updating payout:", error);
-    res.status(500).json({ error: "Failed to update payout" });
+    logError("Error fetching payout", error, { payoutId: req.params.id });
+    res.status(500).json({ error: "Failed to fetch payout" });
   }
 });
 
@@ -740,254 +863,33 @@ router.post("/payouts/:id/mark-paid", async (req: Request, res: Response) => {
       where: { id: req.params.id },
       data: {
         status: "paid",
-        paidAt: new Date()
-      }
-    });
-
-    // Create reconciliation record
-    await prisma.financeReconciliation.create({
-      data: {
-        id: `rec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: "payout_payment",
-        referenceId: payout.id,
-        amount: amount || payout.amount,
-        currency: payout.currency,
-        method: method || "manual",
-        notes: notes || null,
-        confirmedAt: new Date(),
-        createdBy: req.user?.id || ""
-      }
-    });
-
-    // Log activity
-    await prisma.financeActivityLog.create({
-      data: {
-        id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        actionType: "payout_processed",
-        referenceType: "payout",
-        referenceId: payout.id,
-        amount: payout.amount,
-        currency: payout.currency,
-        createdBy: req.user?.id
+        paidAt: new Date(),
+        updatedAt: new Date()
       }
     });
 
     // Audit logging
     try {
-      await prisma.auditLog.create({
-        data: {
-          id: generateId(),
-          userId: req.user?.id || "system",
-          action: "PAYOUT_MARKED_PAID",
-          entityType: "PAYOUT",
-          entityId: payout.id,
-          metadata: {
-            creatorId: payout.creatorId,
-            dealId: payout.dealId,
-            amount: payout.amount,
-            currency: payout.currency,
-            method: method || "manual",
-            paidAt: payout.paidAt
-          },
-          createdAt: new Date()
+      await logAuditEvent(req as any, {
+        action: "PAYOUT_MARKED_PAID",
+        entityType: "Payout",
+        entityId: payout.id,
+        metadata: {
+          creatorId: payout.creatorId,
+          dealId: payout.dealId,
+          amount: amount || payout.amount,
+          method: method || "manual",
+          notes
         }
       });
-    } catch (error) {
-      console.error("[Audit] Failed to log payout payment:", error);
+    } catch (logError) {
+      console.error("[Audit] Failed to log payout payment:", logError);
     }
 
-    res.json({ success: true, payout });
+    res.json(payout);
   } catch (error) {
-    console.error("Error marking payout as paid:", error);
+    logError("Error marking payout as paid", error, { payoutId: req.params.id });
     res.status(500).json({ error: "Failed to mark payout as paid" });
-  }
-});
-
-// ============================================================================
-// PHASE 3.4 - RECONCILIATION APIs
-// ============================================================================
-
-const ReconciliationCreateSchema = z.object({
-  type: z.enum(["invoice_payment", "payout_payment"]),
-  referenceId: z.string(),
-  amount: z.number().positive(),
-  currency: z.string().default("USD"),
-  method: z.string().optional(),
-  notes: z.string().optional(),
-  confirmedAt: z.string().transform(s => new Date(s)).optional()
-});
-
-router.post("/reconciliation", async (req: Request, res: Response) => {
-  try {
-    const parsed = ReconciliationCreateSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
-    }
-
-    const reconciliation = await prisma.financeReconciliation.create({
-      data: {
-        id: `reconciliation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        ...parsed.data,
-        confirmedAt: parsed.data.confirmedAt || new Date(),
-        createdBy: req.user?.id || ""
-      }
-    });
-
-    // Log activity
-    await prisma.financeActivityLog.create({
-      data: {
-        id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        actionType: "reconciliation_logged",
-        referenceType: parsed.data.type,
-        referenceId: parsed.data.referenceId,
-        amount: parsed.data.amount,
-        currency: parsed.data.currency,
-        createdBy: req.user?.id
-      }
-    });
-
-    // Audit logging
-    try {
-      await prisma.auditLog.create({
-        data: {
-          id: generateId(),
-          userId: req.user?.id || "system",
-          action: "FINANCE_RECONCILIATION_CREATED",
-          entityType: "FINANCE_RECONCILIATION",
-          entityId: reconciliation.id,
-          metadata: {
-            type: reconciliation.type,
-            referenceId: reconciliation.referenceId,
-            amount: reconciliation.amount,
-            currency: reconciliation.currency,
-            method: reconciliation.method,
-            confirmedAt: reconciliation.confirmedAt
-          },
-          createdAt: new Date()
-        }
-      });
-    } catch (error) {
-      console.error("[Audit] Failed to log reconciliation:", error);
-    }
-
-    res.status(201).json(reconciliation);
-  } catch (error) {
-    console.error("Error creating reconciliation:", error);
-    res.status(500).json({ error: "Failed to create reconciliation" });
-  }
-});
-
-router.get("/reconciliation", async (req: Request, res: Response) => {
-  try {
-    const { type, referenceId, limit = "50" } = req.query;
-
-    const where: any = {};
-    if (type) where.type = type;
-    if (referenceId) where.referenceId = referenceId;
-
-    const reconciliations = await prisma.financeReconciliation.findMany({
-      where,
-      take: parseInt(limit as string),
-      orderBy: { confirmedAt: "desc" }
-    });
-
-    res.json(reconciliations || []);
-  } catch (error) {
-    console.error("Error fetching reconciliations:", error);
-    res.json([]);
-  }
-});
-
-// ============================================================================
-// PHASE 3.5 - FINANCE DOCUMENTS APIs
-// ============================================================================
-
-const DocumentCreateSchema = z.object({
-  fileUrl: z.string().url(),
-  fileName: z.string().optional(),
-  fileType: z.enum(["invoice", "receipt", "confirmation", "other"]),
-  linkedType: z.enum(["invoice", "payout", "deal", "reconciliation"]),
-  linkedId: z.string()
-});
-
-router.post("/documents", async (req: Request, res: Response) => {
-  try {
-    const parsed = DocumentCreateSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
-    }
-
-    const document = await prisma.financeDocument.create({
-      data: {
-        id: `document_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        ...parsed.data,
-        uploadedBy: req.user?.id || ""
-      }
-    });
-
-    res.status(201).json(document);
-  } catch (error) {
-    console.error("Error uploading document:", error);
-    res.status(500).json({ error: "Failed to upload document" });
-  }
-});
-
-router.get("/documents", async (req: Request, res: Response) => {
-  try {
-    const { linkedType, linkedId } = req.query;
-
-    const where: any = {};
-    if (linkedType) where.linkedType = linkedType;
-    if (linkedId) where.linkedId = linkedId;
-
-    const documents = await prisma.financeDocument.findMany({
-      where,
-      orderBy: { uploadedAt: "desc" }
-    });
-
-    res.json(documents || []);
-  } catch (error) {
-    console.error("Error fetching documents:", error);
-    res.json([]);
-  }
-});
-
-// ============================================================================
-// PHASE 3.6 - FINANCIAL ACTIVITY TIMELINE
-// ============================================================================
-
-router.get("/activity", async (req: Request, res: Response) => {
-  try {
-    const { dealId, brandId, creatorId, startDate, endDate, limit = "100" } = req.query;
-
-    const where: any = {};
-    
-    if (dealId) {
-      where.OR = [
-        { referenceType: "invoice", Invoice: { dealId } },
-        { referenceType: "payout", Payout: { dealId } }
-      ];
-    }
-
-    if (startDate || endDate) {
-      const dateFilter: any = {};
-      if (startDate) dateFilter.gte = new Date(startDate as string);
-      if (endDate) dateFilter.lte = new Date(endDate as string);
-      where.createdAt = dateFilter;
-    }
-
-    const activities = await prisma.financeActivityLog.findMany({
-      where,
-      take: parseInt(limit as string),
-      orderBy: { createdAt: "desc" }
-      // Note: CreatedByUser relation not available in schema
-      // Fetch user details separately if needed
-    });
-
-    res.json(activities || []);
-  } catch (error) {
-    console.error("Error fetching activity:", error);
-    res.json([]);
   }
 });
 
@@ -996,8 +898,15 @@ router.get("/activity", async (req: Request, res: Response) => {
 // ============================================================================
 
 router.get("/xero/status", async (_req: Request, res: Response) => {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Xero integration is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
   // REMOVED: Xero integration not implemented - endpoint returns 410
-  // Status endpoint was reading from DB but no real integration exists
   res.status(410).json({ 
     error: "Xero integration removed",
     message: "Xero integration is not yet implemented. This endpoint has been removed.",
@@ -1006,8 +915,15 @@ router.get("/xero/status", async (_req: Request, res: Response) => {
 });
 
 router.post("/xero/connect", async (_req: Request, res: Response) => {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Xero integration is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
   // REMOVED: Xero integration not implemented - endpoint returns 410
-  // Connect endpoint was saving to DB but no real integration exists
   res.status(410).json({ 
     error: "Xero integration removed",
     message: "Xero integration is not yet implemented. This endpoint has been removed.",
@@ -1016,6 +932,14 @@ router.post("/xero/connect", async (_req: Request, res: Response) => {
 });
 
 router.post("/xero/sync", async (_req: Request, res: Response) => {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Xero integration is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
   // REMOVED: Placeholder sync endpoint - only updated timestamp, no real sync
   res.status(410).json({ 
     error: "Xero sync endpoint removed",
@@ -1025,6 +949,14 @@ router.post("/xero/sync", async (_req: Request, res: Response) => {
 });
 
 router.get("/xero/invoice/:id", async (_req: Request, res: Response) => {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Xero integration is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
   // REMOVED: Placeholder invoice fetch endpoint - no real Xero API integration
   res.status(410).json({ 
     error: "Xero invoice endpoint removed",

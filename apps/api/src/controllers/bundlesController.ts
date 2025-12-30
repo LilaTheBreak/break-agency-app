@@ -46,15 +46,65 @@ export async function createBundle(req: Request, res: Response, next: NextFuncti
 }
 
 export async function updateBundle(req: Request, res: Response, next: NextFunction) {
-  // Implementation for updating a bundle
-  // REMOVED: Bundles feature not implemented
-  res.status(410).json({ ok: false, error: "Bundles feature removed. This feature is not yet implemented." });
+  try {
+    const enabled = process.env.BUNDLES_ENABLED === "true";
+    if (!enabled) {
+      return res.status(503).json({
+        ok: false,
+        error: "Bundles feature is disabled",
+        message: "This feature is currently disabled. Contact an administrator to enable it.",
+        code: "FEATURE_DISABLED"
+      });
+    }
+
+    const { id } = req.params;
+    const BundleUpdateSchema = z.object({
+      name: z.string().optional(),
+      description: z.string().optional(),
+      priceMin: z.number().optional(),
+      priceMax: z.number().optional(),
+      deliverables: z.any().optional(),
+      status: z.string().optional()
+    });
+
+    const parsed = BundleUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ ok: false, error: "Invalid payload", details: parsed.error.flatten() });
+    }
+
+    const bundle = await bundleService.update(id, parsed.data);
+    if (!bundle) {
+      return res.status(404).json({ ok: false, error: "Bundle not found" });
+    }
+
+    res.json({ ok: true, bundle });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function deleteBundle(req: Request, res: Response, next: NextFunction) {
-  // Implementation for deleting a bundle
-  // REMOVED: Bundles feature not implemented
-  res.status(410).json({ ok: false, error: "Bundles feature removed. This feature is not yet implemented." });
+  try {
+    const enabled = process.env.BUNDLES_ENABLED === "true";
+    if (!enabled) {
+      return res.status(503).json({
+        ok: false,
+        error: "Bundles feature is disabled",
+        message: "This feature is currently disabled. Contact an administrator to enable it.",
+        code: "FEATURE_DISABLED"
+      });
+    }
+
+    const { id } = req.params;
+    const deleted = await bundleService.delete(id);
+    if (!deleted) {
+      return res.status(404).json({ ok: false, error: "Bundle not found" });
+    }
+
+    res.json({ ok: true, message: "Bundle deleted" });
+  } catch (error) {
+    next(error);
+  }
 }
 
 const GenerateAIBundleSchema = z.object({

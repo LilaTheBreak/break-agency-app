@@ -128,6 +128,7 @@ export const features = {
    * ✅ Unlocked: API implemented and tested
    */
   BRIEF_APPLICATIONS_ENABLED: true,
+  BRIEFS_ENABLED: false, // Phase 5: Briefs API re-enabled - set to true when ready
   
   /**
    * Advanced Features

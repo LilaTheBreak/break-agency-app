@@ -13,6 +13,8 @@ interface AutoPlanInput {
   dealId?: string;
   briefId?: string;
   userId: string;
+  preview?: boolean;
+  debug?: boolean;
 }
 
 /**
@@ -37,11 +39,15 @@ export async function autoPlanCampaign(input: AutoPlanInput) {
     brand = deal.Brand;
     talent = deal.Talent;
   } else if (briefId) {
-    // REMOVED: BrandBrief model does not exist in schema.prisma
-    throw new Error(
-      "Campaign plan generation from brief not available: BrandBrief model does not exist in database schema. " +
-      "Please provide dealId instead."
-    );
+    // Phase 5: BrandBrief model now exists
+    brief = await prisma.brandBrief.findUnique({ 
+      where: { id: briefId },
+      include: { Brand: { select: { id: true, name: true } } }
+    });
+    if (!brief) throw new Error("Brief not found.");
+    brand = brief.Brand;
+    // Note: Briefs don't have direct talent association, would need to match
+    talent = null;
   } else {
     throw new Error("Either dealId or briefId must be provided.");
   }

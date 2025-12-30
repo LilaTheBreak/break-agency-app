@@ -1,6 +1,8 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { generateCreatorInsights } from "../services/insightService.js";
+import { requireAuth } from "../middleware/auth.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
@@ -19,13 +21,67 @@ router.post("/:userId/generate", async (req, res) => {
   res.json(data);
 });
 
-router.get("/:userId/weekly", async (_req, res) => {
-  // REMOVED: Weekly reports feature not implemented - CreatorWeeklyReport model does not exist
-  res.status(410).json({ 
-    error: "Weekly reports feature removed",
-    message: "This feature is not yet implemented. CreatorWeeklyReport model does not exist in database schema.",
-    alternative: "Use /api/insights/:userId for creator insights"
-  });
+/**
+ * GET /api/insights/:userId/weekly
+ * Phase 5: Weekly reports re-enabled with CreatorWeeklyReport model
+ */
+router.get("/:userId/weekly", requireAuth, async (req, res) => {
+  try {
+    const enabled = process.env.WEEKLY_REPORTS_ENABLED === "true";
+    if (!enabled) {
+      return res.status(503).json({
+        error: "Weekly reports feature is disabled",
+        message: "This feature is currently disabled. Contact an administrator to enable it.",
+        code: "FEATURE_DISABLED"
+      });
+    }
+
+    const { userId } = req.params;
+    const { weekStartDate } = req.query;
+
+    // If weekStartDate provided, get specific week
+    // Otherwise, get most recent week
+    if (weekStartDate) {
+      const startDate = new Date(weekStartDate as string);
+      const report = await prisma.creatorWeeklyReport.findUnique({
+        where: {
+          creatorId_weekStartDate: {
+            creatorId: userId,
+            weekStartDate: startDate
+          }
+        }
+      });
+
+      if (!report) {
+        return res.status(404).json({ 
+          error: "Weekly report not found for this week" 
+        });
+      }
+
+      return res.json({ report });
+    }
+
+    // Get most recent report
+    const report = await prisma.creatorWeeklyReport.findFirst({
+      where: { creatorId: userId },
+      orderBy: { weekStartDate: "desc" }
+    });
+
+    if (!report) {
+      return res.json({ 
+        report: null,
+        message: "No weekly reports available yet"
+      });
+    }
+
+    res.json({ report });
+  } catch (error) {
+    logError("Failed to fetch weekly report", error, { userId: req.params.userId });
+    res.status(500).json({ 
+      error: "Failed to fetch weekly report",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });
 
 export default router;

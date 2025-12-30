@@ -1,9 +1,13 @@
 import { apiFetch } from "./apiClient.js";
+import { isFeatureEnabled } from "../config/features.js";
 
+// Phase 5: Briefs feature re-enabled with full implementation
 export async function fetchBriefVersions({ briefId }) {
-  // REMOVED: Briefs feature not implemented - endpoint returns 410
-  throw new Error("Briefs feature is not available. Use opportunities instead.");
-  // const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/versions`);
+  if (!isFeatureEnabled("BRIEFS_ENABLED")) {
+    throw new Error("Briefs feature is disabled");
+  }
+
+  const response = await apiFetch(`/api/briefs/${encodeURIComponent(briefId)}/versions`);
   if (response.status === 404) {
     return { versions: [] };
   }
@@ -15,9 +19,11 @@ export async function fetchBriefVersions({ briefId }) {
 }
 
 export async function createBriefVersion({ briefId, data }) {
-  // REMOVED: Briefs feature not implemented - endpoint returns 410
-  throw new Error("Briefs feature is not available. Use opportunities instead.");
-  // const response = await apiFetch(`/briefs/${encodeURIComponent(briefId)}/version`, {
+  if (!isFeatureEnabled("BRIEFS_ENABLED")) {
+    throw new Error("Briefs feature is disabled");
+  }
+
+  const response = await apiFetch(`/api/briefs/${encodeURIComponent(briefId)}/versions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -31,11 +37,21 @@ export async function createBriefVersion({ briefId, data }) {
   return response.json();
 }
 
-export async function restoreBriefVersion({ versionId }) {
-  // REMOVED: Briefs feature not implemented - endpoint returns 410
-  throw new Error("Briefs feature is not available. Use opportunities instead.");
-  // const response = await apiFetch(`/briefs/restore/${encodeURIComponent(versionId)}`, {
-    method: "POST"
+export async function restoreBriefVersion({ versionId, briefId }) {
+  if (!isFeatureEnabled("BRIEFS_ENABLED")) {
+    throw new Error("Briefs feature is disabled");
+  }
+
+  if (!briefId) {
+    throw new Error("briefId is required to restore version");
+  }
+
+  const response = await apiFetch(`/api/briefs/restore/${encodeURIComponent(versionId)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ briefId })
   });
   if (!response.ok) {
     const text = await response.text().catch(() => "");

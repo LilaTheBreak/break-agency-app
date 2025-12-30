@@ -501,6 +501,7 @@ app.use("/api/campaign/builder", campaignBuilderRouter);
 app.use("/api/campaign/auto-plan", campaignAutoRouter);
 app.use("/api/campaign/auto-plan/debug", campaignAutoDebugRouter);
 app.use("/api/campaign/auto-plan/preview", campaignAutoPreviewRouter);
+// Phase 5: Briefs API re-enabled with full implementation
 app.use("/api/briefs", briefsRouter);
 
 // ------------------------------------------------------
