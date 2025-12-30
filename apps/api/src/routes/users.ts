@@ -77,10 +77,18 @@ router.get("/", async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 25;
     const users = await prisma.user.findMany({
       take: limit,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        role: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: "desc" }
     });
     console.log(`✅ Found ${users.length} users`);
-    res.json(users);
+    res.json({ users });
   } catch (error) {
     console.error("❌ Error loading users:", error);
     res.status(500).json({ error: "Could not load users." });

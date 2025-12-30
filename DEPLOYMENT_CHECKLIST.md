@@ -1,172 +1,140 @@
-# 🚀 Production Subdomain Deployment Checklist
+# Deployment Checklist - All Changes
 
-## Current Status: Ready for DNS Configuration
+## ✅ Changes Ready for Deployment
 
-### What's Already Done ✅
-- [x] Code updated for subdomain support
-- [x] Cookie domain set to `.tbctbctbc.online`
-- [x] Frontend `.env.production` configured with `VITE_API_URL=https://api.tbctbctbc.online/api`
-- [x] Changes committed to GitHub
+All changes have been committed and pushed to GitHub:
 
----
+1. **Menu Alphabetization** (870c7ce)
+   - All eligible menus alphabetized
+   - Preserved Overview/Settings placement
+   - No breaking changes
 
-## Step 1: Configure DNS (Do This First)
+2. **Console Error Fixes** (792ece8)
+   - Fixed Gmail suggested tasks error
+   - Fixed MEETING_SUMMARIES ReferenceError
+   - Added Talent menu to admin navigation
 
-### In Your DNS Provider (e.g., Cloudflare):
+3. **OAuth Redirect Fix** (0a753e5) ⚠️ **REQUIRES ENV VAR**
+   - Enforces production domain for OAuth redirects
+   - Prevents redirects to Vercel preview URLs
 
-1. **Add CNAME Record:**
-   ```
-   Type: CNAME
-   Name: api
-   Target: breakagencyapi-production.up.railway.app
-   TTL: Auto (or 3600)
-   Proxy status: DNS only (not proxied)
-   ```
+## 🚀 Deployment Status
 
-2. **Wait for DNS Propagation** (5-60 minutes)
-   - Check with: `nslookup api.tbctbctbc.online`
-   - Should return: `canonical name = breakagencyapi-production.up.railway.app`
+### Frontend (Vercel)
+- ✅ **Auto-deploy enabled** - Pushes to `main` trigger automatic deployment
+- ✅ **Status**: Should be deploying now
+- 🔗 **Check**: https://vercel.com/dashboard
 
----
+### Backend (Railway)
+- ✅ **Auto-deploy enabled** - Pushes to `main` trigger automatic deployment
+- ✅ **Status**: Should be deploying now
+- ⚠️ **ACTION REQUIRED**: Set environment variable
+- 🔗 **Check**: https://railway.app/dashboard
 
-## Step 2: Configure Railway Custom Domain
+## ⚠️ Critical: Environment Variable Required
 
-1. Go to: https://railway.app
-2. Select your API project
-3. Click **Settings** → **Domains**
-4. Click **+ Custom Domain**
-5. Enter: `api.tbctbctbc.online`
-6. Railway will verify and generate SSL certificate (automatic)
+**Railway Environment Variable** (REQUIRED for OAuth fix):
 
-⏰ **Wait for Railway to show "Active" status** (usually 5-15 minutes)
-
----
-
-## Step 3: Update Railway Environment Variables
-
-Update these variables in Railway dashboard:
-
-```bash
-COOKIE_DOMAIN=.tbctbctbc.online
-GOOGLE_REDIRECT_URI=https://api.tbctbctbc.online/api/auth/google/callback
-FRONTEND_ORIGIN=https://tbctbctbc.online,https://www.tbctbctbc.online,https://api.tbctbctbc.online
+```
+FRONTEND_URL=https://www.tbctbctbc.online
 ```
 
-**Note:** Railway will auto-redeploy after variable changes.
+### How to Set:
+1. Go to Railway dashboard
+2. Select your API service
+3. Go to Variables tab
+4. Add: `FRONTEND_URL` = `https://www.tbctbctbc.online`
+5. Save (will trigger redeploy)
 
----
+### Why This Matters:
+- Without this, OAuth redirects may still use wrong domain
+- The system will fallback to production domain, but explicit is better
+- Ensures consistent behavior across all environments
 
-## Step 4: Update Google OAuth Console
+## 📋 Post-Deployment Verification
 
-1. Go to: https://console.cloud.google.com/apis/credentials
-2. Select: "The Break Co Agency App" OAuth client
-3. Update **Authorized redirect URIs:**
-   - Add: `https://api.tbctbctbc.online/api/auth/google/callback`
-   - Keep existing: `https://breakagencyapi-production.up.railway.app/api/auth/google/callback` (as backup)
+### 1. Frontend (Vercel)
+- [ ] Check Vercel deployment logs
+- [ ] Verify build completes successfully
+- [ ] Test production site loads correctly
+- [ ] Verify menu alphabetization visible
 
----
+### 2. Backend (Railway)
+- [ ] Check Railway deployment logs
+- [ ] Verify build completes successfully
+- [ ] Verify `FRONTEND_URL` env var is set
+- [ ] Check API health endpoint responds
 
-## Step 5: Update Vercel Environment Variables
+### 3. OAuth Redirects (Critical)
+- [ ] Test Gmail OAuth connection
+- [ ] Verify redirect goes to `www.tbctbctbc.online`
+- [ ] Verify NO redirects to `*.vercel.app`
+- [ ] Test Google Calendar OAuth (if applicable)
+- [ ] Verify sessions persist after redirect
 
-1. Go to: https://vercel.com/lilas-projects-27f9c819/break-agency-app
-2. Settings → Environment Variables
-3. Update or add:
-   ```
-   VITE_API_URL=https://api.tbctbctbc.online/api
-   ```
-4. Redeploy from Vercel dashboard or push new commit
+### 4. Console Errors
+- [ ] Check browser console for errors
+- [ ] Verify no MEETING_SUMMARIES errors
+- [ ] Verify no Gmail suggested tasks errors
+- [ ] Verify Talent menu appears for admins
 
----
+## 🔍 Monitoring
 
-## Step 6: Test the Setup
+### Check Deployment Status:
 
-### 6.1 Verify DNS
+**Vercel:**
 ```bash
-nslookup api.tbctbctbc.online
-# Should show: canonical name = breakagencyapi-production.up.railway.app
+# Check via Vercel CLI (if installed)
+vercel ls
 ```
 
-### 6.2 Test API Directly
+**Railway:**
 ```bash
-curl https://api.tbctbctbc.online/api/health
-# Should return: {"ok":true}
+# Check via Railway CLI (if installed)
+railway status
 ```
 
-### 6.3 Test Authentication Flow
-1. Clear browser cookies (important!)
-2. Visit: https://tbctbctbc.online
-3. Click "Sign In with Google"
-4. Complete OAuth flow
-5. You should be redirected to dashboard **and stay logged in**
+### Check Logs:
 
-### 6.4 Verify Cookie
-Open browser DevTools:
-- Application → Cookies → `https://tbctbctbc.online`
-- Should see: `break_session` cookie with:
-  - Domain: `.tbctbctbc.online`
-  - Secure: ✓
-  - HttpOnly: ✓
-  - SameSite: None
+**Vercel:**
+- Dashboard → Project → Deployments → View logs
 
----
+**Railway:**
+- Dashboard → Service → Deployments → View logs
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
-### DNS Not Resolving
-- Wait longer (can take up to 1 hour)
-- Check your DNS provider's propagation status
-- Use: `dig api.tbctbctbc.online` for detailed info
+### If OAuth redirects still wrong:
+1. Verify `FRONTEND_URL` is set in Railway
+2. Check Railway logs for frontend URL warnings
+3. Verify production domain is correct
+4. Clear browser cache and cookies
 
-### Railway Domain Not Active
-- Verify CNAME is correctly set in DNS
-- Check Railway logs for SSL certificate generation
-- Try removing and re-adding the custom domain
+### If build fails:
+1. Check build logs for errors
+2. Verify all dependencies installed
+3. Check for TypeScript errors
+4. Verify environment variables are set
 
-### OAuth Redirect Error
-- Verify Google OAuth console has new redirect URI
-- Check Railway env var `GOOGLE_REDIRECT_URI` is correct
-- Clear browser cache and cookies
+### If menu not alphabetized:
+1. Hard refresh browser (Cmd+Shift+R / Ctrl+Shift+R)
+2. Clear browser cache
+3. Verify deployment completed successfully
 
-### Cookies Still Not Working
-- Open Network tab in DevTools
-- Look for `Set-Cookie` header in `/api/auth/google/callback` response
-- Verify cookie domain is `.tbctbctbc.online`
-- Check browser console for cookie warnings
+## 📝 Notes
 
----
+- All changes are backward compatible
+- No database migrations required
+- No breaking API changes
+- Environment variable is optional but recommended
 
-## Rollback Plan
+## ✅ Success Criteria
 
-If something goes wrong:
-
-1. **In Railway:** Remove custom domain
-2. **In Vercel:** Change `VITE_API_URL` back to `https://breakagencyapi-production.up.railway.app/api`
-3. **In Railway env vars:** Set `COOKIE_DOMAIN=.up.railway.app`
-4. Redeploy both services
-
----
-
-## Success Criteria ✅
-
-- [ ] DNS resolves `api.tbctbctbc.online` to Railway
-- [ ] Railway shows custom domain as "Active"
-- [ ] API responds at `https://api.tbctbctbc.online/api/health`
-- [ ] Google OAuth redirects to new subdomain
-- [ ] User can log in and session persists across page refreshes
-- [ ] Cookie visible in DevTools with correct domain
-- [ ] No CORS errors in browser console
-- [ ] Dashboard loads with user data (no 403 errors)
-
----
-
-## Need Help?
-
-Check Railway deployment logs:
-```bash
-# In Railway dashboard:
-1. Select your API service
-2. Click "Deployments"
-3. View latest deployment logs
-```
-
-Check browser console for detailed errors.
+- [x] All code pushed to GitHub
+- [ ] Vercel deployment successful
+- [ ] Railway deployment successful
+- [ ] `FRONTEND_URL` env var set in Railway
+- [ ] OAuth redirects go to production domain
+- [ ] No console errors
+- [ ] Menus alphabetized correctly
+- [ ] Talent menu visible for admins

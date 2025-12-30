@@ -89,6 +89,9 @@ import revenueRouter from "./routes/revenue.js";
 // Admin Finance
 import adminFinanceRouter from "./routes/admin/finance.js";
 
+// Admin Talent
+import adminTalentRouter from "./routes/admin/talent.js";
+
 // Admin Users
 import adminUsersRouter from "./routes/adminUsers.js";
 
@@ -459,6 +462,10 @@ app.use("/api/admin/performance", performanceRouter);
 // ADMIN USER MANAGEMENT
 // ------------------------------------------------------
 app.use("/api/admin", adminUsersRouter);
+
+// ADMIN TALENT MANAGEMENT
+// ------------------------------------------------------
+app.use("/api/admin/talent", adminTalentRouter);
 
 // ------------------------------------------------------
 // AI

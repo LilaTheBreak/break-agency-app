@@ -62,6 +62,8 @@ import { AdminBrandsPage } from "./pages/AdminBrandsPage.jsx";
 import { AdminCampaignsPage } from "./pages/AdminCampaignsPage.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
 import { AdminDealsPage } from "./pages/AdminDealsPage.jsx";
+import { AdminTalentPage } from "./pages/AdminTalentPage.jsx";
+import { AdminTalentDetailPage } from "./pages/AdminTalentDetailPage.jsx";
 import AdminTasksPage from "./pages/AdminTasksPage.jsx";
 import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
 import { AdminOutreachPage } from "./pages/AdminOutreachPage.jsx";
@@ -727,6 +729,34 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
             >
               <RouteErrorBoundaryWrapper routeName="Brands CRM">
                 <AdminBrandsPage session={session} />
+              </RouteErrorBoundaryWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/talent"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="Talent Management">
+                <AdminTalentPage />
+              </RouteErrorBoundaryWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/talent/:talentId"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="Talent Detail">
+                <AdminTalentDetailPage />
               </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
