@@ -8,13 +8,13 @@ import { BrandChip } from "../components/BrandChip.jsx";
 import { ContactChip } from "../components/ContactChip.jsx";
 import { OutreachRecordsPanel } from "../components/OutreachRecordsPanel.jsx";
 import { CampaignChip } from "../components/CampaignChip.jsx";
-import { formatCampaignDateRange, readCrmCampaigns } from "../lib/crmCampaigns.js";
+import { formatCampaignDateRange } from "../lib/crmCampaigns.js";
 import { EventChip } from "../components/EventChip.jsx";
-import { formatEventDateTimeRange, readCrmEvents } from "../lib/crmEvents.js";
+import { formatEventDateTimeRange } from "../lib/crmEvents.js";
 import { DealChip } from "../components/DealChip.jsx";
-import { readCrmDeals } from "../lib/crmDeals.js";
 import { ContractChip } from "../components/ContractChip.jsx";
-import { computeExpiryRisk, formatContractEndDate, readCrmContracts } from "../lib/crmContracts.js";
+import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
+import { fetchCampaigns, fetchEvents, fetchDeals, fetchContracts } from "../services/crmClient.js";
 import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection.jsx";
 import {
   fetchBrands,
@@ -602,22 +602,10 @@ export function AdminBrandsPage({ session }) {
   const [enriching, setEnriching] = useState(false);
   const [enrichmentSuggestion, setEnrichmentSuggestion] = useState(null);
   const [contacts, setContacts] = useState([]);
-  const [campaigns, setCampaigns] = useState(() => {
-    const data = readCrmCampaigns();
-    return Array.isArray(data) ? data : [];
-  });
-  const [events, setEvents] = useState(() => {
-    const data = readCrmEvents();
-    return Array.isArray(data) ? data : [];
-  });
-  const [deals, setDeals] = useState(() => {
-    const data = readCrmDeals();
-    return Array.isArray(data) ? data : [];
-  });
-  const [contracts, setContracts] = useState(() => {
-    const data = readCrmContracts();
-    return Array.isArray(data) ? data : [];
-  });
+  const [campaigns, setCampaigns] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [contracts, setContracts] = useState([]);
   
   // Wrapper functions to ensure state is always an array (must be after useState declarations)
   const safeSetBrands = (value) => {
@@ -964,10 +952,13 @@ export function AdminBrandsPage({ session }) {
 
   useEffect(() => {
     if (!drawerBrandId) return;
-    const campaignsData = readCrmCampaigns();
-    const eventsData = readCrmEvents();
-    const dealsData = readCrmDeals();
-    const contractsData = readCrmContracts();
+    // Load related data from API
+    const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
+      fetchCampaigns(),
+      fetchEvents(),
+      fetchDeals(),
+      fetchContracts(),
+    ]);
     safeSetCampaigns(campaignsData);
     safeSetEvents(eventsData);
     safeSetDeals(dealsData);

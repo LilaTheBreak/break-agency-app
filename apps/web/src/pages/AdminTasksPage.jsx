@@ -17,10 +17,7 @@ import {
   fetchTaskUsers,
   fetchTaskTalents 
 } from "../services/crmTasksClient.js";
-import { readCrmDeals } from "../lib/crmDeals.js";
-import { readCrmCampaigns } from "../lib/crmCampaigns.js";
-import { readCrmEvents } from "../lib/crmEvents.js";
-import { readCrmContracts } from "../lib/crmContracts.js";
+import { fetchDeals, fetchCampaigns, fetchEvents, fetchContracts } from "../services/crmClient.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const BRANDS_STORAGE_KEY = "break_admin_brands_v1";

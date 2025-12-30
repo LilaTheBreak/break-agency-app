@@ -7,7 +7,7 @@ import { CampaignChip } from "../components/CampaignChip.jsx";
 import DeckDrawer from "../components/DeckDrawer.jsx";
 import DealAIPanel from "../components/DealAIPanel.jsx";
 import GmailThreadLinker from "../components/GmailThreadLinker.jsx";
-import { linkDealToCampaign, readCrmCampaigns, unlinkDealFromCampaign } from "../lib/crmCampaigns.js";
+import { linkDealToCampaign, unlinkDealFromCampaign, fetchCampaigns } from "../services/crmClient.js";
 import {
   fetchOutreachRecords,
   createOutreachRecord,
@@ -230,7 +230,21 @@ export function AdminOutreachPage({ session }) {
   const [localNotes, setLocalNotes] = useState(() => readStorage(STORAGE_KEYS.localNotes, []));
   const [localTasks, setLocalTasks] = useState(() => readStorage(STORAGE_KEYS.localTasks, []));
   const [noteEdits, setNoteEdits] = useState(() => readStorage(STORAGE_KEYS.noteEdits, {}));
-  const [crmCampaigns, setCrmCampaigns] = useState(() => readCrmCampaigns());
+  const [crmCampaigns, setCrmCampaigns] = useState([]);
+  
+  // Load campaigns from API
+  useEffect(() => {
+    async function loadCampaigns() {
+      try {
+        const data = await fetchCampaigns();
+        setCrmCampaigns(Array.isArray(data) ? data : (data?.campaigns || []));
+      } catch (error) {
+        console.error("Failed to load campaigns:", error);
+        setCrmCampaigns([]);
+      }
+    }
+    loadCampaigns();
+  }, []);
 
   const [outreachModalOpen, setOutreachModalOpen] = useState(false);
   const [editingOutreach, setEditingOutreach] = useState(null);
@@ -310,7 +324,16 @@ export function AdminOutreachPage({ session }) {
 
   useEffect(() => {
     if (!dealModalOpen && !drawer.open) return;
-    setCrmCampaigns(readCrmCampaigns());
+    // Refresh campaigns from API
+    async function refreshCampaigns() {
+      try {
+        const data = await fetchCampaigns();
+        setCrmCampaigns(Array.isArray(data) ? data : (data?.campaigns || []));
+      } catch (error) {
+        console.error("Failed to refresh campaigns:", error);
+      }
+    }
+    refreshCampaigns();
   }, [dealModalOpen, drawer.open, drawer.entityType, drawer.entityId]);
 
   useEffect(() => writeStorage(STORAGE_KEYS.archivedOutreachIds, archivedOutreachIds), [archivedOutreachIds]);
@@ -1005,7 +1028,16 @@ export function AdminOutreachPage({ session }) {
     if (next) {
       linkDealToCampaign({ campaignId: next, dealId, dealLabel: targetDeal?.name || "" });
     }
-    setCrmCampaigns(readCrmCampaigns());
+    // Refresh campaigns from API
+    async function refreshCampaigns() {
+      try {
+        const data = await fetchCampaigns();
+        setCrmCampaigns(Array.isArray(data) ? data : (data?.campaigns || []));
+      } catch (error) {
+        console.error("Failed to refresh campaigns:", error);
+      }
+    }
+    refreshCampaigns();
   };
 
   const openDrawer = (entityType, entityId) => {

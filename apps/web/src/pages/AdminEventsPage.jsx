@@ -15,7 +15,7 @@ import {
 } from "../lib/crmEvents.js";
 import { fetchEvents, createEvent, updateEvent, deleteEvent } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase, clearLocalStorageData } from "../lib/crmMigration.js";
-import { readCrmDeals } from "../lib/crmDeals.js";
+import { fetchDeals, fetchEvents, fetchCampaigns, fetchBrands } from "../services/crmClient.js";
 
 const BRANDS_STORAGE_KEY = "break_admin_brands_v1";
 
@@ -235,7 +235,7 @@ export function AdminEventsPage({ session }) {
   const [events, setEvents] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [deals, setDeals] = useState(() => readCrmDeals());
+  const [deals, setDeals] = useState([]);
   const [drawerId, setDrawerId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -284,7 +284,8 @@ export function AdminEventsPage({ session }) {
     // Also load campaigns for display (they might still be in localStorage)
     const loadedCampaigns = safeRead("break_admin_crm_campaigns_v1", []);
     setCampaigns(loadedCampaigns);
-    setDeals(readCrmDeals());
+    // Refresh data from API
+    loadEvents();
   }, []);
 
   const handleMigrate = async () => {
@@ -319,7 +320,8 @@ export function AdminEventsPage({ session }) {
   useEffect(() => {
     if (!drawerId && !createOpen) return;
     loadEvents();
-    setDeals(readCrmDeals());
+    // Refresh data from API
+    loadEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawerId, createOpen]);
 
