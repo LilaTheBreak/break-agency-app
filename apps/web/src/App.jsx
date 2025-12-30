@@ -64,6 +64,8 @@ import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
 import { AdminDealsPage } from "./pages/AdminDealsPage.jsx";
 import { AdminTalentPage } from "./pages/AdminTalentPage.jsx";
 import { AdminTalentDetailPage } from "./pages/AdminTalentDetailPage.jsx";
+import { AdminContactsPage } from "./pages/AdminContactsPage.jsx";
+import { AdminReportsPage } from "./pages/AdminReportsPage.jsx";
 import AdminTasksPage from "./pages/AdminTasksPage.jsx";
 import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
 import { AdminOutreachPage } from "./pages/AdminOutreachPage.jsx";
@@ -762,6 +764,20 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           }
         />
         <Route
+          path="/admin/contacts"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="Contacts">
+                <AdminContactsPage />
+              </RouteErrorBoundaryWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/users/:email"
           element={
             <ProtectedRoute
@@ -829,6 +845,20 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
             >
               <RouteErrorBoundaryWrapper routeName="Finance">
                 <AdminFinancePage session={session} />
+              </RouteErrorBoundaryWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="Reports">
+                <AdminReportsPage />
               </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
@@ -1129,23 +1159,31 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                           Control room
                         </p>
                         {[
-                          { to: "/admin/dashboard", label: "Overview" }, // Keep first - primary entry point
+                          // Overview & Activity
+                          { to: "/admin/dashboard", label: "Overview" },
                           { to: "/admin/activity", label: "Activity" },
                           { to: "/admin/approvals", label: "Approvals" },
+                          // Talent & CRM
+                          { to: "/admin/talent", label: "Talent" },
                           { to: "/admin/brands", label: "Brands" },
-                          { to: "/admin/campaigns", label: "Campaigns" },
+                          { to: "/admin/contacts", label: "Contacts" },
+                          { to: "/admin/opportunities", label: "Opportunities" },
                           { to: "/admin/deals", label: "Deals" },
-                          { to: "/admin/documents", label: "Documents / Contracts" },
-                          { to: "/admin/events", label: "Events" },
-                          { to: "/admin/finance", label: "Finance" },
+                          { to: "/admin/campaigns", label: "Campaigns" },
+                          // Communication & Operations
                           { to: "/admin/messaging", label: "Messaging" },
                           { to: "/admin/outreach", label: "Outreach" },
-                          { to: "/admin/queues", label: "Queues" },
-                          { to: "/admin/resources", label: "Resources" },
+                          { to: "/admin/calendar", label: "Calendar" },
+                          { to: "/admin/events", label: "Events" },
                           { to: "/admin/tasks", label: "Tasks" },
-                          { to: "/admin/talent", label: "Talent" }, // New Talent Management menu
+                          // Documents & Finance
+                          { to: "/admin/documents", label: "Documents / Contracts" },
+                          { to: "/admin/finance", label: "Finance" },
+                          { to: "/admin/reports", label: "Reports" },
+                          // System
+                          { to: "/admin/queues", label: "Queues" },
                           { to: "/admin/users", label: "Users" },
-                          { to: "/admin/settings", label: "Settings" } // Keep last - standard placement
+                          { to: "/admin/settings", label: "Settings" }
                         ].map((item) => (
                           <Link
                             key={item.to}

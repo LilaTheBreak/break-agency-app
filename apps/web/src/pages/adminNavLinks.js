@@ -1,19 +1,31 @@
 export const ADMIN_NAV_LINKS = [
-  { label: "Overview", to: "/admin/dashboard" }, // Keep first - primary entry point
+  // Overview & Activity
+  { label: "Overview", to: "/admin/dashboard" },
   { label: "Activity", to: "/admin/activity" },
   { label: "Approvals", to: "/admin/approvals" },
+  
+  // Talent & CRM
+  { label: "Talent", to: "/admin/talent" },
   { label: "Brands", to: "/admin/brands" },
-  { label: "Calendar", to: "/admin/calendar" },
-  { label: "Campaigns", to: "/admin/campaigns" },
+  { label: "Contacts", to: "/admin/contacts" },
+  { label: "Opportunities", to: "/admin/opportunities" },
   { label: "Deals", to: "/admin/deals" },
-  { label: "Documents / Contracts", to: "/admin/documents" },
-  { label: "Events", to: "/admin/events" },
-  { label: "Finance", to: "/admin/finance" },
+  { label: "Campaigns", to: "/admin/campaigns" },
+  
+  // Communication & Operations
   { label: "Messaging", to: "/admin/messaging" },
   { label: "Outreach", to: "/admin/outreach" },
-  { label: "Queues", to: "/admin/queues" },
+  { label: "Calendar", to: "/admin/calendar" },
+  { label: "Events", to: "/admin/events" },
   { label: "Tasks", to: "/admin/tasks" },
-  { label: "Talent", to: "/admin/talent" }, // New Talent Management menu
+  
+  // Documents & Finance
+  { label: "Documents / Contracts", to: "/admin/documents" },
+  { label: "Finance", to: "/admin/finance" },
+  { label: "Reports", to: "/admin/reports" },
+  
+  // System
+  { label: "Queues", to: "/admin/queues" },
   { label: "Users", to: "/admin/users" },
-  { label: "Settings", to: "/admin/settings" } // Keep last - standard placement
+  { label: "Settings", to: "/admin/settings" }
 ];
