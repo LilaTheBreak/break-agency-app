@@ -828,27 +828,27 @@ export function AdminBrandsPage({ session }) {
   // Ensure all state variables are always arrays (safety net)
   useEffect(() => {
     if (!Array.isArray(campaigns)) {
-      console.warn('[BRANDS PAGE] campaigns is not an array, resetting to []');
+      console.warn('[BRANDS PAGE] campaigns is not an array, resetting to []', { campaigns, type: typeof campaigns, isArray: Array.isArray(campaigns) });
       setCampaigns([]);
     }
     if (!Array.isArray(events)) {
-      console.warn('[BRANDS PAGE] events is not an array, resetting to []');
+      console.warn('[BRANDS PAGE] events is not an array, resetting to []', { events, type: typeof events, isArray: Array.isArray(events) });
       setEvents([]);
     }
     if (!Array.isArray(deals)) {
-      console.warn('[BRANDS PAGE] deals is not an array, resetting to []');
+      console.warn('[BRANDS PAGE] deals is not an array, resetting to []', { deals, type: typeof deals, isArray: Array.isArray(deals) });
       setDeals([]);
     }
     if (!Array.isArray(contracts)) {
-      console.warn('[BRANDS PAGE] contracts is not an array, resetting to []');
+      console.warn('[BRANDS PAGE] contracts is not an array, resetting to []', { contracts, type: typeof contracts, isArray: Array.isArray(contracts) });
       setContracts([]);
     }
     if (!Array.isArray(contacts)) {
-      console.warn('[BRANDS PAGE] contacts is not an array, resetting to []');
+      console.warn('[BRANDS PAGE] contacts is not an array, resetting to []', { contacts, type: typeof contacts, isArray: Array.isArray(contacts) });
       setContacts([]);
     }
     if (!Array.isArray(brands)) {
-      console.warn('[BRANDS PAGE] brands is not an array, resetting to []');
+      console.warn('[BRANDS PAGE] brands is not an array, resetting to []', { brands, type: typeof brands, isArray: Array.isArray(brands) });
       setBrands([]);
     }
   }, [campaigns, events, deals, contracts, contacts, brands]);
