@@ -1,144 +1,200 @@
-# Phase 3: Complete or Gate Partially Wired Tools - Completion Summary
+# Phase 3: Stabilize Background Jobs and Queues - Completion Summary
 
 ## ✅ COMPLETE
 
-All partially wired tools have been either completed with real data integration or properly gated behind feature flags with clear messaging.
+Phase 3 has been completed. All background jobs and queues are now stable, with proper error handling, logging, and no dead queues.
 
-## Changes Made
+## Tasks Completed
 
-### 1. Creator Revenue Section ✅
+### 1. ✅ Removed Dead Queues
 
-**File:** `apps/web/src/pages/CreatorDashboard.jsx`
+**Removed `dealPackageQueue`:**
+- **Reason:** `dealPackage` schema removed from database
+- **Files Changed:**
+  - `apps/api/src/worker/queues.ts` - Removed `dealPackageQueue` export
+  - `apps/api/src/worker/index.ts` - Removed import and processor attachment
+  - `apps/api/src/worker/processors/dealPackageProcessor.ts` - Updated to throw error (should never be called)
 
-**Before:**
-- Showed static "Revenue tracking coming soon" message
-- No API integration
+**Updated `socialQueue`:**
+- **Status:** Queue exists but processor throws error (fails loudly)
+- **Reason:** Social schema models exist but feature is disabled
+- **Files Changed:**
+  - `apps/api/src/worker/processors/socialRefreshProcessor.ts` - Now throws error instead of silently returning
 
-**After:**
-- Wired to `useRevenue` hook from `useAnalytics.js`
-- Fetches real revenue data from `/api/analytics/revenue`
-- Shows loading state while fetching
-- Displays actual revenue metrics (current, projected, total) when available
-- Shows proper empty state: "No revenue data yet" with helpful message
-- Handles errors gracefully with clear messaging
+### 2. ✅ Removed Duplicate Queue Registrations
 
-**Status:** ✅ Fully wired with real data
+**Fixed `dealExtractionQueue` duplicate:**
+- **Problem:** `dealExtractionQueue` was imported twice and attached twice with different processors
+- **Solution:** 
+  - Removed duplicate import
+  - Removed `dealExtractionProcessor` attachment (line 71)
+  - Kept `dealExtractionWorker` attachment (line 89) - has proper error handling
+  - Removed unused `dealExtractionProcessor` import
 
-### 2. Calendar Sync Providers ✅
+**Files Changed:**
+- `apps/api/src/worker/index.ts` - Removed duplicate import and attachment
 
-**File:** `apps/web/src/pages/AdminCalendarPage.jsx`
+### 3. ✅ Verified All Cron Jobs
 
-**Before:**
-- Generic "Coming soon" message for all external calendars
-- No distinction between available (Google) and unavailable (Microsoft/Apple/iCal)
+**Standard Cron Jobs (using `runCronJob` wrapper):**
+- ✅ `checkOverdueInvoicesJob` - Has logging via `runCronJob`
+- ✅ `sendDailyBriefDigestJob` - Has logging via `runCronJob`
+- ✅ `updateSocialStatsJob` - Has logging via `runCronJob` (disabled - returns skip)
+- ✅ `flushStaleApprovalsJob` - Has logging via `runCronJob`
+- ✅ `dealAutomationJob` - Has logging via `runCronJob` (disabled - returns skip)
+- ✅ `dealCleanupJob` - Has logging via `runCronJob` (disabled - `dealDraft` model removed)
 
-**After:**
-- Google Calendar: Shows connection status and sync button (functional)
-- Microsoft 365/Outlook: Gated with "Coming soon" and "Not available" badge
-- Apple Calendar: Gated with "Coming soon" and "Not available" badge
-- Generic iCal feed: Gated with "Coming soon" and "Not available" badge
-- Clear messaging: "Google Calendar sync is available now. Microsoft 365, Apple Calendar, and iCal feeds are coming soon."
+**Inline Cron Jobs (added logging):**
+- ✅ Weekly reports - Added start/complete logging
+- ✅ AI agent recovery - Added start/complete logging with result count
+- ✅ Outreach rotation - Added start/complete logging with queued count
+- ✅ AI agent queue retry - Added start/complete logging with retry count
+- ✅ Weekly outreach enqueue - Added start/complete logging with enqueued count
+- ✅ Daily outreach plan - Added start/complete logging with queued count
+- ✅ Follow-ups - Added start/complete logging
+- ✅ Brand CRM daily - Added start/complete logging
+- ✅ Strategy predictions - Added start/complete logging with queued count
+- ✅ WhatsApp sync - Added start/complete logging
+- ✅ Gmail sync - Already had logging
+- ✅ Weekly talent reports - Added start/complete logging with enqueued count
+- ✅ Deliverable cron - Added start/complete logging with queued count
 
-**Status:** ✅ Google Calendar functional, others properly gated
+**Dependencies Verified:**
+- ✅ All cron jobs have valid Prisma model dependencies
+- ✅ `dealCleanupJob` disabled (references removed `dealDraft` model)
+- ✅ `dealAutomationJob` disabled (returns skip response)
+- ✅ `updateSocialStatsJob` disabled (returns skip response)
 
-### 3. Admin Finance - Xero Integration ✅
+### 4. ✅ Added Retry Logic (Fail Loudly)
 
-**File:** `apps/web/src/pages/AdminFinancePage.jsx`
+**Worker Processors Updated:**
+All processors now throw errors instead of silently catching them, allowing BullMQ to handle retries:
 
-**Before:**
-- Xero sync button always visible but may not work
-- No feature flag gating
+- ✅ `gmailIngestProcessor` - Throws error if `userId` missing
+- ✅ `emailProcessor` - Re-throws errors
+- ✅ `triageProcessor` - Throws error if `taskId` missing
+- ✅ `aiAgentProcessor` - Throws error if `taskId` missing
+- ✅ `outreachProcessor` - Re-throws errors
+- ✅ `campaignProcessor` - Throws error if `dealDraftId` missing
+- ✅ `negotiationProcessor` - Throws error if `dealDraftId` missing
+- ✅ `contractProcessor` - Re-throws errors
+- ✅ `deliverableProcessor` - Throws error if `deliverableId` missing or not found
+- ✅ `agentProcessor` - Throws error if `taskId` missing
+- ✅ `contractFinalisationProcessor` - Throws error if `userId` or `terms` missing
+- ✅ `outreachEngineProcessor` - Throws error if `actionId` missing or action not found/pending
+- ✅ `brandProcessor` - Throws error if `userId` or `brandId` missing
+- ✅ `strategyProcessor` - Throws error if `userId` or `brandName` missing
+- ✅ `creatorFitProcessor` - Throws error if `userId` or `brandPrediction` missing
+- ✅ `creatorBundleProcessor` - Re-throws errors
+- ✅ `deliverableReviewProcessor` - Throws error if `deliverableId` or `content` missing
+- ✅ `negotiationSessionProcessor` - Re-throws errors
+- ✅ `inboxProcessor` - Already throws errors properly
+- ✅ `dealExtractionWorker` - Already throws errors properly
+- ✅ `socialRefreshProcessor` - Now throws error (fails loudly)
+- ✅ `dealPackageProcessor` - Throws error (should never be called)
 
-**After:**
-- Xero sync button gated behind `XERO_INTEGRATION_ENABLED` feature flag
-- Shows `DisabledNotice` component when feature is disabled
-- Xero connection section shows proper gating message
-- Button disabled when feature flag is false
+**Worker Attach Function Updated:**
+- ✅ `attach` function now re-throws errors so BullMQ can handle retries
+- ✅ Added success logging for completed jobs
+- ✅ Errors are logged before re-throwing
 
-**Status:** ✅ Properly gated with feature flag
+## Clean Queue List
 
-### 4. Admin Finance - Payout Tracking ✅
+### Active Queues (21 total)
 
-**File:** `apps/web/src/pages/AdminFinancePage.jsx`
+1. ✅ `gmail-ingest` - Gmail message ingestion
+2. ✅ `social-refresh` - Social stats refresh (disabled but fails loudly)
+3. ✅ `email-send` - Email sending
+4. ✅ `inbox-triage` - Inbox triage processing
+5. ✅ `deal-extraction` - Deal extraction from emails
+6. ✅ `negotiation-engine` - Negotiation insights
+7. ✅ `campaign-builder` - Campaign building
+8. ✅ `ai-agent` - AI agent tasks
+9. ✅ `ai-outreach` - AI outreach tasks
+10. ✅ `ai-negotiation` - AI negotiation sessions
+11. ✅ `ai-contract` - AI contract processing
+12. ✅ `deliverable-reminders` - Deliverable reminders
+13. ✅ `agent-tasks` - Agent task execution
+14. ✅ `contract_finalisation` - Contract finalisation
+15. ✅ `outreach` - Outreach engine
+16. ✅ `brand-crm` - Brand CRM updates
+17. ✅ `strategy-engine` - Strategy predictions
+18. ✅ `creator-fit` - Creator fit scoring
+19. ✅ `creator-bundle` - Creator bundle generation
+20. ✅ `deliverable-review` - Deliverable review
+21. ✅ `inbox` - Inbox processing
 
-**Before:**
-- Payout section always visible
-- No indication that tracking is incomplete
+### Removed Queues
 
-**After:**
-- Payout section subtitle updated to reflect feature status
-- Shows: "Payout tracking is currently managed manually. Automatic tracking coming soon." when `PAYOUT_TRACKING_ENABLED` is false
-- Clear messaging about manual vs automatic tracking
+- ❌ `deal-package` - **REMOVED** (schema removed)
 
-**Status:** ✅ Properly gated with clear messaging
+## Cron Job Health Summary
 
-### 5. Metrics Display - Empty States ✅
+### ✅ Healthy Cron Jobs (All have logging and error handling)
 
-**File:** `apps/web/src/pages/ControlRoomView.jsx`
+| Job Name | Schedule | Status | Logging | Error Handling |
+|----------|----------|--------|---------|----------------|
+| check-overdue-invoices | `0 9 * * *` | ✅ Active | ✅ Via `runCronJob` | ✅ Throws errors |
+| send-daily-brief-digest | `0 8 * * *` | ✅ Active | ✅ Via `runCronJob` | ✅ Throws errors |
+| update-social-stats | `0 */6 * * *` | ⚠️ Disabled | ✅ Via `runCronJob` | ✅ Returns skip |
+| flush-stale-approvals | `0 */12 * * *` | ✅ Active | ✅ Via `runCronJob` | ✅ Throws errors |
+| deal-automation | `0 * * * *` | ⚠️ Disabled | ✅ Via `runCronJob` | ✅ Returns skip |
+| deal-cleanup | `0 4 * * *` | ⚠️ Disabled | ✅ Via `runCronJob` | ✅ Returns skip |
+| deliverable-overdue | `0 * * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| weekly-reports | `0 8 * * 1` | ✅ Active | ✅ Added | ✅ Throws errors |
+| ai-agent-recovery | `*/10 * * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| outreach-rotation | `0 8 * * 2` | ✅ Active | ✅ Added | ✅ Throws errors |
+| ai-agent-retry | `*/30 * * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| weekly-outreach | `0 9 * * 1` | ✅ Active | ✅ Added | ✅ Throws errors |
+| daily-outreach-plan | `0 9 * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| outreach-follow-ups | `0 */6 * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| brand-crm-daily | `0 3 * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| strategy-predictions | `0 4 * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| whatsapp-sync | `*/10 * * * *` | ✅ Active | ✅ Added | ✅ Throws errors |
+| gmail-sync | `*/15 * * * *` | ✅ Active | ✅ Already had | ✅ Throws errors |
+| weekly-talent-reports | `0 9 * * 1` | ✅ Active | ✅ Added | ✅ Throws errors |
 
-**Before:**
-- Metrics showing "—" when unavailable
-- Unclear what "—" means
+### ⚠️ Disabled Cron Jobs (Intentionally disabled)
 
-**After:**
-- Replaced "—" with "0" for numeric metrics
-- Added "No data available" subtitle when metric value is "—"
-- Clearer empty state messaging
-
-**Status:** ✅ Improved empty state handling
-
-## Tools Status Summary
-
-### ✅ Completed (Now Fully Wired)
-
-1. **Creator Revenue Section**
-   - Status: Fully wired
-   - Uses: `useRevenue` hook → `/api/analytics/revenue`
-   - Shows: Real revenue data or proper empty states
-
-### ✅ Gated (Properly Hidden/Disabled)
-
-1. **Calendar Sync - Microsoft/Apple/iCal**
-   - Status: Gated with "Coming soon" messaging
-   - Feature: Only Google Calendar is functional
-   - UI: Shows disabled state with clear messaging
-
-2. **Xero Integration**
-   - Status: Gated behind `XERO_INTEGRATION_ENABLED` feature flag
-   - Feature: Not yet implemented
-   - UI: Shows `DisabledNotice` component
-
-3. **Payout Tracking**
-   - Status: Gated with clear messaging
-   - Feature: Manual tracking only, automatic coming soon
-   - UI: Updated subtitle to reflect status
-
-### ✅ Improved (Better Empty States)
-
-1. **Metrics Display**
-   - Status: Improved empty state handling
-   - Change: "—" → "0" with "No data available" message
-   - UI: Clearer feedback when data is unavailable
-
-## Acceptance Criteria Met
-
-✅ **No partially working tools remain** - All tools are either fully wired or properly gated  
-✅ **Dashboards feel consistent and reliable** - Real data shown when available, clear messaging when not  
-✅ **No fake metrics** - All metrics show real data or proper empty states  
-✅ **Clear empty states** - Replaced "—" and placeholder text with helpful messages
+- `update-social-stats` - Social schema models removed from active use
+- `deal-automation` - DealThread models removed from schema
+- `deal-cleanup` - DealDraft model removed from schema
 
 ## Files Changed
 
-1. `apps/web/src/pages/CreatorDashboard.jsx` - Wired Creator Revenue to API
-2. `apps/web/src/pages/AdminCalendarPage.jsx` - Gated calendar providers
-3. `apps/web/src/pages/AdminFinancePage.jsx` - Gated Xero and payout tracking
-4. `apps/web/src/pages/ControlRoomView.jsx` - Improved metrics empty states
+### Backend - Worker
+1. `apps/api/src/worker/queues.ts` - Removed `dealPackageQueue`
+2. `apps/api/src/worker/index.ts` - Removed duplicate `dealExtractionQueue`, removed `dealPackageQueue`, updated `attach` function to fail loudly
+3. `apps/api/src/worker/processors/*.ts` - Updated all 20+ processors to throw errors instead of silently catching
 
-## Next Steps
+### Backend - Cron
+4. `apps/api/src/cron/index.ts` - Added logging to all inline cron jobs, added error throwing
+5. `apps/api/src/cron/dealCleanupJob.ts` - Disabled job (dealDraft model removed)
 
-All partially wired tools from the audit have been addressed. The app now:
-- Shows real data when available
-- Gates incomplete features with clear messaging
-- Provides helpful empty states instead of placeholders
-- Maintains consistency across dashboards
+## Acceptance Criteria
 
+✅ **No dead queues** - `dealPackageQueue` removed, `socialQueue` fails loudly
+✅ **No duplicate queue registrations** - `dealExtractionQueue` duplicate removed
+✅ **No silent job failures** - All processors throw errors, all cron jobs have logging
+✅ **Clean worker registry** - All queues properly registered, no duplicates
+
+## Verification
+
+- ✅ No `dealPackageQueue` references in codebase (except processor file kept for reference)
+- ✅ No duplicate queue registrations
+- ✅ All processors throw errors on failure
+- ✅ All cron jobs have start/complete logging
+- ✅ All cron jobs throw errors on failure
+- ✅ Disabled jobs clearly marked and return skip responses
+
+## Next Steps (Optional)
+
+1. **Monitor Queue Health:**
+   - Set up monitoring for failed jobs
+   - Alert on high failure rates
+   - Track retry success rates
+
+2. **Social Queue Decision:**
+   - Decide whether to fully remove `socialQueue` or re-enable it
+   - If removing, delete queue and processor
+   - If re-enabling, update processor to use actual social models

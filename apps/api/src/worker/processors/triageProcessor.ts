@@ -1,14 +1,10 @@
 import { processAIAgentTask } from "../../services/ai/aiAgentService.js";
 
+// Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function triageProcessor(job: any) {
   const taskId = job.data?.taskId;
   if (!taskId) {
-    console.warn("triageProcessor skipped: no taskId", job.data);
-    return;
+    throw new Error(`triageProcessor: missing taskId in job data. Job data: ${JSON.stringify(job.data)}`);
   }
-  try {
-    await processAIAgentTask(taskId);
-  } catch (err) {
-    console.error("triageProcessor failed:", err);
-  }
+  await processAIAgentTask(taskId);
 }

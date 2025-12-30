@@ -6,12 +6,20 @@ async function sendEmailViaGmail({ to, subject, text }: { to: string; subject: s
   return { to, subject, text };
 }
 
+// Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function outreachEngineProcessor(job: any) {
   const actionId = job.data?.actionId;
-  if (!actionId) return;
+  if (!actionId) {
+    throw new Error(`outreachEngineProcessor: missing actionId in job data. Job data: ${JSON.stringify(job.data)}`);
+  }
 
   const action = await prisma.outreachAction.findUnique({ where: { id: actionId } });
-  if (!action || action.status !== "pending") return;
+  if (!action) {
+    throw new Error(`outreachEngineProcessor: action ${actionId} not found`);
+  }
+  if (action.status !== "pending") {
+    throw new Error(`outreachEngineProcessor: action ${actionId} is not pending (status: ${action.status})`);
+  }
 
   await prisma.outreachAction.update({
     where: { id: actionId },
@@ -34,6 +42,8 @@ export default async function outreachEngineProcessor(job: any) {
       where: { id: actionId },
       data: { status: "error", errorMessage: String(err) }
     });
+    // Phase 3: Fail loudly - re-throw so BullMQ can retry
+    throw err;
   }
 }
 

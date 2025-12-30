@@ -1,15 +1,11 @@
 import { processAIAgentTask } from "../../services/ai/aiAgentService.js";
 
+// Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function aiAgentProcessor(job: any) {
   const { taskId } = job.data || {};
   if (!taskId) {
-    console.error("AIAgentProcessor received invalid job payload", job.data);
-    return;
+    throw new Error(`AIAgentProcessor: missing taskId in job data. Job data: ${JSON.stringify(job.data)}`);
   }
 
-  try {
-    await processAIAgentTask(taskId);
-  } catch (err) {
-    console.error("AI Agent Task Failed:", err);
-  }
+  await processAIAgentTask(taskId);
 }

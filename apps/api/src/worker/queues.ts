@@ -19,7 +19,7 @@ export const outreachEngineQueue = createSafeQueue("outreach");
 export const brandQueue = createSafeQueue("brand-crm");
 export const strategyQueue = createSafeQueue("strategy-engine");
 export const creatorFitQueue = createSafeQueue("creator-fit");
-export const dealPackageQueue = createSafeQueue("deal-package");
+// Phase 3: Removed dealPackageQueue - deal packages schema removed
 export const creatorBundleQueue = createSafeQueue("creator-bundle");
 export const deliverableReviewQueue = createSafeQueue("deliverable-review");
 export const inboxQueue = createSafeQueue("inbox");

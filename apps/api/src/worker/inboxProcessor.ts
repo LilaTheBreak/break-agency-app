@@ -9,6 +9,7 @@ type InboxJobData = {
   emailId: string;
 };
 
+// Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function inboxProcessor(job: Job<InboxJobData>) {
   const { emailId } = job.data;
   console.log(`[WORKER] Processing inbox job for email: ${emailId}`);

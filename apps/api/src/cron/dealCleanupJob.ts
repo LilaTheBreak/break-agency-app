@@ -1,14 +1,13 @@
 import { CronJobDefinition } from "./types.js";
-import prisma from "../lib/prisma.js";
+import { logError } from "../lib/logger.js";
 
+// Phase 3: dealDraft model removed from schema - job disabled
 export const dealCleanupJob: CronJobDefinition = {
   name: "deal-cleanup",
   schedule: "0 4 * * *",
-  description: "Cleanup low-confidence deal drafts.",
+  description: "Cleanup low-confidence deal drafts (DISABLED: dealDraft model removed from schema).",
   handler: async () => {
-    const deleted = await prisma.dealDraft.deleteMany({
-      where: { confidence: { lt: 0.3 } }
-    });
-    return { deleted: deleted.count };
+    logError("deal-cleanup job skipped", new Error("dealDraft model removed from schema"), { job: "deal-cleanup" });
+    return { skipped: true, reason: "dealDraft model removed from schema" };
   }
 };
