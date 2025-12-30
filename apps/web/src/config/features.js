@@ -48,7 +48,7 @@ export const features = {
    */
   REVENUE_DASHBOARD_ENABLED: true, // ✅ Unlocked: Deal-based revenue tracking
   FINANCE_METRICS_ENABLED: true, // ✅ Unlocked: Revenue metrics from deals
-  PAYOUT_TRACKING_ENABLED: false, // Still requires manual updates via deal stages
+  PAYOUT_TRACKING_ENABLED: true, // ✅ Unlocked: Stripe payout creation endpoint implemented
   XERO_INTEGRATION_ENABLED: false, // Xero integration not yet implemented
 
   /**
