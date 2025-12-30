@@ -1387,9 +1387,11 @@ export function AdminBrandsPage({ session }) {
                   <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Primary contact</p>
                   <p className="mt-2 text-sm text-brand-black/80">
                     {selectedBrand.primaryContactId
-                      ? brandContacts.find(c => c.id === selectedBrand.primaryContactId)
-                        ? `${brandContacts.find(c => c.id === selectedBrand.primaryContactId).firstName || ""} ${brandContacts.find(c => c.id === selectedBrand.primaryContactId).lastName || ""}`.trim() || "—"
-                        : "—"
+                      ? (() => {
+                          const safeContacts = Array.isArray(brandContacts) ? brandContacts : [];
+                          const contact = safeContacts.find(c => c && c.id === selectedBrand.primaryContactId);
+                          return contact ? `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || "—" : "—";
+                        })()
                       : "—"}
                   </p>
                 </div>
@@ -1756,11 +1758,11 @@ export function AdminBrandsPage({ session }) {
                   <p className="mt-1 text-sm text-brand-black/60">People at this brand. Internal-only.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Pill tone="neutral">{brandContacts.length}</Pill>
+                  <Pill tone="neutral">{(Array.isArray(brandContacts) ? brandContacts : []).length}</Pill>
                   <PrimaryButton onClick={() => openContactCreate(selectedBrand.id)}>Add contact</PrimaryButton>
                 </div>
               </div>
-              {brandContacts.length === 0 ? (
+              {(Array.isArray(brandContacts) ? brandContacts : []).length === 0 ? (
                 <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
                   <p className="text-sm text-brand-black/70">
                     No contacts yet. Add marketing, partnerships, PR, founders, or assistants so outreach and deals stay contextual.
@@ -1768,7 +1770,7 @@ export function AdminBrandsPage({ session }) {
                 </div>
               ) : (
                 <div className="mt-4 space-y-2">
-                  {brandContacts.map((contact) => (
+                  {(Array.isArray(brandContacts) ? brandContacts : []).map((contact) => (
                     <div
                       key={contact.id}
                       className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3"
