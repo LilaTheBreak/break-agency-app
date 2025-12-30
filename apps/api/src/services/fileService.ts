@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
-import { buildObjectKey, createPresignedUploadUrl } from "../lib/s3.js";
+import { buildObjectKey, createPresignedUploadUrl, createPresignedDownloadUrl, s3 } from "../lib/s3.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { safeEnv } from "../utils/safeEnv.js";
 
 const bucket = safeEnv("S3_BUCKET", "local-bucket");
@@ -75,8 +76,6 @@ export async function getPresignedUrl(key: string) {
 }
 
 export async function uploadFileToS3(key: string, fileBuffer: Buffer, mimeType: string) {
-  const { s3 } = await import("../lib/s3.js");
-  const { PutObjectCommand } = await import("@aws-sdk/client-s3");
   const bucket = safeEnv("S3_BUCKET", "local-bucket");
   
   await s3.send(
