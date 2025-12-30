@@ -30,10 +30,12 @@ export async function autoPlanCampaign(req: Request, res: Response, next: NextFu
 export async function previewAutoPlan(req: Request, res: Response, next: NextFunction) {
   // This would typically call the autoPlanCampaign service but not persist the result,
   // or use a dedicated preview function in the service.
-  res.status(501).json({ ok: false, error: "Preview not implemented yet." });
+  // REMOVED: Campaign auto preview not implemented
+  res.status(410).json({ ok: false, error: "Campaign auto preview feature removed. This feature is not yet implemented." });
 }
 
 export async function debugAutoPlan(req: Request, res: Response, next: NextFunction) {
   // This would return raw LLM output for debugging purposes.
-  res.status(501).json({ ok: false, error: "Debug not implemented yet." });
+  // REMOVED: Campaign auto debug not implemented
+  res.status(410).json({ ok: false, error: "Campaign auto debug feature removed. This feature is not yet implemented." });
 }
