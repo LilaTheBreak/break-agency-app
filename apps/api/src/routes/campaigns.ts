@@ -73,33 +73,26 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: 
  * NOTE: This MUST come BEFORE /campaigns/:id to avoid "user" being treated as an ID
  */
 router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Response) => {
-  const requester = req.user!;
-  let targetId = req.params.userId;
-  
-  console.log("[CAMPAIGNS] Request details:", {
-    targetId,
-    requesterId: requester.id,
-    requesterEmail: requester.email,
-    requesterRole: requester.role,
-    allUser: req.user
-  });
-  
-  if (targetId === "me") targetId = requester.id;
-  if (targetId === "all" && !isAdmin(requester)) {
-    console.log("[CAMPAIGNS] Non-admin user requested 'all' - returning empty array");
-    // Return empty array instead of 403 - allow graceful degradation
-    return res.status(200).json({ campaigns: [] });
-  }
-  
-  console.log("[CAMPAIGNS] Admin check passed, fetching campaigns for targetId:", targetId);
-  
-  const whereClause =
-    targetId === "all"
-      ? {}
-      : {
-          OR: [{ ownerId: targetId }, { CampaignBrandPivot: { some: { brandId: targetId } } }]
-        };
   try {
+    const requester = req.user!;
+    let targetId = req.params.userId;
+    
+    if (targetId === "me") targetId = requester.id;
+    
+    // Non-admin users requesting 'all' get empty array (graceful degradation)
+    if (targetId === "all" && !isAdmin(requester)) {
+      return res.status(200).json({ campaigns: [] });
+    }
+    
+    // Build where clause
+    const whereClause =
+      targetId === "all"
+        ? {}
+        : {
+            OR: [{ ownerId: targetId }, { CampaignBrandPivot: { some: { brandId: targetId } } }]
+          };
+    
+    // Fetch campaigns
     const campaigns = await prisma.brandCampaign.findMany({
       where: whereClause,
       include: { CampaignBrandPivot: true },
@@ -107,13 +100,12 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
       take: 25
     });
     
-    console.log("[CAMPAIGNS] Found", campaigns.length, "campaigns");
-    
+    // Format and return
     const formatted = campaigns.map((campaign) => formatCampaign(campaign));
-    res.json({ campaigns: formatted });
+    res.status(200).json({ campaigns: formatted });
   } catch (error) {
-    console.error("Campaigns fetch error:", error);
-    // Return empty array on error - don't crash dashboard
+    // Always return 200 with empty array on error - never crash dashboard
+    console.error("[CAMPAIGNS] Fetch error:", error);
     res.status(200).json({ campaigns: [] });
   }
 });

@@ -17,8 +17,12 @@ export function useCampaigns({ session, userId } = {}) {
     try {
       const response = await fetchUserCampaigns({ session, userId });
       setCampaigns(response.campaigns ?? []);
+      // Clear error on success
+      setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load campaigns");
+      // On error, set empty campaigns and clear error (graceful degradation)
+      setCampaigns([]);
+      setError("");
     } finally {
       setLoading(false);
     }

@@ -15,17 +15,21 @@ export async function getDashboardStats() {
  */
 export async function getRecentActivity(limit = 5) {
   const response = await apiFetch(`/api/activity?limit=${limit}`);
+  // Handle permission errors gracefully - return empty array
   if (response.status === 403) {
-    throw new Error("You don't have permission to view activity");
+    return [];
   }
+  // Handle not found - return empty array
   if (response.status === 404) {
-    throw new Error("Activity feed not available");
+    return [];
   }
-  if (!response.ok) {
-    throw new Error(`Failed to fetch recent activity: ${response.status}`);
+  // If response is ok, return data (even if empty array)
+  if (response.ok) {
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
   }
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  // For any other error, return empty array (graceful degradation)
+  return [];
 }
 
 /**

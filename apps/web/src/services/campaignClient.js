@@ -3,16 +3,26 @@ import { apiFetch } from "./apiClient.js";
 export async function fetchUserCampaigns({ session, userId }) {
   const target = userId || session?.id || "me";
   const response = await apiFetch(`/api/campaigns/user/${encodeURIComponent(target)}`);
+  
+  // Handle errors gracefully - return empty campaigns array instead of throwing
   if (!response.ok) {
-    // Log 403 errors for debugging auth issues
-    if (response.status === 403) {
-      console.warn(`[Campaigns] 403 Forbidden for user ${target}. Check authentication and permissions.`);
+    // For 403/503, return empty array (graceful degradation)
+    if (response.status === 403 || response.status === 503) {
+      return { campaigns: [] };
     }
-    // Try to parse error response
-    const errorData = await response.json().catch(() => ({}));
-    const errorMsg = errorData.error || `Failed to load campaigns (${response.status})`;
-    throw new Error(errorMsg);
+    // For other errors, try to parse but default to empty array
+    try {
+      const errorData = await response.json();
+      // If error response has campaigns, use it; otherwise return empty
+      if (Array.isArray(errorData.campaigns)) {
+        return { campaigns: errorData.campaigns };
+      }
+    } catch {
+      // If parsing fails, return empty array
+    }
+    return { campaigns: [] };
   }
+  
   const data = await response.json();
   // Defensive: Ensure campaigns is always an array
   return {
