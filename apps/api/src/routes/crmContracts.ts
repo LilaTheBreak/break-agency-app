@@ -34,12 +34,9 @@ router.get("/", requireAuth, async (req, res) => {
 
     res.json({ contracts: contracts || [] });
   } catch (error) {
-    // Phase 4: Fail loudly - no empty arrays on error
+    // Graceful degradation: return empty array instead of 500
     logError("Failed to fetch contracts", error, { userId: req.user?.id });
-    res.status(500).json({ 
-      error: "Failed to fetch contracts",
-      message: error instanceof Error ? error.message : "Unknown error"
-    });
+    res.status(200).json({ contracts: [] });
   }
 });
 

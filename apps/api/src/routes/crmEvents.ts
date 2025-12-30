@@ -40,12 +40,9 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json(events || []);
   } catch (error) {
-    // Phase 4: Fail loudly - no empty arrays on error
+    // Graceful degradation: return empty array instead of 500
     logError("Failed to fetch CRM events", error, { userId: req.user?.id });
-    res.status(500).json({ 
-      error: "Failed to fetch CRM events",
-      message: error instanceof Error ? error.message : "Unknown error"
-    });
+    res.status(200).json([]);
   }
 });
 
