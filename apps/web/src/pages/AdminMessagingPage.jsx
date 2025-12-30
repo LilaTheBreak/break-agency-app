@@ -134,13 +134,13 @@ export function AdminMessagingPage() {
             } else {
               toast.success(`Synced ${syncedCount} new email${syncedCount !== 1 ? 's' : ''}${skippedCount > 0 ? ` (${skippedCount} already synced)` : ''}`);
             }
+          } else if (skippedCount > 0) {
+            toast.success(`All emails up to date (${skippedCount} already synced)`);
+          } else if (failedCount > 0) {
+            toast.error(`Sync completed with ${failedCount} error${failedCount !== 1 ? 's' : ''}. Please check logs.`, { duration: 6000 });
+          } else {
+            toast.success('Sync completed — no new emails');
           }
-        } else if (skippedCount > 0) {
-          toast.success(`All emails up to date (${skippedCount} already synced)`);
-        } else if (failedCount > 0) {
-          toast.error(`Sync completed with ${failedCount} error${failedCount !== 1 ? 's' : ''}. Please check logs.`, { duration: 6000 });
-        } else {
-          toast.success('Sync completed — no new emails');
         }
       } else {
         setInboxError(result.message || "Sync failed");

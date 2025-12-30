@@ -913,7 +913,6 @@ function BrandSettingsSection() {
         </div>
       </div>
     </section>
-    </>
   );
 }
 
