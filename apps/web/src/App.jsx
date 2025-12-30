@@ -1044,20 +1044,12 @@ function DashboardRedirect({ session }) {
 function SiteChrome({ session, onRequestSignIn, onSignOut }) {
   const location = useLocation();
   const isPublicResource = location.pathname.startsWith("/resource-hub");
-  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   // Notifications system not yet implemented - using empty array until API is ready
   const [notifications, setNotifications] = useState(() => []);
   const isAdmin = session?.role === 'ADMIN' || session?.role === 'SUPERADMIN';
 
   useEffect(() => {
-    if (!isAdmin) {
-      setAdminMenuOpen(false);
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    setAdminMenuOpen(false);
     setNotificationsOpen(false);
   }, [location.pathname]);
 
@@ -1144,99 +1136,12 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                 ) : null}
               </div>
               {isAdmin && (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setAdminMenuOpen((prev) => !prev)}
-                    className="rounded-full border border-brand-red px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red/10"
-                  >
-                    {session.name?.split(" ")[0] || session.email?.split("@")[0]?.split(".")[0] || "Admin"}
-                  </button>
-                  {adminMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-[0_25px_80px_rgba(0,0,0,0.25)]">
-                      <div>
-                        <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
-                          Control room
-                        </p>
-                        {[
-                          // Overview & Activity
-                          { to: "/admin/dashboard", label: "Overview" },
-                          { to: "/admin/activity", label: "Activity" },
-                          { to: "/admin/approvals", label: "Approvals" },
-                          // Talent & CRM
-                          { to: "/admin/talent", label: "Talent" },
-                          { to: "/admin/brands", label: "Brands" },
-                          { to: "/admin/contacts", label: "Contacts" },
-                          { to: "/admin/opportunities", label: "Opportunities" },
-                          { to: "/admin/deals", label: "Deals" },
-                          { to: "/admin/campaigns", label: "Campaigns" },
-                          // Communication & Operations
-                          { to: "/admin/messaging", label: "Messaging" },
-                          { to: "/admin/outreach", label: "Outreach" },
-                          { to: "/admin/calendar", label: "Calendar" },
-                          { to: "/admin/events", label: "Events" },
-                          { to: "/admin/tasks", label: "Tasks" },
-                          // Documents & Finance
-                          { to: "/admin/documents", label: "Documents / Contracts" },
-                          { to: "/admin/finance", label: "Finance" },
-                          { to: "/admin/reports", label: "Reports" },
-                          // System
-                          { to: "/admin/queues", label: "Queues" },
-                          { to: "/admin/users", label: "Users" },
-                          { to: "/admin/settings", label: "Settings" }
-                        ].map((item) => (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            onClick={() => setAdminMenuOpen(false)}
-                            className="block rounded-xl px-4 py-2 text-sm hover:bg-brand-black/5"
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                      <div className="mt-3 border-t border-brand-black/10 pt-3">
-                        <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
-                          Quick add
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAdminMenuOpen(false);
-                            // Disabled: Feature not implemented yet
-                            // Users can add notes inside Brand, Contact, or Deal drawers
-                          }}
-                          disabled
-                          title="Feature coming soon. Add notes inside Brand, Contact, or Deal drawers."
-                          className="block w-full rounded-xl px-4 py-2 text-left text-sm text-brand-black/40 cursor-not-allowed opacity-50"
-                        >
-                          Note / intelligence
-                        </button>
-                      </div>
-                      <div className="mt-3 border-t border-brand-black/10 pt-3">
-                        <p className="px-4 pb-2 text-[0.55rem] font-semibold uppercase tracking-[0.3em] text-brand-black/50">
-                          View as
-                        </p>
-                        {[
-                          { to: "/admin/view/brand", label: "Brand preview" },
-                          { to: "/admin/view/talent", label: "Talent preview" },
-                          { to: "/admin/view/exclusive", label: "Exclusive talent preview" },
-                          { to: "/admin/view/ugc", label: "UGC talent preview" },
-                          { to: "/admin/view/founder", label: "Founder view" }
-                        ].map((item) => (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            onClick={() => setAdminMenuOpen(false)}
-                            className="block rounded-xl px-4 py-2 text-sm hover:bg-brand-black/5"
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <Link
+                  to="/account/profile"
+                  className="rounded-full border border-brand-red px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red/10"
+                >
+                  {session.name?.split(" ")[0] || session.email?.split("@")[0]?.split(".")[0] || "Admin"}
+                </Link>
               )}
               <Link
                 to="/support"
