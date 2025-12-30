@@ -47,12 +47,14 @@ export async function createBundle(req: Request, res: Response, next: NextFuncti
 
 export async function updateBundle(req: Request, res: Response, next: NextFunction) {
   // Implementation for updating a bundle
-  res.status(501).json({ ok: false, error: "Not implemented" });
+  // REMOVED: Bundles feature not implemented
+  res.status(410).json({ ok: false, error: "Bundles feature removed. This feature is not yet implemented." });
 }
 
 export async function deleteBundle(req: Request, res: Response, next: NextFunction) {
   // Implementation for deleting a bundle
-  res.status(501).json({ ok: false, error: "Not implemented" });
+  // REMOVED: Bundles feature not implemented
+  res.status(410).json({ ok: false, error: "Bundles feature removed. This feature is not yet implemented." });
 }
 
 const GenerateAIBundleSchema = z.object({

@@ -26,7 +26,8 @@ if (!isConfigured) {
  */
 router.get('/connect', requireAuth, (req: Request, res: Response) => {
   if (!isConfigured) {
-    return res.status(501).json({ 
+    // REMOVED: TikTok OAuth not implemented
+    return res.status(410).json({ 
       success: false, 
       error: 'TikTok OAuth not configured',
       message: 'TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, and TIKTOK_REDIRECT_URI must be set'
