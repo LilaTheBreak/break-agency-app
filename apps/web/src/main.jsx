@@ -5,6 +5,13 @@ import "./index.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { MEETING_SUMMARIES } from "./constants/meetingSummaries.js";
+
+// Global fallback: Make MEETING_SUMMARIES available globally to prevent ReferenceError
+// This ensures it's accessible even if referenced without an import
+if (typeof window !== "undefined") {
+  window.MEETING_SUMMARIES = MEETING_SUMMARIES;
+}
 
 const queryClient = new QueryClient();
 
