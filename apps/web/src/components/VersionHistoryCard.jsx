@@ -28,7 +28,9 @@ export function VersionHistoryCard({
       const response = await fetchBriefVersions({ briefId });
       setVersions(response.versions || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load versions");
+      // Briefs feature removed - endpoint returns 410
+      setError("Briefs feature is not available. Use opportunities instead.");
+      setVersions([]);
     } finally {
       setLoading(false);
     }
@@ -44,7 +46,8 @@ export function VersionHistoryCard({
       await createBriefVersion({ briefId, data: serializedData });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save version");
+      // Briefs feature removed - endpoint returns 410
+      setError("Briefs feature is not available. Use opportunities instead.");
     }
   };
 
@@ -53,7 +56,8 @@ export function VersionHistoryCard({
       await restoreBriefVersion({ versionId });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to restore version");
+      // Briefs feature removed - endpoint returns 410
+      setError("Briefs feature is not available. Use opportunities instead.");
     }
   };
 
