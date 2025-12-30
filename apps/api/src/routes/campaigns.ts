@@ -4,6 +4,7 @@ import prisma from "../lib/prisma.js";
 import { SessionUser } from "../lib/session.js"; // Import SessionUser type
 import { z } from "zod";
 import { isSuperAdmin, isAdmin, isManager } from "../lib/roleHelpers.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
@@ -100,10 +101,6 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
       },
       orderBy: { createdAt: "desc" },
       take: 25
-    }).catch((err) => {
-      // Handle database errors gracefully
-      console.error("[CAMPAIGNS] Database query error:", err);
-      return [];
     });
     
     // Format and return
@@ -111,7 +108,7 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     res.status(200).json({ campaigns: formatted || [] });
   } catch (error) {
     // Always return 200 with empty array on error - never crash dashboard
-    console.error("[CAMPAIGNS] Fetch error:", error);
+    logError("Failed to fetch campaigns", error, { userId: req.user?.id, targetId });
     // Defensive: ensure we always return valid structure
     res.status(200).json({ campaigns: [] });
   }
