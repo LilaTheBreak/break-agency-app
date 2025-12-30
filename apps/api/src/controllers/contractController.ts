@@ -130,13 +130,12 @@ export async function uploadContract(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  try {
-    // Implement file upload logic here, potentially using multer
-    // and call contractService.upload(id, file)
-    res.status(501).json({ error: "Not implemented" });
-  } catch (error) {
-    next(error);
-  }
+  // REMOVED: Contract upload endpoint not implemented
+  res.status(410).json({ 
+    error: "Contract upload endpoint removed",
+    message: "This endpoint is not yet implemented and has been removed.",
+    alternative: "Use /api/files/upload for file uploads, then link to contracts manually"
+  });
 }
 
 export async function sendContract(

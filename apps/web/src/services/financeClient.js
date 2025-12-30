@@ -304,41 +304,15 @@ export async function createReconciliation(reconciliationData) {
 }
 
 // Xero Integration
+// REMOVED: Xero integration not implemented - endpoints return 410
 export async function fetchXeroStatus() {
-  const response = await apiFetch("/api/admin/finance/xero/status");
-  
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Failed to fetch Xero status" }));
-    throw new Error(error.error || "Failed to fetch Xero status");
-  }
-  
-  return response.json();
+  throw new Error("Xero integration is not yet available. This feature has been removed.");
 }
 
 export async function connectXero(connectionData) {
-  const response = await apiFetch("/api/admin/finance/xero/connect", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(connectionData),
-  });
-  
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Failed to connect Xero" }));
-    throw new Error(error.error || "Failed to connect Xero");
-  }
-  
-  return response.json();
+  throw new Error("Xero integration is not yet available. This feature has been removed.");
 }
 
 export async function syncXero() {
-  const response = await apiFetch("/api/admin/finance/xero/sync", {
-    method: "POST",
-  });
-  
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Failed to sync Xero" }));
-    throw new Error(error.error || "Failed to sync Xero");
-  }
-  
-  return response.json();
+  throw new Error("Xero integration is not yet available. This feature has been removed.");
 }

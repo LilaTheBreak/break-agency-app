@@ -683,13 +683,8 @@ export function AdminFinancePage() {
   };
 
   const syncXero = () => {
-    if (!xero.connected) {
-      showToast("Xero is unavailable. Connect Xero to sync.");
-      return;
-    }
-    setXero((prev) => ({ ...prev, lastSyncAt: new Date().toISOString() }));
-    addTimelineEvent({ type: "Sync", label: "Xero sync completed", details: "Manual sync triggered from Finance action bar.", link: null });
-    showToast("Sync complete");
+    // REMOVED: Xero integration not implemented
+    showToast("Xero integration is not yet available.");
   };
 
   const handleBulkMarkPaid = () => {

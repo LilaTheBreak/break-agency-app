@@ -839,49 +839,23 @@ router.get("/activity", async (req: Request, res: Response) => {
 // ============================================================================
 
 router.get("/xero/status", async (_req: Request, res: Response) => {
-  try {
-    const connection = await prisma.xeroConnection.findFirst();
-    
-    res.json({
-      connected: connection?.connected || false,
-      lastSyncedAt: connection?.lastSyncedAt || null
-    });
-  } catch (error) {
-    console.error("Error fetching Xero status:", error);
-    res.json({ connected: false, lastSyncedAt: null });
-  }
+  // REMOVED: Xero integration not implemented - endpoint returns 410
+  // Status endpoint was reading from DB but no real integration exists
+  res.status(410).json({ 
+    error: "Xero integration removed",
+    message: "Xero integration is not yet implemented. This endpoint has been removed.",
+    alternative: "Use manual invoice tracking until Xero integration is complete"
+  });
 });
 
-router.post("/xero/connect", async (req: Request, res: Response) => {
-  try {
-    const { tenantId, accessToken, refreshToken, expiresAt } = req.body;
-
-    const connection = await prisma.xeroConnection.upsert({
-      where: { id: "xero_connection_singleton" },
-      update: {
-        connected: true,
-        tenantId,
-        accessToken,
-        refreshToken,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        updatedAt: new Date()
-      },
-      create: {
-        id: "xero_connection_singleton",
-        connected: true,
-        tenantId,
-        accessToken,
-        refreshToken,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        updatedAt: new Date()
-      }
-    });
-
-    res.json({ success: true, connection });
-  } catch (error) {
-    console.error("Error connecting Xero:", error);
-    res.status(500).json({ error: "Failed to connect Xero" });
-  }
+router.post("/xero/connect", async (_req: Request, res: Response) => {
+  // REMOVED: Xero integration not implemented - endpoint returns 410
+  // Connect endpoint was saving to DB but no real integration exists
+  res.status(410).json({ 
+    error: "Xero integration removed",
+    message: "Xero integration is not yet implemented. This endpoint has been removed.",
+    alternative: "Use manual invoice tracking until Xero integration is complete"
+  });
 });
 
 router.post("/xero/sync", async (_req: Request, res: Response) => {
