@@ -26,7 +26,8 @@ if (!isConfigured) {
  */
 router.get('/connect', requireAuth, (req: Request, res: Response) => {
   if (!isConfigured) {
-    return res.status(501).json({ 
+    // REMOVED: Instagram OAuth not configured
+    return res.status(410).json({ 
       success: false, 
       error: 'Instagram OAuth not configured',
       message: 'INSTAGRAM_CLIENT_ID, INSTAGRAM_CLIENT_SECRET, and INSTAGRAM_REDIRECT_URI must be set'
