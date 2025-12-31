@@ -303,6 +303,10 @@ router.get("/:id", async (req: Request, res: Response) => {
 /**
  * POST /api/admin/talent
  * Create new talent
+ * 
+ * IMPORTANT: Talent records are independent entities.
+ * They can be created without user accounts, profiles, briefs, or campaigns.
+ * User linking happens separately via /api/admin/talent/:id/link-user
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
@@ -314,14 +318,14 @@ router.post("/", async (req: Request, res: Response) => {
 
     const { displayName, legalName, primaryEmail, representationType, status, managerId, notes } = validation.data;
 
-    // For now, we need to create a User first (current schema requirement)
-    // In the future, this will be optional
+    // Talent creation is independent - no user/profile/briefs/campaigns required
+    // Schema currently requires userId, so we create a minimal placeholder user if no email provided
     let userId: string | undefined = undefined;
 
-    if (primaryEmail) {
-      // Check if user exists
+    if (primaryEmail && primaryEmail.trim()) {
+      // Email provided - check if user exists, but don't create one automatically
       const existingUser = await prisma.user.findUnique({
-        where: { email: primaryEmail.toLowerCase() },
+        where: { email: primaryEmail.toLowerCase().trim() },
       });
 
       if (existingUser) {
@@ -331,35 +335,42 @@ router.post("/", async (req: Request, res: Response) => {
         });
 
         if (existingTalent) {
-          return res.status(400).json({
-            error: "Talent already exists for this user",
+          return sendError(res, "CONFLICT", "Talent already exists for this user", 409, {
             talentId: existingTalent.id,
           });
         }
 
         userId = existingUser.id;
       } else {
-        // Create user if email provided but user doesn't exist
+        // Email provided but user doesn't exist - create minimal user
+        // This is the only case where we create a user during talent creation
         const newUser = await prisma.user.create({
           data: {
-            email: primaryEmail.toLowerCase(),
+            email: primaryEmail.toLowerCase().trim(),
             name: displayName,
+            role: "CREATOR", // Default role
+            include_in_roster: false, // Don't auto-include in roster
           },
         });
         userId = newUser.id;
       }
     } else {
-      // No email provided - create a placeholder user (required by current schema)
-      // This will be removed when schema supports optional userId
+      // No email provided - create minimal placeholder user (schema requirement)
+      // This placeholder user is NOT linked to profiles, briefs, or campaigns
+      const placeholderEmail = `talent-placeholder-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@breakagency.internal`;
       const placeholderUser = await prisma.user.create({
         data: {
-          email: `talent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@placeholder.breakagency.com`,
+          email: placeholderEmail,
           name: displayName,
+          role: "CREATOR",
+          include_in_roster: false,
+          onboarding_status: "not_applicable", // Mark as not applicable for onboarding
         },
       });
       userId = placeholderUser.id;
     }
 
+    // Create talent record - independent of profiles, briefs, campaigns
     const talent = await prisma.talent.create({
       data: {
         id: `talent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -386,27 +397,29 @@ router.post("/", async (req: Request, res: Response) => {
         talentId: talent.id,
         displayName,
         representationType: representationType || "NON_EXCLUSIVE",
-        hasUser: !!userId,
+        hasEmail: !!primaryEmail,
+        isPlaceholderUser: !primaryEmail || !primaryEmail.trim(),
       },
     });
 
+    // Return success - talent created independently
     sendSuccess(res, {
       talent: {
         id: talent.id,
         name: talent.name,
         displayName: talent.name,
-        linkedUser: talent.User
+        linkedUser: talent.User && !talent.User.email.includes("@breakagency.internal")
           ? {
               id: talent.User.id,
               email: talent.User.email,
               name: talent.User.name,
             }
-          : null,
+          : null, // Don't expose placeholder users
         createdAt: talent.createdAt,
       },
     }, 201);
   } catch (error) {
-    logError("Failed to create talent", error, { userId: req.user?.id });
+    logError("Failed to create talent", error, { userId: req.user?.id, body: req.body });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/admin/talent', method: 'POST' },
     });
