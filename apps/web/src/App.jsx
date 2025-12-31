@@ -361,39 +361,41 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AppErrorBoundary>
-        <ToastProvider />
-        <ErrorTestButton />
-        <MessagingContext.Provider value={messagingValue}>
-          {splashVisible && (
-            <div
-              className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
-                splashFade ? "opacity-0" : "opacity-100"
-              }`}
-            >
-              <div className="flex flex-col items-center gap-6">
-                <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
-                  <img
-                    src="/B Logo Mark.png"
-                    alt="Break"
-                    className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-                  />
-                </div>
-                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full w-full bg-white/80" style={{ animation: "loaderBar 1.4s ease-in-out infinite" }} />
+      <Sentry.ErrorBoundary fallback={null}>
+        <AppErrorBoundary>
+          <ToastProvider />
+          <ErrorTestButton />
+          <MessagingContext.Provider value={messagingValue}>
+            {splashVisible && (
+              <div
+                className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
+                  splashFade ? "opacity-0" : "opacity-100"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-6">
+                  <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
+                    <img
+                      src="/B Logo Mark.png"
+                      alt="Break"
+                      className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                    />
+                  </div>
+                  <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full w-full bg-white/80" style={{ animation: "loaderBar 1.4s ease-in-out infinite" }} />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          <AppRoutes
-            session={session}
-            authModalOpen={authModalOpen}
-            setAuthModalOpen={setAuthModalOpen}
-            handleSignOut={handleSignOut}
-            authLoading={authLoading}
-          />
-        </MessagingContext.Provider>
-      </AppErrorBoundary>
+            )}
+            <AppRoutes
+              session={session}
+              authModalOpen={authModalOpen}
+              setAuthModalOpen={setAuthModalOpen}
+              handleSignOut={handleSignOut}
+              authLoading={authLoading}
+            />
+          </MessagingContext.Provider>
+        </AppErrorBoundary>
+      </Sentry.ErrorBoundary>
     </BrowserRouter>
   );
 }
