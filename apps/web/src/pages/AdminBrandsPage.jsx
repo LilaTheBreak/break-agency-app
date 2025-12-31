@@ -813,22 +813,42 @@ export function AdminBrandsPage({ session }) {
     return [];
   }, [brands]);
   const safeCampaignsState = useMemo(() => {
+    // Defensive: ensure we always return an array
     if (Array.isArray(campaigns)) return campaigns;
+    if (campaigns && typeof campaigns === 'object' && 'campaigns' in campaigns && Array.isArray(campaigns.campaigns)) {
+      console.warn('[BRANDS PAGE] campaigns is wrapped in object, extracting array', { campaigns });
+      return campaigns.campaigns;
+    }
     console.warn('[BRANDS PAGE] campaigns state is not an array, using []', { campaigns, type: typeof campaigns });
     return [];
   }, [campaigns]);
   const safeEventsState = useMemo(() => {
+    // Defensive: ensure we always return an array
     if (Array.isArray(events)) return events;
+    if (events && typeof events === 'object' && 'events' in events && Array.isArray(events.events)) {
+      console.warn('[BRANDS PAGE] events is wrapped in object, extracting array', { events });
+      return events.events;
+    }
     console.warn('[BRANDS PAGE] events state is not an array, using []', { events, type: typeof events });
     return [];
   }, [events]);
   const safeDealsState = useMemo(() => {
+    // Defensive: ensure we always return an array
     if (Array.isArray(deals)) return deals;
+    if (deals && typeof deals === 'object' && 'deals' in deals && Array.isArray(deals.deals)) {
+      console.warn('[BRANDS PAGE] deals is wrapped in object, extracting array', { deals });
+      return deals.deals;
+    }
     console.warn('[BRANDS PAGE] deals state is not an array, using []', { deals, type: typeof deals });
     return [];
   }, [deals]);
   const safeContractsState = useMemo(() => {
+    // Defensive: ensure we always return an array
     if (Array.isArray(contracts)) return contracts;
+    if (contracts && typeof contracts === 'object' && 'contracts' in contracts && Array.isArray(contracts.contracts)) {
+      console.warn('[BRANDS PAGE] contracts is wrapped in object, extracting array', { contracts });
+      return contracts.contracts;
+    }
     console.warn('[BRANDS PAGE] contracts state is not an array, using []', { contracts, type: typeof contracts });
     return [];
   }, [contracts]);
@@ -1252,10 +1272,16 @@ export function AdminBrandsPage({ session }) {
 
   const getLinkedObjectsSummary = (brand) => {
     if (!brand) return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
-    const campaignCount = safeCampaignsState.filter(c => c && c.brandId === brand.id).length;
-    const dealCount = safeDealsState.filter(d => d && d.brandId === brand.id).length;
-    const eventCount = safeEventsState.filter(e => e && e.brandId === brand.id).length;
-    const contractCount = safeContractsState.filter(c => c && c.brandId === brand.id).length;
+    // Defensive: ensure all states are arrays before calling filter
+    const campaignsArray = Array.isArray(safeCampaignsState) ? safeCampaignsState : [];
+    const dealsArray = Array.isArray(safeDealsState) ? safeDealsState : [];
+    const eventsArray = Array.isArray(safeEventsState) ? safeEventsState : [];
+    const contractsArray = Array.isArray(safeContractsState) ? safeContractsState : [];
+    
+    const campaignCount = campaignsArray.filter(c => c && c.brandId === brand.id).length;
+    const dealCount = dealsArray.filter(d => d && d.brandId === brand.id).length;
+    const eventCount = eventsArray.filter(e => e && e.brandId === brand.id).length;
+    const contractCount = contractsArray.filter(c => c && c.brandId === brand.id).length;
     const outreachCount = brand._count?.OutreachRecords || 0;
     return {
       total: campaignCount + dealCount + eventCount + contractCount + outreachCount,
