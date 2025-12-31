@@ -119,7 +119,7 @@ export function mapGmailMessageToDb(
     toEmail: toEmail || "", // Can be empty string
     receivedAt: messageDate,
     body: body || null,
-    snippet: message.snippet || null,
+    // Note: InboundEmail schema doesn't have snippet field - snippet is stored in InboxMessage
     isRead: !(message.labelIds?.includes("UNREAD") ?? false),
     categories: [],
     // Note: Schema doesn't have separate bodyHtml/bodyText or attachments fields

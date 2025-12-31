@@ -36,8 +36,8 @@ function registerDeliverableCron() {
       console.log("[CRON] Starting deliverable overdue check...");
       const overdue = await prisma.deliverable.findMany({
         where: {
-          dueDate: { lt: new Date() },
-          status: { not: "delivered" }
+          dueAt: { lt: new Date() },
+          // Note: Deliverable model doesn't have a status field, filtering by dueAt only
         }
       });
 

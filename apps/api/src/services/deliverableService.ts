@@ -179,13 +179,23 @@ export async function listDeliverablesForUser(userId: string) {
 
 export async function syncDeliverableToCalendar(deliverableId: string) {
   const deliverable = await prisma.deliverable.findUnique({ where: { id: deliverableId } });
-  if (!deliverable || !deliverable.dueDate || !deliverable.userId) return;
+  // Note: Deliverable model doesn't have userId field - it's linked via dealId
+  // This function may need to be refactored to get userId from the Deal relation
+  if (!deliverable || !deliverable.dueAt) return;
+
+  // Get userId from Deal relation if needed
+  const deal = await prisma.deal.findUnique({
+    where: { id: deliverable.dealId },
+    select: { userId: true }
+  });
+
+  if (!deal?.userId) return;
 
   await syncCalendarEvent({
-    userId: deliverable.userId,
+    userId: deal.userId,
     type: "DELIVERABLE_DUE",
     title: deliverable.title,
-    date: deliverable.dueDate,
+    date: deliverable.dueAt,
     metadata: { deliverableId }
   });
 }

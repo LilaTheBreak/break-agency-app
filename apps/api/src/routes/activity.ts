@@ -9,7 +9,8 @@ import * as Sentry from "@sentry/node";
 const router = Router();
 
 // Phase 4: Use requireRole instead of manual check, fail loudly on error
-router.get("/api/activity", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req: Request, res: Response) => {
+// Route path is "/" because it's mounted at "/api/activity" in server.ts
+router.get("/", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req: Request, res: Response) => {
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 5, 100);
 

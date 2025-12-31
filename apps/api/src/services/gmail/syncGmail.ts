@@ -66,7 +66,6 @@ export async function syncGmailForUser(userId: string): Promise<SyncStats> {
             where: { gmailId: gmailMessage.id! },
             update: {
               subject: inboundEmailData.subject,
-              snippet: inboundEmailData.snippet,
               body: inboundEmailData.body,
               inboxMessageId: thread.id,
             },

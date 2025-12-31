@@ -208,11 +208,11 @@ export async function ingestGmailForUser(userId: string) {
         };
 
         // Use upsert to handle race conditions (concurrent syncs)
+        // Note: InboundEmail schema doesn't have snippet field - snippet is stored in InboxMessage
         const inbound = await prisma.inboundEmail.upsert({
           where: { gmailId: parsed.id },
           update: {
             subject: parsed.subject,
-            snippet: parsed.snippet,
             body: parsed.bodyText ?? parsed.bodyHtml ?? null,
             metadata,
           },
@@ -221,7 +221,6 @@ export async function ingestGmailForUser(userId: string) {
             threadId: parsed.threadId,
             gmailId: parsed.id,
             subject: parsed.subject,
-            snippet: parsed.snippet,
             body: parsed.bodyText ?? parsed.bodyHtml ?? null,
             fromEmail: parsed.from ?? "",
             toEmail: parsed.to ?? "",

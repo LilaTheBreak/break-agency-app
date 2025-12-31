@@ -15,9 +15,9 @@ export default async function deliverableProcessor(job: any) {
 
   await sendSlackAlert("Deliverable overdue", {
     deliverableId,
-    userId: deliverable.userId,
+    dealId: deliverable.dealId,
     title: deliverable.title,
-    dueDate: deliverable.dueDate
+    dueAt: deliverable.dueAt
   });
 
   return true;

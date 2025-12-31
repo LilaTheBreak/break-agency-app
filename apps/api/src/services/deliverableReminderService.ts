@@ -14,13 +14,16 @@ export function startDeliverableReminders() {
 
     const upcoming = await prisma.deliverable.findMany({
       where: {
-        dueDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-        status: "pending"
+        dueAt: { 
+          gte: new Date(), 
+          lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) 
+        },
+        // Note: Deliverable model doesn't have a status field
       }
     });
 
     upcoming.forEach((deliverable) => {
-      console.log(`[Reminder] Deliverable "${deliverable.title}" due on ${deliverable.dueDate}`);
+      console.log(`[Reminder] Deliverable "${deliverable.title}" due on ${deliverable.dueAt}`);
       // In a real implementation, you would send a Slack/email reminder here.
     });
   });
