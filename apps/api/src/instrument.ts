@@ -54,6 +54,24 @@ if (!dsn) {
       }
       return event;
     },
+    // Filter breadcrumbs to reduce noise from cron job console logs
+    beforeBreadcrumb(breadcrumb, hint) {
+      // Filter out INFO level console logs from cron jobs (reduce noise)
+      if (
+        breadcrumb.category === "console" &&
+        breadcrumb.level === "info" &&
+        breadcrumb.message &&
+        (
+          breadcrumb.message.includes("[CRON]") ||
+          breadcrumb.message.includes("[GMAIL BACKGROUND SYNC]") ||
+          breadcrumb.message.includes("[GMAIL SYNC]") ||
+          breadcrumb.message.includes("[CORS]")
+        )
+      ) {
+        return null; // Don't send these breadcrumbs to Sentry
+      }
+      return breadcrumb;
+    },
     // Ignore common non-critical errors
     ignoreErrors: [
       "ECONNREFUSED",
