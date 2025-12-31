@@ -102,8 +102,7 @@ import { useAuth } from "./context/AuthContext.jsx";
 import { BrandPage } from "./pages/BrandPage.jsx";
 import { shouldRouteToOnboarding } from "./lib/onboardingState.js";
 import { setSentryTags } from "./lib/sentry.js";
-// TEMPORARY — SENTRY VERIFICATION: Import Sentry for guaranteed test event
-import * as Sentry from "@sentry/react";
+// TEMPORARY — SENTRY VERIFICATION: Sentry already imported on line 22
 import { ErrorTestButton } from "./components/ErrorTestButton.jsx";
 
 const NAV_LINKS = [
