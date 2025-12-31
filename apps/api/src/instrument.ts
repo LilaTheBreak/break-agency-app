@@ -11,8 +11,18 @@ const dsn = process.env.SENTRY_DSN;
 const environment = process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development";
 const release = process.env.SENTRY_RELEASE || process.env.COMMIT_HASH || undefined;
 
+// TEMPORARY — SENTRY VERIFICATION: Log DSN status at runtime
+console.log('[Sentry] Backend DSN check:', {
+  hasDsn: !!dsn,
+  dsnLength: dsn ? dsn.length : 0,
+  environment,
+  release,
+  allEnvKeys: Object.keys(process.env).filter(k => k.includes('SENTRY'))
+});
+
 if (!dsn) {
-  console.warn("[Sentry] Backend DSN not found. Sentry not initialized.");
+  console.warn("[Sentry] ❌ NOT INITIALIZED - No DSN provided at runtime");
+  console.warn("[Sentry] Expected: SENTRY_DSN in environment variables");
   console.warn("[Sentry] Set SENTRY_DSN environment variable to enable error monitoring.");
 } else {
   Sentry.init({

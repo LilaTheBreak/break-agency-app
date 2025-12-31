@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/B Logo Mark.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Content Security Policy: Allow Sentry session replay workers and API calls -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://cdn.tailwindcss.com 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob: data:; connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.railway.app https://*.vercel.app; frame-src 'self' https://*.sentry.io;" />
     <!-- Google Fonts Preconnect for Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -21,9 +21,19 @@ export function initSentry() {
   const environment = import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE || "development";
   const release = import.meta.env.VITE_SENTRY_RELEASE || import.meta.env.VITE_COMMIT_HASH || undefined;
 
+  // TEMPORARY — SENTRY VERIFICATION: Log DSN status at runtime
+  console.log('[Sentry] Frontend DSN check:', {
+    hasDsn: !!dsn,
+    dsnLength: dsn ? dsn.length : 0,
+    environment,
+    release,
+    allEnvKeys: Object.keys(import.meta.env).filter(k => k.includes('SENTRY'))
+  });
+
   // Only initialize if DSN is provided
   if (!dsn) {
-    console.log('[Sentry] Not initialized (no DSN provided)');
+    console.warn('[Sentry] ❌ NOT INITIALIZED - No DSN provided at runtime');
+    console.warn('[Sentry] Expected: VITE_SENTRY_DSN in environment variables');
     return;
   }
 
@@ -51,6 +61,9 @@ export function initSentry() {
         // Mask all text content and user input for privacy
         maskAllText: true,
         blockAllMedia: true,
+        // Use inline worker to avoid CSP issues with blob URLs
+        // This will create the worker inline instead of from a blob URL
+        workerUrl: undefined, // Let Sentry handle worker creation
       }),
     ],
 

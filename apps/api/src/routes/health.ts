@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+// TEMPORARY — SENTRY VERIFICATION: Import Sentry for guaranteed test event
+import * as Sentry from "@sentry/node";
 
 const prisma = new PrismaClient();
 
@@ -20,6 +22,24 @@ const prisma = new PrismaClient();
  * }
  */
 export async function healthCheck(req: Request, res: Response) {
+  // TEMPORARY — SENTRY VERIFICATION: Force a guaranteed Sentry event on every health check
+  try {
+    Sentry.captureException(
+      new Error("Sentry backend HARD verification test - health check"),
+      {
+        level: "info",
+        tags: {
+          verification: "hard_test",
+          endpoint: "/health",
+          source: "health_check",
+        },
+      }
+    );
+    console.log("[Sentry] Hard verification event sent from /health endpoint");
+  } catch (error) {
+    console.warn("[Sentry] Failed to send hard verification event:", error);
+  }
+
   const healthData: {
     status: string;
     db: string;

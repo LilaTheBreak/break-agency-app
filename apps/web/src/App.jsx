@@ -19,6 +19,7 @@ import { UgcBoard } from "./components/UgcBoard.jsx";
 import { DashboardShell } from "./components/DashboardShell.jsx";
 import { LogoWordmark } from "./components/LogoWordmark.jsx";
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
+import * as Sentry from "@sentry/react";
 import { RouteErrorBoundaryWrapper } from "./components/RouteErrorBoundary.jsx";
 import ToastProvider from "./components/ToastProvider.jsx";
 import BrandDashboardLayout, {
@@ -101,6 +102,8 @@ import { useAuth } from "./context/AuthContext.jsx";
 import { BrandPage } from "./pages/BrandPage.jsx";
 import { shouldRouteToOnboarding } from "./lib/onboardingState.js";
 import { setSentryTags } from "./lib/sentry.js";
+// TEMPORARY — SENTRY VERIFICATION: Import Sentry for guaranteed test event
+import * as Sentry from "@sentry/react";
 import { ErrorTestButton } from "./components/ErrorTestButton.jsx";
 
 const NAV_LINKS = [
@@ -279,26 +282,27 @@ function App() {
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
   const remoteMessaging = useRemoteMessaging(session);
-  const location = useLocation();
   
-  // Track route changes in Sentry with user role and feature flags
+  // TEMPORARY — SENTRY VERIFICATION: Force a guaranteed Sentry event on app mount
+  // Note: Using window.location.pathname since we're outside Router context here
   useEffect(() => {
-    if (location.pathname) {
-      // Capture feature flags snapshot
-      const featureFlags = typeof window !== "undefined" && window.__FEATURE_FLAGS__ 
-        ? window.__FEATURE_FLAGS__ 
-        : {};
-      
-      setSentryTags({
-        route: location.pathname,
-        feature: getFeatureFromRoute(location.pathname),
-        role: session?.role || "anonymous",
-        ...Object.fromEntries(
-          Object.entries(featureFlags).map(([key, value]) => [`feature_${key}`, String(value)])
-        ),
-      });
+    try {
+      Sentry.captureException(
+        new Error("Sentry frontend HARD verification test - app mount"),
+        {
+          level: "info",
+          tags: {
+            verification: "hard_test",
+            source: "app_mount",
+            route: typeof window !== "undefined" ? window.location.pathname : "/",
+          },
+        }
+      );
+      console.log("[Sentry] Hard verification event sent from App.jsx on mount");
+    } catch (error) {
+      console.warn("[Sentry] Failed to send hard verification event:", error);
     }
-  }, [location.pathname, session?.role]);
+  }, []); // Run once on mount
 
   useEffect(() => {
     if (session && authModalOpen) {
@@ -357,16 +361,17 @@ function App() {
   }, []);
 
   return (
-        <AppErrorBoundary>
-          <ToastProvider />
-          <ErrorTestButton />
-          <MessagingContext.Provider value={messagingValue}>
-        {splashVisible && (
-          <div
-            className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
-              splashFade ? "opacity-0" : "opacity-100"
-            }`}
-          >
+    <BrowserRouter>
+      <AppErrorBoundary>
+        <ToastProvider />
+        <ErrorTestButton />
+        <MessagingContext.Provider value={messagingValue}>
+          {splashVisible && (
+            <div
+              className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
+                splashFade ? "opacity-0" : "opacity-100"
+              }`}
+            >
               <div className="flex flex-col items-center gap-6">
                 <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
                   <img
@@ -379,9 +384,8 @@ function App() {
                   <div className="h-full w-full bg-white/80" style={{ animation: "loaderBar 1.4s ease-in-out infinite" }} />
                 </div>
               </div>
-          </div>
-        )}
-        <BrowserRouter>
+            </div>
+          )}
           <AppRoutes
             session={session}
             authModalOpen={authModalOpen}
@@ -389,9 +393,9 @@ function App() {
             handleSignOut={handleSignOut}
             authLoading={authLoading}
           />
-        </BrowserRouter>
-      </MessagingContext.Provider>
-    </AppErrorBoundary>
+        </MessagingContext.Provider>
+      </AppErrorBoundary>
+    </BrowserRouter>
   );
 }
 
@@ -413,6 +417,26 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
   const handleGateChoice = (path) => {
     navigate(path);
   };
+
+  // Track route changes in Sentry with user role and feature flags
+  // Moved here from App component since we need Router context for useLocation()
+  useEffect(() => {
+    if (location.pathname) {
+      // Capture feature flags snapshot
+      const featureFlags = typeof window !== "undefined" && window.__FEATURE_FLAGS__ 
+        ? window.__FEATURE_FLAGS__ 
+        : {};
+      
+      setSentryTags({
+        route: location.pathname,
+        feature: getFeatureFromRoute(location.pathname),
+        role: session?.role || "anonymous",
+        ...Object.fromEntries(
+          Object.entries(featureFlags).map(([key, value]) => [`feature_${key}`, String(value)])
+        ),
+      });
+    }
+  }, [location.pathname, session?.role]);
 
   useEffect(() => {
     if (location.pathname !== "/") {
