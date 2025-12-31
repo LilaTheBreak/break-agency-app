@@ -4,33 +4,67 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 /**
- * GET /health
+ * GET /api/health
  * 
  * Basic health check endpoint for monitoring system status.
  * Returns basic system information and database connectivity.
  * No authentication required.
+ * 
+ * Response format:
+ * {
+ *   "status": "ok",
+ *   "db": "connected",
+ *   "gmail": "configured|missing",
+ *   "stripe": "enabled|disabled",
+ *   "version": "<commit-hash>"
+ * }
  */
 export async function healthCheck(req: Request, res: Response) {
   const healthData: {
     status: string;
+    db: string;
+    gmail: string;
+    stripe: string;
+    version?: string;
     timestamp: string;
-    database: string;
     uptime: number;
   } = {
     status: "ok",
+    db: "disconnected",
+    gmail: "missing",
+    stripe: "disabled",
     timestamp: new Date().toISOString(),
-    database: "disconnected",
-    uptime: process.uptime()
+    uptime: process.uptime(),
   };
 
+  // Add version from commit hash if available
+  const commitHash = process.env.COMMIT_HASH || process.env.SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
+  if (commitHash) {
+    healthData.version = commitHash;
+  }
+
+  // 1. Database connectivity check
   try {
-    // Simple database connectivity check
     await prisma.$queryRaw`SELECT 1`;
-    healthData.database = "connected";
+    healthData.db = "connected";
   } catch (error) {
     console.error("Health check database error:", error);
     healthData.status = "degraded";
-    healthData.database = "error";
+    healthData.db = "error";
+  }
+
+  // 2. Gmail configuration check
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    healthData.gmail = "configured";
+  } else {
+    healthData.gmail = "missing";
+  }
+
+  // 3. Stripe configuration check
+  if (process.env.STRIPE_SECRET_KEY) {
+    healthData.stripe = "enabled";
+  } else {
+    healthData.stripe = "disabled";
   }
 
   // Return 200 if status is ok, 503 if degraded

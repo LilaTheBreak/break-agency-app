@@ -64,3 +64,16 @@ packages/
 ```
 
 Upcoming phases will introduce Prisma models, more API routes, portal-specific UIs, CI workflows, and deployment manifests.
+
+## Error Monitoring
+
+**Error Monitoring Enabled** ✅
+
+The platform uses [Sentry](https://sentry.io) for production-grade error monitoring. All errors are automatically captured, grouped, and traceable.
+
+- **Frontend errors** - Uncaught exceptions, React errors, promise rejections
+- **Backend errors** - API errors, unhandled exceptions, promise rejections
+- **User context** - Errors tagged with user role, route, and feature
+- **Release tracking** - Compare error rates before/after deployments
+
+See [SENTRY_SETUP.md](./SENTRY_SETUP.md) for configuration details.

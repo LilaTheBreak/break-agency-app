@@ -7,7 +7,9 @@ import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
 import { logAdminActivity } from "../../lib/adminActivityLogger.js";
 import { logAuditEvent } from "../../lib/auditLogger.js";
 import { logError } from "../../lib/logger.js";
-import { sendSuccess, sendList, sendEmptyList } from "../../utils/apiResponse.js";
+import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from "../../utils/apiResponse.js";
+import { validateRequestSafe, TalentCreateSchema, TalentUpdateSchema, TalentLinkUserSchema } from "../../utils/validationSchemas.js";
+import * as Sentry from "@sentry/node";
 
 const router = Router();
 
@@ -15,7 +17,7 @@ const router = Router();
 router.use(requireAuth);
 router.use((req: Request, res: Response, next) => {
   if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
-    return res.status(403).json({ error: "Forbidden: Admin access required" });
+    return sendError(res, "FORBIDDEN", "Forbidden: Admin access required", 403);
   }
   next();
 });
@@ -288,10 +290,13 @@ router.get("/:id", async (req: Request, res: Response) => {
       updatedAt: talent.updatedAt,
     };
 
-    res.json({ talent: talentData });
+    sendSuccess(res, { talent: talentData });
   } catch (error) {
     logError("Failed to fetch talent details", error, { userId: req.user?.id, talentId: req.params.id });
-    res.status(500).json({ error: "Failed to fetch talent details" });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/admin/talent/:id', method: 'GET' },
+    });
+    handleApiError(res, error, 'Failed to fetch talent details', 'TALENT_FETCH_FAILED');
   }
 });
 
@@ -301,11 +306,13 @@ router.get("/:id", async (req: Request, res: Response) => {
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { displayName, legalName, primaryEmail, representationType, status, managerId, notes } = req.body;
-
-    if (!displayName) {
-      return res.status(400).json({ error: "Display name is required" });
+    // Validate request body
+    const validation = validateRequestSafe(TalentCreateSchema, req.body);
+    if (!validation.success) {
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
     }
+
+    const { displayName, legalName, primaryEmail, representationType, status, managerId, notes } = validation.data;
 
     // For now, we need to create a User first (current schema requirement)
     // In the future, this will be optional
@@ -383,7 +390,7 @@ router.post("/", async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json({
+    sendSuccess(res, {
       talent: {
         id: talent.id,
         name: talent.name,
@@ -397,10 +404,13 @@ router.post("/", async (req: Request, res: Response) => {
           : null,
         createdAt: talent.createdAt,
       },
-    });
+    }, 201);
   } catch (error) {
     logError("Failed to create talent", error, { userId: req.user?.id });
-    res.status(500).json({ error: "Failed to create talent" });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/admin/talent', method: 'POST' },
+    });
+    handleApiError(res, error, 'Failed to create talent', 'TALENT_CREATE_FAILED');
   }
 });
 
@@ -411,14 +421,21 @@ router.post("/", async (req: Request, res: Response) => {
 router.put("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { displayName, legalName, primaryEmail, representationType, status, managerId, notes } = req.body;
+    
+    // Validate request body
+    const validation = validateRequestSafe(TalentUpdateSchema, req.body);
+    if (!validation.success) {
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+    }
+
+    const { displayName, legalName, primaryEmail, representationType, status, managerId, notes } = validation.data;
 
     const existingTalent = await prisma.talent.findUnique({
       where: { id },
     });
 
     if (!existingTalent) {
-      return res.status(404).json({ error: "Talent not found" });
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
 
     // Update talent (limited to current schema fields)
@@ -448,7 +465,7 @@ router.put("/:id", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({
+    sendSuccess(res, {
       talent: {
         id: updatedTalent.id,
         name: updatedTalent.name,
@@ -465,7 +482,10 @@ router.put("/:id", async (req: Request, res: Response) => {
     });
   } catch (error) {
     logError("Failed to update talent", error, { userId: req.user?.id, talentId: req.params.id });
-    res.status(500).json({ error: "Failed to update talent" });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/admin/talent/:id', method: 'PUT' },
+    });
+    handleApiError(res, error, 'Failed to update talent', 'TALENT_UPDATE_FAILED');
   }
 });
 
@@ -593,7 +613,7 @@ router.post("/:id/unlink-user", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({
+    sendSuccess(res, {
       message: "User unlink requested (will be implemented after schema migration)",
       talent: {
         id: talent.id,
@@ -602,7 +622,10 @@ router.post("/:id/unlink-user", async (req: Request, res: Response) => {
     });
   } catch (error) {
     logError("Failed to unlink user from talent", error, { userId: req.user?.id, talentId: req.params.id });
-    res.status(500).json({ error: "Failed to unlink user from talent" });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/admin/talent/:id/unlink-user', method: 'POST' },
+    });
+    handleApiError(res, error, 'Failed to unlink user from talent', 'TALENT_UNLINK_USER_FAILED');
   }
 });
 

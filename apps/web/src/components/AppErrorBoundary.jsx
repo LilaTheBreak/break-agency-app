@@ -1,8 +1,11 @@
 import React from "react";
+import * as Sentry from "@sentry/react";
+import { captureException } from "../lib/sentry.js";
 
 /**
  * Root-level error boundary that catches all React errors
  * Displays a full-page error state with recovery options
+ * Automatically reports to Sentry when configured
  */
 class AppErrorBoundary extends React.Component {
   constructor(props) {
@@ -29,10 +32,20 @@ class AppErrorBoundary extends React.Component {
       errorCount: prevState.errorCount + 1
     }));
 
-    // Log to external service if configured
-    if (window.Sentry) {
-      window.Sentry.captureException(error, { extra: errorInfo });
-    }
+    // Capture feature flags snapshot for debugging
+    const featureFlags = typeof window !== "undefined" && window.__FEATURE_FLAGS__ 
+      ? window.__FEATURE_FLAGS__ 
+      : {};
+
+    // Report to Sentry with context
+    captureException(error, {
+      ...errorInfo,
+      errorBoundary: "AppErrorBoundary",
+      errorCount: this.state.errorCount + 1,
+      featureFlags,
+      route: window.location.pathname,
+      userAgent: navigator.userAgent,
+    });
   }
 
   handleReset = () => {

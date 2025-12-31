@@ -14,16 +14,22 @@ const router = Router();
  * Creates a new BrandCampaign.
  */
 router.post("/campaigns", ensureManager, async (req: Request, res: Response) => {
-  const { title, ownerId, stage = "PLANNING", brands = [], creatorTeams = [], metadata = {} } = req.body ?? {};
-  if (!title) {
-    return res.status(400).json({ error: "Title is required" });
-  }
-  if (!req.user?.id) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-  const userId = req.user.id;
-  const normalizedStage = normalizeStage(stage);
   try {
+    // Validate request body
+    const validation = validateRequestSafe(CampaignCreateSchema, req.body);
+    if (!validation.success) {
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+    }
+
+    const { title, ownerId, stage = "PLANNING", brands = [], creatorTeams = [], metadata = {} } = validation.data;
+    
+    if (!req.user?.id) {
+      return sendError(res, "UNAUTHORIZED", "Authentication required", 401);
+    }
+    
+    const userId = req.user.id;
+    const normalizedStage = normalizeStage(stage);
+    
     const campaign = await prisma.brandCampaign.create({
       data: {
         title,
@@ -36,9 +42,13 @@ router.post("/campaigns", ensureManager, async (req: Request, res: Response) => 
     });
     await syncBrandPivots(campaign.id, Array.isArray(brands) ? brands : []);
     const payload = await fetchCampaign(campaign.id, userId);
-    res.status(201).json({ campaign: payload });
+    sendSuccess(res, { campaign: payload }, 201);
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Unable to create campaign" });
+    logError("Failed to create campaign", error, { userId: req.user?.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/campaigns', method: 'POST' },
+    });
+    handleApiError(res, error, 'Failed to create campaign', 'CAMPAIGN_CREATE_FAILED');
   }
 });
 
@@ -145,14 +155,16 @@ const CampaignUpdateSchema = z.object({
  * Updates an existing BrandCampaign.
  */
 router.put("/campaigns/:id", ensureManager, async (req: Request, res: Response) => {
-  const campaignId = req.params.id;
-  const parsed = CampaignUpdateSchema.safeParse(req.body);
-
-  if (!parsed.success) {
-    return res.status(400).json({ error: "Invalid payload.", details: parsed.error.flatten() });
-  }
-
   try {
+    const campaignId = req.params.id;
+    
+    // Validate request body (using existing schema validation)
+    const parsed = CampaignUpdateSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, parsed.error.format());
+    }
+
     const updatedCampaign = await prisma.brandCampaign.update({
       where: { id: campaignId },
       data: {
@@ -165,9 +177,13 @@ router.put("/campaigns/:id", ensureManager, async (req: Request, res: Response) 
     });
     // Re-sync brand pivots if brands were updated
     if (parsed.data.brands) await syncBrandPivots(campaignId, parsed.data.brands);
-    res.json({ campaign: formatCampaign(updatedCampaign) });
+    sendSuccess(res, { campaign: formatCampaign(updatedCampaign) });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Unable to update campaign" });
+    logError("Failed to update campaign", error, { userId: req.user?.id, campaignId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/campaigns/:id', method: 'PUT' },
+    });
+    handleApiError(res, error, 'Failed to update campaign', 'CAMPAIGN_UPDATE_FAILED');
   }
 });
 

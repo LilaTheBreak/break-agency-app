@@ -1,9 +1,11 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { captureException, setSentryTags } from "../lib/sentry.js";
 
 /**
  * Route-level error boundary for dashboard pages
  * Allows partial recovery without full page reload
+ * Automatically reports to Sentry with route context
  */
 class RouteErrorBoundary extends React.Component {
   constructor(props) {
@@ -28,12 +30,18 @@ class RouteErrorBoundary extends React.Component {
       errorInfo
     });
 
-    // Log to external service if configured
-    if (window.Sentry) {
-      window.Sentry.captureException(error, {
-        extra: { ...errorInfo, route: this.props.routeName }
-      });
-    }
+    // Tag error with route information
+    setSentryTags({
+      route: this.props.routeName,
+      errorBoundary: "RouteErrorBoundary",
+    });
+
+    // Report to Sentry with route context
+    captureException(error, {
+      ...errorInfo,
+      route: this.props.routeName,
+      errorBoundary: "RouteErrorBoundary",
+    });
   }
 
   handleRetry = () => {

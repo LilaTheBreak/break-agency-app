@@ -4,7 +4,9 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { logError } from '../lib/logger.js';
 import prisma from '../lib/prisma.js';
-import { sendList, sendEmptyList } from '../utils/apiResponse.js';
+import { sendList, sendEmptyList, sendSuccess, sendError, handleApiError } from '../utils/apiResponse.js';
+import { validateRequestSafe, OpportunityCreateSchema, OpportunityUpdateSchema } from '../utils/validationSchemas.js';
+import * as Sentry from '@sentry/node';
 
 const router = express.Router();
 
@@ -16,10 +18,13 @@ router.get('/public', async (req, res) => {
       orderBy: { createdAt: 'desc' },
       take: 20
     });
-    res.json(opportunities);
+    sendList(res, opportunities || []);
   } catch (error) {
-    console.error('Error fetching opportunities:', error);
-    res.status(500).json({ error: 'Failed to fetch opportunities' });
+    logError('Error fetching public opportunities', error);
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/public', method: 'GET' },
+    });
+    sendEmptyList(res);
   }
 });
 
@@ -56,57 +61,58 @@ router.get('/:id', async (req, res) => {
     });
     
     if (!opportunity) {
-      return res.status(404).json({ error: 'Opportunity not found' });
+      return sendError(res, "NOT_FOUND", "Opportunity not found", 404);
     }
     
-    res.json(opportunity);
+    sendSuccess(res, opportunity);
   } catch (error) {
-    console.error('Error fetching opportunity:', error);
-    res.status(500).json({ error: 'Failed to fetch opportunity' });
+    logError('Error fetching opportunity', error, { opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id', method: 'GET' },
+    });
+    handleApiError(res, error, 'Failed to fetch opportunity', 'OPPORTUNITY_FETCH_FAILED');
   }
 });
 
 // Create opportunity (admin only)
 router.post('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN', 'BRAND']), async (req, res) => {
   try {
-    const {
-      brand,
-      location,
-      title,
-      deliverables,
-      payment,
-      deadline,
-      status,
-      image,
-      logo,
-      type,
-      isActive
-    } = req.body;
+    // Validate request body
+    const validation = validateRequestSafe(OpportunityCreateSchema, req.body);
+    if (!validation.success) {
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+    }
 
-    // Get user from session/token
+    const { title, description, brandId, isActive, deadline, payment } = validation.data;
     const createdBy = req.user?.id || 'system';
 
+    // Map validated data to Prisma schema (handle legacy fields)
     const opportunity = await prisma.opportunity.create({
       data: {
-        brand,
-        location,
         title,
-        deliverables,
-        payment,
-        deadline,
-        status: status || 'Live brief · Login required to apply',
-        image,
-        logo,
-        type,
+        description: description || null,
+        brandId: brandId || null,
+        brand: req.body.brand || null, // Legacy field
+        location: req.body.location || null, // Legacy field
+        deliverables: req.body.deliverables || null, // Legacy field
+        payment: payment || req.body.payment || null,
+        deadline: deadline ? new Date(deadline) : (req.body.deadline ? new Date(req.body.deadline) : null),
+        status: req.body.status || 'Live brief · Login required to apply',
+        image: req.body.image || null,
+        logo: req.body.logo || null,
+        type: req.body.type || null,
         isActive: isActive !== undefined ? isActive : true,
         createdBy
       }
     });
 
-    res.status(201).json(opportunity);
+    sendSuccess(res, opportunity, 201);
   } catch (error) {
-    console.error('Error creating opportunity:', error);
-    res.status(500).json({ error: 'Failed to create opportunity' });
+    logError('Error creating opportunity', error, { userId: req.user?.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities', method: 'POST' },
+    });
+    handleApiError(res, error, 'Failed to create opportunity', 'OPPORTUNITY_CREATE_FAILED');
   }
 });
 
@@ -114,41 +120,42 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN'
 router.put('/:id', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN', 'BRAND']), async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      brand,
-      location,
-      title,
-      deliverables,
-      payment,
-      deadline,
-      status,
-      image,
-      logo,
-      type,
-      isActive
-    } = req.body;
+    
+    // Validate request body
+    const validation = validateRequestSafe(OpportunityUpdateSchema, req.body);
+    if (!validation.success) {
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+    }
 
+    const { title, description, isActive, deadline, payment } = validation.data;
+
+    // Map validated data to Prisma schema (handle legacy fields)
     const opportunity = await prisma.opportunity.update({
       where: { id },
       data: {
-        brand,
-        location,
-        title,
-        deliverables,
-        payment,
-        deadline,
-        status,
-        image,
-        logo,
-        type,
-        isActive
+        ...(title && { title }),
+        ...(description !== undefined && { description }),
+        ...(isActive !== undefined && { isActive }),
+        ...(deadline && { deadline: new Date(deadline) }),
+        ...(payment && { payment }),
+        // Legacy fields (preserve if provided)
+        ...(req.body.brand && { brand: req.body.brand }),
+        ...(req.body.location && { location: req.body.location }),
+        ...(req.body.deliverables && { deliverables: req.body.deliverables }),
+        ...(req.body.status && { status: req.body.status }),
+        ...(req.body.image && { image: req.body.image }),
+        ...(req.body.logo && { logo: req.body.logo }),
+        ...(req.body.type && { type: req.body.type }),
       }
     });
 
-    res.json(opportunity);
+    sendSuccess(res, opportunity);
   } catch (error) {
-    console.error('Error updating opportunity:', error);
-    res.status(500).json({ error: 'Failed to update opportunity' });
+    logError('Error updating opportunity', error, { userId: req.user?.id, opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id', method: 'PUT' },
+    });
+    handleApiError(res, error, 'Failed to update opportunity', 'OPPORTUNITY_UPDATE_FAILED');
   }
 });
 
@@ -161,10 +168,13 @@ router.delete('/:id', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_A
       where: { id }
     });
 
-    res.json({ message: 'Opportunity deleted successfully' });
+    sendSuccess(res, { message: 'Opportunity deleted successfully' });
   } catch (error) {
-    console.error('Error deleting opportunity:', error);
-    res.status(500).json({ error: 'Failed to delete opportunity' });
+    logError('Error deleting opportunity', error, { userId: req.user?.id, opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id', method: 'DELETE' },
+    });
+    handleApiError(res, error, 'Failed to delete opportunity', 'OPPORTUNITY_DELETE_FAILED');
   }
 });
 
@@ -206,10 +216,13 @@ router.get('/creator/all', requireAuth, async (req, res) => {
       hasSubmission: opp.Submissions.length > 0,
     }));
 
-    res.json({ opportunities: opportunitiesWithStatus });
+    sendSuccess(res, { opportunities: opportunitiesWithStatus });
   } catch (error) {
-    console.error('[OPPORTUNITIES] Error fetching creator opportunities:', error);
-    res.status(500).json({ error: 'Failed to fetch opportunities' });
+    logError('Error fetching creator opportunities', error, { userId: req.user?.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/creator/all', method: 'GET' },
+    });
+    handleApiError(res, error, 'Failed to fetch opportunities', 'OPPORTUNITY_CREATOR_FETCH_FAILED');
   }
 });
 
@@ -264,10 +277,13 @@ router.post('/:id/apply', requireAuth, async (req, res) => {
       },
     });
 
-    res.status(201).json({ application });
+    sendSuccess(res, { application }, 201);
   } catch (error) {
-    console.error('[OPPORTUNITIES] Error applying to opportunity:', error);
-    res.status(500).json({ error: 'Failed to apply to opportunity' });
+    logError('Error applying to opportunity', error, { userId: req.user?.id, opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id/apply', method: 'POST' },
+    });
+    handleApiError(res, error, 'Failed to apply to opportunity', 'OPPORTUNITY_APPLY_FAILED');
   }
 });
 
@@ -297,10 +313,13 @@ router.get('/:id/application', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Application not found' });
     }
 
-    res.json({ application });
+    sendSuccess(res, { application });
   } catch (error) {
-    console.error('[OPPORTUNITIES] Error fetching application:', error);
-    res.status(500).json({ error: 'Failed to fetch application' });
+    logError('Error fetching application', error, { userId: req.user?.id, opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id/application', method: 'GET' },
+    });
+    handleApiError(res, error, 'Failed to fetch application', 'APPLICATION_FETCH_FAILED');
   }
 });
 
@@ -349,10 +368,13 @@ router.get('/admin/applications', requireAuth, requireRole(['ADMIN', 'SUPERADMIN
       orderBy: { appliedAt: 'desc' },
     });
 
-    res.json({ applications });
+    sendSuccess(res, { applications });
   } catch (error) {
-    console.error('[OPPORTUNITIES] Error fetching applications:', error);
-    res.status(500).json({ error: 'Failed to fetch applications' });
+    logError('Error fetching applications', error, { userId: req.user?.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/admin/applications', method: 'GET' },
+    });
+    handleApiError(res, error, 'Failed to fetch applications', 'APPLICATIONS_FETCH_FAILED');
   }
 });
 
@@ -388,10 +410,13 @@ router.patch('/admin/applications/:id', requireAuth, requireRole(['ADMIN', 'SUPE
       await createDealFromApplication(application);
     }
 
-    res.json({ application });
+    sendSuccess(res, { application });
   } catch (error) {
-    console.error('[OPPORTUNITIES] Error updating application:', error);
-    res.status(500).json({ error: 'Failed to update application' });
+    logError('Error updating application', error, { userId: req.user?.id, applicationId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/admin/applications/:id', method: 'PATCH' },
+    });
+    handleApiError(res, error, 'Failed to update application', 'APPLICATION_UPDATE_FAILED');
   }
 });
 
@@ -410,10 +435,13 @@ router.patch('/:id/status', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AG
       data: updateData,
     });
 
-    res.json({ opportunity });
+    sendSuccess(res, { opportunity });
   } catch (error) {
-    console.error('[OPPORTUNITIES] Error updating opportunity status:', error);
-    res.status(500).json({ error: 'Failed to update opportunity status' });
+    logError('Error updating opportunity status', error, { userId: req.user?.id, opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id/status', method: 'PATCH' },
+    });
+    handleApiError(res, error, 'Failed to update opportunity status', 'OPPORTUNITY_STATUS_UPDATE_FAILED');
   }
 });
 

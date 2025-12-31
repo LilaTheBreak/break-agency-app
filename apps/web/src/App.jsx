@@ -100,6 +100,8 @@ import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
 import { useAuth } from "./context/AuthContext.jsx";
 import { BrandPage } from "./pages/BrandPage.jsx";
 import { shouldRouteToOnboarding } from "./lib/onboardingState.js";
+import { setSentryTags } from "./lib/sentry.js";
+import { ErrorTestButton } from "./components/ErrorTestButton.jsx";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -132,6 +134,20 @@ const CREATOR_PANELS = [
     cta: "Explore opportunities board"
   }
 ];
+
+// Helper to extract feature name from route for Sentry tagging
+function getFeatureFromRoute(pathname) {
+  if (pathname.startsWith("/admin/talent")) return "talent";
+  if (pathname.startsWith("/admin/campaigns")) return "campaigns";
+  if (pathname.startsWith("/admin/messaging")) return "messaging";
+  if (pathname.startsWith("/admin/inbox")) return "gmail";
+  if (pathname.startsWith("/admin/opportunities")) return "opportunities";
+  if (pathname.startsWith("/admin/deals")) return "deals";
+  if (pathname.startsWith("/admin/finance")) return "finance";
+  if (pathname.startsWith("/creator")) return "creator";
+  if (pathname.startsWith("/brand")) return "brand";
+  return "other";
+}
 
 const RESOURCE_PANELS = [
   {
@@ -263,6 +279,26 @@ function App() {
   const [splashVisible, setSplashVisible] = useState(true);
   const [splashFade, setSplashFade] = useState(false);
   const remoteMessaging = useRemoteMessaging(session);
+  const location = useLocation();
+  
+  // Track route changes in Sentry with user role and feature flags
+  useEffect(() => {
+    if (location.pathname) {
+      // Capture feature flags snapshot
+      const featureFlags = typeof window !== "undefined" && window.__FEATURE_FLAGS__ 
+        ? window.__FEATURE_FLAGS__ 
+        : {};
+      
+      setSentryTags({
+        route: location.pathname,
+        feature: getFeatureFromRoute(location.pathname),
+        role: session?.role || "anonymous",
+        ...Object.fromEntries(
+          Object.entries(featureFlags).map(([key, value]) => [`feature_${key}`, String(value)])
+        ),
+      });
+    }
+  }, [location.pathname, session?.role]);
 
   useEffect(() => {
     if (session && authModalOpen) {
@@ -321,9 +357,10 @@ function App() {
   }, []);
 
   return (
-    <AppErrorBoundary>
-      <ToastProvider />
-      <MessagingContext.Provider value={messagingValue}>
+        <AppErrorBoundary>
+          <ToastProvider />
+          <ErrorTestButton />
+          <MessagingContext.Provider value={messagingValue}>
         {splashVisible && (
           <div
             className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${

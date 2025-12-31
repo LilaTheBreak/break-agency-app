@@ -58,9 +58,10 @@ const router = Router();
 /* -------------------------------------------------------
    PUBLIC ROUTES
 -------------------------------------------------------- */
-router.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok" });
-});
+// Health check moved to /health (not /api/health) - see server.ts
+// router.get("/health", (_req: Request, res: Response) => {
+//   res.json({ status: "ok" });
+// });
 
 // Public Auth (Google OAuth, login, logout)
 router.use(authRouter);

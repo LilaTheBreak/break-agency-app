@@ -7,6 +7,23 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { MEETING_SUMMARIES } from "./constants/meetingSummaries.js";
 
+// Initialize Sentry early (before React renders)
+import { initSentry } from "./lib/sentry.js";
+import { getAllFeatureFlags } from "./config/features.js";
+
+// Capture feature flags snapshot for error context
+if (typeof window !== "undefined") {
+  try {
+    const flags = getAllFeatureFlags();
+    window.__FEATURE_FLAGS__ = flags;
+  } catch (e) {
+    console.warn("[Sentry] Failed to capture feature flags:", e);
+    window.__FEATURE_FLAGS__ = {};
+  }
+}
+
+initSentry();
+
 // Global fallback: Make MEETING_SUMMARIES available globally to prevent ReferenceError
 // This ensures it's accessible even if referenced without an import
 if (typeof window !== "undefined") {

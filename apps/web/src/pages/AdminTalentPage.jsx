@@ -49,6 +49,50 @@ function AddTalentModal({ open, onClose, onSuccess }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Close on ESC key
+  useEffect(() => {
+    if (!open) return;
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [open, onClose]);
+
+  // Trap focus within modal
+  useEffect(() => {
+    if (!open) return;
+    const modal = document.querySelector('[data-modal="add-talent"]');
+    if (modal) {
+      const focusableElements = modal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      
+      const handleTab = (e) => {
+        if (e.key !== "Tab") return;
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement?.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement?.focus();
+          }
+        }
+      };
+      
+      firstElement?.focus();
+      document.addEventListener("keydown", handleTab);
+      return () => document.removeEventListener("keydown", handleTab);
+    }
+  }, [open]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -89,137 +133,198 @@ function AddTalentModal({ open, onClose, onSuccess }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-2xl rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-xl">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Add New Talent</p>
-            <h3 className="font-display text-2xl uppercase">Create Talent Record</h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
-          >
-            Cancel
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-2xl border border-brand-red/20 bg-brand-red/10 p-4 text-sm text-brand-red">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-              Display Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.displayName}
-              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-              className="w-full rounded-2xl border border-brand-black/10 px-4 py-3 text-sm focus:border-brand-black focus:outline-none"
-              placeholder="Talent display name"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div 
+        data-modal="add-talent"
+        className="w-full max-w-[720px] rounded-[36px] border border-brand-black/15 bg-brand-white shadow-[0_40px_120px_rgba(0,0,0,0.35)] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="border-b border-brand-black/10 px-8 py-6">
+          <div className="flex items-start justify-between">
             <div>
-              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-                Legal Name
-              </label>
-              <input
-                type="text"
-                value={formData.legalName}
-                onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
-                className="w-full rounded-2xl border border-brand-black/10 px-4 py-3 text-sm focus:border-brand-black focus:outline-none"
-                placeholder="Optional"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-                Primary Email
-              </label>
-              <input
-                type="email"
-                value={formData.primaryEmail}
-                onChange={(e) => setFormData({ ...formData, primaryEmail: e.target.value })}
-                className="w-full rounded-2xl border border-brand-black/10 px-4 py-3 text-sm focus:border-brand-black focus:outline-none"
-                placeholder="Optional"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-                Representation Type
-              </label>
-              <select
-                value={formData.representationType}
-                onChange={(e) => setFormData({ ...formData, representationType: e.target.value })}
-                className="w-full rounded-2xl border border-brand-black/10 px-4 py-3 text-sm focus:border-brand-black focus:outline-none"
+              <h3 
+                id="modal-title"
+                className="font-display text-3xl uppercase text-brand-black"
               >
-                {REPRESENTATION_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
+                Create Talent Record
+              </h3>
+              <p className="mt-2 text-sm text-brand-black/70">
+                Add a new talent profile to manage representation and relationships
+              </p>
             </div>
-
-            <div>
-              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full rounded-2xl border border-brand-black/10 px-4 py-3 text-sm focus:border-brand-black focus:outline-none"
-              >
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-              Internal Notes
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-              className="w-full rounded-2xl border border-brand-black/10 px-4 py-3 text-sm focus:border-brand-black focus:outline-none"
-              placeholder="Optional internal notes"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-brand-black/20 px-6 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
+              className="ml-4 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/60 hover:bg-brand-black/5 hover:text-brand-black transition-colors"
+              aria-label="Close modal"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        {/* Body - Scrollable */}
+        <div className="max-h-[calc(90vh-200px)] overflow-y-auto px-8 py-6">
+          <form id="add-talent-form" onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="rounded-2xl border border-brand-red/20 bg-brand-red/10 p-4 text-sm text-brand-red">
+                {error}
+              </div>
+            )}
+
+            {/* Display Name */}
+            <div>
+              <label 
+                htmlFor="displayName"
+                className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
+              >
+                Display Name *
+              </label>
+              <input
+                id="displayName"
+                type="text"
+                required
+                value={formData.displayName}
+                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
+                placeholder="Talent display name"
+                autoFocus
+              />
+            </div>
+
+            {/* Legal Name and Email - Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label 
+                  htmlFor="legalName"
+                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
+                >
+                  Legal Name
+                </label>
+                <input
+                  id="legalName"
+                  type="text"
+                  value={formData.legalName}
+                  onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
+                  className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="primaryEmail"
+                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
+                >
+                  Primary Email
+                </label>
+                <input
+                  id="primaryEmail"
+                  type="email"
+                  value={formData.primaryEmail}
+                  onChange={(e) => setFormData({ ...formData, primaryEmail: e.target.value })}
+                  className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
+                  placeholder="Optional"
+                />
+              </div>
+            </div>
+
+            {/* Representation Type and Status - Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label 
+                  htmlFor="representationType"
+                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
+                >
+                  Representation Type
+                </label>
+                <select
+                  id="representationType"
+                  value={formData.representationType}
+                  onChange={(e) => setFormData({ ...formData, representationType: e.target.value })}
+                  className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
+                >
+                  {REPRESENTATION_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="status"
+                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
+                >
+                  Status
+                </label>
+                <select
+                  id="status"
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
+                >
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Internal Notes */}
+            <div>
+              <label 
+                htmlFor="notes"
+                className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
+              >
+                Internal Notes
+              </label>
+              <textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={4}
+                className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10 resize-none"
+                placeholder="Optional internal notes"
+              />
+            </div>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-brand-black/10 px-8 py-6 bg-brand-white">
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-brand-black/20 px-6 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5 hover:text-brand-black transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
+              form="add-talent-form"
               disabled={saving}
-              className="rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black disabled:opacity-50"
+              className="rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {saving ? "Creating..." : "Create Talent"}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

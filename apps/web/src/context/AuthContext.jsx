@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { apiFetch } from "../services/apiClient.js";
 import { getCurrentUser, login as loginWithEmailClient, signup as signupWithEmailClient } from "../services/authClient.js";
 import { deriveOnboardingStatus } from "../lib/onboardingState.js";
+import { setSentryUser, setSentryTags } from "../lib/sentry.js";
 
 /**
  * Legacy context note:
@@ -46,14 +47,21 @@ export function AuthProvider({ children }) {
       }
       
       const payload = await response.json();
-      setUser(
-        payload.user
-          ? {
-              ...payload.user,
-              onboardingStatus: deriveOnboardingStatus(payload.user)
-            }
-          : null
-      );
+      const newUser = payload.user
+        ? {
+            ...payload.user,
+            onboardingStatus: deriveOnboardingStatus(payload.user)
+          }
+        : null;
+      setUser(newUser);
+      
+      // Update Sentry user context
+      if (newUser) {
+        setSentryUser({ id: newUser.id, role: newUser.role });
+        setSentryTags({ role: newUser.role || "unknown" });
+      } else {
+        setSentryUser(null);
+      }
     } catch (err) {
       // Network errors or JSON parsing errors
       console.warn("[AUTH] Error loading user:", err);
@@ -109,6 +117,8 @@ export function AuthProvider({ children }) {
     } finally {
       localStorage.removeItem('auth_token');
       setUser(null);
+      // Clear Sentry user context on logout
+      setSentryUser(null);
     }
   }, []);
 
@@ -133,6 +143,13 @@ export function AuthProvider({ children }) {
         ? { ...loggedInUser, onboardingStatus: deriveOnboardingStatus(loggedInUser) }
         : null;
       setUser(normalizedUser);
+      
+      // Update Sentry user context
+      if (normalizedUser) {
+        setSentryUser({ id: normalizedUser.id, role: normalizedUser.role });
+        setSentryTags({ role: normalizedUser.role || "unknown" });
+      }
+      
       return normalizedUser;
     },
     []

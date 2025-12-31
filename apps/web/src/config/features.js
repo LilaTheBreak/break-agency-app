@@ -265,4 +265,12 @@ export function getDisabledMessage(featureName) {
   return messages[featureName] || "This feature is not yet available.";
 }
 
+/**
+ * Get all feature flags as a snapshot object
+ * Useful for error reporting and debugging
+ */
+export function getAllFeatureFlags() {
+  return { ...features };
+}
+
 export default features;

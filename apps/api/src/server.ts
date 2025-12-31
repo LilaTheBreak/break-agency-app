@@ -1,3 +1,6 @@
+// IMPORTANT: Import Sentry instrumentation at the very top, before any other imports
+import "./instrument.js";
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -5,6 +8,7 @@ import morgan from "morgan";
 import path from "path";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import * as Sentry from "@sentry/node";
 
 import routes from "./routes/index.js";
 import activityRouter from "./routes/activity.js";
@@ -211,6 +215,12 @@ if (!credentialValidation.valid) {
 }
 
 const app = express();
+
+// Add Sentry request handler (must be first middleware)
+// Note: setupExpressErrorHandler sets up both request and error handlers
+// But we need to call it after routes are defined, so we'll set it up later
+// For now, we use the request handler middleware
+const sentryDsn = process.env.SENTRY_DSN;
 
 // CRITICAL: Combine FRONTEND_ORIGIN and WEB_APP_URL to support both
 // Railway has FRONTEND_ORIGIN set to Vercel preview URL
@@ -598,6 +608,13 @@ app.get("/", (_req, res) => {
 });
 
 // ------------------------------------------------------
+// SENTRY DEBUG ENDPOINT (for testing)
+// ------------------------------------------------------
+app.get("/debug-sentry", function mainHandler(_req, res) {
+  throw new Error("My first Sentry error!");
+});
+
+// ------------------------------------------------------
 // HEALTH ENDPOINTS
 // ------------------------------------------------------
 app.get("/health", healthCheck);
@@ -610,6 +627,27 @@ app.get("/api/cron/status", cronStatusCheck);
 app.use("/api", routes);
 
 // ------------------------------------------------------
+// SENTRY ERROR HANDLER (before custom error handler)
+// The error handler must be registered before any other error middleware and after all controllers
+// ------------------------------------------------------
+if (sentryDsn) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
+// Helper to extract feature name from route for Sentry tagging
+function getFeatureFromRoute(path: string): string {
+  if (path.includes("/admin/talent")) return "talent";
+  if (path.includes("/admin/campaigns")) return "campaigns";
+  if (path.includes("/admin/messaging") || path.includes("/gmail")) return "messaging";
+  if (path.includes("/admin/inbox")) return "gmail";
+  if (path.includes("/opportunities")) return "opportunities";
+  if (path.includes("/deals")) return "deals";
+  if (path.includes("/finance") || path.includes("/revenue")) return "finance";
+  if (path.includes("/auth")) return "auth";
+  return "other";
+}
+
+// ------------------------------------------------------
 // GLOBAL ERROR HANDLER (must be last)
 // ------------------------------------------------------
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -618,6 +656,37 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   // Don't send response if headers already sent
   if (res.headersSent) {
     return next(err);
+  }
+  
+  // Capture error in Sentry with context
+  if (sentryDsn) {
+    Sentry.withScope((scope) => {
+      // Add request context
+      scope.setTag("route", req.path);
+      scope.setTag("method", req.method);
+      scope.setTag("feature", getFeatureFromRoute(req.path));
+      
+      // Add user context if available
+      if ((req as any).user) {
+        scope.setUser({
+          id: (req as any).user.id,
+          role: (req as any).user.role,
+        });
+        scope.setTag("role", (req as any).user.role || "unknown");
+      }
+      
+      // Add request data
+      scope.setContext("request", {
+        url: req.url,
+        method: req.method,
+        headers: {
+          "user-agent": req.headers["user-agent"],
+          "referer": req.headers.referer,
+        },
+      });
+      
+      Sentry.captureException(err);
+    });
   }
   
   // Normalize error for user-friendly message

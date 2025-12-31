@@ -3,6 +3,8 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireRole } from "../middleware/requireRole.js";
 import prisma from "../lib/prisma.js";
 import { logError } from "../lib/logger.js";
+import { sendList, sendEmptyList } from "../utils/apiResponse.js";
+import * as Sentry from "@sentry/node";
 
 const router = Router();
 
@@ -37,11 +39,14 @@ router.get("/api/activity", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), a
       })
     );
 
-    res.json(activityWithUsers);
+    sendList(res, activityWithUsers || []);
   } catch (error) {
     // Graceful degradation: return empty array instead of 500
     logError("Failed to fetch activity feed", error, { userId: req.user?.id });
-    res.status(200).json([]);
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/activity', method: 'GET' },
+    });
+    sendEmptyList(res);
   }
 });
 
