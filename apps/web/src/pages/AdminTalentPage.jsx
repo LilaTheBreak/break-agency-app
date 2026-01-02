@@ -105,18 +105,14 @@ function AddTalentModal({ open, onClose, onSuccess }) {
       return;
     }
 
-    if (!formData.primaryEmail || !formData.primaryEmail.trim()) {
-      setError("Primary email is required. Talent must be linked to an existing user account. Please create the user first in Admin → Users, then enter their email here.");
-      setSaving(false);
-      return;
-    }
-
-    // Basic email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.primaryEmail.trim())) {
-      setError("Please enter a valid email address");
-      setSaving(false);
-      return;
+    // Email is optional, but if provided, validate format
+    if (formData.primaryEmail && formData.primaryEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.primaryEmail.trim())) {
+        setError("Please enter a valid email address");
+        setSaving(false);
+        return;
+      }
     }
 
     try {
@@ -249,19 +245,18 @@ function AddTalentModal({ open, onClose, onSuccess }) {
                   htmlFor="primaryEmail"
                   className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
                 >
-                  Primary Email *
+                  Primary Email
                 </label>
                 <input
                   id="primaryEmail"
                   type="email"
-                  required
                   value={formData.primaryEmail}
                   onChange={(e) => setFormData({ ...formData, primaryEmail: e.target.value })}
                   className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
-                  placeholder="user@example.com"
+                  placeholder="Optional - link to existing user"
                 />
                 <p className="mt-1 text-xs text-brand-black/50">
-                  Must match an existing user account. Create user in Admin → Users first.
+                  Optional. If provided, must match an existing user account.
                 </p>
               </div>
             </div>

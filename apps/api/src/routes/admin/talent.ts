@@ -389,11 +389,20 @@ router.post("/", async (req: Request, res: Response) => {
           });
         }
       } else {
-        // No userId or email provided - return clear error (schema requires userId)
-        return res.status(400).json({
-          code: "USER_REQUIRED",
-          message: "userId or primaryEmail is required. Talent creation requires an existing user account. Please create the user first, then provide userId or primaryEmail.",
+        // No userId or email provided - create a placeholder user for this talent
+        // This allows talent to be created independently without requiring a user account first
+        const placeholderEmail = `talent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}@internal.breakagency.com`;
+        const placeholderUser = await prisma.user.create({
+          data: {
+            id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            email: placeholderEmail,
+            name: displayName.trim(),
+            role: "CREATOR", // Default role for placeholder users
+            onboarding_status: "pending_review",
+            updatedAt: new Date(),
+          },
         });
+        resolvedUserId = placeholderUser.id;
       }
     }
 
