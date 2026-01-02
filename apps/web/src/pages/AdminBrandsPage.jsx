@@ -914,7 +914,9 @@ export function AdminBrandsPage({ session }) {
   const [contactDrawerId, setContactDrawerId] = useState("");
   const selectedContact = useMemo(
     () => {
-      return safeContactsState.find((c) => c && c.id === contactDrawerId) || null;
+      // CRITICAL: Ensure safeContactsState is an array before calling .find()
+      const contactsArray = normalizeApiArray(safeContactsState);
+      return contactsArray.find((c) => c && c.id === contactDrawerId) || null;
     },
     [safeContactsState, contactDrawerId]
   );
