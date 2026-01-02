@@ -792,17 +792,22 @@ export function AdminBrandsPage({ session }) {
 
   const filtered = useMemo(() => {
     try {
-      // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
-      const brandsArray = normalizeApiArray(safeBrandsState);
+      // CRITICAL: Triple-normalize to handle any edge cases (defense in depth)
+      // First normalize safeBrandsState (which should already be normalized, but be extra safe)
+      const normalizedState = normalizeApiArray(safeBrandsState, 'brands');
+      // Then normalize again to handle any edge cases
+      const brandsArray = normalizeApiArray(normalizedState);
       
-      // Runtime guard: Warn if safeBrandsState is not an array
-      if (!Array.isArray(safeBrandsState)) {
-        console.warn('[BRANDS CRM] safeBrandsState is not an array in filtered useMemo:', { 
+      // Final safety check - ensure we have an array
+      if (!Array.isArray(brandsArray)) {
+        console.error('[BRANDS CRM] CRITICAL: brandsArray is not an array after normalization:', { 
           safeBrandsState, 
-          type: typeof safeBrandsState,
-          isArray: Array.isArray(safeBrandsState),
-          value: safeBrandsState
+          normalizedState,
+          brandsArray,
+          type: typeof brandsArray,
+          isArray: Array.isArray(brandsArray)
         });
+        return [];
       }
       
       const q = query.trim().toLowerCase();
