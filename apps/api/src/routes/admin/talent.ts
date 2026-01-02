@@ -40,13 +40,13 @@ router.get("/", async (req: Request, res: Response) => {
         },
         Deal: {
           where: {
-            status: {
-              not: "CLOSED",
+            stage: {
+              notIn: ["COMPLETED", "LOST"],
             },
           },
           select: {
             id: true,
-            status: true,
+            stage: true,
           },
         },
         _count: {
