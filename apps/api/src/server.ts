@@ -219,17 +219,11 @@ import { validateGCSConfig } from "./services/storage/googleCloudStorage.js";
 
 const gcsValidation = validateGCSConfig();
 if (!gcsValidation.valid) {
-  console.error("\n❌ INVALID GCS CONFIGURATION:");
-  gcsValidation.errors.forEach(err => console.error(`   - ${err}`));
-  
-  if (process.env.NODE_ENV === "production") {
-    console.error("\n🚨 FATAL: Cannot start server in production with invalid GCS configuration");
-    console.error("   Please set valid GCS_PROJECT_ID, GCS_BUCKET_NAME, and GOOGLE_APPLICATION_CREDENTIALS_JSON");
-    process.exit(1);
-  } else {
-    console.warn("\n⚠️  WARNING: Invalid GCS configuration detected in development mode");
-    console.warn("   File uploads will fail until this is configured");
-  }
+  console.warn("\n⚠️  WARNING: GCS CONFIGURATION INCOMPLETE:");
+  gcsValidation.errors.forEach(err => console.warn(`   - ${err}`));
+  console.warn("   File uploads will fail until GCS is configured");
+  console.warn("   Set GCS_PROJECT_ID, GCS_BUCKET_NAME, and GOOGLE_APPLICATION_CREDENTIALS_JSON to enable file storage");
+  console.warn("   Server will continue to run, but file operations will error");
 } else {
   console.log("✅ GCS configuration validated");
 }
