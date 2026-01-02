@@ -138,8 +138,11 @@ function AddTalentModal({ open, onClose, onSuccess }) {
       }
 
       const data = await response.json();
+      console.log("[TALENT] Response data:", data);
+      console.log("[TALENT] Created talent ID:", data.talent?.id);
       toast.success("Talent created successfully");
-      onSuccess();
+      // Call onSuccess to refresh the list
+      await onSuccess();
       onClose();
       setFormData({
         displayName: "",

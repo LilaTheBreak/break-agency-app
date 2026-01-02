@@ -411,6 +411,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     // Create talent record ONLY - no user creation, no profiles, no briefs, no campaigns
+    console.log("[TALENT] Creating talent record with userId:", resolvedUserId);
     const talent = await prisma.talent.create({
       data: {
         id: `talent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -430,6 +431,21 @@ router.post("/", async (req: Request, res: Response) => {
       },
     });
 
+    console.log("[TALENT] Talent created successfully:", talent.id, talent.name);
+
+    // Verify the record was actually created
+    const verifyTalent = await prisma.talent.findUnique({
+      where: { id: talent.id },
+    });
+    if (!verifyTalent) {
+      console.error("[TALENT] CRITICAL: Talent record not found after creation!");
+      return res.status(500).json({
+        code: "TALENT_CREATE_FAILED",
+        message: "Talent record was not created in database",
+      });
+    }
+    console.log("[TALENT] Verified talent exists in database:", verifyTalent.id);
+
     // Log admin activity (non-blocking - don't fail talent creation if logging fails)
     try {
       await logAdminActivity(req, {
@@ -447,6 +463,7 @@ router.post("/", async (req: Request, res: Response) => {
       console.warn("[TALENT] Failed to log admin activity:", logError);
     }
 
+    console.log("[TALENT] Returning success response with talent:", talent.id);
     // Return success - talent created independently
     return res.status(201).json({
       talent: {
