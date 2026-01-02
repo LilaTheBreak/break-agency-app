@@ -315,6 +315,10 @@ router.get("/:id", async (req: Request, res: Response) => {
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
+    console.log("[TALENT] POST /api/admin/talent - Request received");
+    console.log("[TALENT] User:", req.user?.id, req.user?.email, req.user?.role);
+    console.log("[TALENT] Body:", JSON.stringify(req.body, null, 2));
+    
     // Extract and validate input directly (bypass schema validation if it's too strict)
     const {
       displayName,

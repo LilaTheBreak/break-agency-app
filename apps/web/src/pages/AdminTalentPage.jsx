@@ -116,14 +116,23 @@ function AddTalentModal({ open, onClose, onSuccess }) {
     }
 
     try {
+      console.log("[TALENT] Creating talent with data:", { 
+        displayName: formData.displayName, 
+        representationType: formData.representationType,
+        hasEmail: !!formData.primaryEmail 
+      });
+      
       const response = await apiFetch("/api/admin/talent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
+      console.log("[TALENT] Response status:", response.status, response.statusText);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error("[TALENT] Error response:", errorData);
         // Backend returns { code, message } format, fallback to error field for compatibility
         throw new Error(errorData.message || errorData.error || `Failed to create talent (${errorData.code || response.status})`);
       }
