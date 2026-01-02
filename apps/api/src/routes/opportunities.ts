@@ -142,8 +142,8 @@ router.put('/:id', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMI
         ...(title && { title }),
         ...(description !== undefined && { description }),
         ...(isActive !== undefined && { isActive }),
-        ...(deadline && { deadline: new Date(deadline) }),
-        ...(payment && { payment }),
+        ...(deadline && { deadline: new Date(deadline).toISOString() }), // Convert to ISO string (schema expects String)
+        ...(payment && { payment: String(payment) }), // Convert to string (schema expects String)
         // Legacy fields (preserve if provided)
         ...(req.body.brand && { brand: req.body.brand }),
         ...(req.body.location && { location: req.body.location }),
