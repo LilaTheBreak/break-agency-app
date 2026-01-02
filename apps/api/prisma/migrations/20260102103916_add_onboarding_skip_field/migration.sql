@@ -1,1 +1,3 @@
--- Migration already applied in 20250102120000_add_onboarding_skip_field
+-- This migration is a no-op as the field was already added in 20250102120000_add_onboarding_skip_field
+-- Prisma requires this file to exist for the migration directory
+-- No SQL changes needed - column already exists
