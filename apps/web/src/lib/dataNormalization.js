@@ -79,15 +79,26 @@ export function normalizeApiArray(input, key) {
 export function normalizeApiArrayWithGuard(input, key, context = '') {
   const normalized = normalizeApiArray(input, key);
   
-  // Runtime guard: Warn if input was not already an array and we had to normalize
+  // Runtime guard: Only warn if input was not already an array AND we had to normalize
+  // Don't warn for expected API response shapes like { brands: [...] } - this is normal
   if (!Array.isArray(input) && input !== "" && input !== null && input !== undefined) {
-    console.warn(`[${context || 'DATA_NORMALIZATION'}] Expected array, received:`, {
-      input,
-      type: typeof input,
-      isArray: Array.isArray(input),
-      normalizedLength: normalized.length,
-      key
-    });
+    // Only warn if normalization failed (returned empty array when we expected data)
+    // or if the input is an unexpected type (not an object with the expected key)
+    const isExpectedObjectShape = input && typeof input === 'object' && (
+      (key && Array.isArray(input[key])) ||
+      Array.isArray(input.data) ||
+      Array.isArray(input.items)
+    );
+    
+    if (!isExpectedObjectShape || normalized.length === 0) {
+      console.warn(`[${context || 'DATA_NORMALIZATION'}] Expected array, received:`, {
+        input,
+        type: typeof input,
+        isArray: Array.isArray(input),
+        normalizedLength: normalized.length,
+        key
+      });
+    }
   }
   
   return normalized;

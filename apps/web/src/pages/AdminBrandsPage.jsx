@@ -769,23 +769,25 @@ export function AdminBrandsPage({ session }) {
   };
 
   // Ensure state is always an array before useMemo hooks
+  // CRITICAL: Use normalizeApiArray (without guard) to avoid warnings for expected API shapes
+  // The guard warnings are too noisy for normal API responses like { brands: [...] }
   const safeBrandsState = useMemo(() => {
-    return normalizeApiArrayWithGuard(brands, 'brands', 'BRANDS CRM');
+    return normalizeApiArray(brands, 'brands');
   }, [brands]);
   const safeCampaignsState = useMemo(() => {
-    return normalizeApiArrayWithGuard(campaigns, 'campaigns', 'BRANDS CRM');
+    return normalizeApiArray(campaigns, 'campaigns');
   }, [campaigns]);
   const safeEventsState = useMemo(() => {
-    return normalizeApiArrayWithGuard(events, 'events', 'BRANDS CRM');
+    return normalizeApiArray(events, 'events');
   }, [events]);
   const safeDealsState = useMemo(() => {
-    return normalizeApiArrayWithGuard(deals, 'deals', 'BRANDS CRM');
+    return normalizeApiArray(deals, 'deals');
   }, [deals]);
   const safeContractsState = useMemo(() => {
-    return normalizeApiArrayWithGuard(contracts, 'contracts', 'BRANDS CRM');
+    return normalizeApiArray(contracts, 'contracts');
   }, [contracts]);
   const safeContactsState = useMemo(() => {
-    return normalizeApiArrayWithGuard(contacts, 'contacts', 'BRANDS CRM');
+    return normalizeApiArray(contacts, 'contacts');
   }, [contacts]);
 
   const filtered = useMemo(() => {
