@@ -88,65 +88,75 @@ router.get("/", async (req: Request, res: Response) => {
 
     console.log("[TALENT] Found", talents.length, "talents with User relation");
     
-    // If count > 0 but findMany with User relation returns 0, use fallback
-    if (totalCount > 0 && talents.length === 0 && talentsWithoutUser.length > 0) {
+    // CRITICAL FIX: If count > 0 but findMany with User relation returns 0, use fallback
+    // This handles cases where User relation fails (e.g., placeholder users, missing fields)
+    if (totalCount > 0 && talents.length === 0) {
       console.error("[TALENT] WARNING: Count shows", totalCount, "talents but findMany with User relation returned 0!");
-      console.error("[TALENT] User relation is failing. Using talents without User relation as fallback.");
-      // Use talents without User relation and manually fetch User data
-      const fallbackTalents = await Promise.all(
-        talentsWithoutUser.map(async (talent) => {
-          try {
-            // Try to fetch User separately
-            let userData = null;
+      console.error("[TALENT] This suggests User relation is failing. Using fallback query.");
+      
+      // Use talentsWithoutUser as fallback
+      if (talentsWithoutUser.length > 0) {
+        console.log("[TALENT] Using", talentsWithoutUser.length, "talents from fallback query");
+        const fallbackTalents = await Promise.all(
+          talentsWithoutUser.map(async (talent) => {
             try {
-              const user = await prisma.user.findUnique({
-                where: { id: talent.userId },
-                select: {
-                  id: true,
-                  email: true,
-                  name: true,
-                  avatarUrl: true,
+              // Try to fetch User separately (may fail for placeholder users, that's OK)
+              let userData = null;
+              try {
+                const user = await prisma.user.findUnique({
+                  where: { id: talent.userId },
+                  select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    avatarUrl: true,
+                  },
+                });
+                userData = user;
+              } catch (userError) {
+                console.warn("[TALENT] Failed to fetch User for talent", talent.id, "- continuing without User data");
+              }
+              
+              return {
+                id: talent.id,
+                name: talent.name || "Unknown",
+                displayName: talent.name || "Unknown",
+                representationType: "NON_EXCLUSIVE",
+                status: "ACTIVE",
+                linkedUser: userData
+                  ? {
+                      id: userData.id,
+                      email: userData.email,
+                      name: userData.name,
+                      avatarUrl: userData.avatarUrl,
+                    }
+                  : null,
+                managerId: null,
+                metrics: {
+                  openOpportunities: 0,
+                  activeDeals: 0,
+                  totalDeals: 0,
+                  totalTasks: 0,
+                  totalRevenue: 0,
                 },
-              });
-              userData = user;
-            } catch (userError) {
-              console.warn("[TALENT] Failed to fetch User for talent", talent.id, userError);
+                createdAt: talent.createdAt,
+                updatedAt: talent.updatedAt,
+              };
+            } catch (talentError) {
+              console.error("[TALENT] Failed to process fallback talent", talent.id, talentError);
+              logError("Failed to process fallback talent", talentError, { talentId: talent.id });
+              return null;
             }
-            
-            return {
-              id: talent.id,
-              name: talent.name || "Unknown",
-              displayName: talent.name || "Unknown",
-              representationType: "NON_EXCLUSIVE",
-              status: "ACTIVE",
-              linkedUser: userData
-                ? {
-                    id: userData.id,
-                    email: userData.email,
-                    name: userData.name,
-                    avatarUrl: userData.avatarUrl,
-                  }
-                : null,
-              managerId: null,
-              metrics: {
-                openOpportunities: 0,
-                activeDeals: 0,
-                totalDeals: 0,
-                totalTasks: 0,
-                totalRevenue: 0,
-              },
-              createdAt: talent.createdAt,
-              updatedAt: talent.updatedAt,
-            };
-          } catch (talentError) {
-            logError("Failed to process fallback talent", talentError, { talentId: talent.id });
-            return null;
-          }
-        })
-      );
-      const validFallback = fallbackTalents.filter(t => t !== null);
-      console.log("[TALENT] Returning", validFallback.length, "fallback talents");
-      return sendList(res, validFallback);
+          })
+        );
+        const validFallback = fallbackTalents.filter(t => t !== null);
+        console.log("[TALENT] Returning", validFallback.length, "fallback talents");
+        return sendList(res, validFallback);
+      } else {
+        // Even fallback query returned 0 - this is a real problem
+        console.error("[TALENT] CRITICAL: Both queries returned 0 but count shows", totalCount);
+        console.error("[TALENT] This suggests a database transaction or query issue");
+      }
     }
 
     // Calculate metrics for each talent with error handling
