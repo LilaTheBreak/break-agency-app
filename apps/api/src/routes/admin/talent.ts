@@ -29,6 +29,12 @@ router.use((req: Request, res: Response, next) => {
 router.get("/", async (req: Request, res: Response) => {
   try {
     console.log("[TALENT] GET /api/admin/talent - Fetching all talents");
+    console.log("[TALENT] User making request:", req.user?.id, req.user?.role);
+    
+    // First, try a simple count to verify connection
+    const totalCount = await prisma.talent.count();
+    console.log("[TALENT] Total talent count in database:", totalCount);
+    
     const talents = await prisma.talent.findMany({
       include: {
         User: {
@@ -144,6 +150,7 @@ router.get("/", async (req: Request, res: Response) => {
     console.log("[TALENT] Returning", talentsWithMetrics?.length || 0, "talents with metrics");
     sendList(res, talentsWithMetrics || []);
   } catch (error) {
+    console.error("[TALENT] Error fetching talent list:", error);
     logError("Failed to fetch talent list", error, { userId: req.user?.id });
     // Return empty list on error - graceful degradation
     sendEmptyList(res);
