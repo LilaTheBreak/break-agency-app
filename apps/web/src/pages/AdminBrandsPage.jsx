@@ -1428,7 +1428,7 @@ export function AdminBrandsPage({ session }) {
           </div>
         </section>
 
-        {filtered.length === 0 ? (
+        {(!Array.isArray(filtered) || filtered.length === 0) ? (
           <EmptyState onAdd={openCreate} />
         ) : (
           <section className="space-y-4">
