@@ -98,6 +98,27 @@ function AddTalentModal({ open, onClose, onSuccess }) {
     setError("");
     setSaving(true);
 
+    // Frontend validation
+    if (!formData.displayName || !formData.displayName.trim()) {
+      setError("Display name is required");
+      setSaving(false);
+      return;
+    }
+
+    if (!formData.primaryEmail || !formData.primaryEmail.trim()) {
+      setError("Primary email is required. Talent must be linked to an existing user account. Please create the user first in Admin → Users, then enter their email here.");
+      setSaving(false);
+      return;
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.primaryEmail.trim())) {
+      setError("Please enter a valid email address");
+      setSaving(false);
+      return;
+    }
+
     try {
       const response = await apiFetch("/api/admin/talent", {
         method: "POST",
@@ -228,16 +249,20 @@ function AddTalentModal({ open, onClose, onSuccess }) {
                   htmlFor="primaryEmail"
                   className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
                 >
-                  Primary Email
+                  Primary Email *
                 </label>
                 <input
                   id="primaryEmail"
                   type="email"
+                  required
                   value={formData.primaryEmail}
                   onChange={(e) => setFormData({ ...formData, primaryEmail: e.target.value })}
                   className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
-                  placeholder="Optional"
+                  placeholder="user@example.com"
                 />
+                <p className="mt-1 text-xs text-brand-black/50">
+                  Must match an existing user account. Create user in Admin → Users first.
+                </p>
               </div>
             </div>
 
