@@ -27,7 +27,6 @@ import { registerCronJobs } from "./cron/index.js";
 import { stripeWebhookHandler } from "./routes/webhooks.js";
 import signatureWebhookRouter from "./routes/signatureWebhooks.js";
 import { metaWebhookVerificationHandler } from "./routes/metaWebhook.js";
-import { metaWebhookVerificationHandler } from "./routes/metaWebhook.js";
 
 // Core Routers
 import paymentsRouter from "./routes/payments.js";
