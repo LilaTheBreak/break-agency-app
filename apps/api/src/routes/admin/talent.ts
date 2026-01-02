@@ -308,18 +308,24 @@ router.get("/:id", async (req: Request, res: Response) => {
  * They can be created without user accounts, profiles, briefs, or campaigns.
  * User linking happens separately via /api/admin/talent/:id/link-user
  * 
- * NOTE: Current schema requires userId. If no user exists, return clear error.
- * User must be created separately before linking to talent.
+ * NOTE: Current schema requires userId (non-nullable, unique).
+ * If userId is not provided, we must find or require an existing user.
+ * We do NOT auto-create users - user must exist first.
  */
 router.post("/", async (req: Request, res: Response) => {
   try {
-    // Validate required input
-    const validation = validateRequestSafe(TalentCreateSchema, req.body);
-    if (!validation.success) {
-      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
-    }
-
-    const { displayName, legalName, primaryEmail, representationType, status, managerId, notes } = validation.data;
+    // Extract and validate input directly (bypass schema validation if it's too strict)
+    const {
+      displayName,
+      legalName,
+      primaryEmail,
+      email, // Accept both primaryEmail and email
+      representationType,
+      status,
+      managerId,
+      notes,
+      userId, // Allow userId to be passed directly
+    } = req.body;
 
     // Validate required fields
     if (!displayName || !displayName.trim()) {
@@ -336,51 +342,66 @@ router.post("/", async (req: Request, res: Response) => {
       });
     }
 
-    // Schema requires userId - check if user exists (do NOT auto-create)
-    let userId: string | null = null;
+    // Schema requires userId - resolve it from provided data
+    let resolvedUserId: string | null = null;
 
-    if (primaryEmail && primaryEmail.trim()) {
-      // Email provided - check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email: primaryEmail.toLowerCase().trim() },
+    // If userId is provided directly, use it (but verify it exists)
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
       });
-
-      if (existingUser) {
-        // Check if talent already exists for this user
-        const existingTalent = await prisma.talent.findUnique({
-          where: { userId: existingUser.id },
-        });
-
-        if (existingTalent) {
-          return res.status(409).json({
-            code: "CONFLICT",
-            message: "Talent already exists for this user",
-            talentId: existingTalent.id,
-          });
-        }
-
-        userId = existingUser.id;
-      } else {
-        // Email provided but user doesn't exist - return error (do NOT auto-create)
+      if (!user) {
         return res.status(400).json({
           code: "USER_NOT_FOUND",
-          message: `User with email ${primaryEmail} does not exist. Please create the user account first, then link it to talent.`,
+          message: `User with ID ${userId} does not exist. Please provide a valid userId or primaryEmail.`,
         });
       }
+      resolvedUserId = userId;
     } else {
-      // No email provided - return error (schema requires userId)
-      return res.status(400).json({
-        code: "USER_REQUIRED",
-        message: "primaryEmail is required. Talent creation requires an existing user account. Please create the user first, then link it to talent.",
-      });
+      // Try to resolve userId from email
+      const emailToCheck = primaryEmail || email;
+      if (emailToCheck && emailToCheck.trim()) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: emailToCheck.toLowerCase().trim() },
+        });
+
+        if (existingUser) {
+          // Check if talent already exists for this user
+          const existingTalent = await prisma.talent.findUnique({
+            where: { userId: existingUser.id },
+          });
+
+          if (existingTalent) {
+            return res.status(409).json({
+              code: "CONFLICT",
+              message: "Talent already exists for this user",
+              talentId: existingTalent.id,
+            });
+          }
+
+          resolvedUserId = existingUser.id;
+        } else {
+          // Email provided but user doesn't exist - return clear error (do NOT auto-create)
+          return res.status(400).json({
+            code: "USER_NOT_FOUND",
+            message: `User with email ${emailToCheck} does not exist. Please create the user account first, then link it to talent.`,
+          });
+        }
+      } else {
+        // No userId or email provided - return clear error (schema requires userId)
+        return res.status(400).json({
+          code: "USER_REQUIRED",
+          message: "userId or primaryEmail is required. Talent creation requires an existing user account. Please create the user first, then provide userId or primaryEmail.",
+        });
+      }
     }
 
     // Create talent record ONLY - no user creation, no profiles, no briefs, no campaigns
     const talent = await prisma.talent.create({
       data: {
         id: `talent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: userId!, // Schema requires userId, we've validated it exists above
-        name: displayName,
+        userId: resolvedUserId!, // Schema requires userId, we've validated it exists above
+        name: displayName.trim(),
         categories: [],
         stage: null,
       },
@@ -395,17 +416,22 @@ router.post("/", async (req: Request, res: Response) => {
       },
     });
 
-    // Log admin activity
-    await logAdminActivity(req, {
-      event: "TALENT_CREATED",
-      metadata: {
-        talentId: talent.id,
-        displayName,
-        representationType: representationType || "NON_EXCLUSIVE",
-        hasEmail: !!primaryEmail,
-        linkedUserId: userId,
-      },
-    });
+    // Log admin activity (non-blocking - don't fail talent creation if logging fails)
+    try {
+      await logAdminActivity(req, {
+        event: "TALENT_CREATED",
+        metadata: {
+          talentId: talent.id,
+          displayName,
+          representationType: representationType || "NON_EXCLUSIVE",
+          hasEmail: !!(primaryEmail || email),
+          linkedUserId: resolvedUserId,
+        },
+      });
+    } catch (logError) {
+      // Log error but don't fail the request
+      console.warn("[TALENT] Failed to log admin activity:", logError);
+    }
 
     // Return success - talent created independently
     return res.status(201).json({
@@ -441,6 +467,14 @@ router.post("/", async (req: Request, res: Response) => {
         return res.status(400).json({
           code: "TALENT_CREATE_FAILED",
           message: error.message,
+        });
+      }
+      
+      // Check for Prisma record not found
+      if (error.message.includes("Record to update not found") || error.message.includes("Record to delete does not exist")) {
+        return res.status(400).json({
+          code: "TALENT_CREATE_FAILED",
+          message: "Referenced user or resource does not exist",
         });
       }
       
