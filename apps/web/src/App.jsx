@@ -101,7 +101,7 @@ import { MessagingContext } from "./context/messaging.js";
 import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
 import { useAuth } from "./context/AuthContext.jsx";
 import { BrandPage } from "./pages/BrandPage.jsx";
-import { shouldRouteToOnboarding } from "./lib/onboardingState.js";
+import { shouldRouteToOnboarding, getDashboardPathForRole } from "./lib/onboardingState.js";
 import { setSentryTags } from "./lib/sentry.js";
 // TEMPORARY — SENTRY VERIFICATION: Sentry already imported on line 22
 import { ErrorTestButton } from "./components/ErrorTestButton.jsx";
@@ -1140,9 +1140,13 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
           </span>
           {session ? (
             <>
-              <span className="rounded-full border border-brand-white/30 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white/90">
+              <Link
+                to={getDashboardPathForRole(session.role)}
+                className="rounded-full border border-brand-white/30 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white/90 hover:bg-brand-white/10 transition cursor-pointer"
+                title="Go to dashboard"
+              >
                 {session.role || "member"}
-              </span>
+              </Link>
               <div className="relative">
                 <button
                   type="button"
