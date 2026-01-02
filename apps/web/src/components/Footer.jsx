@@ -24,7 +24,8 @@ const NAV_LINKS = [
     links: [
       { to: "/help", label: "Help center" },
       { to: "/contact", label: "Contact" },
-      { to: "/legal", label: "Legal + privacy" }
+      { to: "/legal", label: "Legal + privacy" },
+      { to: "/privacy", label: "Privacy policy" }
     ]
   }
 ];

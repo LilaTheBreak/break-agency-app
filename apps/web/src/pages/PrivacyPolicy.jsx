@@ -9,7 +9,7 @@ export function PrivacyPolicyPage() {
           <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Privacy Policy</p>
           <h1 className="text-3xl font-semibold">Privacy Policy</h1>
           <p className="text-sm text-slate-600">
-            This privacy policy explains how The Break collects, uses, and protects your personal information, including Gmail data when you connect your account.
+            This privacy policy explains how The Break collects, uses, and protects your personal information, including data from Gmail, Instagram, TikTok, and other third-party platforms when you connect your accounts.
           </p>
         </div>
       </header>
