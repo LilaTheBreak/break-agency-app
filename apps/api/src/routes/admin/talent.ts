@@ -35,6 +35,24 @@ router.get("/", async (req: Request, res: Response) => {
     const totalCount = await prisma.talent.count();
     console.log("[TALENT] Total talent count in database:", totalCount);
     
+    // Try fetching without User relation first to see if that's the issue
+    const talentsWithoutUser = await prisma.talent.findMany({
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        categories: true,
+        stage: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    console.log("[TALENT] Found", talentsWithoutUser.length, "talents without User relation");
+    
+    // Now fetch with User relation
     const talents = await prisma.talent.findMany({
       include: {
         User: {
