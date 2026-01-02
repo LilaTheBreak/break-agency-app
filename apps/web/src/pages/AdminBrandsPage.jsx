@@ -865,7 +865,8 @@ export function AdminBrandsPage({ session }) {
   const brandContracts = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const contracts = Array.isArray(safeContractsState) ? safeContractsState : [];
+      // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
+      const contracts = normalizeApiArray(safeContractsState);
       return contracts
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
