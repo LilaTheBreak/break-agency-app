@@ -1,0 +1,1 @@
+-- Migration already applied in 20250102120000_add_onboarding_skip_field
