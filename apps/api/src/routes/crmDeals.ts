@@ -4,6 +4,7 @@ import prisma from "../lib/prisma.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
+import { DealStage } from "@prisma/client";
 
 const router = express.Router();
 
@@ -14,8 +15,22 @@ router.get("/", requireAuth, async (req, res) => {
 
     const where: any = {};
     if (brandId) where.brandId = brandId;
-    if (status) where.status = status;
-    if (owner) where.owner = owner;
+    if (status) {
+      // Map status string to DealStage enum if needed
+      const stageMap: Record<string, DealStage> = {
+        "Prospect": DealStage.NEW_LEAD,
+        "Negotiation": DealStage.NEGOTIATION,
+        "Contract Sent": DealStage.CONTRACT_SENT,
+        "Contract Signed": DealStage.CONTRACT_SIGNED,
+        "In Progress": DealStage.DELIVERABLES_IN_PROGRESS,
+        "Payment Pending": DealStage.PAYMENT_PENDING,
+        "Payment Received": DealStage.PAYMENT_RECEIVED,
+        "Completed": DealStage.COMPLETED,
+        "Lost": DealStage.LOST,
+      };
+      where.stage = stageMap[status as string] || status;
+    }
+    if (owner) where.userId = owner;
 
     const deals = await prisma.deal.findMany({
       where,
@@ -26,13 +41,29 @@ router.get("/", requireAuth, async (req, res) => {
             name: true,
           },
         },
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    res.json(deals || []);
+    // Transform deals to include dealName (from brandName) for backward compatibility
+    const transformedDeals = deals.map(deal => ({
+      ...deal,
+      dealName: deal.brandName || `Deal with ${deal.Brand?.name || 'Unknown Brand'}`,
+      status: deal.stage,
+      estimatedValue: deal.value,
+      expectedCloseDate: deal.expectedClose,
+    }));
+
+    // CRITICAL: Ensure we always return an array, never an empty string
+    const safeDeals = Array.isArray(transformedDeals) ? transformedDeals : [];
+    res.json(safeDeals);
   } catch (error) {
-    // Phase 4: Fail loudly - no empty arrays on error
     logError("Failed to fetch deals", error, { userId: req.user?.id });
     res.status(500).json({ 
       error: "Failed to fetch deals",
@@ -55,6 +86,12 @@ router.get("/:id", requireAuth, async (req, res) => {
             name: true,
           },
         },
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -62,9 +99,17 @@ router.get("/:id", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Deal not found" });
     }
 
-    res.json(deal);
+    // Transform deal to include dealName for backward compatibility
+    const transformedDeal = {
+      ...deal,
+      dealName: deal.brandName || `Deal with ${deal.Brand?.name || 'Unknown Brand'}`,
+      status: deal.stage,
+      estimatedValue: deal.value,
+      expectedCloseDate: deal.expectedClose,
+    };
+
+    res.json(transformedDeal);
   } catch (error) {
-    // Phase 4: Fail loudly - explicit error handling
     logError("Failed to fetch deal", error, { dealId: id, userId: req.user?.id });
     if (error instanceof Error && error.message.includes("not found")) {
       return res.status(404).json({ error: "Deal not found" });
@@ -79,7 +124,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 // POST /api/crm-deals - Create a new deal
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const { dealName, brandId, dealType, status, estimatedValue, confidence, expectedCloseDate, actualCloseDate, internalSummary, termsNotes, owner, linkedCampaignIds, linkedTalentIds, linkedEventIds, notes } = req.body;
+    const { dealName, brandId, status, estimatedValue, expectedCloseDate, notes, userId, talentId } = req.body;
 
     // Validation
     if (!dealName || !dealName.trim()) {
@@ -88,29 +133,39 @@ router.post("/", requireAuth, async (req, res) => {
     if (!brandId) {
       return res.status(400).json({ error: "Brand is required" });
     }
-    if (!dealType) {
-      return res.status(400).json({ error: "Deal type is required" });
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
     }
+    if (!talentId) {
+      return res.status(400).json({ error: "Talent ID is required" });
+    }
+
+    // Map status string to DealStage enum
+    const stageMap: Record<string, DealStage> = {
+      "Prospect": DealStage.NEW_LEAD,
+      "Negotiation": DealStage.NEGOTIATION,
+      "Contract Sent": DealStage.CONTRACT_SENT,
+      "Contract Signed": DealStage.CONTRACT_SIGNED,
+      "In Progress": DealStage.DELIVERABLES_IN_PROGRESS,
+      "Payment Pending": DealStage.PAYMENT_PENDING,
+      "Payment Received": DealStage.PAYMENT_RECEIVED,
+      "Completed": DealStage.COMPLETED,
+      "Lost": DealStage.LOST,
+    };
+    const stage = status ? (stageMap[status] || DealStage.NEW_LEAD) : DealStage.NEW_LEAD;
 
     const deal = await prisma.deal.create({
       data: {
         id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        dealName: dealName.trim(),
+        brandName: dealName.trim(), // Deal model uses brandName
         brandId,
-        dealType,
-        status: status || "Prospect",
-        estimatedValue: estimatedValue || null,
-        confidence: confidence || "Medium",
-        expectedCloseDate: expectedCloseDate || null,
-        actualCloseDate: actualCloseDate || null,
-        internalSummary: internalSummary || null,
-        termsNotes: termsNotes || null,
-        owner: owner || null,
-        linkedCampaignIds: linkedCampaignIds || [],
-        linkedTalentIds: linkedTalentIds || [],
-        linkedEventIds: linkedEventIds || [],
-        notes: notes || [],
-        createdBy: req.user?.email || req.user?.name || "unknown",
+        userId,
+        talentId,
+        stage,
+        value: estimatedValue || null,
+        expectedClose: expectedCloseDate ? new Date(expectedCloseDate) : null,
+        notes: notes || null,
+        updatedAt: new Date(),
       },
       include: {
         Brand: {
@@ -119,33 +174,49 @@ router.post("/", requireAuth, async (req, res) => {
             name: true,
           },
         },
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
-    // Phase 2: Log to AdminActivity for activity feed
-    // Phase 4: Add audit log for sensitive operation
+    // Log activity
     try {
       await Promise.all([
         logAdminActivity(req as any, {
           event: "CRM_DEAL_CREATED",
-          metadata: { dealId: deal.id, dealName: deal.dealName, brandId: deal.brandId }
+          metadata: { dealId: deal.id, dealName: deal.brandName, brandId: deal.brandId }
         }),
         logAuditEvent(req as any, {
           action: "DEAL_CREATED",
           entityType: "Deal",
           entityId: deal.id,
-          metadata: { dealName: deal.dealName, brandId: deal.brandId, estimatedValue: deal.estimatedValue }
+          metadata: { dealName: deal.brandName, brandId: deal.brandId, value: deal.value }
         })
       ]);
     } catch (logError) {
       console.error("Failed to log activity/audit:", logError);
-      // Don't fail the request if logging fails
     }
 
-    res.status(201).json(deal);
+    // Transform response for backward compatibility
+    const transformedDeal = {
+      ...deal,
+      dealName: deal.brandName,
+      status: deal.stage,
+      estimatedValue: deal.value,
+      expectedCloseDate: deal.expectedClose,
+    };
+
+    res.status(201).json(transformedDeal);
   } catch (error) {
     console.error("[crmDeals] Error creating deal:", error);
-    res.status(500).json({ error: "Failed to create deal" });
+    res.status(500).json({ 
+      error: "Failed to create deal",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -153,24 +224,29 @@ router.post("/", requireAuth, async (req, res) => {
 router.patch("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { dealName, brandId, dealType, status, estimatedValue, confidence, expectedCloseDate, actualCloseDate, internalSummary, termsNotes, owner, linkedCampaignIds, linkedTalentIds, linkedEventIds, notes } = req.body;
+    const { dealName, brandId, status, estimatedValue, expectedCloseDate, notes } = req.body;
 
     const updateData: any = {};
-    if (dealName !== undefined) updateData.dealName = dealName.trim();
+    if (dealName !== undefined) updateData.brandName = dealName.trim();
     if (brandId !== undefined) updateData.brandId = brandId;
-    if (dealType !== undefined) updateData.dealType = dealType;
-    if (status !== undefined) updateData.status = status;
-    if (estimatedValue !== undefined) updateData.estimatedValue = estimatedValue;
-    if (confidence !== undefined) updateData.confidence = confidence;
-    if (expectedCloseDate !== undefined) updateData.expectedCloseDate = expectedCloseDate;
-    if (actualCloseDate !== undefined) updateData.actualCloseDate = actualCloseDate;
-    if (internalSummary !== undefined) updateData.internalSummary = internalSummary;
-    if (termsNotes !== undefined) updateData.termsNotes = termsNotes;
-    if (owner !== undefined) updateData.owner = owner;
-    if (linkedCampaignIds !== undefined) updateData.linkedCampaignIds = linkedCampaignIds;
-    if (linkedTalentIds !== undefined) updateData.linkedTalentIds = linkedTalentIds;
-    if (linkedEventIds !== undefined) updateData.linkedEventIds = linkedEventIds;
+    if (status !== undefined) {
+      const stageMap: Record<string, DealStage> = {
+        "Prospect": DealStage.NEW_LEAD,
+        "Negotiation": DealStage.NEGOTIATION,
+        "Contract Sent": DealStage.CONTRACT_SENT,
+        "Contract Signed": DealStage.CONTRACT_SIGNED,
+        "In Progress": DealStage.DELIVERABLES_IN_PROGRESS,
+        "Payment Pending": DealStage.PAYMENT_PENDING,
+        "Payment Received": DealStage.PAYMENT_RECEIVED,
+        "Completed": DealStage.COMPLETED,
+        "Lost": DealStage.LOST,
+      };
+      updateData.stage = stageMap[status] || DealStage.NEW_LEAD;
+    }
+    if (estimatedValue !== undefined) updateData.value = estimatedValue;
+    if (expectedCloseDate !== undefined) updateData.expectedClose = expectedCloseDate ? new Date(expectedCloseDate) : null;
     if (notes !== undefined) updateData.notes = notes;
+    updateData.updatedAt = new Date();
 
     const deal = await prisma.deal.update({
       where: { id },
@@ -182,33 +258,49 @@ router.patch("/:id", requireAuth, async (req, res) => {
             name: true,
           },
         },
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
-    // Phase 2: Log to AdminActivity for activity feed
-    // Phase 4: Add audit log for sensitive operation
+    // Log activity
     try {
       await Promise.all([
         logAdminActivity(req as any, {
           event: "CRM_DEAL_UPDATED",
-          metadata: { dealId: deal.id, dealName: deal.dealName, changes: Object.keys(updateData) }
+          metadata: { dealId: deal.id, dealName: deal.brandName, changes: Object.keys(updateData) }
         }),
         logAuditEvent(req as any, {
           action: "DEAL_UPDATED",
           entityType: "Deal",
           entityId: deal.id,
-          metadata: { dealName: deal.dealName, changes: Object.keys(updateData) }
+          metadata: { dealName: deal.brandName, changes: Object.keys(updateData) }
         })
       ]);
     } catch (logError) {
       console.error("Failed to log activity/audit:", logError);
-      // Don't fail the request if logging fails
     }
 
-    res.json(deal);
+    // Transform response
+    const transformedDeal = {
+      ...deal,
+      dealName: deal.brandName,
+      status: deal.stage,
+      estimatedValue: deal.value,
+      expectedCloseDate: deal.expectedClose,
+    };
+
+    res.json(transformedDeal);
   } catch (error) {
     console.error("[crmDeals] Error updating deal:", error);
-    res.status(500).json({ error: "Failed to update deal" });
+    res.status(500).json({ 
+      error: "Failed to update deal",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -217,10 +309,9 @@ router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Phase 4: Get deal info before deletion for audit logging
     const deal = await prisma.deal.findUnique({ 
       where: { id },
-      select: { id: true, dealName: true, brandId: true }
+      select: { id: true, brandName: true, brandId: true }
     });
     if (!deal) {
       return res.status(404).json({ error: "Deal not found" });
@@ -230,28 +321,26 @@ router.delete("/:id", requireAuth, async (req, res) => {
       where: { id },
     });
 
-    // Phase 4: Log destructive action
+    // Log destructive action
     try {
       await Promise.all([
         logDestructiveAction(req as any, {
           action: "DEAL_DELETED",
           entityType: "Deal",
           entityId: deal.id,
-          metadata: { dealName: deal.dealName, brandId: deal.brandId }
+          metadata: { dealName: deal.brandName, brandId: deal.brandId }
         }),
         logAdminActivity(req as any, {
           event: "CRM_DEAL_DELETED",
-          metadata: { dealId: deal.id, dealName: deal.dealName }
+          metadata: { dealId: deal.id, dealName: deal.brandName }
         })
       ]);
     } catch (logError) {
       console.error("Failed to log destructive action:", logError);
-      // Don't fail the request if logging fails
     }
 
     res.json({ success: true });
   } catch (error) {
-    // Phase 4: Fail loudly
     logError("Failed to delete deal", error, { dealId: req.params.id, userId: req.user?.id });
     res.status(500).json({ 
       error: "Failed to delete deal",
@@ -278,19 +367,23 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Deal not found" });
     }
 
-    const newNote = {
-      at: new Date().toISOString(),
-      author: author || req.user?.email || req.user?.name || "unknown",
-      text: text.trim(),
-    };
-
-    const notes = Array.isArray(deal.notes) ? [...deal.notes, newNote] : [newNote];
+    // Deal.notes is a string, not an array - append to it
+    const authorName = author || req.user?.email || req.user?.name || "unknown";
+    const timestamp = new Date().toISOString();
+    const newNote = `[${timestamp}] ${authorName}: ${text.trim()}`;
+    const updatedNotes = deal.notes ? `${deal.notes}\n${newNote}` : newNote;
 
     const updatedDeal = await prisma.deal.update({
       where: { id },
-      data: { notes },
+      data: { notes: updatedNotes },
       include: {
         Brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        Talent: {
           select: {
             id: true,
             name: true,
@@ -299,10 +392,22 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
       },
     });
 
-    res.json(updatedDeal);
+    // Transform response
+    const transformedDeal = {
+      ...updatedDeal,
+      dealName: updatedDeal.brandName,
+      status: updatedDeal.stage,
+      estimatedValue: updatedDeal.value,
+      expectedCloseDate: updatedDeal.expectedClose,
+    };
+
+    res.json(transformedDeal);
   } catch (error) {
     console.error("[crmDeals] Error adding note:", error);
-    res.status(500).json({ error: "Failed to add note" });
+    res.status(500).json({ 
+      error: "Failed to add note",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -321,6 +426,18 @@ router.post("/batch-import", requireAuth, async (req, res) => {
       errors: [] as string[],
     };
 
+    const stageMap: Record<string, DealStage> = {
+      "Prospect": DealStage.NEW_LEAD,
+      "Negotiation": DealStage.NEGOTIATION,
+      "Contract Sent": DealStage.CONTRACT_SENT,
+      "Contract Signed": DealStage.CONTRACT_SIGNED,
+      "In Progress": DealStage.DELIVERABLES_IN_PROGRESS,
+      "Payment Pending": DealStage.PAYMENT_PENDING,
+      "Payment Received": DealStage.PAYMENT_RECEIVED,
+      "Completed": DealStage.COMPLETED,
+      "Lost": DealStage.LOST,
+    };
+
     for (const deal of deals) {
       try {
         // Skip if deal name or brand ID is missing
@@ -331,7 +448,7 @@ router.post("/batch-import", requireAuth, async (req, res) => {
         }
 
         // Check if brand exists
-        const brandExists = await prisma.crmBrand.findUnique({
+        const brandExists = await prisma.brand.findUnique({
           where: { id: deal.brandId },
         });
 
@@ -341,27 +458,25 @@ router.post("/batch-import", requireAuth, async (req, res) => {
           continue;
         }
 
-        await prisma.crmDeal.create({
+        // Require userId and talentId for Deal model
+        if (!deal.userId || !deal.talentId) {
+          results.skipped++;
+          results.errors.push(`Deal "${deal.dealName}" missing userId or talentId`);
+          continue;
+        }
+
+        await prisma.deal.create({
           data: {
             id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            dealName: deal.dealName,
+            brandName: deal.dealName,
             brandId: deal.brandId,
-            dealType: deal.dealType || "Other",
-            status: deal.status || "Prospect",
-            estimatedValue: deal.estimatedValue || null,
-            confidence: deal.confidence || "Medium",
-            expectedCloseDate: deal.expectedCloseDate || null,
-            actualCloseDate: deal.actualCloseDate || null,
-            internalSummary: deal.internalSummary || null,
-            termsNotes: deal.termsNotes || null,
-            owner: deal.owner || null,
-            linkedCampaignIds: deal.linkedCampaignIds || [],
-            linkedTalentIds: deal.linkedTalentIds || [],
-            linkedEventIds: deal.linkedEventIds || [],
-            notes: deal.notes || [],
-            createdBy: deal.createdBy || req.user?.email || req.user?.name || "migration",
-            createdAt: deal.createdAt ? new Date(deal.createdAt) : new Date(),
-            updatedAt: deal.updatedAt ? new Date(deal.updatedAt) : new Date(),
+            userId: deal.userId,
+            talentId: deal.talentId,
+            stage: deal.status ? (stageMap[deal.status] || DealStage.NEW_LEAD) : DealStage.NEW_LEAD,
+            value: deal.estimatedValue || null,
+            expectedClose: deal.expectedCloseDate ? new Date(deal.expectedCloseDate) : null,
+            notes: deal.notes || null,
+            updatedAt: new Date(),
           },
         });
 
@@ -375,7 +490,10 @@ router.post("/batch-import", requireAuth, async (req, res) => {
     res.json(results);
   } catch (error) {
     console.error("[crmDeals] Error importing deals:", error);
-    res.status(500).json({ error: "Failed to import deals" });
+    res.status(500).json({ 
+      error: "Failed to import deals",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

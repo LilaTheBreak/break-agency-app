@@ -40,7 +40,9 @@ router.get("/", async (req, res) => {
       },
     });
 
-    res.json(campaigns || []);
+    // CRITICAL: Ensure we always return an array, never an empty string
+    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    res.json(safeCampaigns);
   } catch (error) {
     // Phase 4: Fail loudly - no empty arrays on error
     logError("Failed to fetch campaigns", error, { userId: req.user?.id });

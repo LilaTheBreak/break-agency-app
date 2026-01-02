@@ -187,7 +187,7 @@ router.get("/payouts", async (req: Request, res: Response) => {
         Deal: {
           select: {
             id: true,
-            dealName: true
+            brandName: true // Deal model uses brandName, not dealName
           }
         },
         Talent: {
@@ -211,7 +211,7 @@ router.get("/payouts", async (req: Request, res: Response) => {
       creator: p.Talent?.name || `Creator ${p.creatorId.slice(0, 8)}`,
       creatorId: p.creatorId,
       dealId: p.dealId,
-      dealName: p.Deal?.dealName || "Unknown Deal",
+      dealName: p.Deal?.brandName || "Unknown Deal", // Deal model uses brandName
       amount: `${p.currency || "USD"}${p.amount.toFixed(2)}`,
       status: p.status === "paid" ? "Paid" : p.status === "pending" ? "Scheduled" : "Awaiting approval",
       expectedDate: p.expectedPayoutAt ? p.expectedPayoutAt.toISOString().split("T")[0] : null,
@@ -260,7 +260,7 @@ router.get("/invoices", async (req: Request, res: Response) => {
         Deal: {
           select: {
             id: true,
-            dealName: true
+            brandName: true // Deal model uses brandName, not dealName
           }
         },
         Brand: {
@@ -279,7 +279,7 @@ router.get("/invoices", async (req: Request, res: Response) => {
       brandId: inv.brandId,
       ref: inv.invoiceNumber,
       dealId: inv.dealId,
-      dealName: inv.Deal?.dealName || "Unknown Deal",
+      dealName: inv.Deal?.brandName || "Unknown Deal", // Deal model uses brandName
       amount: `${inv.currency || "USD"}${inv.amount.toFixed(2)}`,
       status: inv.status === "paid" ? "Paid" : 
               inv.status === "overdue" ? "Overdue" :

@@ -11,32 +11,46 @@ const router = express.Router();
 // GET /api/crm-contracts - List all contracts with optional filters
 router.get("/", requireAuth, async (req, res) => {
   try {
-    const { brandId, dealId, status, owner } = req.query;
+    const { brandId, dealId, status } = req.query;
 
     const where: any = {};
-    if (brandId) where.brandId = brandId as string;
     if (dealId) where.dealId = dealId as string;
     if (status) where.status = status as string;
-    if (owner) where.internalOwner = owner as string;
+    // If brandId is provided, filter by Deal.brandId through relation
+    if (brandId) {
+      where.Deal = {
+        brandId: brandId as string
+      };
+    }
 
     const contracts = await prisma.contract.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {
-        Brand: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
+        Deal: {
+          include: {
+            Brand: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    sendList(res, contracts || []);
+    // Transform contracts to include contractName (from title) and brandId for backward compatibility
+    const transformedContracts = contracts.map(contract => ({
+      ...contract,
+      contractName: contract.title,
+      brandId: contract.Deal?.brandId || null,
+      Brand: contract.Deal?.Brand || null,
+    }));
+
+    sendList(res, transformedContracts || []);
   } catch (error) {
     logError("Failed to fetch contracts", error, { userId: req.user?.id });
-    // Return empty list on error (graceful degradation for list endpoints)
     sendEmptyList(res);
   }
 });
@@ -49,11 +63,14 @@ router.get("/:id", requireAuth, async (req, res) => {
     const contract = await prisma.contract.findUnique({
       where: { id },
       include: {
-        Brand: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
+        Deal: {
+          include: {
+            Brand: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -63,10 +80,17 @@ router.get("/:id", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Contract not found" });
     }
 
-    res.json({ contract });
+    // Transform contract for backward compatibility
+    const transformedContract = {
+      ...contract,
+      contractName: contract.title,
+      brandId: contract.Deal?.brandId || null,
+      Brand: contract.Deal?.Brand || null,
+    };
+
+    res.json({ contract: transformedContract });
   } catch (error) {
     console.error("Error fetching contract:", error);
-    // Return 404 instead of 500 for missing contracts
     res.status(404).json({ error: "Contract not found" });
   }
 });
@@ -77,87 +101,90 @@ router.post("/", requireAuth, async (req, res) => {
     const {
       contractName,
       contractType,
-      status = "Draft",
+      status = "draft",
       brandId,
       dealId,
-      talentIds = [],
-      internalOwner,
       startDate,
       endDate,
-      renewalType = "Fixed term",
-      campaignId,
-      eventId,
-      notes = "",
+      notes,
     } = req.body;
 
     // Validation
     if (!contractName?.trim()) {
       return res.status(400).json({ error: "Contract name is required" });
     }
-    if (!brandId) {
-      return res.status(400).json({ error: "Brand is required" });
-    }
-    if (!contractType) {
-      return res.status(400).json({ error: "Contract type is required" });
+    if (!dealId) {
+      return res.status(400).json({ error: "Deal ID is required" });
     }
 
-    // Verify brand exists
-    const brand = await prisma.crmBrand.findUnique({
-      where: { id: brandId },
+    // Verify deal exists
+    const deal = await prisma.deal.findUnique({
+      where: { id: dealId },
+      include: {
+        Brand: true,
+      },
     });
-    if (!brand) {
-      return res.status(404).json({ error: "Brand not found" });
+    if (!deal) {
+      return res.status(404).json({ error: "Deal not found" });
     }
 
-    const now = new Date().toISOString();
+    // Store extra CRM fields in metadata
+    const metadata = {
+      contractType: contractType || null,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      notes: notes || null,
+      brandId: brandId || deal.brandId, // Store brandId in metadata for filtering
+    };
+
     const contract = await prisma.contract.create({
       data: {
         id: `contract_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        contractName: contractName.trim(),
-        contractType,
+        title: contractName.trim(), // Contract model uses title, not contractName
+        dealId,
         status,
-        brandId,
-        dealId: dealId || null,
-        talentIds: talentIds || [],
-        internalOwner: internalOwner || null,
-        startDate: startDate || null,
-        endDate: endDate || null,
-        renewalType,
-        campaignId: campaignId || null,
-        eventId: eventId || null,
-        notes: notes || "",
-        files: [],
-        versions: [],
-        tasks: [],
-        activity: [{ at: now, label: "Contract created" }],
-        createdBy: req.user?.id || req.user?.email || "unknown",
+        metadata,
+        updatedAt: new Date(),
       },
       include: {
-        Brand: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
+        Deal: {
+          include: {
+            Brand: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    // Phase 2: Log to AdminActivity for activity feed
+    // Log activity
     try {
       await logAdminActivity(req as any, {
         event: "CRM_CONTRACT_CREATED",
-        metadata: { contractId: contract.id, contractName: contract.contractName, brandId: contract.brandId }
+        metadata: { contractId: contract.id, contractName: contract.title, dealId: contract.dealId }
       });
     } catch (logError) {
       console.error("Failed to log admin activity:", logError);
-      // Don't fail the request if logging fails
     }
 
-    res.status(201).json({ contract });
+    // Transform response
+    const transformedContract = {
+      ...contract,
+      contractName: contract.title,
+      brandId: contract.Deal?.brandId || null,
+      Brand: contract.Deal?.Brand || null,
+    };
+
+    res.status(201).json({ contract: transformedContract });
   } catch (error) {
     console.error("Error creating contract:", error);
-    res.status(500).json({ error: "Failed to create contract" });
+    res.status(500).json({ 
+      error: "Failed to create contract",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -168,87 +195,103 @@ router.patch("/:id", requireAuth, async (req, res) => {
     const updates = req.body;
 
     // Check if contract exists
-    const existing = await prisma.contract.findUnique({ where: { id } });
+    const existing = await prisma.contract.findUnique({ 
+      where: { id },
+      include: { Deal: true }
+    });
     if (!existing) {
       return res.status(404).json({ error: "Contract not found" });
     }
 
-    // If brandId is being updated, verify it exists
-    if (updates.brandId && updates.brandId !== existing.brandId) {
-      const brand = await prisma.crmBrand.findUnique({
-        where: { id: updates.brandId },
-      });
-      if (!brand) {
-        return res.status(404).json({ error: "Brand not found" });
-      }
-    }
-
     // Prepare update data
     const updateData: any = {};
-    const allowedFields = [
-      "contractName",
-      "contractType",
-      "status",
-      "brandId",
-      "dealId",
-      "talentIds",
-      "internalOwner",
-      "startDate",
-      "endDate",
-      "renewalType",
-      "campaignId",
-      "eventId",
-      "notes",
-      "files",
-      "versions",
-      "tasks",
-      "activity",
-    ];
-
-    for (const field of allowedFields) {
-      if (field in updates) {
-        updateData[field] = updates[field];
-      }
+    
+    // Map contractName to title
+    if (updates.contractName !== undefined) {
+      updateData.title = updates.contractName.trim();
     }
+    
+    // Update status if provided
+    if (updates.status !== undefined) {
+      updateData.status = updates.status;
+    }
+    
+    // Update dealId if provided (verify deal exists)
+    if (updates.dealId !== undefined && updates.dealId !== existing.dealId) {
+      const deal = await prisma.deal.findUnique({
+        where: { id: updates.dealId },
+      });
+      if (!deal) {
+        return res.status(404).json({ error: "Deal not found" });
+      }
+      updateData.dealId = updates.dealId;
+    }
+    
+    // Store extra CRM fields in metadata
+    if (updates.contractType || updates.startDate || updates.endDate || updates.notes || updates.brandId) {
+      const existingMetadata = (existing.metadata as any) || {};
+      updateData.metadata = {
+        ...existingMetadata,
+        ...(updates.contractType !== undefined && { contractType: updates.contractType }),
+        ...(updates.startDate !== undefined && { startDate: updates.startDate }),
+        ...(updates.endDate !== undefined && { endDate: updates.endDate }),
+        ...(updates.notes !== undefined && { notes: updates.notes }),
+        ...(updates.brandId !== undefined && { brandId: updates.brandId }),
+      };
+    }
+    
+    updateData.updatedAt = new Date();
 
     const contract = await prisma.contract.update({
       where: { id },
       data: updateData,
       include: {
-        Brand: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
+        Deal: {
+          include: {
+            Brand: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    // Phase 2: Log to AdminActivity for activity feed
-    // Phase 4: Add audit log for sensitive operation
+    // Log activity
     try {
       await Promise.all([
         logAdminActivity(req as any, {
           event: "CRM_CONTRACT_UPDATED",
-          metadata: { contractId: contract.id, contractName: contract.contractName, changes: Object.keys(updateData) }
+          metadata: { contractId: contract.id, contractName: contract.title, changes: Object.keys(updateData) }
         }),
         logAuditEvent(req as any, {
           action: "CONTRACT_UPDATED",
           entityType: "Contract",
           entityId: contract.id,
-          metadata: { contractName: contract.contractName, changes: Object.keys(updateData) }
+          metadata: { contractName: contract.title, changes: Object.keys(updateData) }
         })
       ]);
     } catch (logError) {
       console.error("Failed to log activity/audit:", logError);
-      // Don't fail the request if logging fails
     }
 
-    res.json({ contract });
+    // Transform response
+    const transformedContract = {
+      ...contract,
+      contractName: contract.title,
+      brandId: contract.Deal?.brandId || null,
+      Brand: contract.Deal?.Brand || null,
+    };
+
+    res.json({ contract: transformedContract });
   } catch (error) {
     console.error("Error updating contract:", error);
-    res.status(500).json({ error: "Failed to update contract" });
+    res.status(500).json({ 
+      error: "Failed to update contract",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -257,37 +300,36 @@ router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Get contract info before deletion for logging
-    const contract = await prisma.contract.findUnique({ where: { id } });
+    const contract = await prisma.contract.findUnique({ 
+      where: { id },
+      select: { id: true, title: true, dealId: true }
+    });
     if (!contract) {
       return res.status(404).json({ error: "Contract not found" });
     }
 
     await prisma.contract.delete({ where: { id } });
 
-    // Phase 2: Log to AdminActivity for activity feed
-    // Phase 4: Log destructive action
+    // Log destructive action
     try {
       await Promise.all([
         logAdminActivity(req as any, {
           event: "CRM_CONTRACT_DELETED",
-          metadata: { contractId: contract.id, contractName: contract.contractName }
+          metadata: { contractId: contract.id, contractName: contract.title }
         }),
         logDestructiveAction(req as any, {
           action: "CONTRACT_DELETED",
           entityType: "Contract",
           entityId: contract.id,
-          metadata: { contractName: contract.contractName }
+          metadata: { contractName: contract.title }
         })
       ]);
     } catch (logError) {
       console.error("Failed to log activity/audit:", logError);
-      // Don't fail the request if logging fails
     }
 
     res.json({ success: true });
   } catch (error) {
-    // Phase 4: Fail loudly
     logError("Failed to delete contract", error, { contractId: req.params.id, userId: req.user?.id });
     res.status(500).json({ 
       error: "Failed to delete contract",
@@ -311,33 +353,50 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "Contract not found" });
     }
 
-    const now = new Date().toISOString();
-    const activity = [
-      ...(Array.isArray(contract.activity) ? contract.activity : []),
-      { at: now, label: `Note added: ${note.trim().substring(0, 50)}${note.trim().length > 50 ? "..." : ""}` },
-    ];
+    // Store note in metadata
+    const existingMetadata = (contract.metadata as any) || {};
+    const existingNotes = existingMetadata.notes || "";
+    const newNote = `[${new Date().toISOString()}] ${req.user?.email || req.user?.name || "unknown"}: ${note.trim()}`;
+    const updatedNotes = existingNotes ? `${existingNotes}\n${newNote}` : newNote;
 
     const updated = await prisma.contract.update({
       where: { id },
       data: {
-        notes: note.trim(),
-        activity,
+        metadata: {
+          ...existingMetadata,
+          notes: updatedNotes,
+        },
+        updatedAt: new Date(),
       },
       include: {
-        Brand: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
+        Deal: {
+          include: {
+            Brand: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    res.json({ contract: updated });
+    // Transform response
+    const transformedContract = {
+      ...updated,
+      contractName: updated.title,
+      brandId: updated.Deal?.brandId || null,
+      Brand: updated.Deal?.Brand || null,
+    };
+
+    res.json({ contract: transformedContract });
   } catch (error) {
     console.error("Error adding note:", error);
-    res.status(500).json({ error: "Failed to add note" });
+    res.status(500).json({ 
+      error: "Failed to add note",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -355,38 +414,39 @@ router.post("/batch-import", requireAuth, async (req, res) => {
 
     for (const contract of contracts) {
       try {
-        // Verify brand exists
-        const brand = await prisma.crmBrand.findUnique({
-          where: { id: contract.brandId },
-        });
-
-        if (!brand) {
-          errors.push({ contractName: contract.contractName, error: "Brand not found" });
+        // Require dealId for Contract model
+        if (!contract.dealId) {
+          errors.push({ contractName: contract.contractName, error: "Deal ID is required" });
           continue;
         }
+
+        // Verify deal exists
+        const deal = await prisma.deal.findUnique({
+          where: { id: contract.dealId },
+        });
+
+        if (!deal) {
+          errors.push({ contractName: contract.contractName, error: "Deal not found" });
+          continue;
+        }
+
+        // Store extra CRM fields in metadata
+        const metadata = {
+          contractType: contract.contractType || null,
+          startDate: contract.startDate || null,
+          endDate: contract.endDate || null,
+          notes: contract.notes || null,
+          brandId: contract.brandId || deal.brandId,
+        };
 
         const created = await prisma.contract.create({
           data: {
             id: `contract_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            contractName: contract.contractName || "Untitled Contract",
-            contractType: contract.contractType || "Other",
-            status: contract.status || "Draft",
-            brandId: contract.brandId,
-            dealId: contract.dealId || null,
-            talentIds: contract.talentIds || [],
-            internalOwner: contract.internalOwner || null,
-            startDate: contract.startDate || null,
-            endDate: contract.endDate || null,
-            renewalType: contract.renewalType || "Fixed term",
-            campaignId: contract.campaignId || null,
-            eventId: contract.eventId || null,
-            notes: contract.notes || "",
-            files: contract.files || [],
-            versions: contract.versions || [],
-            tasks: contract.tasks || [],
-            activity: contract.activity || [{ at: new Date().toISOString(), label: "Contract imported" }],
-            createdBy: req.user?.id || req.user?.email || "migration",
-            createdAt: contract.createdAt ? new Date(contract.createdAt) : undefined,
+            title: contract.contractName || "Untitled Contract",
+            dealId: contract.dealId,
+            status: contract.status || "draft",
+            metadata,
+            updatedAt: new Date(),
           },
         });
 
@@ -405,7 +465,10 @@ router.post("/batch-import", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error in batch import:", error);
-    res.status(500).json({ error: "Failed to import contracts" });
+    res.status(500).json({ 
+      error: "Failed to import contracts",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

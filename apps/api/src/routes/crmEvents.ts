@@ -14,6 +14,7 @@ router.use(requireAuth);
 /**
  * GET /api/crm-events
  * List all CRM events with optional filters
+ * Note: Events are stored as CrmTask records with event metadata
  */
 router.get("/", async (req: Request, res: Response) => {
   try {
@@ -23,26 +24,50 @@ router.get("/", async (req: Request, res: Response) => {
     if (brandId) where.brandId = brandId as string;
     if (status) where.status = status as string;
     if (owner) where.owner = owner as string;
+    // Filter for event-like tasks (can be identified by having eventId or specific metadata)
+    // For now, we'll return all tasks that could be events
 
     const events = await prisma.crmTask.findMany({
       where,
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
-            name: true,
+            brandName: true,
           },
         },
       },
       orderBy: {
-        startDateTime: "desc",
+        dueDate: "desc", // CrmTask uses dueDate, not startDateTime
       },
     });
 
-    sendList(res, events || []);
+    // Transform tasks to events format for backward compatibility
+    const transformedEvents = events.map(event => {
+      const metadata = (event.mentions as any) || {};
+      return {
+        ...event,
+        eventName: event.title, // CrmTask uses title, not eventName
+        startDateTime: event.dueDate, // CrmTask uses dueDate, not startDateTime
+        endDateTime: metadata.endDateTime || null,
+        eventType: metadata.eventType || "Other",
+        location: metadata.location || null,
+        description: event.description || null,
+        attendees: metadata.attendees || null,
+        linkedCampaignIds: metadata.linkedCampaignIds || [],
+        linkedDealIds: metadata.linkedDealIds || [],
+        linkedTalentIds: metadata.linkedTalentIds || [],
+        notes: metadata.notes || [],
+        Brand: event.CrmBrand ? {
+          id: event.CrmBrand.id,
+          name: event.CrmBrand.brandName,
+        } : null,
+      };
+    });
+
+    sendList(res, transformedEvents || []);
   } catch (error) {
     logError("Failed to fetch CRM events", error, { userId: req.user?.id });
-    // Return empty list on error (graceful degradation for list endpoints)
     sendEmptyList(res);
   }
 });
@@ -58,10 +83,10 @@ router.get("/:id", async (req: Request, res: Response) => {
     const event = await prisma.crmTask.findUnique({
       where: { id },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
-            name: true,
+            brandName: true,
             website: true,
             industry: true,
           },
@@ -73,10 +98,36 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
-    res.json(event);
+    // Transform task to event format
+    const metadata = (event.mentions as any) || {};
+    const transformedEvent = {
+      ...event,
+      eventName: event.title,
+      startDateTime: event.dueDate,
+      endDateTime: metadata.endDateTime || null,
+      eventType: metadata.eventType || "Other",
+      location: metadata.location || null,
+      description: event.description || null,
+      attendees: metadata.attendees || null,
+      linkedCampaignIds: metadata.linkedCampaignIds || [],
+      linkedDealIds: metadata.linkedDealIds || [],
+      linkedTalentIds: metadata.linkedTalentIds || [],
+      notes: metadata.notes || [],
+      Brand: event.CrmBrand ? {
+        id: event.CrmBrand.id,
+        name: event.CrmBrand.brandName,
+        website: event.CrmBrand.website,
+        industry: event.CrmBrand.industry,
+      } : null,
+    };
+
+    res.json(transformedEvent);
   } catch (error) {
     console.error("Error fetching CRM event:", error);
-    res.status(500).json({ error: "Failed to fetch event" });
+    res.status(500).json({ 
+      error: "Failed to fetch event",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -108,50 +159,78 @@ router.post("/", async (req: Request, res: Response) => {
       });
     }
 
+    // Store event-specific fields in mentions JSON
+    const eventMetadata = {
+      eventType,
+      endDateTime: endDateTime || null,
+      location: location || null,
+      attendees: attendees || null,
+      linkedCampaignIds: linkedCampaignIds || [],
+      linkedDealIds: linkedDealIds || [],
+      linkedTalentIds: linkedTalentIds || [],
+      notes: [],
+    };
+
     const event = await prisma.crmTask.create({
       data: {
         id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        eventName,
+        title: eventName, // CrmTask uses title, not eventName
         brandId,
-        eventType,
-        status: status || "Planned",
-        startDateTime: new Date(startDateTime),
-        endDateTime: endDateTime ? new Date(endDateTime) : null,
-        location: location || null,
+        status: status || "Pending", // CrmTask status, not event status
+        priority: "Medium", // Default priority
+        dueDate: new Date(startDateTime), // CrmTask uses dueDate, not startDateTime
         description: description || null,
-        attendees: attendees || null,
-        linkedCampaignIds: linkedCampaignIds || [],
-        linkedDealIds: linkedDealIds || [],
-        linkedTalentIds: linkedTalentIds || [],
         owner: owner || null,
         createdBy: req.user!.id,
-        notes: [],
+        mentions: eventMetadata, // Store event metadata in mentions JSON
+        updatedAt: new Date(),
       },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
-            name: true,
+            brandName: true,
           },
         },
       },
     });
 
-    // Phase 2: Log to AdminActivity for activity feed
+    // Log activity
     try {
       await logAdminActivity(req as any, {
         event: "CRM_EVENT_CREATED",
-        metadata: { eventId: event.id, eventName: event.eventName, brandId: event.brandId }
+        metadata: { eventId: event.id, eventName: event.title, brandId: event.brandId }
       });
     } catch (logError) {
       console.error("Failed to log admin activity:", logError);
-      // Don't fail the request if logging fails
     }
 
-    res.status(201).json(event);
+    // Transform response
+    const transformedEvent = {
+      ...event,
+      eventName: event.title,
+      startDateTime: event.dueDate,
+      endDateTime: eventMetadata.endDateTime,
+      eventType: eventMetadata.eventType,
+      location: eventMetadata.location,
+      attendees: eventMetadata.attendees,
+      linkedCampaignIds: eventMetadata.linkedCampaignIds,
+      linkedDealIds: eventMetadata.linkedDealIds,
+      linkedTalentIds: eventMetadata.linkedTalentIds,
+      notes: eventMetadata.notes,
+      Brand: event.CrmBrand ? {
+        id: event.CrmBrand.id,
+        name: event.CrmBrand.brandName,
+      } : null,
+    };
+
+    res.status(201).json(transformedEvent);
   } catch (error) {
     console.error("Error creating CRM event:", error);
-    res.status(500).json({ error: "Failed to create event" });
+    res.status(500).json({ 
+      error: "Failed to create event",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -186,56 +265,84 @@ router.patch("/:id", async (req: Request, res: Response) => {
       updatedAt: new Date(),
     };
 
-    if (eventName !== undefined) updateData.eventName = eventName;
-    if (eventType !== undefined) updateData.eventType = eventType;
+    // Update CrmTask fields
+    if (eventName !== undefined) updateData.title = eventName;
     if (status !== undefined) updateData.status = status;
-    if (startDateTime !== undefined) updateData.startDateTime = new Date(startDateTime);
-    if (endDateTime !== undefined) updateData.endDateTime = endDateTime ? new Date(endDateTime) : null;
-    if (location !== undefined) updateData.location = location;
+    if (startDateTime !== undefined) updateData.dueDate = new Date(startDateTime);
     if (description !== undefined) updateData.description = description;
-    if (attendees !== undefined) updateData.attendees = attendees;
-    if (linkedCampaignIds !== undefined) updateData.linkedCampaignIds = linkedCampaignIds;
-    if (linkedDealIds !== undefined) updateData.linkedDealIds = linkedDealIds;
-    if (linkedTalentIds !== undefined) updateData.linkedTalentIds = linkedTalentIds;
     if (owner !== undefined) updateData.owner = owner;
+
+    // Update event metadata in mentions
+    const existingMetadata = (existing.mentions as any) || {};
+    const updatedMetadata = {
+      ...existingMetadata,
+      ...(eventType !== undefined && { eventType }),
+      ...(endDateTime !== undefined && { endDateTime }),
+      ...(location !== undefined && { location }),
+      ...(attendees !== undefined && { attendees }),
+      ...(linkedCampaignIds !== undefined && { linkedCampaignIds }),
+      ...(linkedDealIds !== undefined && { linkedDealIds }),
+      ...(linkedTalentIds !== undefined && { linkedTalentIds }),
+    };
+    updateData.mentions = updatedMetadata;
 
     const updated = await prisma.crmTask.update({
       where: { id },
       data: updateData,
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
-            name: true,
+            brandName: true,
           },
         },
       },
     });
 
-    // Phase 2: Log to AdminActivity for activity feed
-    // Phase 4: Add audit log for sensitive operation
+    // Log activity
     try {
       await Promise.all([
         logAdminActivity(req as any, {
           event: "CRM_EVENT_UPDATED",
-          metadata: { eventId: updated.id, eventName: updated.eventName, changes: Object.keys(updateData) }
+          metadata: { eventId: updated.id, eventName: updated.title, changes: Object.keys(updateData) }
         }),
         logAuditEvent(req as any, {
           action: "EVENT_UPDATED",
           entityType: "CrmTask",
           entityId: updated.id,
-          metadata: { eventName: updated.eventName, changes: Object.keys(updateData) }
+          metadata: { eventName: updated.title, changes: Object.keys(updateData) }
         })
       ]);
     } catch (logError) {
       console.error("Failed to log activity/audit:", logError);
-      // Don't fail the request if logging fails
     }
 
-    res.json(updated);
+    // Transform response
+    const transformedEvent = {
+      ...updated,
+      eventName: updated.title,
+      startDateTime: updated.dueDate,
+      endDateTime: updatedMetadata.endDateTime,
+      eventType: updatedMetadata.eventType,
+      location: updatedMetadata.location,
+      attendees: updatedMetadata.attendees,
+      linkedCampaignIds: updatedMetadata.linkedCampaignIds,
+      linkedDealIds: updatedMetadata.linkedDealIds,
+      linkedTalentIds: updatedMetadata.linkedTalentIds,
+      notes: updatedMetadata.notes || [],
+      Brand: updated.CrmBrand ? {
+        id: updated.CrmBrand.id,
+        name: updated.CrmBrand.brandName,
+      } : null,
+    };
+
+    res.json(transformedEvent);
   } catch (error) {
     console.error("Error updating CRM event:", error);
-    res.status(500).json({ error: "Failed to update event" });
+    res.status(500).json({ 
+      error: "Failed to update event",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -254,29 +361,26 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     await prisma.crmTask.delete({ where: { id } });
 
-    // Phase 2: Log to AdminActivity for activity feed
-    // Phase 4: Log destructive action
+    // Log destructive action
     try {
       await Promise.all([
         logAdminActivity(req as any, {
           event: "CRM_EVENT_DELETED",
-          metadata: { eventId: existing.id, eventName: existing.eventName }
+          metadata: { eventId: existing.id, eventName: existing.title }
         }),
         logDestructiveAction(req as any, {
           action: "EVENT_DELETED",
           entityType: "CrmTask",
           entityId: existing.id,
-          metadata: { eventName: existing.eventName }
+          metadata: { eventName: existing.title }
         })
       ]);
     } catch (logError) {
       console.error("Failed to log activity/audit:", logError);
-      // Don't fail the request if logging fails
     }
 
     res.status(204).send();
   } catch (error) {
-    // Phase 4: Fail loudly
     logError("Failed to delete CRM event", error, { eventId: req.params.id, userId: req.user?.id });
     res.status(500).json({ 
       error: "Failed to delete event",
@@ -294,8 +398,8 @@ router.post("/:id/notes", async (req: Request, res: Response) => {
     const { id } = req.params;
     const { text, author } = req.body;
 
-    if (!text || !author) {
-      return res.status(400).json({ error: "Missing required fields: text, author" });
+    if (!text) {
+      return res.status(400).json({ error: "Note text is required" });
     }
 
     const event = await prisma.crmTask.findUnique({ where: { id } });
@@ -303,32 +407,61 @@ router.post("/:id/notes", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Event not found" });
     }
 
+    // Store note in mentions metadata
+    const existingMetadata = (event.mentions as any) || {};
+    const existingNotes = existingMetadata.notes || [];
     const newNote = {
       at: new Date().toISOString(),
-      author,
-      text,
+      author: author || req.user?.email || req.user?.name || "unknown",
+      text: text.trim(),
     };
+    const updatedNotes = [...existingNotes, newNote];
 
     const updated = await prisma.crmTask.update({
       where: { id },
       data: {
-        notes: [...(Array.isArray(event.notes) ? event.notes : []), newNote],
+        mentions: {
+          ...existingMetadata,
+          notes: updatedNotes,
+        },
         updatedAt: new Date(),
       },
       include: {
-        Brand: {
+        CrmBrand: {
           select: {
             id: true,
-            name: true,
+            brandName: true,
           },
         },
       },
     });
 
-    res.json(updated);
+    // Transform response
+    const transformedEvent = {
+      ...updated,
+      eventName: updated.title,
+      startDateTime: updated.dueDate,
+      endDateTime: existingMetadata.endDateTime,
+      eventType: existingMetadata.eventType,
+      location: existingMetadata.location,
+      attendees: existingMetadata.attendees,
+      linkedCampaignIds: existingMetadata.linkedCampaignIds,
+      linkedDealIds: existingMetadata.linkedDealIds,
+      linkedTalentIds: existingMetadata.linkedTalentIds,
+      notes: updatedNotes,
+      Brand: updated.CrmBrand ? {
+        id: updated.CrmBrand.id,
+        name: updated.CrmBrand.brandName,
+      } : null,
+    };
+
+    res.json(transformedEvent);
   } catch (error) {
     console.error("Error adding note to event:", error);
-    res.status(500).json({ error: "Failed to add note" });
+    res.status(500).json({ 
+      error: "Failed to add note",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -345,33 +478,46 @@ router.post("/batch-import", async (req: Request, res: Response) => {
     }
 
     const createdEvents: any[] = [];
+    const errors: any[] = [];
 
     for (const event of events) {
       try {
-        const created = await prisma.crmEvent.create({
+        if (!event.eventName || !event.brandId || !event.startDateTime) {
+          errors.push({ eventName: event.eventName || "Unknown", error: "Missing required fields" });
+          continue;
+        }
+
+        // Store event metadata in mentions
+        const eventMetadata = {
+          eventType: event.eventType || "Other",
+          endDateTime: event.endDateTime || null,
+          location: event.location || null,
+          attendees: event.attendees || null,
+          linkedCampaignIds: event.linkedCampaignIds || [],
+          linkedDealIds: event.linkedDealIds || [],
+          linkedTalentIds: event.linkedTalentIds || [],
+          notes: event.notes || [],
+        };
+
+        const created = await prisma.crmTask.create({
           data: {
-            id: `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            eventName: event.eventName || "Untitled Event",
+            id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            title: event.eventName,
             brandId: event.brandId,
-            eventType: event.eventType || "Other",
-            status: event.status || "Planned",
-            startDateTime: new Date(event.startDateTime),
-            endDateTime: event.endDateTime ? new Date(event.endDateTime) : null,
-            location: event.location || null,
+            status: event.status || "Pending",
+            priority: "Medium",
+            dueDate: new Date(event.startDateTime),
             description: event.description || null,
-            attendees: event.attendees || null,
-            linkedCampaignIds: event.linkedCampaignIds || [],
-            linkedDealIds: event.linkedDealIds || [],
-            linkedTalentIds: event.linkedTalentIds || [],
             owner: event.owner || null,
             createdBy: req.user!.id,
-            notes: event.notes || [],
+            mentions: eventMetadata,
+            updatedAt: new Date(),
           },
         });
         createdEvents.push(created);
       } catch (err) {
         console.error("Error importing event:", event, err);
-        // Continue with other events
+        errors.push({ eventName: event.eventName || "Unknown", error: String(err) });
       }
     }
 
@@ -379,10 +525,14 @@ router.post("/batch-import", async (req: Request, res: Response) => {
       message: `Successfully imported ${createdEvents.length} of ${events.length} events`,
       imported: createdEvents.length,
       total: events.length,
+      errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
     console.error("Error batch importing events:", error);
-    res.status(500).json({ error: "Failed to import events" });
+    res.status(500).json({ 
+      error: "Failed to import events",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

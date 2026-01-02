@@ -14,26 +14,29 @@ router.get("/", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req: R
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 5, 100);
 
-    // Query activity without include to avoid relation errors
-    const activity = await prisma.adminActivity.findMany({
+    // Note: adminActivity model doesn't exist - using AuditLog instead
+    const activity = await prisma.auditLog.findMany({
+      where: {
+        entityType: "AdminActivity" // Filter for admin activities
+      },
       take: limit,
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    // Manually fetch user data if actorId exists (defensive approach)
+    // Manually fetch user data if userId exists (defensive approach)
     const activityWithUsers = await Promise.all(
       activity.map(async (item: any) => {
-        if (item.actorId) {
+        if (item.userId) {
           try {
             const user = await prisma.user.findUnique({
-              where: { id: item.actorId },
+              where: { id: item.userId },
               select: { name: true, avatarUrl: true },
             });
-            return { ...item, user: user || null };
+            return { ...item, user: user || null, actorId: item.userId }; // Map userId to actorId for backward compatibility
           } catch {
-            return { ...item, user: null };
+            return { ...item, user: null, actorId: item.userId };
           }
         }
         return { ...item, user: null };

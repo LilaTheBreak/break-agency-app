@@ -12,33 +12,48 @@ export type CronJobDefinition = {
 
 export async function runCronJob(job: CronJobDefinition) {
   const start = new Date();
-  const log = await prisma.cronLog.create({
+  // Note: cronLog model doesn't exist - using AuditLog instead
+  const logId = `cron_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const log = await prisma.auditLog.create({
     data: {
-      name: job.name,
-      status: "running",
-      startedAt: start,
-      message: job.description
+      id: logId,
+      action: "CRON_JOB_STARTED",
+      entityType: "CronJob",
+      metadata: {
+        name: job.name,
+        status: "running",
+        startedAt: start,
+        message: job.description
+      }
     }
   });
 
   try {
     const metadata = (await job.handler()) ?? {};
-    await prisma.cronLog.update({
+    await prisma.auditLog.update({
       where: { id: log.id },
       data: {
-        status: "success",
-        completedAt: new Date(),
-        metadata
+        action: "CRON_JOB_SUCCESS",
+        metadata: {
+          ...(log.metadata as any || {}),
+          status: "success",
+          completedAt: new Date(),
+          ...metadata
+        }
       }
     });
   } catch (error) {
     logError(`Cron job failed: ${job.name}`, error instanceof Error ? error.message : error, { job: job.name });
-    await prisma.cronLog.update({
+    await prisma.auditLog.update({
       where: { id: log.id },
       data: {
-        status: "failed",
-        completedAt: new Date(),
-        error: error instanceof Error ? error.message : "Unknown error"
+        action: "CRON_JOB_FAILED",
+        metadata: {
+          ...(log.metadata as any || {}),
+          status: "failed",
+          completedAt: new Date(),
+          error: error instanceof Error ? error.message : "Unknown error"
+        }
       }
     });
   }

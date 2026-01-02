@@ -9,7 +9,11 @@ router.get("/admin/activity", async (req, res) => {
     return res.status(403).json({ error: "Admin access required" });
   }
   const limit = Math.min(parseInt(String(req.query.limit ?? "50"), 10) || 50, 200);
-  const logs = await prisma.adminActivity.findMany({
+  // Note: adminActivity model doesn't exist - using AuditLog instead
+  const logs = await prisma.auditLog.findMany({
+    where: {
+      entityType: "AdminActivity" // Filter for admin activities
+    },
     orderBy: { createdAt: "desc" },
     take: limit
   });
@@ -21,8 +25,12 @@ router.get("/admin/activity/live", async (req, res) => {
     return res.status(403).json({ error: "Admin access required" });
   }
   const since = req.query.since ? new Date(String(req.query.since)) : null;
-  const query = prisma.adminActivity.findMany({
-    where: since ? { createdAt: { gt: since } } : undefined,
+  // Note: adminActivity model doesn't exist - using AuditLog instead
+  const query = prisma.auditLog.findMany({
+    where: {
+      entityType: "AdminActivity",
+      ...(since ? { createdAt: { gt: since } } : {})
+    },
     orderBy: { createdAt: "desc" },
     take: 50
   });

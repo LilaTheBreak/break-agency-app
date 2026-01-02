@@ -815,6 +815,11 @@ export function AdminBrandsPage({ session }) {
   const safeCampaignsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(campaigns)) return campaigns;
+    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
+    if (campaigns === "" || campaigns === null || campaigns === undefined) {
+      console.warn('[BRANDS PAGE] campaigns is empty string/null/undefined, using []', { campaigns, type: typeof campaigns });
+      return [];
+    }
     if (campaigns && typeof campaigns === 'object') {
       if (Array.isArray(campaigns.campaigns)) {
         console.warn('[BRANDS PAGE] campaigns is wrapped in object, extracting array', { campaigns });
@@ -835,6 +840,11 @@ export function AdminBrandsPage({ session }) {
   const safeEventsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(events)) return events;
+    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
+    if (events === "" || events === null || events === undefined) {
+      console.warn('[BRANDS PAGE] events is empty string/null/undefined, using []', { events, type: typeof events });
+      return [];
+    }
     if (events && typeof events === 'object') {
       if (Array.isArray(events.events)) {
         console.warn('[BRANDS PAGE] events is wrapped in object, extracting array', { events });
@@ -855,6 +865,11 @@ export function AdminBrandsPage({ session }) {
   const safeDealsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(deals)) return deals;
+    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
+    if (deals === "" || deals === null || deals === undefined) {
+      console.warn('[BRANDS PAGE] deals is empty string/null/undefined, using []', { deals, type: typeof deals });
+      return [];
+    }
     if (deals && typeof deals === 'object') {
       if (Array.isArray(deals.deals)) {
         console.warn('[BRANDS PAGE] deals is wrapped in object, extracting array', { deals });
@@ -875,6 +890,11 @@ export function AdminBrandsPage({ session }) {
   const safeContractsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(contracts)) return contracts;
+    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
+    if (contracts === "" || contracts === null || contracts === undefined) {
+      console.warn('[BRANDS PAGE] contracts is empty string/null/undefined, using []', { contracts, type: typeof contracts });
+      return [];
+    }
     if (contracts && typeof contracts === 'object') {
       if (Array.isArray(contracts.contracts)) {
         console.warn('[BRANDS PAGE] contracts is wrapped in object, extracting array', { contracts });
@@ -1040,6 +1060,11 @@ export function AdminBrandsPage({ session }) {
         
         // Defensive: Extract arrays from various response formats
         const extractArray = (data, key) => {
+          // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
+          if (data === "" || data === null || data === undefined) {
+            console.warn(`[BRANDS PAGE] ${key} is empty string/null/undefined, using []`, { data, type: typeof data });
+            return [];
+          }
           if (Array.isArray(data)) return data;
           if (data && typeof data === 'object') {
             if (Array.isArray(data[key])) return data[key];

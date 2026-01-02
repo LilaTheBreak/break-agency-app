@@ -52,124 +52,185 @@ router.get("/", async (req: Request, res: Response) => {
     });
     console.log("[TALENT] Found", talentsWithoutUser.length, "talents without User relation");
     
+    // CRITICAL FIX: Always use the fallback query first to ensure we get all talents
+    // The include query might fail if User relation has issues, so we'll fetch User separately
+    // Use talentsWithoutUser as the base, then enrich with User data
+    let talents = talentsWithoutUser;
+    
+    console.log("[TALENT] Found", talents.length, "talents (base query)");
+    
+    // If we have talents, enrich them with User and Deal data
+    if (talents.length > 0) {
+      // Enrich with User data separately to avoid relation failures
+      const enrichedTalents = await Promise.all(
+        talents.map(async (talent) => {
+          try {
+            // Fetch User separately (may fail for placeholder users, that's OK)
+            let userData = null;
+            try {
+              const user = await prisma.user.findUnique({
+                where: { id: talent.userId },
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                  avatarUrl: true,
+                },
+              });
+              userData = user;
+            } catch (userError) {
+              console.warn("[TALENT] Failed to fetch User for talent", talent.id, "- continuing without User data");
+            }
+            
+            // Fetch Deal count separately
+            let dealCount = 0;
+            let activeDeals = 0;
+            try {
+              const deals = await prisma.deal.findMany({
+                where: { talentId: talent.id },
+                select: {
+                  id: true,
+                  stage: true,
+                },
+              });
+              dealCount = deals.length;
+              activeDeals = deals.filter(d => d.stage && !["COMPLETED", "LOST"].includes(d.stage)).length;
+            } catch (dealError) {
+              console.warn("[TALENT] Failed to fetch Deals for talent", talent.id);
+            }
+            
+            // Fetch CreatorTask count
+            let taskCount = 0;
+            try {
+              taskCount = await prisma.creatorTask.count({
+                where: { creatorId: talent.id },
+              });
+            } catch (taskError) {
+              console.warn("[TALENT] Failed to fetch CreatorTasks for talent", talent.id);
+            }
+            
+            return {
+              id: talent.id,
+              name: talent.name || "Unknown",
+              displayName: talent.name || "Unknown",
+              representationType: "NON_EXCLUSIVE",
+              status: "ACTIVE",
+              linkedUser: userData
+                ? {
+                    id: userData.id,
+                    email: userData.email,
+                    name: userData.name,
+                    avatarUrl: userData.avatarUrl,
+                  }
+                : null,
+              managerId: null,
+              metrics: {
+                openOpportunities: 0, // Will be calculated below
+                activeDeals,
+                totalDeals: dealCount,
+                totalTasks: taskCount,
+                totalRevenue: 0, // Will be calculated below
+              },
+              createdAt: talent.createdAt,
+              updatedAt: talent.updatedAt,
+            };
+          } catch (talentError) {
+            console.error("[TALENT] Failed to enrich talent", talent.id, talentError);
+            // Return minimal data
+            return {
+              id: talent.id,
+              name: talent.name || "Unknown",
+              displayName: talent.name || "Unknown",
+              representationType: "NON_EXCLUSIVE",
+              status: "ACTIVE",
+              linkedUser: null,
+              managerId: null,
+              metrics: {
+                openOpportunities: 0,
+                activeDeals: 0,
+                totalDeals: 0,
+                totalTasks: 0,
+                totalRevenue: 0,
+              },
+              createdAt: talent.createdAt,
+              updatedAt: talent.updatedAt,
+            };
+          }
+        })
+      );
+      
+      talents = enrichedTalents;
+    }
+    
+    // OLD CODE - Keep for reference but use enriched approach above
     // Now fetch with User relation (optional - won't filter out talents if User is missing)
     // Use left join behavior by making User optional
-    const talents = await prisma.talent.findMany({
-      include: {
-        User: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            avatarUrl: true,
-          },
-          // User is optional - if it doesn't exist, talent will still be returned with User: null
-        },
-        Deal: {
-          where: {
-            stage: {
-              notIn: ["COMPLETED", "LOST"],
-            },
-          },
-          select: {
-            id: true,
-            stage: true,
-          },
-        },
-        _count: {
-          select: {
-            Deal: true,
-            CreatorTask: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc", // Use createdAt instead of name to avoid schema issues
-      },
-    });
+    // const talentsWithRelation = await prisma.talent.findMany({
+    //   include: {
+    //     User: {
+    //       select: {
+    //         id: true,
+    //         email: true,
+    //         name: true,
+    //         avatarUrl: true,
+    //       },
+    //     },
+    //     Deal: {
+    //       where: {
+    //         stage: {
+    //           notIn: ["COMPLETED", "LOST"],
+    //         },
+    //       },
+    //       select: {
+    //         id: true,
+    //         stage: true,
+    //       },
+    //     },
+    //     _count: {
+    //       select: {
+    //         Deal: true,
+    //         CreatorTask: true,
+    //       },
+    //     },
+    //   },
+    //   orderBy: {
+    //     createdAt: "desc",
+    //   },
+    // });
 
-    console.log("[TALENT] Found", talents.length, "talents with User relation");
+    console.log("[TALENT] Found", talents.length, "talents after enrichment");
     
-    // CRITICAL FIX: If count > 0 but findMany with User relation returns 0, use fallback
-    // This handles cases where User relation fails (e.g., placeholder users, missing fields)
+    // If we have talents but count doesn't match, log a warning
     if (totalCount > 0 && talents.length === 0) {
-      console.error("[TALENT] WARNING: Count shows", totalCount, "talents but findMany with User relation returned 0!");
-      console.error("[TALENT] This suggests User relation is failing. Using fallback query.");
-      
-      // Use talentsWithoutUser as fallback
-      if (talentsWithoutUser.length > 0) {
-        console.log("[TALENT] Using", talentsWithoutUser.length, "talents from fallback query");
-        const fallbackTalents = await Promise.all(
-          talentsWithoutUser.map(async (talent) => {
-            try {
-              // Try to fetch User separately (may fail for placeholder users, that's OK)
-              let userData = null;
-              try {
-                const user = await prisma.user.findUnique({
-                  where: { id: talent.userId },
-                  select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    avatarUrl: true,
-                  },
-                });
-                userData = user;
-              } catch (userError) {
-                console.warn("[TALENT] Failed to fetch User for talent", talent.id, "- continuing without User data");
-              }
-              
-              return {
-                id: talent.id,
-                name: talent.name || "Unknown",
-                displayName: talent.name || "Unknown",
-                representationType: "NON_EXCLUSIVE",
-                status: "ACTIVE",
-                linkedUser: userData
-                  ? {
-                      id: userData.id,
-                      email: userData.email,
-                      name: userData.name,
-                      avatarUrl: userData.avatarUrl,
-                    }
-                  : null,
-                managerId: null,
-                metrics: {
-                  openOpportunities: 0,
-                  activeDeals: 0,
-                  totalDeals: 0,
-                  totalTasks: 0,
-                  totalRevenue: 0,
-                },
-                createdAt: talent.createdAt,
-                updatedAt: talent.updatedAt,
-              };
-            } catch (talentError) {
-              console.error("[TALENT] Failed to process fallback talent", talent.id, talentError);
-              logError("Failed to process fallback talent", talentError, { talentId: talent.id });
-              return null;
-            }
-          })
-        );
-        const validFallback = fallbackTalents.filter(t => t !== null);
-        console.log("[TALENT] Returning", validFallback.length, "fallback talents");
-        return sendList(res, validFallback);
-      } else {
-        // Even fallback query returned 0 - this is a real problem
-        console.error("[TALENT] CRITICAL: Both queries returned 0 but count shows", totalCount);
-        console.error("[TALENT] This suggests a database transaction or query issue");
-      }
+      console.error("[TALENT] WARNING: Count shows", totalCount, "talents but enrichment returned 0!");
+      console.error("[TALENT] This suggests an issue with the enrichment process");
+      // Return empty list but log the issue
+      return sendEmptyList(res);
+    }
+    
+    if (totalCount !== talents.length) {
+      console.warn("[TALENT] Count mismatch: database has", totalCount, "but returning", talents.length, "talents");
     }
 
-    // Calculate metrics for each talent with error handling
+    // Calculate additional metrics for each talent (openOpportunities, totalRevenue)
     const talentsWithMetrics = await Promise.all(
       talents.map(async (talent) => {
         try {
-          // Count open opportunities (if Opportunity model has talentId)
-          const openOpportunities = 0; // TODO: Add when Opportunity model is updated
-
-          // Count active deals
-          const activeDeals = talent.Deal?.length || 0;
+          // Count open opportunities for this talent
+          // Opportunities are linked through OpportunityApplication.creatorId (which is userId)
+          let openOpportunities = 0;
+          if (talent.linkedUser?.id) {
+            try {
+              openOpportunities = await prisma.opportunityApplication.count({
+                where: {
+                  creatorId: talent.linkedUser.id,
+                  status: { not: "rejected" } // Count pending and accepted applications
+                }
+              });
+            } catch (oppError) {
+              console.warn("[TALENT] Failed to count opportunities for talent", talent.id);
+            }
+          }
 
           // Calculate total revenue (from Payments) - handle gracefully if field doesn't exist
           let totalRevenue = 0;
@@ -188,52 +249,19 @@ router.get("/", async (req: Request, res: Response) => {
             console.warn("[TALENT] Payment aggregation failed (may not be implemented yet):", paymentError);
           }
 
+          // Return talent with updated metrics
           return {
-            id: talent.id,
-            name: talent.name || "Unknown",
-            displayName: talent.name || "Unknown",
-            representationType: "NON_EXCLUSIVE", // Default for now, will be added in schema migration
-            status: "ACTIVE", // Default for now
-            linkedUser: talent.User
-              ? {
-                  id: talent.User.id,
-                  email: talent.User.email,
-                  name: talent.User.name,
-                  avatarUrl: talent.User.avatarUrl,
-                }
-              : null,
-            managerId: null, // Will be added in schema migration
+            ...talent,
             metrics: {
+              ...talent.metrics,
               openOpportunities,
-              activeDeals,
-              totalDeals: talent._count?.Deal || 0,
-              totalTasks: talent._count?.CreatorTask || 0,
               totalRevenue,
             },
-            createdAt: talent.createdAt,
-            updatedAt: talent.updatedAt,
           };
         } catch (talentError) {
-          // If individual talent processing fails, return minimal data
+          // If individual talent processing fails, return talent as-is
           logError("Failed to process talent metrics", talentError, { talentId: talent.id });
-          return {
-            id: talent.id,
-            name: talent.name || "Unknown",
-            displayName: talent.name || "Unknown",
-            representationType: "NON_EXCLUSIVE",
-            status: "ACTIVE",
-            linkedUser: null,
-            managerId: null,
-            metrics: {
-              openOpportunities: 0,
-              activeDeals: 0,
-              totalDeals: 0,
-              totalTasks: 0,
-              totalRevenue: 0,
-            },
-            createdAt: talent.createdAt,
-            updatedAt: talent.updatedAt,
-          };
+          return talent; // Return the talent we already have
         }
       })
     );

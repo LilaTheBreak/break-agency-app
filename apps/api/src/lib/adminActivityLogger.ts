@@ -10,12 +10,16 @@ type AdminActivityPayload = {
 
 export async function logAdminActivity(req: Request, payload: AdminActivityPayload) {
   try {
-    await prisma.adminActivity.create({
+    // Note: adminActivity model doesn't exist - using AuditLog instead
+    await prisma.auditLog.create({
       data: {
-        actorId: req.user?.id ?? null,
-        event: payload.event,
+        userId: req.user?.id ?? null,
+        userEmail: req.user?.email ?? null,
+        userRole: req.user?.role ?? null,
+        action: payload.event, // Map event to action
+        entityType: "AdminActivity",
         metadata: (payload.metadata ?? undefined) as Prisma.InputJsonValue,
-        ip: req.ipAddress ?? req.ip
+        ipAddress: req.ipAddress ?? req.ip ?? null
       }
     });
   } catch (error) {

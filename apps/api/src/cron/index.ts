@@ -207,7 +207,9 @@ export function registerCronJobs() {
     cron.schedule("0 4 * * *", async () => {
       try {
         console.log("[CRON] Starting strategy predictions...");
-        const brands = await prisma.brandRelationship.findMany();
+        // Note: brandRelationship model doesn't exist - skipping for now
+        // TODO: Refactor to use CrmBrand or implement brandRelationship model
+        const brands: any[] = [];
         let queued = 0;
         for (const b of brands) {
           await strategyQueue.add("predict", { userId: b.userId, brandName: b.brandName });

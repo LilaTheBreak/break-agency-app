@@ -150,8 +150,8 @@ function AddTalentModal({ open, onClose, onSuccess }) {
       toast.success("Talent created successfully");
       // Call onSuccess to refresh the list - wait for it to complete
       console.log("[TALENT] Calling onSuccess to refresh list...");
-      // Add small delay to ensure database transaction is committed
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Add delay to ensure database transaction is committed and visible to read queries
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay to 1 second
       await onSuccess();
       console.log("[TALENT] List refresh completed");
       onClose();
@@ -387,24 +387,40 @@ export function AdminTalentPage() {
       setError("");
       console.log("[TALENT] Fetching talent list...");
       const response = await apiFetch("/api/admin/talent");
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch talent");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("[TALENT] Error response:", response.status, errorData);
+        throw new Error(errorData.message || errorData.error || `Failed to fetch talent (${response.status})`);
       }
+      
       const data = await response.json();
       console.log("[TALENT] Fetched data:", data);
-      // Backend returns array directly, not wrapped in { talents: [...] }
+      console.log("[TALENT] Data type:", typeof data, "Is array:", Array.isArray(data));
+      
+      // Backend returns array directly via sendList()
       // Handle both formats for backward compatibility
-      const talentsArray = Array.isArray(data) 
-        ? data 
-        : Array.isArray(data.talents) 
-          ? data.talents 
-          : Array.isArray(data.data)
-            ? data.data
-            : [];
+      let talentsArray = [];
+      if (Array.isArray(data)) {
+        talentsArray = data;
+      } else if (data && Array.isArray(data.talents)) {
+        talentsArray = data.talents;
+      } else if (data && Array.isArray(data.data)) {
+        talentsArray = data.data;
+      } else if (data && data.success && Array.isArray(data.data)) {
+        talentsArray = data.data;
+      } else {
+        console.warn("[TALENT] Unexpected response format:", data);
+        talentsArray = [];
+      }
+      
       console.log("[TALENT] Parsed talents array:", talentsArray.length, "talents");
+      if (talentsArray.length > 0) {
+        console.log("[TALENT] First talent:", talentsArray[0]);
+      }
       setTalents(talentsArray);
     } catch (err) {
-      console.error("Error fetching talent:", err);
+      console.error("[TALENT] Error fetching talent:", err);
       setError(err.message || "Failed to load talent");
       setTalents([]);
     } finally {

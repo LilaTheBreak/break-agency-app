@@ -33,12 +33,19 @@ export async function sendTemplatedEmail({ to, template, data = {}, subject }: S
   const rendered = templateDef.render(data);
   const resolvedSubject = subject || rendered.subject || templateDef.subject(data);
 
-  const log = await prisma.emailLog.create({
+  // Note: emailLog model doesn't exist - using AuditLog instead
+  const logId = `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const log = await prisma.auditLog.create({
     data: {
-      to,
-      subject: resolvedSubject,
-      template,
-      status: "queued"
+      id: logId,
+      action: "EMAIL_QUEUED",
+      entityType: "Email",
+      metadata: {
+        to,
+        subject: resolvedSubject,
+        template,
+        status: "queued"
+      }
     }
   });
 
@@ -50,19 +57,41 @@ export async function sendTemplatedEmail({ to, template, data = {}, subject }: S
       html: rendered.html,
       text: rendered.text
     });
-    await prisma.emailLog.update({ where: { id: log.id }, data: { status: "sent" } });
+    const metadata = (log.metadata as any) || {};
+    await prisma.auditLog.update({ 
+      where: { id: log.id }, 
+      data: { 
+        action: "EMAIL_SENT",
+        metadata: {
+          ...metadata,
+          status: "sent"
+        }
+      } 
+    });
     return { id: log.id, status: "sent" };
   } catch (error) {
-    await prisma.emailLog.update({
+    const metadata = (log.metadata as any) || {};
+    await prisma.auditLog.update({
       where: { id: log.id },
-      data: { status: "failed" }
+      data: {
+        action: "EMAIL_FAILED",
+        metadata: {
+          ...metadata,
+          status: "failed",
+          error: error instanceof Error ? error.message : "Unknown error"
+        }
+      }
     });
     throw error;
   }
 }
 
 export async function listEmailLogs(limit = 50) {
-  return prisma.emailLog.findMany({
+  // Note: emailLog model doesn't exist - using AuditLog instead
+  return prisma.auditLog.findMany({
+    where: {
+      entityType: "Email"
+    },
     orderBy: { createdAt: "desc" },
     take: limit
   });

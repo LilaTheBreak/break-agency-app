@@ -62,7 +62,9 @@ export function sendError(
  * This can be changed to use sendSuccess in the future if frontend is updated
  */
 export function sendList<T>(res: Response, items: T[], status: number = 200): void {
-  res.status(status).json(items || []);
+  // CRITICAL: Ensure we always return an array, never an empty string or other type
+  const safeItems = Array.isArray(items) ? items : [];
+  res.status(status).json(safeItems);
 }
 
 /**

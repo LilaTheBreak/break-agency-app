@@ -6,20 +6,20 @@ import { recordThreadMessage } from "./negotiation/recordMessage.js";
 import { getActiveThreadState } from "./negotiation/getActiveThreadState.js";
 
 export async function executeAgentTask(taskId: string) {
-  const task = await prisma.agentTask.findUnique({ where: { id: taskId } });
+  const task = await prisma.aIAgentTask.findUnique({ where: { id: taskId } });
   if (!task) return;
 
-  const userId = task.userId!;
+  const userId = task.userId;
   const policy = await loadAgentPolicy(userId);
 
-  await prisma.agentTask.update({
+  await prisma.aIAgentTask.update({
     where: { id: taskId },
-    data: { status: "running" }
+    data: { status: "running", startedAt: new Date(), updatedAt: new Date() }
   });
 
   try {
-    let plan = (task.input as any)?.plan;
-    const context: any = { ...(task.input as any)?.context, policy };
+    let plan = (task.payload as any)?.plan;
+    const context: any = { ...(task.payload as any)?.context, policy };
 
     const email = context?.email;
     if (email && userId) {
@@ -48,61 +48,72 @@ export async function executeAgentTask(taskId: string) {
       results.push({ step: step.action, result });
 
       if (step.action === "validateCounterOffer" && result?.approved === false) {
-        await prisma.agentTask.update({
+        await prisma.aIAgentTask.update({
           where: { id: taskId },
           data: {
-            status: "success",
-            output: [...results, { status: "needs_review", reason: "counter_offer_exceeds_policy" }]
+            status: "completed",
+            result: [...results, { status: "needs_review", reason: "counter_offer_exceeds_policy" }],
+            completedAt: new Date(),
+            updatedAt: new Date()
           }
         });
         return { status: "needs_review" };
       }
 
       if (step.action === "evaluateOffer" && result?.strategy?.riskLevel === "high") {
-        await prisma.agentTask.update({
+        await prisma.aIAgentTask.update({
           where: { id: taskId },
           data: {
-            status: "success",
-            output: [...results, { status: "needs_review", reason: "high_risk_negotiation" }]
+            status: "completed",
+            result: [...results, { status: "needs_review", reason: "high_risk_negotiation" }],
+            completedAt: new Date(),
+            updatedAt: new Date()
           }
         });
         return { status: "needs_review" };
       }
 
       if (step.action === "evaluateOfferAgainstHistory" && result?.shouldCounter === false) {
-        await prisma.agentTask.update({
+        await prisma.aIAgentTask.update({
           where: { id: taskId },
           data: {
-            status: "success",
-            output: [...results, { status: "no_action", reason: "counter_not_advised" }]
+            status: "completed",
+            result: [...results, { status: "no_action", reason: "counter_not_advised" }],
+            completedAt: new Date(),
+            updatedAt: new Date()
           }
         });
         return { status: "no_action" };
       }
     }
 
-    if (context?.thread?.id) {
-      await prisma.negotiationThread.update({
-        where: { id: context.thread.id },
-        data: { status: "closed" }
-      });
-    }
+    // Note: negotiationThread model doesn't exist - commenting out
+    // if (context?.thread?.id) {
+    //   await prisma.negotiationThread.update({
+    //     where: { id: context.thread.id },
+    //     data: { status: "closed" }
+    //   });
+    // }
 
-    await prisma.agentTask.update({
+    await prisma.aIAgentTask.update({
       where: { id: taskId },
       data: {
-        status: "success",
-        output: results
+        status: "completed",
+        result: results,
+        completedAt: new Date(),
+        updatedAt: new Date()
       }
     });
 
     return results;
   } catch (error: any) {
-    await prisma.agentTask.update({
+    await prisma.aIAgentTask.update({
       where: { id: taskId },
       data: {
-        status: "error",
-        error: String(error)
+        status: "failed",
+        error: String(error),
+        completedAt: new Date(),
+        updatedAt: new Date()
       }
     });
     throw error;

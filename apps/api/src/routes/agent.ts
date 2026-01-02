@@ -22,11 +22,14 @@ router.post("/run", requireAuth, async (req, res, next) => {
       policy
     });
 
-    const task = await prisma.agentTask.create({
+    const task = await prisma.aIAgentTask.create({
       data: {
+        id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId,
-        type: "agent-plan",
-        input: { plan, context: { email, user: req.user, llm } }
+        taskType: "agent-plan", // AIAgentTask uses taskType, not type
+        payload: { plan, context: { email, user: req.user, llm } }, // AIAgentTask uses payload, not input
+        status: "pending",
+        updatedAt: new Date(),
       }
     });
 

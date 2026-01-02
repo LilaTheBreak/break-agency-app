@@ -1,4 +1,4 @@
-import { Prisma, type EmailLog } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Resend } from "resend";
 import prisma from "../lib/prisma.js";
 import { logError, logInfo } from "../lib/logger.js";
@@ -36,14 +36,23 @@ export async function sendEmail({
     throw new Error(`Unknown email template ${template}`);
   }
 
-  const log = await prisma.emailLog.create({
+  // Note: emailLog model doesn't exist - using AuditLog instead
+  const logId = `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const logSubject = subject ?? templateDef.subject(data);
+  
+  const log = await prisma.auditLog.create({
     data: {
-      to,
+      id: logId,
       userId: userId ?? null,
-      subject: subject ?? templateDef.subject(data),
-      template,
-      status: "queued",
-      metadata: (data ?? undefined) as Prisma.InputJsonValue
+      action: "EMAIL_QUEUED",
+      entityType: "Email",
+      metadata: {
+        to,
+        subject: logSubject,
+        template,
+        status: "queued",
+        ...(data ?? {})
+      } as Prisma.InputJsonValue
     }
   });
 
@@ -70,8 +79,10 @@ export async function processEmailQueue(max = 10) {
 }
 
 async function deliverEmail(job: EmailJob) {
-  const logEntry = await prisma.emailLog.findUnique({ where: { id: job.logId } });
-  if (!logEntry) return;
+  // Note: emailLog model doesn't exist - using AuditLog instead
+  const logEntry = await prisma.auditLog.findUnique({ where: { id: job.logId } });
+  if (!logEntry || logEntry.entityType !== "Email") return;
+  
   const template = templates[job.template];
   const rendered = template.render(job.data);
   const subject = job.subject ?? rendered.subject ?? template.subject(job.data);
@@ -86,17 +97,31 @@ async function deliverEmail(job: EmailJob) {
       html: rendered.html,
       text: rendered.text
     });
-    await prisma.emailLog.update({
+    // Update metadata in AuditLog
+    const metadata = (logEntry.metadata as any) || {};
+    await prisma.auditLog.update({
       where: { id: job.logId },
-      data: { status: "sent", updatedAt: new Date() }
+      data: {
+        action: "EMAIL_SENT",
+        metadata: {
+          ...metadata,
+          status: "sent"
+        }
+      }
     });
   } catch (error) {
     logError("Email delivery failed", error, { logId: job.logId });
-    await prisma.emailLog.update({
+    // Update metadata in AuditLog
+    const metadata = (logEntry.metadata as any) || {};
+    await prisma.auditLog.update({
       where: { id: job.logId },
       data: {
-        status: "failed",
-        error: error instanceof Error ? error.message : "Unknown error"
+        action: "EMAIL_FAILED",
+        metadata: {
+          ...metadata,
+          status: "failed",
+          error: error instanceof Error ? error.message : "Unknown error"
+        }
       }
     });
   }
