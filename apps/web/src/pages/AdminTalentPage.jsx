@@ -374,11 +374,13 @@ export function AdminTalentPage() {
     try {
       setLoading(true);
       setError("");
+      console.log("[TALENT] Fetching talent list...");
       const response = await apiFetch("/api/admin/talent");
       if (!response.ok) {
         throw new Error("Failed to fetch talent");
       }
       const data = await response.json();
+      console.log("[TALENT] Fetched data:", data);
       // Backend returns array directly, not wrapped in { talents: [...] }
       // Handle both formats for backward compatibility
       const talentsArray = Array.isArray(data) 
@@ -388,6 +390,7 @@ export function AdminTalentPage() {
           : Array.isArray(data.data)
             ? data.data
             : [];
+      console.log("[TALENT] Parsed talents array:", talentsArray.length, "talents");
       setTalents(talentsArray);
     } catch (err) {
       console.error("Error fetching talent:", err);
