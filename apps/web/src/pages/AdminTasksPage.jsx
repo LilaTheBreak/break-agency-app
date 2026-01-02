@@ -19,6 +19,7 @@ import {
 } from "../services/crmTasksClient.js";
 import { fetchDeals, fetchCampaigns, fetchEvents, fetchContracts, fetchBrands } from "../services/crmClient.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { normalizeApiArray } from "../lib/dataNormalization.js";
 
 function nowIso() {
   return new Date().toISOString();
@@ -254,11 +255,12 @@ export function AdminTasksPage() {
           fetchContracts(),
           fetchBrands(),
         ]);
-        setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
-        setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
-        setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
-        setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
-        setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
+        // Use shared helper to normalize API responses
+        setDeals(normalizeApiArray(dealsData, 'deals'));
+        setCampaigns(normalizeApiArray(campaignsData, 'campaigns'));
+        setEvents(normalizeApiArray(eventsData, 'events'));
+        setContracts(normalizeApiArray(contractsData, 'contracts'));
+        setBrands(normalizeApiArray(brandsData, 'brands'));
       } catch (error) {
         console.error("Failed to load CRM data:", error);
         setError("Failed to load CRM data: " + (error.message || "Unknown error"));

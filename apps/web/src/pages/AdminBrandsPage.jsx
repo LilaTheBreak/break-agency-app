@@ -694,63 +694,12 @@ export function AdminBrandsPage({ session }) {
           return { contacts: [] }; // Contacts are optional - continue with empty array
         });
 
-        // CRITICAL: Normalize API response to array format
-        // API can return: { brands: [...] } OR [...] OR "" OR null
-        let brandsData = null;
-        if (Array.isArray(brandsResult)) {
-          // API returned array directly
-          brandsData = brandsResult;
-        } else if (brandsResult && typeof brandsResult === 'object') {
-          // API returned object - extract brands property
-          brandsData = brandsResult.brands;
-        } else if (brandsResult === "" || brandsResult === null || brandsResult === undefined) {
-          // API returned empty string/null/undefined
-          brandsData = null;
-        }
+        // CRITICAL: Normalize API response to array format using shared helper
+        const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM');
+        const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM');
         
-        let contactsData = null;
-        if (Array.isArray(contactsResult)) {
-          // API returned array directly
-          contactsData = contactsResult;
-        } else if (contactsResult && typeof contactsResult === 'object') {
-          // API returned object - extract contacts property
-          contactsData = contactsResult.contacts;
-        } else if (contactsResult === "" || contactsResult === null || contactsResult === undefined) {
-          // API returned empty string/null/undefined
-          contactsData = null;
-        }
-        
-        console.log('[CRM] Initial brands loaded:', Array.isArray(brandsData) ? brandsData.length : 0);
-        console.log('[CRM] Initial contacts loaded:', Array.isArray(contactsData) ? contactsData.length : 0);
-        console.log('[CRM] Brands response shape:', { 
-          isArray: Array.isArray(brandsResult), 
-          hasBrands: brandsResult?.brands !== undefined,
-          brandsDataType: typeof brandsData,
-          brandsDataIsArray: Array.isArray(brandsData)
-        });
-        
-        // CRITICAL: Ensure arrays are always arrays, never empty strings or other types
-        const safeBrands = Array.isArray(brandsData) ? brandsData : [];
-        const safeContacts = Array.isArray(contactsData) ? contactsData : [];
-        
-        // Runtime guard: Warn if data shape is unexpected
-        if (!Array.isArray(brandsData) && brandsData !== null && brandsData !== undefined) {
-          console.warn('[BRANDS CRM] Expected array, received:', { 
-            brandsResult, 
-            brandsData, 
-            type: typeof brandsData,
-            isArray: Array.isArray(brandsData),
-            value: brandsData
-          });
-        }
-        if (!Array.isArray(contactsData) && contactsData !== null && contactsData !== undefined) {
-          console.warn('[BRANDS CRM] Unexpected contacts response shape:', { 
-            contactsResult, 
-            contactsData, 
-            type: typeof contactsData,
-            isArray: Array.isArray(contactsData)
-          });
-        }
+        console.log('[CRM] Initial brands loaded:', safeBrands.length);
+        console.log('[CRM] Initial contacts loaded:', safeContacts.length);
         
         safeSetBrands(safeBrands);
         safeSetContacts(safeContacts);
@@ -821,50 +770,12 @@ export function AdminBrandsPage({ session }) {
         return { contacts: contacts || [] }; // Keep existing contacts on failure
       });
       
-      // CRITICAL: Normalize API response to array format (same logic as initial load)
-      let brandsData = null;
-      if (Array.isArray(brandsResult)) {
-        brandsData = brandsResult;
-      } else if (brandsResult && typeof brandsResult === 'object') {
-        brandsData = brandsResult.brands;
-      } else if (brandsResult === "" || brandsResult === null || brandsResult === undefined) {
-        brandsData = null;
-      }
+      // CRITICAL: Normalize API response to array format using shared helper
+      const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM') || (Array.isArray(brands) ? brands : []);
+      const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM') || (Array.isArray(contacts) ? contacts : []);
       
-      let contactsData = null;
-      if (Array.isArray(contactsResult)) {
-        contactsData = contactsResult;
-      } else if (contactsResult && typeof contactsResult === 'object') {
-        contactsData = contactsResult.contacts;
-      } else if (contactsResult === "" || contactsResult === null || contactsResult === undefined) {
-        contactsData = null;
-      }
-      
-      console.log('[CRM] Fetched brands:', Array.isArray(brandsData) ? brandsData.length : 0);
-      console.log('[CRM] Fetched contacts:', Array.isArray(contactsData) ? contactsData.length : 0);
-      
-      // CRITICAL: Ensure arrays are always arrays, never empty strings or other types
-      const safeBrands = Array.isArray(brandsData) ? brandsData : (Array.isArray(brands) ? brands : []);
-      const safeContacts = Array.isArray(contactsData) ? contactsData : (Array.isArray(contacts) ? contacts : []);
-      
-      // Runtime guard: Warn if data shape is unexpected
-      if (!Array.isArray(brandsData) && brandsData !== null && brandsData !== undefined) {
-        console.warn('[BRANDS CRM] Expected array in refresh, received:', { 
-          brandsResult, 
-          brandsData, 
-          type: typeof brandsData,
-          isArray: Array.isArray(brandsData),
-          value: brandsData
-        });
-      }
-      if (!Array.isArray(contactsData) && contactsData !== null && contactsData !== undefined) {
-        console.warn('[BRANDS CRM] Unexpected contacts response shape in refresh:', { 
-          contactsResult, 
-          contactsData,
-          type: typeof contactsData,
-          isArray: Array.isArray(contactsData)
-        });
-      }
+      console.log('[CRM] Fetched brands:', safeBrands.length);
+      console.log('[CRM] Fetched contacts:', safeContacts.length);
       
       safeSetBrands(safeBrands);
       safeSetContacts(safeContacts);
@@ -875,141 +786,22 @@ export function AdminBrandsPage({ session }) {
 
   // Ensure state is always an array before useMemo hooks
   const safeBrandsState = useMemo(() => {
-    // CRITICAL: Normalize brands to array - handle all edge cases
-    if (Array.isArray(brands)) return brands;
-    // Handle empty string case (API bug - returns "" instead of [])
-    if (brands === "" || brands === null || brands === undefined) {
-      console.warn('[BRANDS CRM] brands is empty string/null/undefined, using []', { brands, type: typeof brands });
-      return [];
-    }
-    // Handle wrapped object case
-    if (brands && typeof brands === 'object') {
-      if (Array.isArray(brands.brands)) {
-        console.warn('[BRANDS CRM] brands is wrapped in object, extracting array', { brands });
-        return brands.brands;
-      }
-      if (Array.isArray(brands.data)) {
-        console.warn('[BRANDS CRM] brands is wrapped in data property, extracting array', { brands });
-        return brands.data;
-      }
-      if (Array.isArray(brands.items)) {
-        console.warn('[BRANDS CRM] brands is wrapped in items property, extracting array', { brands });
-        return brands.items;
-      }
-    }
-    // Runtime guard: Warn if data shape is unexpected
-    console.warn('[BRANDS CRM] Expected array, received:', { 
-      brands, 
-      type: typeof brands, 
-      isArray: Array.isArray(brands),
-      value: brands
-    });
-    return [];
+    return normalizeApiArrayWithGuard(brands, 'brands', 'BRANDS CRM');
   }, [brands]);
   const safeCampaignsState = useMemo(() => {
-    // Defensive: ensure we always return an array
-    if (Array.isArray(campaigns)) return campaigns;
-    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
-    if (campaigns === "" || campaigns === null || campaigns === undefined) {
-      console.warn('[BRANDS PAGE] campaigns is empty string/null/undefined, using []', { campaigns, type: typeof campaigns });
-      return [];
-    }
-    if (campaigns && typeof campaigns === 'object') {
-      if (Array.isArray(campaigns.campaigns)) {
-        console.warn('[BRANDS PAGE] campaigns is wrapped in object, extracting array', { campaigns });
-        return campaigns.campaigns;
-      }
-      if (Array.isArray(campaigns.data)) {
-        console.warn('[BRANDS PAGE] campaigns is wrapped in data property, extracting array', { campaigns });
-        return campaigns.data;
-      }
-      if (Array.isArray(campaigns.items)) {
-        console.warn('[BRANDS PAGE] campaigns is wrapped in items property, extracting array', { campaigns });
-        return campaigns.items;
-      }
-    }
-    console.warn('[BRANDS PAGE] campaigns state is not an array, using []', { campaigns, type: typeof campaigns, isArray: Array.isArray(campaigns) });
-    return [];
+    return normalizeApiArrayWithGuard(campaigns, 'campaigns', 'BRANDS CRM');
   }, [campaigns]);
   const safeEventsState = useMemo(() => {
-    // Defensive: ensure we always return an array
-    if (Array.isArray(events)) return events;
-    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
-    if (events === "" || events === null || events === undefined) {
-      console.warn('[BRANDS PAGE] events is empty string/null/undefined, using []', { events, type: typeof events });
-      return [];
-    }
-    if (events && typeof events === 'object') {
-      if (Array.isArray(events.events)) {
-        console.warn('[BRANDS PAGE] events is wrapped in object, extracting array', { events });
-        return events.events;
-      }
-      if (Array.isArray(events.data)) {
-        console.warn('[BRANDS PAGE] events is wrapped in data property, extracting array', { events });
-        return events.data;
-      }
-      if (Array.isArray(events.items)) {
-        console.warn('[BRANDS PAGE] events is wrapped in items property, extracting array', { events });
-        return events.items;
-      }
-    }
-    console.warn('[BRANDS PAGE] events state is not an array, using []', { events, type: typeof events, isArray: Array.isArray(events) });
-    return [];
+    return normalizeApiArrayWithGuard(events, 'events', 'BRANDS CRM');
   }, [events]);
   const safeDealsState = useMemo(() => {
-    // Defensive: ensure we always return an array
-    if (Array.isArray(deals)) return deals;
-    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
-    if (deals === "" || deals === null || deals === undefined) {
-      console.warn('[BRANDS PAGE] deals is empty string/null/undefined, using []', { deals, type: typeof deals });
-      return [];
-    }
-    if (deals && typeof deals === 'object') {
-      if (Array.isArray(deals.deals)) {
-        console.warn('[BRANDS PAGE] deals is wrapped in object, extracting array', { deals });
-        return deals.deals;
-      }
-      if (Array.isArray(deals.data)) {
-        console.warn('[BRANDS PAGE] deals is wrapped in data property, extracting array', { deals });
-        return deals.data;
-      }
-      if (Array.isArray(deals.items)) {
-        console.warn('[BRANDS PAGE] deals is wrapped in items property, extracting array', { deals });
-        return deals.items;
-      }
-    }
-    console.warn('[BRANDS PAGE] deals state is not an array, using []', { deals, type: typeof deals, isArray: Array.isArray(deals) });
-    return [];
+    return normalizeApiArrayWithGuard(deals, 'deals', 'BRANDS CRM');
   }, [deals]);
   const safeContractsState = useMemo(() => {
-    // Defensive: ensure we always return an array
-    if (Array.isArray(contracts)) return contracts;
-    // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
-    if (contracts === "" || contracts === null || contracts === undefined) {
-      console.warn('[BRANDS PAGE] contracts is empty string/null/undefined, using []', { contracts, type: typeof contracts });
-      return [];
-    }
-    if (contracts && typeof contracts === 'object') {
-      if (Array.isArray(contracts.contracts)) {
-        console.warn('[BRANDS PAGE] contracts is wrapped in object, extracting array', { contracts });
-        return contracts.contracts;
-      }
-      if (Array.isArray(contracts.data)) {
-        console.warn('[BRANDS PAGE] contracts is wrapped in data property, extracting array', { contracts });
-        return contracts.data;
-      }
-      if (Array.isArray(contracts.items)) {
-        console.warn('[BRANDS PAGE] contracts is wrapped in items property, extracting array', { contracts });
-        return contracts.items;
-      }
-    }
-    console.warn('[BRANDS PAGE] contracts state is not an array, using []', { contracts, type: typeof contracts, isArray: Array.isArray(contracts) });
-    return [];
+    return normalizeApiArrayWithGuard(contracts, 'contracts', 'BRANDS CRM');
   }, [contracts]);
   const safeContactsState = useMemo(() => {
-    if (Array.isArray(contacts)) return contacts;
-    console.warn('[BRANDS PAGE] contacts state is not an array, using []', { contacts, type: typeof contacts });
-    return [];
+    return normalizeApiArrayWithGuard(contacts, 'contacts', 'BRANDS CRM');
   }, [contacts]);
 
   const filtered = useMemo(() => {
@@ -1173,43 +965,27 @@ export function AdminBrandsPage({ session }) {
         const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
           fetchCampaigns({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch campaigns:', err);
-            return [];
+            return "";
           }),
           fetchEvents({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch events:', err);
-            return [];
+            return "";
           }),
           fetchDeals({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch deals:', err);
-            return [];
+            return "";
           }),
           fetchContracts({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch contracts:', err);
-            return [];
+            return "";
           }),
         ]);
         
-        // Defensive: Extract arrays from various response formats
-        const extractArray = (data, key) => {
-          // CRITICAL FIX: Handle empty string case (API bug - returns "" instead of [])
-          if (data === "" || data === null || data === undefined) {
-            console.warn(`[BRANDS PAGE] ${key} is empty string/null/undefined, using []`, { data, type: typeof data });
-            return [];
-          }
-          if (Array.isArray(data)) return data;
-          if (data && typeof data === 'object') {
-            if (Array.isArray(data[key])) return data[key];
-            if (Array.isArray(data.data)) return data.data;
-            if (Array.isArray(data.items)) return data.items;
-          }
-          console.warn(`[BRANDS PAGE] Unexpected response format for ${key}:`, { data, type: typeof data });
-          return [];
-        };
-        
-        const campaignsArray = extractArray(campaignsData, 'campaigns');
-        const eventsArray = extractArray(eventsData, 'events');
-        const dealsArray = extractArray(dealsData, 'deals');
-        const contractsArray = extractArray(contractsData, 'contracts');
+        // Use shared helper to normalize API responses
+        const campaignsArray = normalizeApiArrayWithGuard(campaignsData, 'campaigns', 'BRANDS CRM');
+        const eventsArray = normalizeApiArrayWithGuard(eventsData, 'events', 'BRANDS CRM');
+        const dealsArray = normalizeApiArrayWithGuard(dealsData, 'deals', 'BRANDS CRM');
+        const contractsArray = normalizeApiArrayWithGuard(contractsData, 'contracts', 'BRANDS CRM');
         
         safeSetCampaigns(campaignsArray);
         safeSetEvents(eventsArray);

@@ -233,12 +233,12 @@ export function AdminCampaignsPage({ session }) {
           fetchDeals(),
           fetchContracts(),
         ]);
-        // Defensive: Handle different response shapes
-        setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
-        setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
-        setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
-        setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
-        setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
+        // Use shared helper to normalize API responses
+        setCampaigns(normalizeApiArray(campaignsData, 'campaigns'));
+        setBrands(normalizeApiArray(brandsData, 'brands'));
+        setEvents(normalizeApiArray(eventsData, 'events'));
+        setDeals(normalizeApiArray(dealsData, 'deals'));
+        setContracts(normalizeApiArray(contractsData, 'contracts'));
       } catch (error) {
         console.error("Failed to load data:", error);
         // Ensure arrays are set even on error

@@ -21,6 +21,7 @@ import { formatEventDateTimeRange } from "../lib/crmEvents.js";
 import { fetchDeals, createDeal, updateDeal, deleteDeal, fetchEvents, fetchCampaigns, fetchContracts } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase, clearLocalStorageData } from "../lib/crmMigration.js";
 import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
+import { normalizeApiArray } from "../lib/dataNormalization.js";
 
 const BRANDS_STORAGE_KEY = "break_admin_brands_v1";
 
@@ -263,12 +264,12 @@ export function AdminDealsPage({ session }) {
         fetchContracts(),
         fetchBrands(),
       ]);
-      // Defensive: Handle different response shapes
-      setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
-      setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
-      setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
-      setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
-      setBrands(Array.isArray(brandsData) ? brandsData : (brandsData?.brands || []));
+      // Use shared helper to normalize API responses
+      setDeals(normalizeApiArray(dealsData, 'deals'));
+      setEvents(normalizeApiArray(eventsData, 'events'));
+      setCampaigns(normalizeApiArray(campaignsData, 'campaigns'));
+      setContracts(normalizeApiArray(contractsData, 'contracts'));
+      setBrands(normalizeApiArray(brandsData, 'brands'));
       
       // Check for localStorage migration
       const migrationCheck = await checkForLocalStorageData();
