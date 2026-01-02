@@ -507,6 +507,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         />
         <Route path="/resource-hub" element={<ResourceHubPage />} />
         <Route path="/legal" element={<LegalPrivacyPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-of-service" element={<TermsOfServicePage />} />
         <Route path="/contact" element={<ContactPage />} />

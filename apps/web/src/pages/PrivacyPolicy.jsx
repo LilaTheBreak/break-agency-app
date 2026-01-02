@@ -20,6 +20,8 @@ export function PrivacyPolicyPage() {
           <ul className="space-y-2 text-sm text-slate-700">
             <li>• <strong>Account Information:</strong> Name, email address, profile information, and authentication credentials.</li>
             <li>• <strong>Gmail Data (with your consent):</strong> When you connect your Gmail account, we access your emails to sync them into The Break platform for unified inbox management. This includes email content, sender information, subject lines, and timestamps.</li>
+            <li>• <strong>Instagram Data (with your consent):</strong> When you connect your Instagram account, we access your profile information, follower counts, and analytics data through Instagram Graph API in read-only mode. We do not post content, send messages, or modify your account.</li>
+            <li>• <strong>TikTok Data (with your consent):</strong> When you connect your TikTok account, we access your profile information, follower counts, and analytics data through TikTok Login Kit in read-only mode. We do not post content, send messages, or modify your account.</li>
             <li>• <strong>Usage Data:</strong> How you interact with the platform, including pages visited, features used, and actions taken.</li>
             <li>• <strong>Content You Submit:</strong> Profile information, campaign briefs, applications, messages, and other content you create on the platform.</li>
           </ul>
@@ -30,6 +32,7 @@ export function PrivacyPolicyPage() {
           <ul className="space-y-2 text-sm text-slate-700">
             <li>• <strong>Service Operation:</strong> To provide, maintain, and improve The Break platform and its features.</li>
             <li>• <strong>Gmail Integration:</strong> To sync your emails into the platform, identify brand contacts and opportunities, and enable email management through The Break.</li>
+            <li>• <strong>Instagram & TikTok Integration:</strong> To access your social media analytics and profile data for talent management, opportunity matching, and internal CRM visibility. All access is read-only—we do not post content, send messages, run ads, or modify your accounts.</li>
             <li>• <strong>Communication:</strong> To send you service-related notifications, updates, and respond to your inquiries.</li>
             <li>• <strong>Analytics:</strong> To understand how the platform is used and improve user experience.</li>
             <li>• <strong>Legal Compliance:</strong> To comply with applicable laws, regulations, and legal processes.</li>
@@ -37,7 +40,9 @@ export function PrivacyPolicyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">3. Gmail Data Usage</h2>
+          <h2 className="text-xl font-semibold">3. Third-Party Platform Data Usage</h2>
+          
+          <h3 className="text-lg font-semibold mt-4">3.1 Gmail Data Usage</h3>
           <p className="text-sm text-slate-700">
             When you connect your Gmail account to The Break:
           </p>
@@ -49,6 +54,34 @@ export function PrivacyPolicyPage() {
             <li>• We use email content to identify brand contacts, opportunities, and help organize your communications.</li>
             <li>• <strong>We do not sell, share, or use your Gmail data for advertising purposes.</strong></li>
             <li>• You can disconnect your Gmail account at any time, which will stop new email syncing.</li>
+          </ul>
+
+          <h3 className="text-lg font-semibold mt-6">3.2 Instagram Graph API Data Usage</h3>
+          <p className="text-sm text-slate-700">
+            When you connect your Instagram account to The Break:
+          </p>
+          <ul className="space-y-2 text-sm text-slate-700 mt-2">
+            <li>• We access your Instagram account with your explicit consent through Meta's Instagram Graph API.</li>
+            <li>• <strong>READ-ONLY ACCESS:</strong> The Break uses Instagram Graph API in read-only mode. We do not post content, send messages, run ads, or modify your Instagram account in any way.</li>
+            <li>• We access your Instagram profile information, follower counts, and analytics data (e.g., post engagement metrics) for talent management and opportunity matching purposes.</li>
+            <li>• This data is used internally by The Break to help brands evaluate creator profiles and match creators with relevant opportunities.</li>
+            <li>• Instagram data is stored securely in our database and is only accessible to you and authorized Break platform administrators.</li>
+            <li>• <strong>We do not sell, share, or use your Instagram data for advertising purposes.</strong></li>
+            <li>• You can disconnect your Instagram account at any time through your account settings.</li>
+          </ul>
+
+          <h3 className="text-lg font-semibold mt-6">3.3 TikTok Login Kit Data Usage</h3>
+          <p className="text-sm text-slate-700">
+            When you connect your TikTok account to The Break:
+          </p>
+          <ul className="space-y-2 text-sm text-slate-700 mt-2">
+            <li>• We access your TikTok account with your explicit consent through TikTok's Login Kit API.</li>
+            <li>• <strong>READ-ONLY ACCESS:</strong> The Break uses TikTok Login Kit in read-only mode. We do not post content, send messages, run ads, or modify your TikTok account in any way.</li>
+            <li>• We access your TikTok profile information, follower counts, and analytics data (e.g., video engagement metrics) for talent management and opportunity matching purposes.</li>
+            <li>• This data is used internally by The Break to help brands evaluate creator profiles and match creators with relevant opportunities.</li>
+            <li>• TikTok data is stored securely in our database and is only accessible to you and authorized Break platform administrators.</li>
+            <li>• <strong>We do not sell, share, or use your TikTok data for advertising purposes.</strong></li>
+            <li>• You can disconnect your TikTok account at any time through your account settings.</li>
           </ul>
         </section>
 
@@ -84,7 +117,7 @@ export function PrivacyPolicyPage() {
             <li>• <strong>Access:</strong> Request a copy of the personal information we hold about you.</li>
             <li>• <strong>Correction:</strong> Request correction of inaccurate or incomplete information.</li>
             <li>• <strong>Deletion:</strong> Request deletion of your personal information, subject to legal and operational requirements.</li>
-            <li>• <strong>Gmail Disconnection:</strong> Disconnect your Gmail account at any time through your account settings.</li>
+            <li>• <strong>Account Disconnection:</strong> Disconnect your Gmail, Instagram, or TikTok accounts at any time through your account settings. This will stop new data syncing, but historical data may be retained for a limited period as required for service continuity.</li>
             <li>• <strong>Data Portability:</strong> Request your data in a machine-readable format.</li>
             <li>• <strong>Objection:</strong> Object to certain processing of your personal information.</li>
           </ul>

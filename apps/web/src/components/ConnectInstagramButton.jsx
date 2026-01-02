@@ -4,6 +4,11 @@ import { toast } from 'sonner';
 /**
  * Connect Instagram Button
  * Handles Instagram OAuth connection flow
+ * 
+ * IMPORTANT FOR APP REVIEW:
+ * - Uses Instagram Graph API in READ-ONLY mode
+ * - Does NOT post content, send messages, run ads, or modify accounts
+ * - Only accesses profile information and analytics data
  */
 export function ConnectInstagramButton({ onConnect, className = '' }) {
   const [loading, setLoading] = useState(false);

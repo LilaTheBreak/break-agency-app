@@ -4,6 +4,11 @@ import { toast } from 'sonner';
 /**
  * Connect TikTok Button
  * Handles TikTok OAuth connection flow
+ * 
+ * IMPORTANT FOR APP REVIEW:
+ * - Uses TikTok Login Kit in READ-ONLY mode
+ * - Does NOT post content, send messages, run ads, or modify accounts
+ * - Only accesses profile information and analytics data
  */
 export function ConnectTikTokButton({ onConnect, className = '' }) {
   const [loading, setLoading] = useState(false);
