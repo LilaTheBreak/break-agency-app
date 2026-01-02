@@ -1266,12 +1266,12 @@ export function AdminBrandsPage({ session }) {
   const getLinkedObjectsSummary = (brand) => {
     if (!brand) return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
     // Defensive: ensure all states are arrays before calling filter
-    // Use the safe state wrappers which already guarantee arrays
+    // Double-normalize to handle any edge cases (defense in depth)
     try {
-      const campaignsArray = Array.isArray(safeCampaignsState) ? safeCampaignsState : [];
-      const dealsArray = Array.isArray(safeDealsState) ? safeDealsState : [];
-      const eventsArray = Array.isArray(safeEventsState) ? safeEventsState : [];
-      const contractsArray = Array.isArray(safeContractsState) ? safeContractsState : [];
+      const campaignsArray = normalizeApiArray(safeCampaignsState);
+      const dealsArray = normalizeApiArray(safeDealsState);
+      const eventsArray = normalizeApiArray(safeEventsState);
+      const contractsArray = normalizeApiArray(safeContractsState);
       
       const campaignCount = campaignsArray.filter(c => c && c.brandId === brand.id).length;
       const dealCount = dealsArray.filter(d => d && d.brandId === brand.id).length;
