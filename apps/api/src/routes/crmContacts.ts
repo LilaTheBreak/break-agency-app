@@ -55,7 +55,16 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
     res.json({ contact });
   } catch (error) {
     console.error("[CRM CONTACTS] Error fetching contact:", error);
-    res.status(500).json({ error: "Failed to fetch contact" });
+    if (error instanceof Error) {
+      return res.status(400).json({
+        code: "CONTACT_FETCH_FAILED",
+        message: error.message,
+      });
+    }
+    return res.status(400).json({
+      code: "CONTACT_FETCH_FAILED",
+      message: "Failed to fetch contact",
+    });
   }
 });
 
@@ -119,7 +128,23 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     res.json({ contact });
   } catch (error) {
     console.error("[CRM CONTACTS] Error creating contact:", error);
-    res.status(500).json({ error: "Failed to create contact" });
+    if (error instanceof Error) {
+      // Check for Prisma validation errors
+      if (error.message.includes("Unique constraint") || error.message.includes("Foreign key constraint")) {
+        return res.status(400).json({
+          code: "CONTACT_CREATE_FAILED",
+          message: error.message,
+        });
+      }
+      return res.status(400).json({
+        code: "CONTACT_CREATE_FAILED",
+        message: error.message,
+      });
+    }
+    return res.status(400).json({
+      code: "CONTACT_CREATE_FAILED",
+      message: "Invalid contact input",
+    });
   }
 });
 
@@ -178,7 +203,22 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
     res.json({ contact });
   } catch (error) {
     console.error("[CRM CONTACTS] Error updating contact:", error);
-    res.status(500).json({ error: "Failed to update contact" });
+    if (error instanceof Error) {
+      if (error.message.includes("Unique constraint") || error.message.includes("Foreign key constraint")) {
+        return res.status(400).json({
+          code: "CONTACT_UPDATE_FAILED",
+          message: error.message,
+        });
+      }
+      return res.status(400).json({
+        code: "CONTACT_UPDATE_FAILED",
+        message: error.message,
+      });
+    }
+    return res.status(400).json({
+      code: "CONTACT_UPDATE_FAILED",
+      message: "Invalid contact input",
+    });
   }
 });
 
@@ -192,7 +232,16 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
     res.json({ success: true });
   } catch (error) {
     console.error("[CRM CONTACTS] Error deleting contact:", error);
-    res.status(500).json({ error: "Failed to delete contact" });
+    if (error instanceof Error) {
+      return res.status(400).json({
+        code: "CONTACT_DELETE_FAILED",
+        message: error.message,
+      });
+    }
+    return res.status(400).json({
+      code: "CONTACT_DELETE_FAILED",
+      message: "Failed to delete contact",
+    });
   }
 });
 
@@ -237,7 +286,16 @@ router.post("/:id/notes", requireAuth, async (req: Request, res: Response) => {
     res.json({ contact: updated });
   } catch (error) {
     console.error("[CRM CONTACTS] Error adding note:", error);
-    res.status(500).json({ error: "Failed to add note" });
+    if (error instanceof Error) {
+      return res.status(400).json({
+        code: "CONTACT_NOTE_FAILED",
+        message: error.message,
+      });
+    }
+    return res.status(400).json({
+      code: "CONTACT_NOTE_FAILED",
+      message: "Failed to add note",
+    });
   }
 });
 
