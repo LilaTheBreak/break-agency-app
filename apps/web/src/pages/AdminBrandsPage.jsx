@@ -608,47 +608,30 @@ export function AdminBrandsPage({ session }) {
   const [contracts, setContracts] = useState([]);
   
   // Wrapper functions to ensure state is always an array (must be after useState declarations)
+  // Use normalizeApiArray to handle all edge cases (empty strings, null, undefined, wrapped objects)
   const safeSetBrands = (value) => {
-    const safe = Array.isArray(value) ? value : [];
+    const safe = normalizeApiArray(value, 'brands');
     setBrands(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set brands to non-array:', { value, type: typeof value });
-    }
   };
   const safeSetContacts = (value) => {
-    const safe = Array.isArray(value) ? value : [];
+    const safe = normalizeApiArray(value, 'contacts');
     setContacts(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set contacts to non-array:', { value, type: typeof value });
-    }
   };
   const safeSetCampaigns = (value) => {
-    const safe = Array.isArray(value) ? value : [];
+    const safe = normalizeApiArray(value, 'campaigns');
     setCampaigns(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set campaigns to non-array:', { value, type: typeof value });
-    }
   };
   const safeSetEvents = (value) => {
-    const safe = Array.isArray(value) ? value : [];
+    const safe = normalizeApiArray(value, 'events');
     setEvents(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set events to non-array:', { value, type: typeof value });
-    }
   };
   const safeSetDeals = (value) => {
-    const safe = Array.isArray(value) ? value : [];
+    const safe = normalizeApiArray(value, 'deals');
     setDeals(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set deals to non-array:', { value, type: typeof value });
-    }
   };
   const safeSetContracts = (value) => {
-    const safe = Array.isArray(value) ? value : [];
+    const safe = normalizeApiArray(value, 'contracts');
     setContracts(safe);
-    if (!Array.isArray(value) && value !== null && value !== undefined) {
-      console.warn('[BRANDS PAGE] Attempted to set contracts to non-array:', { value, type: typeof value });
-    }
   };
   
   const [loading, setLoading] = useState(true);
@@ -806,8 +789,8 @@ export function AdminBrandsPage({ session }) {
 
   const filtered = useMemo(() => {
     try {
-      // CRITICAL: Ensure safeBrandsState is an array before filtering
-      const brandsArray = Array.isArray(safeBrandsState) ? safeBrandsState : [];
+      // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
+      const brandsArray = normalizeApiArray(safeBrandsState);
       
       // Runtime guard: Warn if safeBrandsState is not an array
       if (!Array.isArray(safeBrandsState)) {
@@ -843,7 +826,8 @@ export function AdminBrandsPage({ session }) {
   const brandCampaigns = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const campaigns = Array.isArray(safeCampaignsState) ? safeCampaignsState : [];
+      // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
+      const campaigns = normalizeApiArray(safeCampaignsState);
       return campaigns
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
@@ -855,7 +839,8 @@ export function AdminBrandsPage({ session }) {
   const brandEvents = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const events = Array.isArray(safeEventsState) ? safeEventsState : [];
+      // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
+      const events = normalizeApiArray(safeEventsState);
       return events
         .filter((e) => e && e.brandId === selectedBrand.id)
         .sort((a, b) => String(b.startDateTime || "").localeCompare(String(a.startDateTime || "")));
@@ -867,7 +852,8 @@ export function AdminBrandsPage({ session }) {
   const brandDeals = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      const deals = Array.isArray(safeDealsState) ? safeDealsState : [];
+      // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
+      const deals = normalizeApiArray(safeDealsState);
       return deals
         .filter((d) => d && d.brandId === selectedBrand.id)
         .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
@@ -891,8 +877,8 @@ export function AdminBrandsPage({ session }) {
   const brandContacts = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      // CRITICAL: Ensure safeContactsState is an array before filtering
-      const contacts = Array.isArray(safeContactsState) ? safeContactsState : [];
+      // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
+      const contacts = normalizeApiArray(safeContactsState);
       
       // Runtime guard: Warn if safeContactsState is not an array
       if (!Array.isArray(safeContactsState)) {
