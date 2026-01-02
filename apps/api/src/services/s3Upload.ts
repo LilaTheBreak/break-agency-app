@@ -1,17 +1,21 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { s3 } from "../lib/s3.js";
-import { safeEnv } from "../utils/safeEnv.js";
+import { uploadFile } from "./storage/googleCloudStorage.js";
 
+/**
+ * Upload buffer to Google Cloud Storage
+ * @deprecated Use uploadFile from googleCloudStorage directly
+ */
 export async function uploadBufferToS3(buffer: Buffer, key: string) {
-  const bucket = safeEnv("S3_BUCKET", "local-bucket");
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: "application/pdf"
-    })
+  // Extract folder and filename from key
+  const keyParts = key.split("/");
+  const filename = keyParts[keyParts.length - 1];
+  const folder = keyParts.length > 1 ? keyParts[0] : undefined;
+  
+  const uploadResult = await uploadFile(
+    buffer,
+    filename,
+    "application/pdf",
+    folder
   );
-  const endpoint = process.env.S3_PUBLIC_URL || `https://${bucket}.s3.amazonaws.com`;
-  return `${endpoint}/${key}`;
+  
+  return uploadResult.signedUrl;
 }

@@ -1,7 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import prisma from "../lib/prisma.js";
-import { deleteObject, buildObjectKey, s3 } from "../lib/s3.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  uploadFile as uploadFileToGCS,
+  getSignedUrl as getGCSignedUrl,
+  deleteFile as deleteFileFromGCS,
+  buildObjectKey
+} from "../services/storage/googleCloudStorage.js";
 import {
   requestUploadUrl,
   confirmUpload,
@@ -9,15 +13,12 @@ import {
   getDownloadUrl
 } from "../services/fileService.js";
 import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
-import { safeEnv } from "../utils/safeEnv.js";
 import { requireAuth } from "../middleware/auth.js";
 import { logAuditEvent, logDestructiveAction } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
 // import slackClient from "../integrations/slack/slackClient.js";
 
 const router = Router();
-const bucket = safeEnv("S3_BUCKET", "local-bucket");
-const region = safeEnv("S3_REGION", "us-east-1");
 
 router.get("/", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -63,9 +64,6 @@ router.post("/upload", requireAuth, async (req: Request, res: Response, next: Ne
     const buffer = Buffer.from(base64Data, "base64");
     const size = buffer.length;
     
-    // Generate storage key
-    const key = buildObjectKey(currentUser.id, filename);
-    
     // Determine content type from base64 header or default
     let contentType = "application/octet-stream";
     const dataUrlMatch = content.match(/^data:([^;]+);base64,/);
@@ -74,31 +72,14 @@ router.post("/upload", requireAuth, async (req: Request, res: Response, next: Ne
     }
     
     try {
-      // Actually upload to S3
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: key,
-          Body: buffer,
-          ContentType: contentType,
-        })
+      // Upload to Google Cloud Storage
+      const uploadResult = await uploadFileToGCS(
+        buffer,
+        filename,
+        contentType,
+        folder,
+        currentUser.id
       );
-      
-      // Generate public or signed URL
-      // Support both standard S3 and R2 endpoints
-      const endpoint = process.env.S3_ENDPOINT;
-      const forcePathStyle = process.env.S3_FORCE_PATH_STYLE === "true";
-      let url: string;
-      if (endpoint && forcePathStyle) {
-        // Cloudflare R2 or S3-compatible with path-style
-        url = `${endpoint}/${bucket}/${key}`;
-      } else if (endpoint) {
-        // Custom endpoint (virtual-hosted style)
-        url = `${endpoint}/${key}`;
-      } else {
-        // Standard S3
-        url = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
-      }
       
       // Save file record to database
       const file = await prisma.file.create({
@@ -106,8 +87,8 @@ router.post("/upload", requireAuth, async (req: Request, res: Response, next: Ne
           id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           updatedAt: new Date(),
           userId: currentUser.id,
-          key,
-          url,
+          key: uploadResult.key,
+          url: uploadResult.signedUrl, // Store signed URL (will expire, but we can regenerate)
           filename,
           type: contentType,
           folder: folder || null,
@@ -116,14 +97,14 @@ router.post("/upload", requireAuth, async (req: Request, res: Response, next: Ne
       });
       
       res.json({ file });
-    } catch (s3Error) {
-      console.error("[FILE_UPLOAD] S3 Error:", s3Error);
+    } catch (uploadError) {
+      console.error("[FILE_UPLOAD] GCS Error:", uploadError);
       
       // Return error - don't create stub records in production
       return res.status(500).json({ 
         error: true, 
         message: "File upload to storage failed. Please check storage configuration.",
-        details: s3Error instanceof Error ? s3Error.message : String(s3Error)
+        details: uploadError instanceof Error ? uploadError.message : String(uploadError)
       });
     }
   } catch (err) {
@@ -167,7 +148,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
   if (file.userId !== currentUser.id && !userIsAdmin) {
     return res.status(403).json({ error: true, message: "Forbidden" });
   }
-  await deleteObject(file.key).catch(() => null);
+  await deleteFileFromGCS(file.key).catch(() => null);
   await prisma.file.delete({ where: { id: file.id } });
   res.json({ success: true });
 });

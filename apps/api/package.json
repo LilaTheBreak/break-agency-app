@@ -21,6 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.940.0",
     "@aws-sdk/s3-request-presigner": "^3.940.0",
+    "@google-cloud/storage": "^7.18.0",
     "@paralleldrive/cuid2": "^3.0.4",
     "@prisma/client": "5.22.0",
     "@sentry/node": "^10.32.1",

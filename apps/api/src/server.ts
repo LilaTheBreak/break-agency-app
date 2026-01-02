@@ -192,6 +192,9 @@ console.log(
 );
 console.log(">>> GOOGLE_REDIRECT_URI =", process.env.GOOGLE_REDIRECT_URI);
 console.log(">>> WEBHOOK_VERIFY_TOKEN =", process.env.WEBHOOK_VERIFY_TOKEN ? `${process.env.WEBHOOK_VERIFY_TOKEN.slice(0, 4)}****` : "[MISSING]");
+console.log(">>> GCS_PROJECT_ID =", process.env.GCS_PROJECT_ID || "break-agency-storage (default)");
+console.log(">>> GCS_BUCKET_NAME =", process.env.GCS_BUCKET_NAME || "break-agency-app-storage (default)");
+console.log(">>> GOOGLE_APPLICATION_CREDENTIALS_JSON =", process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON ? "[SET]" : "[MISSING]");
 
 // ------------------------------------------------------
 // VALIDATE PRODUCTION CREDENTIALS
@@ -207,6 +210,28 @@ if (!process.env.WEBHOOK_VERIFY_TOKEN) {
   console.warn("   Set WEBHOOK_VERIFY_TOKEN in your environment variables");
 } else {
   console.log("✅ WEBHOOK_VERIFY_TOKEN is configured");
+}
+
+// ------------------------------------------------------
+// VALIDATE GOOGLE CLOUD STORAGE CONFIGURATION
+// ------------------------------------------------------
+import { validateGCSConfig } from "./services/storage/googleCloudStorage.js";
+
+const gcsValidation = validateGCSConfig();
+if (!gcsValidation.valid) {
+  console.error("\n❌ INVALID GCS CONFIGURATION:");
+  gcsValidation.errors.forEach(err => console.error(`   - ${err}`));
+  
+  if (process.env.NODE_ENV === "production") {
+    console.error("\n🚨 FATAL: Cannot start server in production with invalid GCS configuration");
+    console.error("   Please set valid GCS_PROJECT_ID, GCS_BUCKET_NAME, and GOOGLE_APPLICATION_CREDENTIALS_JSON");
+    process.exit(1);
+  } else {
+    console.warn("\n⚠️  WARNING: Invalid GCS configuration detected in development mode");
+    console.warn("   File uploads will fail until this is configured");
+  }
+} else {
+  console.log("✅ GCS configuration validated");
 }
 
 const credentialValidation = validateProductionCredentials();
