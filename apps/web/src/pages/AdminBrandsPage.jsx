@@ -815,41 +815,81 @@ export function AdminBrandsPage({ session }) {
   const safeCampaignsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(campaigns)) return campaigns;
-    if (campaigns && typeof campaigns === 'object' && 'campaigns' in campaigns && Array.isArray(campaigns.campaigns)) {
-      console.warn('[BRANDS PAGE] campaigns is wrapped in object, extracting array', { campaigns });
-      return campaigns.campaigns;
+    if (campaigns && typeof campaigns === 'object') {
+      if (Array.isArray(campaigns.campaigns)) {
+        console.warn('[BRANDS PAGE] campaigns is wrapped in object, extracting array', { campaigns });
+        return campaigns.campaigns;
+      }
+      if (Array.isArray(campaigns.data)) {
+        console.warn('[BRANDS PAGE] campaigns is wrapped in data property, extracting array', { campaigns });
+        return campaigns.data;
+      }
+      if (Array.isArray(campaigns.items)) {
+        console.warn('[BRANDS PAGE] campaigns is wrapped in items property, extracting array', { campaigns });
+        return campaigns.items;
+      }
     }
-    console.warn('[BRANDS PAGE] campaigns state is not an array, using []', { campaigns, type: typeof campaigns });
+    console.warn('[BRANDS PAGE] campaigns state is not an array, using []', { campaigns, type: typeof campaigns, isArray: Array.isArray(campaigns) });
     return [];
   }, [campaigns]);
   const safeEventsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(events)) return events;
-    if (events && typeof events === 'object' && 'events' in events && Array.isArray(events.events)) {
-      console.warn('[BRANDS PAGE] events is wrapped in object, extracting array', { events });
-      return events.events;
+    if (events && typeof events === 'object') {
+      if (Array.isArray(events.events)) {
+        console.warn('[BRANDS PAGE] events is wrapped in object, extracting array', { events });
+        return events.events;
+      }
+      if (Array.isArray(events.data)) {
+        console.warn('[BRANDS PAGE] events is wrapped in data property, extracting array', { events });
+        return events.data;
+      }
+      if (Array.isArray(events.items)) {
+        console.warn('[BRANDS PAGE] events is wrapped in items property, extracting array', { events });
+        return events.items;
+      }
     }
-    console.warn('[BRANDS PAGE] events state is not an array, using []', { events, type: typeof events });
+    console.warn('[BRANDS PAGE] events state is not an array, using []', { events, type: typeof events, isArray: Array.isArray(events) });
     return [];
   }, [events]);
   const safeDealsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(deals)) return deals;
-    if (deals && typeof deals === 'object' && 'deals' in deals && Array.isArray(deals.deals)) {
-      console.warn('[BRANDS PAGE] deals is wrapped in object, extracting array', { deals });
-      return deals.deals;
+    if (deals && typeof deals === 'object') {
+      if (Array.isArray(deals.deals)) {
+        console.warn('[BRANDS PAGE] deals is wrapped in object, extracting array', { deals });
+        return deals.deals;
+      }
+      if (Array.isArray(deals.data)) {
+        console.warn('[BRANDS PAGE] deals is wrapped in data property, extracting array', { deals });
+        return deals.data;
+      }
+      if (Array.isArray(deals.items)) {
+        console.warn('[BRANDS PAGE] deals is wrapped in items property, extracting array', { deals });
+        return deals.items;
+      }
     }
-    console.warn('[BRANDS PAGE] deals state is not an array, using []', { deals, type: typeof deals });
+    console.warn('[BRANDS PAGE] deals state is not an array, using []', { deals, type: typeof deals, isArray: Array.isArray(deals) });
     return [];
   }, [deals]);
   const safeContractsState = useMemo(() => {
     // Defensive: ensure we always return an array
     if (Array.isArray(contracts)) return contracts;
-    if (contracts && typeof contracts === 'object' && 'contracts' in contracts && Array.isArray(contracts.contracts)) {
-      console.warn('[BRANDS PAGE] contracts is wrapped in object, extracting array', { contracts });
-      return contracts.contracts;
+    if (contracts && typeof contracts === 'object') {
+      if (Array.isArray(contracts.contracts)) {
+        console.warn('[BRANDS PAGE] contracts is wrapped in object, extracting array', { contracts });
+        return contracts.contracts;
+      }
+      if (Array.isArray(contracts.data)) {
+        console.warn('[BRANDS PAGE] contracts is wrapped in data property, extracting array', { contracts });
+        return contracts.data;
+      }
+      if (Array.isArray(contracts.items)) {
+        console.warn('[BRANDS PAGE] contracts is wrapped in items property, extracting array', { contracts });
+        return contracts.items;
+      }
     }
-    console.warn('[BRANDS PAGE] contracts state is not an array, using []', { contracts, type: typeof contracts });
+    console.warn('[BRANDS PAGE] contracts state is not an array, using []', { contracts, type: typeof contracts, isArray: Array.isArray(contracts) });
     return [];
   }, [contracts]);
   const safeContactsState = useMemo(() => {
@@ -976,17 +1016,47 @@ export function AdminBrandsPage({ session }) {
     async function loadRelatedData() {
       try {
         const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
-          fetchCampaigns({ brandId: drawerBrandId }),
-          fetchEvents({ brandId: drawerBrandId }),
-          fetchDeals({ brandId: drawerBrandId }),
-          fetchContracts({ brandId: drawerBrandId }),
+          fetchCampaigns({ brandId: drawerBrandId }).catch(err => {
+            console.warn('[BRANDS PAGE] Failed to fetch campaigns:', err);
+            return [];
+          }),
+          fetchEvents({ brandId: drawerBrandId }).catch(err => {
+            console.warn('[BRANDS PAGE] Failed to fetch events:', err);
+            return [];
+          }),
+          fetchDeals({ brandId: drawerBrandId }).catch(err => {
+            console.warn('[BRANDS PAGE] Failed to fetch deals:', err);
+            return [];
+          }),
+          fetchContracts({ brandId: drawerBrandId }).catch(err => {
+            console.warn('[BRANDS PAGE] Failed to fetch contracts:', err);
+            return [];
+          }),
         ]);
-        safeSetCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
-        safeSetEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
-        safeSetDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
-        safeSetContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
+        
+        // Defensive: Extract arrays from various response formats
+        const extractArray = (data, key) => {
+          if (Array.isArray(data)) return data;
+          if (data && typeof data === 'object') {
+            if (Array.isArray(data[key])) return data[key];
+            if (Array.isArray(data.data)) return data.data;
+            if (Array.isArray(data.items)) return data.items;
+          }
+          console.warn(`[BRANDS PAGE] Unexpected response format for ${key}:`, { data, type: typeof data });
+          return [];
+        };
+        
+        const campaignsArray = extractArray(campaignsData, 'campaigns');
+        const eventsArray = extractArray(eventsData, 'events');
+        const dealsArray = extractArray(dealsData, 'deals');
+        const contractsArray = extractArray(contractsData, 'contracts');
+        
+        safeSetCampaigns(campaignsArray);
+        safeSetEvents(eventsArray);
+        safeSetDeals(dealsArray);
+        safeSetContracts(contractsArray);
       } catch (error) {
-        console.error("Failed to load related data:", error);
+        console.error("[BRANDS PAGE] Failed to load related data:", error);
         // Ensure arrays are set even on error
         safeSetCampaigns([]);
         safeSetEvents([]);
@@ -1273,24 +1343,30 @@ export function AdminBrandsPage({ session }) {
   const getLinkedObjectsSummary = (brand) => {
     if (!brand) return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
     // Defensive: ensure all states are arrays before calling filter
-    const campaignsArray = Array.isArray(safeCampaignsState) ? safeCampaignsState : [];
-    const dealsArray = Array.isArray(safeDealsState) ? safeDealsState : [];
-    const eventsArray = Array.isArray(safeEventsState) ? safeEventsState : [];
-    const contractsArray = Array.isArray(safeContractsState) ? safeContractsState : [];
-    
-    const campaignCount = campaignsArray.filter(c => c && c.brandId === brand.id).length;
-    const dealCount = dealsArray.filter(d => d && d.brandId === brand.id).length;
-    const eventCount = eventsArray.filter(e => e && e.brandId === brand.id).length;
-    const contractCount = contractsArray.filter(c => c && c.brandId === brand.id).length;
-    const outreachCount = brand._count?.OutreachRecords || 0;
-    return {
-      total: campaignCount + dealCount + eventCount + contractCount + outreachCount,
-      campaigns: campaignCount,
-      deals: dealCount,
-      events: eventCount,
-      contracts: contractCount,
-      outreach: outreachCount
-    };
+    // Use the safe state wrappers which already guarantee arrays
+    try {
+      const campaignsArray = Array.isArray(safeCampaignsState) ? safeCampaignsState : [];
+      const dealsArray = Array.isArray(safeDealsState) ? safeDealsState : [];
+      const eventsArray = Array.isArray(safeEventsState) ? safeEventsState : [];
+      const contractsArray = Array.isArray(safeContractsState) ? safeContractsState : [];
+      
+      const campaignCount = campaignsArray.filter(c => c && c.brandId === brand.id).length;
+      const dealCount = dealsArray.filter(d => d && d.brandId === brand.id).length;
+      const eventCount = eventsArray.filter(e => e && e.brandId === brand.id).length;
+      const contractCount = contractsArray.filter(c => c && c.brandId === brand.id).length;
+      const outreachCount = brand._count?.OutreachRecords || 0;
+      return {
+        total: campaignCount + dealCount + eventCount + contractCount + outreachCount,
+        campaigns: campaignCount,
+        deals: dealCount,
+        events: eventCount,
+        contracts: contractCount,
+        outreach: outreachCount,
+      };
+    } catch (error) {
+      console.error('[BRANDS PAGE] Error in getLinkedObjectsSummary:', error, { brand, safeCampaignsState, safeDealsState, safeEventsState, safeContractsState });
+      return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
+    }
   };
 
   const enrichWebsite = async (websiteUrl) => {
