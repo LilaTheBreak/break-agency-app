@@ -25,7 +25,7 @@ import campaignsRouter from "./campaigns.js";
 import deckRouter from "./deck.js";
 
 // User management & onboarding
-import authRouter from "./auth.js";
+// NOTE: authRouter is mounted in server.ts at /api/auth, not here
 import onboardingRouter from "./onboarding.js";
 import adminUsersRouter from "./adminUsers.js";
 
