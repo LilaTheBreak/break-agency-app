@@ -150,6 +150,8 @@ function AddTalentModal({ open, onClose, onSuccess }) {
       toast.success("Talent created successfully");
       // Call onSuccess to refresh the list - wait for it to complete
       console.log("[TALENT] Calling onSuccess to refresh list...");
+      // Add small delay to ensure database transaction is committed
+      await new Promise(resolve => setTimeout(resolve, 500));
       await onSuccess();
       console.log("[TALENT] List refresh completed");
       onClose();

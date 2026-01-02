@@ -28,6 +28,7 @@ router.use((req: Request, res: Response, next) => {
  */
 router.get("/", async (req: Request, res: Response) => {
   try {
+    console.log("[TALENT] GET /api/admin/talent - Fetching all talents");
     const talents = await prisma.talent.findMany({
       include: {
         User: {
@@ -60,6 +61,8 @@ router.get("/", async (req: Request, res: Response) => {
         createdAt: "desc", // Use createdAt instead of name to avoid schema issues
       },
     });
+
+    console.log("[TALENT] Found", talents.length, "talents in database");
 
     // Calculate metrics for each talent with error handling
     const talentsWithMetrics = await Promise.all(
@@ -138,6 +141,7 @@ router.get("/", async (req: Request, res: Response) => {
       })
     );
 
+    console.log("[TALENT] Returning", talentsWithMetrics?.length || 0, "talents with metrics");
     sendList(res, talentsWithMetrics || []);
   } catch (error) {
     logError("Failed to fetch talent list", error, { userId: req.user?.id });
