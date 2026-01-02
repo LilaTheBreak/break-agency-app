@@ -63,8 +63,8 @@ const router = Router();
 //   res.json({ status: "ok" });
 // });
 
-// Public Auth (Google OAuth, login, logout)
-router.use(authRouter);
+// NOTE: Auth routes are mounted in server.ts at /api/auth
+// Do NOT mount authRouter here to avoid duplicate routes
 
 /* -------------------------------------------------------
    AUTH REQUIRED FOR EVERYTHING BELOW
