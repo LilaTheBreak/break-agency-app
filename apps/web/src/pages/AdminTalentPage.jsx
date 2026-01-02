@@ -106,8 +106,9 @@ function AddTalentModal({ open, onClose, onSuccess }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create talent");
+        const errorData = await response.json().catch(() => ({}));
+        // Backend returns { code, message } format, fallback to error field for compatibility
+        throw new Error(errorData.message || errorData.error || `Failed to create talent (${errorData.code || response.status})`);
       }
 
       const data = await response.json();
