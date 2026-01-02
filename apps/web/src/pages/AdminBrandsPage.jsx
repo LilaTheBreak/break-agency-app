@@ -755,8 +755,8 @@ export function AdminBrandsPage({ session }) {
       });
       
       // CRITICAL: Normalize API response to array format using shared helper
-      const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM') || (Array.isArray(brands) ? brands : []);
-      const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM') || (Array.isArray(contacts) ? contacts : []);
+      const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM');
+      const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM');
       
       console.log('[CRM] Fetched brands:', safeBrands.length);
       console.log('[CRM] Fetched contacts:', safeContacts.length);
