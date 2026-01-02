@@ -26,6 +26,8 @@ import { registerCronJobs } from "./cron/index.js";
 // Webhooks
 import { stripeWebhookHandler } from "./routes/webhooks.js";
 import signatureWebhookRouter from "./routes/signatureWebhooks.js";
+import { metaWebhookVerificationHandler } from "./routes/metaWebhook.js";
+import { metaWebhookVerificationHandler } from "./routes/metaWebhook.js";
 
 // Core Routers
 import paymentsRouter from "./routes/payments.js";
@@ -190,11 +192,23 @@ console.log(
   process.env.GOOGLE_CLIENT_SECRET ? `${process.env.GOOGLE_CLIENT_SECRET.slice(0, 4)}****` : "[MISSING]"
 );
 console.log(">>> GOOGLE_REDIRECT_URI =", process.env.GOOGLE_REDIRECT_URI);
+console.log(">>> WEBHOOK_VERIFY_TOKEN =", process.env.WEBHOOK_VERIFY_TOKEN ? `${process.env.WEBHOOK_VERIFY_TOKEN.slice(0, 4)}****` : "[MISSING]");
 
 // ------------------------------------------------------
 // VALIDATE PRODUCTION CREDENTIALS
 // ------------------------------------------------------
 import { validateProductionCredentials } from "./lib/env.js";
+
+// ------------------------------------------------------
+// VALIDATE META WEBHOOK VERIFY TOKEN
+// ------------------------------------------------------
+if (!process.env.WEBHOOK_VERIFY_TOKEN) {
+  console.warn("\n⚠️  WARNING: WEBHOOK_VERIFY_TOKEN environment variable is not set");
+  console.warn("   Meta webhook verification will fail until this is configured");
+  console.warn("   Set WEBHOOK_VERIFY_TOKEN in your environment variables");
+} else {
+  console.log("✅ WEBHOOK_VERIFY_TOKEN is configured");
+}
 
 const credentialValidation = validateProductionCredentials();
 
@@ -336,6 +350,10 @@ app.use(attachUserFromSession);
 
 // Stripe webhook MUST run BEFORE body parsers
 app.post("/webhooks/stripe", express.raw({ type: "application/json" }), stripeWebhookHandler);
+
+// Meta (Instagram) webhook verification - PUBLIC, no auth required
+// This is a GET endpoint for Meta's verification challenge only
+app.get("/api/webhooks/meta", metaWebhookVerificationHandler);
 
 // JSON parser (after stripe)
 app.use(express.json({ limit: "350mb" }));
