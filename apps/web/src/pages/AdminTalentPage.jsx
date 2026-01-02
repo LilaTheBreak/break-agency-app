@@ -367,7 +367,16 @@ export function AdminTalentPage() {
         throw new Error("Failed to fetch talent");
       }
       const data = await response.json();
-      setTalents(Array.isArray(data.talents) ? data.talents : []);
+      // Backend returns array directly, not wrapped in { talents: [...] }
+      // Handle both formats for backward compatibility
+      const talentsArray = Array.isArray(data) 
+        ? data 
+        : Array.isArray(data.talents) 
+          ? data.talents 
+          : Array.isArray(data.data)
+            ? data.data
+            : [];
+      setTalents(talentsArray);
     } catch (err) {
       console.error("Error fetching talent:", err);
       setError(err.message || "Failed to load talent");
