@@ -27,3 +27,23 @@ export async function getOnboardingStatus() {
     method: "GET",
   });
 }
+
+/**
+ * Skip onboarding and complete it later
+ * @returns {Promise<Response>}
+ */
+export async function skipOnboarding() {
+  return apiFetch("/api/onboarding/skip", {
+    method: "POST",
+  });
+}
+
+/**
+ * Mark onboarding as completed
+ * @returns {Promise<Response>}
+ */
+export async function completeOnboarding() {
+  return apiFetch("/api/onboarding/complete", {
+    method: "POST",
+  });
+}

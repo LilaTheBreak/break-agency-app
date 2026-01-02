@@ -8,9 +8,12 @@ export type SessionUser = {
   role: string; // Single canonical role
   onboardingStatus?: string;
   onboardingComplete?: boolean;
+  isApproved?: boolean; // Computed from onboarding_status === "approved"
 };
 
 export function buildSessionUser(user: User): SessionUser {
+  const isApproved = user.onboarding_status?.toLowerCase() === "approved";
+  
   return {
     id: user.id,
     email: user.email,
@@ -18,6 +21,7 @@ export function buildSessionUser(user: User): SessionUser {
     avatarUrl: user.avatarUrl,
     role: user.role, // Single role from User.role enum
     onboardingStatus: user.onboarding_status,
-    onboardingComplete: user.onboardingComplete ?? false
+    onboardingComplete: user.onboardingComplete ?? false,
+    isApproved
   };
 }

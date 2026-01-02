@@ -241,33 +241,33 @@ model CreatorBalance {
 }
 
 model CalendarEvent {
-  id               String    @id @default(cuid())
-  title            String
-  description      String?
-  startAt          DateTime
-  endAt            DateTime
-  type             String    // "meeting" | "event" | "content"
-  source           String    @default("internal") // "internal" | "email" | "google"
-  location         String?
-  status           String    @default("scheduled") // "scheduled" | "cancelled" | "completed"
-  isAllDay         Boolean   @default(false)
-  createdBy        String
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  type        String // "meeting" | "event" | "content"
+  source      String   @default("internal") // "internal" | "email" | "google"
+  location    String?
+  status      String   @default("scheduled") // "scheduled" | "cancelled" | "completed"
+  isAllDay    Boolean  @default(false)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   // Metadata for filtering and relations
-  metadata         Json?     // { brand, category, confirmed, etc. }
-  
+  metadata Json? // { brand, category, confirmed, etc. }
+
   // Relations to CRM entities
-  relatedBrandIds     String[] @default([])
-  relatedCreatorIds   String[] @default([])
-  relatedDealIds      String[] @default([])
-  relatedCampaignIds  String[] @default([])
-  relatedTaskIds      String[] @default([])
-  
+  relatedBrandIds    String[] @default([])
+  relatedCreatorIds  String[] @default([])
+  relatedDealIds     String[] @default([])
+  relatedCampaignIds String[] @default([])
+  relatedTaskIds     String[] @default([])
+
   // Creator relation
-  Creator          User      @relation("CalendarEventCreator", fields: [createdBy], references: [id])
-  
+  Creator User @relation("CalendarEventCreator", fields: [createdBy], references: [id])
+
   @@index([createdBy])
   @@index([startAt])
   @@index([endAt])
@@ -417,11 +417,11 @@ model CrmBrand {
   updatedAt            DateTime
   lifecycleStage       String?
   logo                 String?
-  logoUrl              String?           // Auto-imported logo URL
-  about                String?           // Enriched about text
-  socialLinks          Json?             // { instagram, linkedin, tiktok, etc. }
-  enrichedAt           DateTime?         // When enrichment was last run
-  enrichmentSource     String?           // e.g. "website", "manual"
+  logoUrl              String? // Auto-imported logo URL
+  about                String? // Enriched about text
+  socialLinks          Json? // { instagram, linkedin, tiktok, etc. }
+  enrichedAt           DateTime? // When enrichment was last run
+  enrichmentSource     String? // e.g. "website", "manual"
   primaryContactId     String?
   relationshipStrength String?
   CrmBrandContact      CrmBrandContact[]
@@ -1421,6 +1421,7 @@ model User {
   location                                String?
   managedTalentIds                        String[]                 @default([])
   onboardingComplete                      Boolean?                 @default(false)
+  onboardingSkippedAt                     DateTime?
   onboarding_responses                    Json?
   onboarding_status                       String?                  @default("pending_review")
   pronouns                                String?
@@ -1516,19 +1517,19 @@ model BrandSavedTalent {
 
 // Phase 5: BrandBrief model for briefs feature
 model BrandBrief {
-  id             String      @id
+  id             String       @id
   brandId        String
   title          String
   description    String?
   deliverables   String[]
   budget         String?
   deadline       DateTime?
-  status         String      @default("draft") // draft, published, closed
+  status         String       @default("draft") // draft, published, closed
   createdBy      String
-  versionHistory Json[]      @default([])
+  versionHistory Json[]       @default([])
   metadata       Json?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   BriefMatch     BriefMatch[]
 
   @@index([brandId])
@@ -1538,15 +1539,15 @@ model BrandBrief {
 
 // Phase 5: BriefMatch model for matching briefs to creators
 model BriefMatch {
-  id        String     @id
-  briefId   String
-  creatorId String
+  id         String     @id
+  briefId    String
+  creatorId  String
   matchScore Float
-  status    String     @default("pending") // pending, accepted, rejected
-  notes     String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  Brief     BrandBrief @relation(fields: [briefId], references: [id], onDelete: Cascade)
+  status     String     @default("pending") // pending, accepted, rejected
+  notes      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  Brief      BrandBrief @relation(fields: [briefId], references: [id], onDelete: Cascade)
 
   @@unique([briefId, creatorId])
   @@index([briefId])
@@ -1556,20 +1557,20 @@ model BriefMatch {
 
 // Phase 5: OutreachLead model
 model OutreachLead {
-  id                  String   @id
-  brandName           String
-  contactName         String?
-  contactEmail        String?
-  contactPhone        String?
-  website             String?
-  industry            String?
-  status              String   @default("new") // new, contacted, qualified, converted, lost
-  source              String?
-  notes               String?
+  id                    String   @id
+  brandName             String
+  contactName           String?
+  contactEmail          String?
+  contactPhone          String?
+  website               String?
+  industry              String?
+  status                String   @default("new") // new, contacted, qualified, converted, lost
+  source                String?
+  notes                 String?
   convertedToOutreachId String?
-  createdBy           String
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdBy             String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([status])
   @@index([createdBy])
@@ -1578,7 +1579,7 @@ model OutreachLead {
 
 // Phase 5: CreatorWeeklyReport model
 model CreatorWeeklyReport {
-  id            String    @id
+  id            String   @id
   creatorId     String
   weekStartDate DateTime
   weekEndDate   DateTime
@@ -1587,8 +1588,8 @@ model CreatorWeeklyReport {
   highlights    String[]
   challenges    String[]
   nextWeekGoals String[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([creatorId, weekStartDate])
   @@index([creatorId])
@@ -1597,32 +1598,32 @@ model CreatorWeeklyReport {
 
 // Phase 5: DealIntelligence model
 model DealIntelligence {
-  id             String   @id
-  dealId         String   @unique
-  summary        String?
-  riskFlags      String[]
+  id               String   @id
+  dealId           String   @unique
+  summary          String?
+  riskFlags        String[]
   performanceNotes String[]
-  insights       Json?
-  generatedAt    DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  insights         Json?
+  generatedAt      DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@index([dealId])
 }
 
 // Phase 5: Bundle model
 model Bundle {
-  id          String   @id
-  name        String
-  description String?
-  priceMin    Float?
-  priceMax    Float?
+  id           String   @id
+  name         String
+  description  String?
+  priceMin     Float?
+  priceMax     Float?
   deliverables Json?
-  dealId      String?
-  creatorId   String?
-  status      String   @default("active") // active, archived
-  createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  dealId       String?
+  creatorId    String?
+  status       String   @default("active") // active, archived
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([dealId])
   @@index([creatorId])

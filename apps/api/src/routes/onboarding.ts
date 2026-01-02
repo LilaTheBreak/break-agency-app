@@ -55,7 +55,10 @@ router.post("/onboarding/submit", async (req, res) => {
       // 2. Mark the user as having completed onboarding
       prisma.user.update({
         where: { id: userId },
-        data: { onboardingComplete: true },
+        data: { 
+          onboardingComplete: true,
+          onboardingSkippedAt: null, // Clear skip timestamp if completing
+        },
       }),
     ]);
 
@@ -63,6 +66,52 @@ router.post("/onboarding/submit", async (req, res) => {
   } catch (err) {
     console.error("Error submitting onboarding", err);
     res.status(500).json({ error: "Failed to submit onboarding" });
+  }
+});
+
+/**
+ * POST /api/onboarding/skip
+ * Allows user to skip onboarding and complete it later.
+ */
+router.post("/onboarding/skip", async (req, res) => {
+  try {
+    const userId = req.user!.id;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        onboardingSkippedAt: new Date(),
+        onboardingComplete: false, // Ensure it's marked as incomplete
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error skipping onboarding", err);
+    res.status(500).json({ error: "Failed to skip onboarding" });
+  }
+});
+
+/**
+ * POST /api/onboarding/complete
+ * Marks onboarding as completed (can be called after completing onboarding form).
+ */
+router.post("/onboarding/complete", async (req, res) => {
+  try {
+    const userId = req.user!.id;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        onboardingComplete: true,
+        onboardingSkippedAt: null, // Clear skip timestamp
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error completing onboarding", err);
+    res.status(500).json({ error: "Failed to complete onboarding" });
   }
 });
 

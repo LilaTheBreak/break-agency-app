@@ -22,6 +22,7 @@ import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
 import * as Sentry from "@sentry/react";
 import { RouteErrorBoundaryWrapper } from "./components/RouteErrorBoundary.jsx";
 import ToastProvider from "./components/ToastProvider.jsx";
+import { OnboardingReminderBanner } from "./components/OnboardingReminderBanner.jsx";
 import BrandDashboardLayout, {
   BrandOverviewPage,
   BrandProfilePage,
@@ -386,6 +387,7 @@ function App() {
                 </div>
               </div>
             )}
+            <OnboardingReminderBanner />
             <AppRoutes
               session={session}
               authModalOpen={authModalOpen}

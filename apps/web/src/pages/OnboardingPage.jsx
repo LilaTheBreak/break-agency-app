@@ -10,7 +10,7 @@ import {
   persistOnboardingState,
   shouldRouteToOnboarding
 } from "../lib/onboardingState.js";
-import { submitOnboarding } from "../services/onboardingClient.js";
+import { submitOnboarding, skipOnboarding } from "../services/onboardingClient.js";
 import { saveCrmOnboarding } from "../lib/crmOnboarding.js";
 import { upsertContactFromOnboarding } from "../lib/crmContacts.js";
 
@@ -351,6 +351,20 @@ export default function OnboardingPage() {
         return false;
       }
 
+      // Mark onboarding as completed in backend
+      try {
+        const completeResponse = await fetch("/api/onboarding/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+        if (!completeResponse.ok) {
+          console.warn("Failed to mark onboarding as completed:", await completeResponse.text());
+        }
+      } catch (err) {
+        console.warn("Error marking onboarding as completed:", err);
+      }
+
       // Update local storage
       markOnboardingSubmitted(user.email, resolvedRole, form.context);
       saveCrmOnboarding(user.email, resolvedRole, form.context, form);
@@ -372,16 +386,43 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleSkipOnboarding = async () => {
+    try {
+      const response = await skipOnboarding();
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Failed to skip onboarding" }));
+        console.error("Skip onboarding failed:", error);
+        setError(error.error || "Failed to skip onboarding. Please try again.");
+        return;
+      }
+      // Navigate to dashboard after skipping
+      const path = getDashboardPathForRole(resolvedRole);
+      navigate(path, { replace: true });
+    } catch (err) {
+      console.error("Error skipping onboarding:", err);
+      setError("Failed to skip onboarding. Please try again.");
+    }
+  };
+
   const renderPrimaryAction = () => {
     if (currentStep.id === "welcome") {
       return (
-        <button
-          type="button"
-          onClick={handleNext}
-          className="w-full rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white transition hover:-translate-y-0.5 hover:bg-brand-red"
-        >
-          Let’s set your direction (≈8 mins)
-        </button>
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={handleNext}
+            className="w-full rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white transition hover:-translate-y-0.5 hover:bg-brand-red"
+          >
+            Let's set your direction (≈8 mins)
+          </button>
+          <button
+            type="button"
+            onClick={handleSkipOnboarding}
+            className="w-full rounded-full border border-brand-black/20 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60 transition hover:bg-brand-black/5 hover:text-brand-black"
+          >
+            Do this later
+          </button>
+        </div>
       );
     }
     if (currentStep.id === "complete") {
@@ -396,21 +437,30 @@ export default function OnboardingPage() {
       );
     }
     return (
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            disabled={stepIndex === 0}
+            className="rounded-full border border-brand-black px-5 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white transition hover:-translate-y-0.5 hover:bg-brand-red"
+          >
+            Next
+          </button>
+        </div>
         <button
           type="button"
-          onClick={handleBack}
-          disabled={stepIndex === 0}
-          className="rounded-full border border-brand-black px-5 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={handleSkipOnboarding}
+          className="w-full rounded-full border border-brand-black/20 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60 transition hover:bg-brand-black/5 hover:text-brand-black"
         >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white transition hover:-translate-y-0.5 hover:bg-brand-red"
-        >
-          Next
+          Do this later
         </button>
       </div>
     );
