@@ -140,7 +140,7 @@ PORT=5001
 **Used by:** Express server  
 **Default:** 5001 if not set  
 **Failure Mode:** None (uses default)  
-**Note:** On Railway/Render, this is set automatically
+**Note:** On Railway, this is set automatically
 
 ---
 
@@ -495,7 +495,7 @@ This table shows which env vars are needed for each feature flag:
 - Use different secrets for dev/staging/prod
 - Rotate secrets regularly (quarterly)
 - Use environment variables, never commit secrets to git
-- Use Railway Secrets, Render Env Vars, or similar for deployment
+- Use Railway Secrets for deployment
 - Set `CRON_SECRET` to random string in production
 - Use HTTPS in production (`COOKIE_SECURE=true`)
 
@@ -536,7 +536,7 @@ STRIPE_SECRET_KEY=
 
 ```bash
 NODE_ENV=production
-PORT=${PORT}  # Set by host (Railway, Render)
+PORT=${PORT}  # Set by host (Railway)
 DATABASE_URL=${DATABASE_URL}  # Set by database provider
 SESSION_SECRET=${SESSION_SECRET}  # Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 JWT_SECRET=${JWT_SECRET}  # Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -578,5 +578,5 @@ S3_SECRET_KEY=${S3_SECRET_KEY}
 **Still stuck?**
 - Check `SMOKE_TESTS.md` for troubleshooting steps
 - Review `PRODUCTION_READY_FEATURES.md` for feature status
-- Check Railway/Render logs for environment variable issues
+- Check Railway logs for environment variable issues
 

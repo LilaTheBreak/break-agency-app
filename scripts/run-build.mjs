@@ -15,13 +15,13 @@ const run = (cmd, opts = {}) => {
 const isVercel = process.env.VERCEL === "1";
 
 // On Vercel: build ONLY the frontend (apps/web)
-// On Render/Local: build the entire workspace (shared, api, web)
+// On Railway/Local: build the entire workspace (shared, api, web)
 if (isVercel) {
-  // Deps are already installed by Vercel’s Install Command at the workspace root
+  // Deps are already installed by Vercel's Install Command at the workspace root
   // Just build the web app
   run("pnpm -C apps/web build");
 } else {
-  // Render/local: full monorepo build (shared → api → web)
+  // Railway/local: full monorepo build (shared → api → web)
   run("pnpm install --frozen-lockfile");
   run("pnpm -r build");
 }

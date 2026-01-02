@@ -11,11 +11,8 @@ Google OAuth login fails on Vercel because the API backend is not deployed.
 
 ### Step 1: Choose an API Hosting Platform
 
-**Recommended Options:**
-1. **Railway** - Easiest, free tier available
-2. **Render** - Free tier with good PostgreSQL support
-3. **Fly.io** - Great for Node.js apps
-4. **Heroku** - Classic option (no free tier)
+**Recommended Option:**
+1. **Railway** - Easiest, free tier available, currently in use
 
 ### Step 2: Deploy API to Railway (Example)
 

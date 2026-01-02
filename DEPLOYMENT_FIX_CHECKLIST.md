@@ -28,7 +28,7 @@ Environment: Production
 
 ### 2. Configure Backend Environment Variables
 
-In your backend hosting platform (Railway, Render, etc.), set these:
+In your backend hosting platform (Railway), set these:
 
 **Critical for login to work:**
 ```bash
@@ -63,9 +63,8 @@ git push
 ```
 
 **Backend:**
-- If using Railway: Push to trigger rebuild
-- If using Render: It will auto-redeploy on env change
-- Or manually restart the service
+- Push to trigger Railway rebuild
+- Or manually restart the service in Railway dashboard
 
 ### 4. Test After Deployment
 
