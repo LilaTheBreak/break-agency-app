@@ -822,7 +822,9 @@ export function AdminBrandsPage({ session }) {
 
   const selectedBrand = useMemo(() => {
     if (!drawerBrandId) return null;
-    return safeBrandsState.find((b) => b && b.id === drawerBrandId) || null;
+    // CRITICAL: Ensure safeBrandsState is an array before calling .find()
+    const brandsArray = normalizeApiArray(safeBrandsState);
+    return brandsArray.find((b) => b && b.id === drawerBrandId) || null;
   }, [safeBrandsState, drawerBrandId]);
   const brandCampaigns = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
