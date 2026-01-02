@@ -213,7 +213,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     }
 
     // Calculate snapshot metrics
-    const activeDeals = talent.Deal.filter((d) => d.status !== "CLOSED").length;
+    const activeDeals = talent.Deal.filter((d) => d.stage !== "COMPLETED" && d.stage !== "LOST").length;
     const totalRevenue = talent.Payment.reduce((sum, p) => sum + (p.amount || 0), 0);
     const totalPayouts = talent.Payout.reduce((sum, p) => sum + (p.amount || 0), 0);
 
@@ -261,8 +261,9 @@ router.get("/:id", async (req: Request, res: Response) => {
       },
       deals: talent.Deal.map((deal) => ({
         id: deal.id,
-        title: deal.title,
-        status: deal.status,
+        title: deal.brandName || `Deal ${deal.id.slice(0, 8)}`,
+        stage: deal.stage,
+        status: deal.stage, // Keep for backward compatibility with frontend
         value: deal.value,
         brand: deal.Brand
           ? {
