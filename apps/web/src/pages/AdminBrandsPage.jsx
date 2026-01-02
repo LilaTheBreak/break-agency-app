@@ -694,22 +694,62 @@ export function AdminBrandsPage({ session }) {
           return { contacts: [] }; // Contacts are optional - continue with empty array
         });
 
-        // Defensive: handle any unexpected API response shape
-        const brandsData = brandsResult && typeof brandsResult === 'object' ? brandsResult.brands : null;
-        const contactsData = contactsResult && typeof contactsResult === 'object' ? contactsResult.contacts : null;
+        // CRITICAL: Normalize API response to array format
+        // API can return: { brands: [...] } OR [...] OR "" OR null
+        let brandsData = null;
+        if (Array.isArray(brandsResult)) {
+          // API returned array directly
+          brandsData = brandsResult;
+        } else if (brandsResult && typeof brandsResult === 'object') {
+          // API returned object - extract brands property
+          brandsData = brandsResult.brands;
+        } else if (brandsResult === "" || brandsResult === null || brandsResult === undefined) {
+          // API returned empty string/null/undefined
+          brandsData = null;
+        }
+        
+        let contactsData = null;
+        if (Array.isArray(contactsResult)) {
+          // API returned array directly
+          contactsData = contactsResult;
+        } else if (contactsResult && typeof contactsResult === 'object') {
+          // API returned object - extract contacts property
+          contactsData = contactsResult.contacts;
+        } else if (contactsResult === "" || contactsResult === null || contactsResult === undefined) {
+          // API returned empty string/null/undefined
+          contactsData = null;
+        }
         
         console.log('[CRM] Initial brands loaded:', Array.isArray(brandsData) ? brandsData.length : 0);
         console.log('[CRM] Initial contacts loaded:', Array.isArray(contactsData) ? contactsData.length : 0);
+        console.log('[CRM] Brands response shape:', { 
+          isArray: Array.isArray(brandsResult), 
+          hasBrands: brandsResult?.brands !== undefined,
+          brandsDataType: typeof brandsData,
+          brandsDataIsArray: Array.isArray(brandsData)
+        });
         
-        // Defensive: ensure arrays are always arrays, even if API returns unexpected shape
+        // CRITICAL: Ensure arrays are always arrays, never empty strings or other types
         const safeBrands = Array.isArray(brandsData) ? brandsData : [];
         const safeContacts = Array.isArray(contactsData) ? contactsData : [];
         
+        // Runtime guard: Warn if data shape is unexpected
         if (!Array.isArray(brandsData) && brandsData !== null && brandsData !== undefined) {
-          console.warn('[CRM] Unexpected brands response shape:', { brandsResult, brandsData, type: typeof brandsData });
+          console.warn('[BRANDS CRM] Expected array, received:', { 
+            brandsResult, 
+            brandsData, 
+            type: typeof brandsData,
+            isArray: Array.isArray(brandsData),
+            value: brandsData
+          });
         }
         if (!Array.isArray(contactsData) && contactsData !== null && contactsData !== undefined) {
-          console.warn('[CRM] Unexpected contacts response shape:', { contactsResult, contactsData, type: typeof contactsData });
+          console.warn('[BRANDS CRM] Unexpected contacts response shape:', { 
+            contactsResult, 
+            contactsData, 
+            type: typeof contactsData,
+            isArray: Array.isArray(contactsData)
+          });
         }
         
         safeSetBrands(safeBrands);
@@ -781,22 +821,49 @@ export function AdminBrandsPage({ session }) {
         return { contacts: contacts || [] }; // Keep existing contacts on failure
       });
       
-      // Defensive: handle any unexpected API response shape
-      const brandsData = brandsResult && typeof brandsResult === 'object' ? brandsResult.brands : null;
-      const contactsData = contactsResult && typeof contactsResult === 'object' ? contactsResult.contacts : null;
+      // CRITICAL: Normalize API response to array format (same logic as initial load)
+      let brandsData = null;
+      if (Array.isArray(brandsResult)) {
+        brandsData = brandsResult;
+      } else if (brandsResult && typeof brandsResult === 'object') {
+        brandsData = brandsResult.brands;
+      } else if (brandsResult === "" || brandsResult === null || brandsResult === undefined) {
+        brandsData = null;
+      }
+      
+      let contactsData = null;
+      if (Array.isArray(contactsResult)) {
+        contactsData = contactsResult;
+      } else if (contactsResult && typeof contactsResult === 'object') {
+        contactsData = contactsResult.contacts;
+      } else if (contactsResult === "" || contactsResult === null || contactsResult === undefined) {
+        contactsData = null;
+      }
       
       console.log('[CRM] Fetched brands:', Array.isArray(brandsData) ? brandsData.length : 0);
       console.log('[CRM] Fetched contacts:', Array.isArray(contactsData) ? contactsData.length : 0);
       
-      // Defensive: ensure arrays are always arrays
+      // CRITICAL: Ensure arrays are always arrays, never empty strings or other types
       const safeBrands = Array.isArray(brandsData) ? brandsData : (Array.isArray(brands) ? brands : []);
       const safeContacts = Array.isArray(contactsData) ? contactsData : (Array.isArray(contacts) ? contacts : []);
       
+      // Runtime guard: Warn if data shape is unexpected
       if (!Array.isArray(brandsData) && brandsData !== null && brandsData !== undefined) {
-        console.warn('[CRM] Unexpected brands response shape in refresh:', { brandsResult, brandsData });
+        console.warn('[BRANDS CRM] Expected array in refresh, received:', { 
+          brandsResult, 
+          brandsData, 
+          type: typeof brandsData,
+          isArray: Array.isArray(brandsData),
+          value: brandsData
+        });
       }
       if (!Array.isArray(contactsData) && contactsData !== null && contactsData !== undefined) {
-        console.warn('[CRM] Unexpected contacts response shape in refresh:', { contactsResult, contactsData });
+        console.warn('[BRANDS CRM] Unexpected contacts response shape in refresh:', { 
+          contactsResult, 
+          contactsData,
+          type: typeof contactsData,
+          isArray: Array.isArray(contactsData)
+        });
       }
       
       safeSetBrands(safeBrands);
@@ -808,8 +875,35 @@ export function AdminBrandsPage({ session }) {
 
   // Ensure state is always an array before useMemo hooks
   const safeBrandsState = useMemo(() => {
+    // CRITICAL: Normalize brands to array - handle all edge cases
     if (Array.isArray(brands)) return brands;
-    console.warn('[BRANDS PAGE] brands state is not an array, using []', { brands, type: typeof brands });
+    // Handle empty string case (API bug - returns "" instead of [])
+    if (brands === "" || brands === null || brands === undefined) {
+      console.warn('[BRANDS CRM] brands is empty string/null/undefined, using []', { brands, type: typeof brands });
+      return [];
+    }
+    // Handle wrapped object case
+    if (brands && typeof brands === 'object') {
+      if (Array.isArray(brands.brands)) {
+        console.warn('[BRANDS CRM] brands is wrapped in object, extracting array', { brands });
+        return brands.brands;
+      }
+      if (Array.isArray(brands.data)) {
+        console.warn('[BRANDS CRM] brands is wrapped in data property, extracting array', { brands });
+        return brands.data;
+      }
+      if (Array.isArray(brands.items)) {
+        console.warn('[BRANDS CRM] brands is wrapped in items property, extracting array', { brands });
+        return brands.items;
+      }
+    }
+    // Runtime guard: Warn if data shape is unexpected
+    console.warn('[BRANDS CRM] Expected array, received:', { 
+      brands, 
+      type: typeof brands, 
+      isArray: Array.isArray(brands),
+      value: brands
+    });
     return [];
   }, [brands]);
   const safeCampaignsState = useMemo(() => {
@@ -920,13 +1014,32 @@ export function AdminBrandsPage({ session }) {
 
   const filtered = useMemo(() => {
     try {
+      // CRITICAL: Ensure safeBrandsState is an array before filtering
+      const brandsArray = Array.isArray(safeBrandsState) ? safeBrandsState : [];
+      
+      // Runtime guard: Warn if safeBrandsState is not an array
+      if (!Array.isArray(safeBrandsState)) {
+        console.warn('[BRANDS CRM] safeBrandsState is not an array in filtered useMemo:', { 
+          safeBrandsState, 
+          type: typeof safeBrandsState,
+          isArray: Array.isArray(safeBrandsState),
+          value: safeBrandsState
+        });
+      }
+      
       const q = query.trim().toLowerCase();
-      return safeBrandsState
+      return brandsArray
         .filter((b) => b && (statusFilter === "All" ? true : b.status === statusFilter))
         .filter((b) => (q ? `${b.brandName || ""} ${b.website || ""} ${b.industry || ""}`.toLowerCase().includes(q) : true))
-        .sort((a, b) => (b.lastActivityAt || b.createdAt || "").localeCompare(a.lastActivityAt || a.createdAt || ""));
+        .sort((a, b) => (b.lastActivityAt || a.createdAt || "").localeCompare(a.lastActivityAt || a.createdAt || ""));
     } catch (error) {
-      console.error('[BRANDS PAGE] Error in filtered useMemo:', error, { brands: safeBrandsState, query, statusFilter });
+      console.error('[BRANDS CRM] Error in filtered useMemo:', error, { 
+        safeBrandsState, 
+        type: typeof safeBrandsState,
+        isArray: Array.isArray(safeBrandsState),
+        query, 
+        statusFilter 
+      });
       return [];
     }
   }, [safeBrandsState, query, statusFilter]);
@@ -986,14 +1099,32 @@ export function AdminBrandsPage({ session }) {
   const brandContacts = useMemo(() => {
     if (!selectedBrand || !selectedBrand.id) return [];
     try {
-      return safeContactsState
+      // CRITICAL: Ensure safeContactsState is an array before filtering
+      const contacts = Array.isArray(safeContactsState) ? safeContactsState : [];
+      
+      // Runtime guard: Warn if safeContactsState is not an array
+      if (!Array.isArray(safeContactsState)) {
+        console.warn('[BRANDS CRM] safeContactsState is not an array in brandContacts useMemo:', { 
+          safeContactsState, 
+          type: typeof safeContactsState,
+          isArray: Array.isArray(safeContactsState),
+          value: safeContactsState
+        });
+      }
+      
+      return contacts
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => {
           if (Boolean(b.primaryContact) !== Boolean(a.primaryContact)) return b.primaryContact ? 1 : -1;
           return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(`${b.lastName || ""} ${b.firstName || ""}`);
         });
     } catch (error) {
-      console.error('[BRANDS PAGE] Error in brandContacts useMemo:', error, { contacts: safeContactsState, selectedBrand });
+      console.error('[BRANDS CRM] Error in brandContacts useMemo:', error, { 
+        safeContactsState, 
+        type: typeof safeContactsState,
+        isArray: Array.isArray(safeContactsState),
+        selectedBrand 
+      });
       return [];
     }
   }, [safeContactsState, selectedBrand]);
