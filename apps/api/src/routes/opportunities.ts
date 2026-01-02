@@ -86,23 +86,29 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN'
     const { title, description, brandId, isActive, deadline, payment } = validation.data;
     const createdBy = req.user?.id || 'system';
 
+    // Generate unique ID for opportunity
+    const opportunityId = `opp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Map validated data to Prisma schema (handle legacy fields)
+    // Note: Schema requires non-null strings for brand, location, deliverables, payment, deadline, image, logo, type
     const opportunity = await prisma.opportunity.create({
       data: {
+        id: opportunityId,
         title,
         description: description || null,
         brandId: brandId || null,
-        brand: req.body.brand || null, // Legacy field
-        location: req.body.location || null, // Legacy field
-        deliverables: req.body.deliverables || null, // Legacy field
-        payment: payment || req.body.payment || null,
-        deadline: deadline ? new Date(deadline) : (req.body.deadline ? new Date(req.body.deadline) : null),
+        brand: req.body.brand || '', // Required field - use empty string if not provided
+        location: req.body.location || '', // Required field - use empty string if not provided
+        deliverables: req.body.deliverables || '', // Required field - use empty string if not provided
+        payment: payment ? String(payment) : (req.body.payment ? String(req.body.payment) : ''), // Required field - convert to string
+        deadline: deadline ? new Date(deadline).toISOString() : (req.body.deadline ? new Date(req.body.deadline).toISOString() : ''), // Required field - convert to ISO string
         status: req.body.status || 'Live brief · Login required to apply',
-        image: req.body.image || null,
-        logo: req.body.logo || null,
-        type: req.body.type || null,
+        image: req.body.image || '', // Required field - use empty string if not provided
+        logo: req.body.logo || '', // Required field - use empty string if not provided
+        type: req.body.type || '', // Required field - use empty string if not provided
         isActive: isActive !== undefined ? isActive : true,
-        createdBy
+        createdBy,
+        updatedAt: new Date()
       }
     });
 
