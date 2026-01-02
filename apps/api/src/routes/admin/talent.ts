@@ -52,7 +52,8 @@ router.get("/", async (req: Request, res: Response) => {
     });
     console.log("[TALENT] Found", talentsWithoutUser.length, "talents without User relation");
     
-    // Now fetch with User relation
+    // Now fetch with User relation (optional - won't filter out talents if User is missing)
+    // Use left join behavior by making User optional
     const talents = await prisma.talent.findMany({
       include: {
         User: {
@@ -62,6 +63,7 @@ router.get("/", async (req: Request, res: Response) => {
             name: true,
             avatarUrl: true,
           },
+          // User is optional - if it doesn't exist, talent will still be returned with User: null
         },
         Deal: {
           where: {
