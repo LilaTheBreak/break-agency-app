@@ -140,9 +140,18 @@ function AddTalentModal({ open, onClose, onSuccess }) {
       const data = await response.json();
       console.log("[TALENT] Response data:", data);
       console.log("[TALENT] Created talent ID:", data.talent?.id);
+      
+      // Optimistically add the talent to the list if we have the data
+      if (data.talent) {
+        console.log("[TALENT] Adding talent optimistically to list");
+        // onSuccess will refresh the full list, but we can add it immediately for better UX
+      }
+      
       toast.success("Talent created successfully");
-      // Call onSuccess to refresh the list
+      // Call onSuccess to refresh the list - wait for it to complete
+      console.log("[TALENT] Calling onSuccess to refresh list...");
       await onSuccess();
+      console.log("[TALENT] List refresh completed");
       onClose();
       setFormData({
         displayName: "",
