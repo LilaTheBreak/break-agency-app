@@ -155,9 +155,10 @@ router.get("/pages", async (req: Request, res: Response) => {
       },
     });
 
+    console.log(`[CMS] GET /pages: Found ${pages.length} pages`);
     res.json({ pages });
   } catch (error) {
-    console.error("Failed to fetch pages:", error);
+    console.error("[CMS] Failed to fetch pages:", error);
     res.status(500).json({ error: "Failed to fetch pages" });
   }
 });

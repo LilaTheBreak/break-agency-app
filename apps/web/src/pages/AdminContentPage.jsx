@@ -625,22 +625,37 @@ export function AdminContentPage({ session }) {
         <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
           <label className="block mb-3">
             <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Select Page</span>
-            <select
-              value={selectedPage?.id || ""}
-              onChange={(e) => {
-                const page = pages.find((p) => p.id === e.target.value);
-                setSelectedPage(page || null);
-                setPreviewMode(false);
-              }}
-              className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
-            >
-              <option value="">Choose a page...</option>
-              {pages.map((page) => (
-                <option key={page.id} value={page.id}>
-                  {page.title} ({page.roleScope})
-                </option>
-              ))}
-            </select>
+            {loading ? (
+              <div className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black/60">
+                Loading pages...
+              </div>
+            ) : pages.length === 0 ? (
+              <div className="mt-2 rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-6 text-center">
+                <p className="text-sm text-brand-black/70">
+                  No CMS pages available yet.
+                </p>
+                <p className="mt-1 text-xs text-brand-black/50">
+                  Pages will appear here once created.
+                </p>
+              </div>
+            ) : (
+              <select
+                value={selectedPage?.id || ""}
+                onChange={(e) => {
+                  const page = pages.find((p) => p.id === e.target.value);
+                  setSelectedPage(page || null);
+                  setPreviewMode(false);
+                }}
+                className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
+              >
+                <option value="">Choose a page...</option>
+                {pages.map((page) => (
+                  <option key={page.id} value={page.id}>
+                    {page.title} ({page.roleScope})
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
         </div>
 
