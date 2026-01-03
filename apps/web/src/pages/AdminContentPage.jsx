@@ -391,13 +391,27 @@ export function AdminContentPage({ session }) {
 
   const loadPages = async () => {
     try {
+      setLoading(true);
       const response = await apiFetch("/api/content/pages");
-      if (!response.ok) throw new Error("Failed to load pages");
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to load pages (${response.status})`);
+      }
+      
       const data = await response.json();
-      setPages(data.pages || []);
+      const pagesArray = Array.isArray(data.pages) ? data.pages : [];
+      
+      console.log("[CMS] Loaded pages:", pagesArray.length, pagesArray);
+      setPages(pagesArray);
+      
+      if (pagesArray.length === 0) {
+        console.warn("[CMS] No pages found in database. Consider running seed script.");
+      }
     } catch (error) {
-      console.error("Failed to load pages:", error);
-      toast.error("Failed to load pages");
+      console.error("[CMS] Failed to load pages:", error);
+      toast.error(error.message || "Failed to load pages");
+      setPages([]); // Ensure pages is always an array
     } finally {
       setLoading(false);
     }
