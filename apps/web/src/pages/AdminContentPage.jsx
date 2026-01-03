@@ -389,6 +389,29 @@ export function AdminContentPage({ session }) {
     }
   }, [selectedPage, previewMode]);
 
+  const seedPages = async () => {
+    try {
+      const response = await apiFetch("/api/content/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("[CMS] Seeding result:", data);
+        toast.success(`Seeded ${data.created} pages successfully`);
+        // Refresh pages after seeding
+        await loadPages();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("[CMS] Seeding failed:", errorData);
+        toast.error(errorData.error || "Failed to seed pages");
+      }
+    } catch (error) {
+      console.error("[CMS] Error seeding pages:", error);
+      toast.error("Failed to seed pages");
+    }
+  };
+
   const loadPages = async () => {
     try {
       setLoading(true);
