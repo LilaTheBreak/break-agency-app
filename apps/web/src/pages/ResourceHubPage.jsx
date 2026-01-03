@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { BlockRenderer } from "../components/BlockRenderer.jsx";
+import { usePublicCmsPage } from "../hooks/usePublicCmsPage.js";
 
 const PUBLIC_RESOURCES = [
   {
@@ -84,6 +86,23 @@ const EVENTS = [
 ];
 
 export function ResourceHubPage() {
+  // Fetch CMS content for resources page (public, no auth required)
+  const cms = usePublicCmsPage("resources");
+
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-[#f6efe7] text-slate-900 min-h-screen">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <ResourceHubHardcoded />;
+}
+
+function ResourceHubHardcoded() {
   return (
     <div className="bg-white text-slate-900">
       <section className="border-b border-slate-200 bg-white">

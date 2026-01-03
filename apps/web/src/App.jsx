@@ -106,6 +106,8 @@ import { shouldRouteToOnboarding, getDashboardPathForRole } from "./lib/onboardi
 import { setSentryTags } from "./lib/sentry.js";
 // TEMPORARY — SENTRY VERIFICATION: Sentry already imported on line 22
 import { ErrorTestButton } from "./components/ErrorTestButton.jsx";
+import { BlockRenderer } from "./components/BlockRenderer.jsx";
+import { usePublicCmsPage } from "./hooks/usePublicCmsPage.js";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -1266,6 +1268,23 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
 
 
 function LandingPage() {
+  // Fetch CMS content for welcome page (public, no auth required)
+  const cms = usePublicCmsPage("welcome");
+
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-[#f6efe7] text-slate-900">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <LandingPageHardcoded />;
+}
+
+function LandingPageHardcoded() {
   const clientLogos = [
     { src: "/logos/amex.png", alt: "AMEX" },
     { src: "/logos/audemars-piguet.png", alt: "Audemars Piguet" },

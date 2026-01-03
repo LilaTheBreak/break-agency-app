@@ -26,7 +26,78 @@ function isSystemPage(slug: string): boolean {
 
 const router = Router();
 
-// All CMS routes require superadmin access
+// ============================================================================
+// PUBLIC READ-ONLY CMS ENDPOINT (No Authentication Required)
+// Must be defined BEFORE the auth middleware
+// ============================================================================
+
+/**
+ * Public CMS allowlist - only these slugs are accessible via public endpoint
+ */
+const PUBLIC_CMS_ALLOWLIST = ["welcome", "resources"] as const;
+
+/**
+ * GET /api/content/public/:slug
+ * 
+ * Public read-only endpoint for CMS pages.
+ * - No authentication required
+ * - Returns only published + visible blocks
+ * - Never returns drafts
+ * - Only allows slugs in PUBLIC_CMS_ALLOWLIST
+ */
+router.get("/public/:slug", async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+
+    // Hard allowlist check - only allow specific public pages
+    if (!PUBLIC_CMS_ALLOWLIST.includes(slug as any)) {
+      return res.status(404).json({ error: "Page not found" });
+    }
+
+    // Find the page
+    const page = await prisma.page.findUnique({
+      where: { slug },
+      include: {
+        blocks: {
+          where: {
+            isVisible: true, // Only visible blocks
+          },
+          orderBy: {
+            order: "asc",
+          },
+        },
+      },
+    });
+
+    if (!page) {
+      return res.status(404).json({ error: "Page not found" });
+    }
+
+    if (!page.isActive) {
+      return res.status(404).json({ error: "Page not found" });
+    }
+
+    // Return only published blocks (no drafts, no admin metadata)
+    const publicBlocks = page.blocks.map((block) => ({
+      id: block.id,
+      blockType: block.blockType,
+      contentJson: block.contentJson,
+      order: block.order,
+      // Explicitly exclude: createdBy, updatedAt, pageId, isVisible (already filtered)
+    }));
+
+    return res.json({
+      slug: page.slug,
+      title: page.title,
+      blocks: publicBlocks,
+    });
+  } catch (error) {
+    console.error("[CMS Public] Error fetching public page:", error);
+    return res.status(500).json({ error: "Failed to fetch page" });
+  }
+});
+
+// All other CMS routes require superadmin access
 router.use(requireAuth);
 router.use((req: Request, res: Response, next) => {
   if (!isSuperAdmin(req.user!)) {
