@@ -5,6 +5,7 @@ import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { z } from "zod";
 import { ensureCmsPagesExist } from "../lib/cmsSeeder.js";
+import { hydrateAllCmsPages, hydrateCmsPage } from "../lib/cmsHydration.js";
 
 /**
  * System-defined CMS pages that cannot be deleted or modified (slug/roleScope)
@@ -172,6 +173,46 @@ router.post("/seed", async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Failed to seed CMS pages",
+    });
+  }
+});
+
+/**
+ * POST /api/content/hydrate
+ * One-time hydration: Convert existing hardcoded content to CMS blocks
+ * Only hydrates pages that have zero blocks (idempotent, safe to re-run)
+ */
+router.post("/hydrate", async (req: Request, res: Response) => {
+  try {
+    const { pageSlug } = req.body;
+
+    if (pageSlug) {
+      // Hydrate single page
+      const result = await hydrateCmsPage(pageSlug);
+      return res.json({
+        success: true,
+        hydrated: result.hydrated,
+        blocksCreated: result.blocksCreated,
+        message: result.hydrated
+          ? `Hydrated ${pageSlug}: Created ${result.blocksCreated} blocks`
+          : `Page ${pageSlug} already has blocks or not found`,
+      });
+    } else {
+      // Hydrate all pages
+      const result = await hydrateAllCmsPages();
+      return res.json({
+        success: true,
+        totalHydrated: result.totalHydrated,
+        totalBlocksCreated: result.totalBlocksCreated,
+        results: result.results,
+        message: `Hydrated ${result.totalHydrated} pages, created ${result.totalBlocksCreated} blocks`,
+      });
+    }
+  } catch (error) {
+    console.error("[CMS] Hydration failed:", error);
+    return res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to hydrate CMS pages",
     });
   }
 });
