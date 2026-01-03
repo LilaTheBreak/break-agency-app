@@ -841,7 +841,13 @@ export function AdminContentPage({ session }) {
 
               {displayBlocks.length === 0 && (
                 <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
-                  <p className="text-sm text-brand-black/60">No blocks yet. Add your first block to get started.</p>
+                  <p className="text-sm text-brand-black/60 mb-4">No blocks yet. Click below to hydrate with default content.</p>
+                  <button
+                    onClick={hydratePages}
+                    className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black transition-colors"
+                  >
+                    Hydrate with Default Content
+                  </button>
                 </div>
               )}
             </div>
