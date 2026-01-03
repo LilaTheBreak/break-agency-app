@@ -5,11 +5,21 @@ import prisma from "../lib/prisma.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { enrichBrandFromUrl } from "../services/brandEnrichment.js";
 import { logError } from "../lib/logger.js";
+import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 
+// All CRM routes require admin access
+router.use(requireAuth);
+router.use((req: Request, res: Response, next) => {
+  if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  }
+  next();
+});
+
 // GET /api/crm-brands - Get all brands
-router.get("/", requireAuth, async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const brands = await prisma.crmBrand.findMany({
       include: {
@@ -57,7 +67,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 // GET /api/crm-brands/:id - Get single brand with details
-router.get("/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -115,7 +125,7 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
 });
 
 // POST /api/crm-brands - Create brand
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const {
       brandName,
@@ -221,7 +231,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 // PATCH /api/crm-brands/:id - Update brand
-router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const {
@@ -333,7 +343,7 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
 });
 
 // DELETE /api/crm-brands/:id - Delete brand
-router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const user = (req as any).user;
@@ -399,7 +409,7 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
 });
 
 // POST /api/crm-brands/batch-import - Import brands from localStorage
-router.post("/batch-import", requireAuth, async (req: Request, res: Response) => {
+router.post("/batch-import", async (req: Request, res: Response) => {
   try {
     const { brands, contacts, outreach } = req.body;
 

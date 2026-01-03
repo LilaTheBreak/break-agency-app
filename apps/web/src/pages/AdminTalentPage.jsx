@@ -398,21 +398,8 @@ export function AdminTalentPage() {
       console.log("[TALENT] Fetched data:", data);
       console.log("[TALENT] Data type:", typeof data, "Is array:", Array.isArray(data));
       
-      // Backend returns array directly via sendList()
-      // Handle both formats for backward compatibility
-      let talentsArray = [];
-      if (Array.isArray(data)) {
-        talentsArray = data;
-      } else if (data && Array.isArray(data.talents)) {
-        talentsArray = data.talents;
-      } else if (data && Array.isArray(data.data)) {
-        talentsArray = data.data;
-      } else if (data && data.success && Array.isArray(data.data)) {
-        talentsArray = data.data;
-      } else {
-        console.warn("[TALENT] Unexpected response format:", data);
-        talentsArray = [];
-      }
+      // Use shared helper to normalize API responses (consistent with other pages)
+      const talentsArray = normalizeApiArray(data, 'talents');
       
       console.log("[TALENT] Parsed talents array:", talentsArray.length, "talents");
       if (talentsArray.length > 0) {

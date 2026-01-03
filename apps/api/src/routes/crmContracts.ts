@@ -5,11 +5,21 @@ import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
 import { sendSuccess, sendList, sendEmptyList, handleApiError } from "../utils/apiResponse.js";
+import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 
 const router = express.Router();
 
+// All CRM routes require admin access
+router.use(requireAuth);
+router.use((req, res, next) => {
+  if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  }
+  next();
+});
+
 // GET /api/crm-contracts - List all contracts with optional filters
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { brandId, dealId, status } = req.query;
 
@@ -56,7 +66,7 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // GET /api/crm-contracts/:id - Get single contract
-router.get("/:id", requireAuth, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -96,7 +106,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 });
 
 // POST /api/crm-contracts - Create new contract
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const {
       contractName,
@@ -189,7 +199,7 @@ router.post("/", requireAuth, async (req, res) => {
 });
 
 // PATCH /api/crm-contracts/:id - Update contract
-router.patch("/:id", requireAuth, async (req, res) => {
+router.patch("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -296,7 +306,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
 });
 
 // DELETE /api/crm-contracts/:id - Delete contract
-router.delete("/:id", requireAuth, async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -339,7 +349,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
 });
 
 // POST /api/crm-contracts/:id/notes - Add note to contract
-router.post("/:id/notes", requireAuth, async (req, res) => {
+router.post("/:id/notes", async (req, res) => {
   try {
     const { id } = req.params;
     const { note } = req.body;
@@ -401,7 +411,7 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
 });
 
 // POST /api/crm-contracts/batch-import - Import contracts from localStorage
-router.post("/batch-import", requireAuth, async (req, res) => {
+router.post("/batch-import", async (req, res) => {
   try {
     const { contracts } = req.body;
 

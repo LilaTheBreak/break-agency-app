@@ -5,7 +5,7 @@ import prisma from "../../lib/prisma.js";
 import { z } from "zod";
 import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
 import { logAdminActivity } from "../../lib/adminActivityLogger.js";
-import { logAuditEvent } from "../../lib/auditLogger.js";
+import { logAuditEvent, logDestructiveAction } from "../../lib/auditLogger.js";
 import { logError } from "../../lib/logger.js";
 import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from "../../utils/apiResponse.js";
 import { validateRequestSafe, TalentCreateSchema, TalentUpdateSchema, TalentLinkUserSchema } from "../../utils/validationSchemas.js";
@@ -946,6 +946,80 @@ router.get("/:id/inbox", async (req: Request, res: Response) => {
   } catch (error) {
     logError("Failed to fetch talent inbox", error, { userId: req.user?.id, talentId: id });
     res.status(500).json({ error: "Failed to fetch talent inbox" });
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/:id
+ * Delete talent (admin only)
+ */
+router.delete("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const talent = await prisma.talent.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+      },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Check for related records before deletion
+    const dealCount = await prisma.deal.count({
+      where: { talentId: id },
+    });
+
+    const taskCount = await prisma.creatorTask.count({
+      where: { creatorId: id },
+    });
+
+    if (dealCount > 0 || taskCount > 0) {
+      return sendError(
+        res,
+        "CONFLICT",
+        `Cannot delete talent: ${dealCount} deal(s) and ${taskCount} task(s) are linked to this talent. Please remove these relationships first.`,
+        409
+      );
+    }
+
+    await prisma.talent.delete({ where: { id } });
+
+    // Log destructive action
+    try {
+      await Promise.all([
+        logAdminActivity(req, {
+          event: "TALENT_DELETED",
+          metadata: {
+            talentId: id,
+            talentName: talent.name,
+          },
+        }),
+        logDestructiveAction(req, {
+          action: "TALENT_DELETED",
+          entityType: "Talent",
+          entityId: id,
+          metadata: {
+            talentName: talent.name,
+          },
+        }),
+      ]);
+    } catch (logError) {
+      console.error("Failed to log talent deletion:", logError);
+    }
+
+    sendSuccess(res, { message: "Talent deleted successfully" });
+  } catch (error) {
+    logError("Failed to delete talent", error, { userId: req.user?.id, talentId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/admin/talent/:id', method: 'DELETE' },
+    });
+    handleApiError(res, error, 'Failed to delete talent', 'TALENT_DELETE_FAILED');
   }
 });
 

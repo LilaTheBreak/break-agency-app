@@ -5,11 +5,18 @@ import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
 import { sendList, sendEmptyList, handleApiError } from "../utils/apiResponse.js";
+import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 
-// Apply authentication to all routes
+// All CRM routes require admin access
 router.use(requireAuth);
+router.use((req: Request, res: Response, next) => {
+  if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  }
+  next();
+});
 
 /**
  * GET /api/crm-events

@@ -7,11 +7,11 @@ import { z } from "zod";
 
 const router = Router();
 
-// All CMS routes require admin access
+// All CMS routes require superadmin access
 router.use(requireAuth);
 router.use((req: Request, res: Response, next) => {
-  if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
-    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  if (!isSuperAdmin(req.user!)) {
+    return res.status(403).json({ error: "Forbidden: Superadmin access required" });
   }
   next();
 });
@@ -26,20 +26,20 @@ const HeroBlockSchema = z.object({
   subheadline: z.string().max(500).optional(),
   primaryCtaText: z.string().max(100).optional(),
   primaryCtaLink: z.string().url().optional(),
-});
+}).strict();
 
 const TextBlockSchema = z.object({
   headline: z.string().max(200).optional(),
   body: z.string().max(5000),
   link: z.string().url().optional(),
   linkText: z.string().max(100).optional(),
-});
+}).strict();
 
 const ImageBlockSchema = z.object({
   image: z.string().url(),
   caption: z.string().max(500).optional(),
   aspectRatio: z.enum(["16:9", "4:3", "1:1", "3:2"]).optional(),
-});
+}).strict();
 
 const SplitBlockSchema = z.object({
   image: z.string().url(),
@@ -48,18 +48,18 @@ const SplitBlockSchema = z.object({
   body: z.string().max(5000),
   ctaText: z.string().max(100).optional(),
   ctaLink: z.string().url().optional(),
-});
+}).strict();
 
 const AnnouncementBlockSchema = z.object({
   message: z.string().min(1).max(1000),
   ctaText: z.string().max(100).optional(),
   ctaLink: z.string().url().optional(),
   variant: z.enum(["info", "success", "warning"]).default("info"),
-});
+}).strict();
 
 const SpacerBlockSchema = z.object({
   size: z.enum(["sm", "md", "lg"]).default("md"),
-});
+}).strict();
 
 /**
  * Validate content JSON based on block type
@@ -170,6 +170,11 @@ router.get("/pages/:slug", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
     const preview = req.query.preview === "true";
+    
+    // Preview mode requires superadmin access
+    if (preview && !isSuperAdmin(req.user!)) {
+      return res.status(403).json({ error: "Forbidden: Preview mode requires superadmin access" });
+    }
 
     const page = await prisma.page.findUnique({
       where: { slug },
@@ -581,27 +586,32 @@ router.post("/pages/:slug/publish", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Page not found" });
     }
 
-    // Delete all existing blocks
-    await prisma.pageBlock.deleteMany({ where: { pageId: page.id } });
+    // Publish operation wrapped in transaction for atomicity
+    const publishedBlocks = await prisma.$transaction(async (tx) => {
+      // Delete all existing blocks
+      await tx.pageBlock.deleteMany({ where: { pageId: page.id } });
 
-    // Create blocks from drafts
-    const publishedBlocks = await Promise.all(
-      page.drafts.map((draft) =>
-        prisma.pageBlock.create({
-          data: {
-            pageId: page.id,
-            blockType: draft.blockType,
-            contentJson: draft.contentJson,
-            order: draft.order,
-            isVisible: draft.isVisible,
-            createdBy: draft.createdBy || req.user!.id,
-          },
-        })
-      )
-    );
+      // Create blocks from drafts
+      const newBlocks = await Promise.all(
+        page.drafts.map((draft) =>
+          tx.pageBlock.create({
+            data: {
+              pageId: page.id,
+              blockType: draft.blockType,
+              contentJson: draft.contentJson,
+              order: draft.order,
+              isVisible: draft.isVisible,
+              createdBy: draft.createdBy || req.user!.id,
+            },
+          })
+        )
+      );
 
-    // Clear drafts after publishing
-    await prisma.pageBlockDraft.deleteMany({ where: { pageId: page.id } });
+      // Clear drafts after publishing
+      await tx.pageBlockDraft.deleteMany({ where: { pageId: page.id } });
+
+      return newBlocks;
+    });
 
     // Log activity
     try {

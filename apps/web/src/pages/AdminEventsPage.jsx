@@ -280,11 +280,10 @@ export function AdminEventsPage({ session }) {
   };
 
   useEffect(() => {
-    loadEvents();
-    // Also load campaigns for display (they might still be in localStorage)
+    // Load campaigns from localStorage (they might still be there)
     const loadedCampaigns = safeRead("break_admin_crm_campaigns_v1", []);
     setCampaigns(loadedCampaigns);
-    // Refresh data from API
+    // Load events from API (only once)
     loadEvents();
   }, []);
 
@@ -367,8 +366,9 @@ export function AdminEventsPage({ session }) {
       });
 
     const sorted = filtered.sort((a, b) => {
-      const aTime = a.startDateTime ? new Date(a.startDateTime).getTime() : 0;
-      const bTime = b.startDateTime ? new Date(b.startDateTime).getTime() : 0;
+      // Defensive: Handle invalid dates gracefully
+      const aTime = a.startDateTime ? (new Date(a.startDateTime).getTime() || 0) : 0;
+      const bTime = b.startDateTime ? (new Date(b.startDateTime).getTime() || 0) : 0;
       return view === "past" ? bTime - aTime : aTime - bTime;
     });
     return sorted;

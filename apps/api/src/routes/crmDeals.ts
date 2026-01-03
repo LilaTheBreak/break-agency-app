@@ -5,11 +5,21 @@ import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
 import { DealStage } from "@prisma/client";
+import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 
 const router = express.Router();
 
+// All CRM routes require admin access
+router.use(requireAuth);
+router.use((req, res, next) => {
+  if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  }
+  next();
+});
+
 // GET /api/crm-deals - List all deals with optional filters
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { brandId, status, owner } = req.query;
 
@@ -73,7 +83,7 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // GET /api/crm-deals/:id - Get a single deal by ID
-router.get("/:id", requireAuth, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -122,7 +132,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 });
 
 // POST /api/crm-deals - Create a new deal
-router.post("/", requireAuth, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { dealName, brandId, status, estimatedValue, expectedCloseDate, notes, userId, talentId } = req.body;
 
@@ -221,7 +231,7 @@ router.post("/", requireAuth, async (req, res) => {
 });
 
 // PATCH /api/crm-deals/:id - Update a deal
-router.patch("/:id", requireAuth, async (req, res) => {
+router.patch("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { dealName, brandId, status, estimatedValue, expectedCloseDate, notes } = req.body;
@@ -305,7 +315,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
 });
 
 // DELETE /api/crm-deals/:id - Delete a deal
-router.delete("/:id", requireAuth, async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -350,7 +360,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
 });
 
 // POST /api/crm-deals/:id/notes - Add a note to a deal
-router.post("/:id/notes", requireAuth, async (req, res) => {
+router.post("/:id/notes", async (req, res) => {
   try {
     const { id } = req.params;
     const { text, author } = req.body;
@@ -412,7 +422,7 @@ router.post("/:id/notes", requireAuth, async (req, res) => {
 });
 
 // POST /api/crm-deals/batch-import - Import deals from localStorage
-router.post("/batch-import", requireAuth, async (req, res) => {
+router.post("/batch-import", async (req, res) => {
   try {
     const { deals } = req.body;
 

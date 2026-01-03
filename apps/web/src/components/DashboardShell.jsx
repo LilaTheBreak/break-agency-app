@@ -27,9 +27,11 @@ export function DashboardShell({
   children,
   statusSummary = {},
   role,
-  showStatusSummary = false
+  showStatusSummary = false,
+  session
 }) {
   const { user, logout } = useAuth();
+  const activeUser = session || user;
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [userToggledNav, setUserToggledNav] = useState(false);
@@ -137,7 +139,27 @@ export function DashboardShell({
 
   const renderNavigation = () => {
     if (navLinks.length > 0) {
-      return navLinks.map((link) => (
+      // Filter nav links based on user role
+      const filteredLinks = navLinks.filter((link) => {
+        // If no allowedRoles specified, show to all (backward compatibility)
+        if (!link.allowedRoles || !Array.isArray(link.allowedRoles) || link.allowedRoles.length === 0) {
+          return true;
+        }
+        
+        // Check if user role is in allowedRoles
+        const userRole = activeUser?.role;
+        if (!userRole) return false;
+        
+        // SUPERADMIN always has access to all links (bypass check)
+        if (userRole === "SUPERADMIN" || userRole === "SUPER_ADMIN") {
+          return true;
+        }
+        
+        // For non-SUPERADMIN users, check if their role is in allowedRoles
+        return link.allowedRoles.includes(userRole);
+      });
+      
+      return filteredLinks.map((link) => (
         <NavLink
           key={link.to}
           end={link.end}
@@ -147,7 +169,7 @@ export function DashboardShell({
               "w-full",
               navBaseClasses,
               isActive
-                ? "border-brand-red bg-brand-red text-brand-white"
+                ? "border-brand-red bg-brand-red text-white"
                 : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
             ].join(" ")
           }

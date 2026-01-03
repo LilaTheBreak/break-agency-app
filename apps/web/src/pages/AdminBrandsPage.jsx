@@ -792,17 +792,13 @@ export function AdminBrandsPage({ session }) {
 
   const filtered = useMemo(() => {
     try {
-      // CRITICAL: Triple-normalize to handle any edge cases (defense in depth)
-      // First normalize safeBrandsState (which should already be normalized, but be extra safe)
-      const normalizedState = normalizeApiArray(safeBrandsState, 'brands');
-      // Then normalize again to handle any edge cases
-      const brandsArray = normalizeApiArray(normalizedState);
+      // Normalize once - safeBrandsState should already be normalized, but be defensive
+      const brandsArray = normalizeApiArray(safeBrandsState);
       
       // Final safety check - ensure we have an array
       if (!Array.isArray(brandsArray)) {
         console.error('[BRANDS CRM] CRITICAL: brandsArray is not an array after normalization:', { 
           safeBrandsState, 
-          normalizedState,
           brandsArray,
           type: typeof brandsArray,
           isArray: Array.isArray(brandsArray)
@@ -1198,7 +1194,11 @@ export function AdminBrandsPage({ session }) {
           primaryContact: Boolean(contactDraft.primaryContact),
           owner: contactDraft.owner || ownerDefault
         };
-        const newContact = await createContact(contactData);
+        const response = await createContact(contactData);
+        const newContact = response.contact; // Extract contact from response
+        if (!newContact || !newContact.id) {
+          throw new Error('Invalid response from server');
+        }
         await refreshData();
         setContactEditorOpen(false);
         setContactDrawerId(newContact.id);

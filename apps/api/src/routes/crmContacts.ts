@@ -1,11 +1,21 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
+import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 
 const router = Router();
 
+// All CRM routes require admin access
+router.use(requireAuth);
+router.use((req: Request, res: Response, next) => {
+  if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
+    return res.status(403).json({ error: "Forbidden: Admin access required" });
+  }
+  next();
+});
+
 // GET /api/crm-contacts - Get all contacts (optionally filter by brandId)
-router.get("/", requireAuth, async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const { brandId } = req.query;
 
@@ -37,7 +47,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 // GET /api/crm-contacts/:id - Get single contact
-router.get("/:id", requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -69,7 +79,7 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
 });
 
 // POST /api/crm-contacts - Create contact
-router.post("/", requireAuth, async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const {
       brandId,
@@ -149,7 +159,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 });
 
 // PATCH /api/crm-contacts/:id - Update contact
-router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
+router.patch("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const {
@@ -223,7 +233,7 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
 });
 
 // DELETE /api/crm-contacts/:id - Delete contact
-router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
@@ -246,7 +256,7 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
 });
 
 // POST /api/crm-contacts/:id/notes - Add note to contact
-router.post("/:id/notes", requireAuth, async (req: Request, res: Response) => {
+router.post("/:id/notes", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { text, author } = req.body;

@@ -908,7 +908,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              allowed={[Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <RouteErrorBoundaryWrapper routeName="Content Manager">

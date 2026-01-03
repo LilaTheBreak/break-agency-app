@@ -19,6 +19,7 @@ import {
 } from "../lib/crmDeals.js";
 import { formatEventDateTimeRange } from "../lib/crmEvents.js";
 import { fetchDeals, createDeal, updateDeal, deleteDeal, fetchEvents, fetchCampaigns, fetchContracts } from "../services/crmClient.js";
+import { fetchTaskTalents } from "../services/crmTasksClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase, clearLocalStorageData } from "../lib/crmMigration.js";
 import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
@@ -237,6 +238,7 @@ export function AdminDealsPage({ session }) {
   const [campaigns, setCampaigns] = useState([]);
   const [contracts, setContracts] = useState([]);
   const [brands, setBrands] = useState([]);
+  const [talents, setTalents] = useState([]);
   const [drawerId, setDrawerId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -257,12 +259,13 @@ export function AdminDealsPage({ session }) {
   const loadDeals = async () => {
     try {
       setLoading(true);
-      const [dealsData, eventsData, campaignsData, contractsData, brandsData] = await Promise.all([
+      const [dealsData, eventsData, campaignsData, contractsData, brandsData, talentsData] = await Promise.all([
         fetchDeals(),
         fetchEvents(),
         fetchCampaigns(),
         fetchContracts(),
         fetchBrands(),
+        fetchTaskTalents().catch(() => []), // Load talents for deal creation
       ]);
       // Use shared helper to normalize API responses
       setDeals(normalizeApiArray(dealsData, 'deals'));
@@ -270,6 +273,7 @@ export function AdminDealsPage({ session }) {
       setCampaigns(normalizeApiArray(campaignsData, 'campaigns'));
       setContracts(normalizeApiArray(contractsData, 'contracts'));
       setBrands(normalizeApiArray(brandsData, 'brands'));
+      setTalents(Array.isArray(talentsData) ? talentsData : []);
       
       // Check for localStorage migration
       const migrationCheck = await checkForLocalStorageData();
@@ -284,6 +288,7 @@ export function AdminDealsPage({ session }) {
       setCampaigns([]);
       setContracts([]);
       setBrands([]);
+      setTalents([]);
     } finally {
       setLoading(false);
     }
@@ -387,7 +392,7 @@ export function AdminDealsPage({ session }) {
     notes: "",
     campaignId: "",
     eventIds: [],
-    talentIds: [],
+    talentIds: [], // Array for UI, but we'll use first one for backend
     owner: session?.name || session?.email?.split("@")[0] || "Admin"
   });
 
@@ -438,11 +443,30 @@ export function AdminDealsPage({ session }) {
   };
 
   const createNewDeal = async () => {
+    // CRITICAL: Backend requires userId and talentId
+    if (!session?.id) {
+      setCreateError("User session not found. Please log in again.");
+      return;
+    }
+
+    // Get talentId from talentIds array (first one, or empty if none selected)
+    // Backend requires a single talentId (string), but UI uses array for future multi-talent support
+    const talentId = Array.isArray(createForm.talentIds) && createForm.talentIds.length > 0
+      ? createForm.talentIds[0]
+      : "";
+
+    if (!talentId) {
+      setCreateError("Please select a talent for this deal.");
+      return;
+    }
+
     const createdAt = nowIso();
     const deal = {
       id: `deal-${Date.now()}`,
       dealName: createForm.dealName.trim(),
       brandId: createForm.brandId,
+      userId: session.id, // ✅ Add userId from session
+      talentId: talentId, // ✅ Use first talentId from array (backend expects singular)
       dealType: createForm.dealType,
       status: createForm.status,
       estimatedValueBand: createForm.estimatedValueBand,
@@ -453,7 +477,7 @@ export function AdminDealsPage({ session }) {
       notes: createForm.notes || "",
       campaignId: createForm.campaignId || null,
       eventIds: [],
-      talentIds: createForm.talentIds || [],
+      talentIds: createForm.talentIds || [], // Keep for frontend state
       owner: createForm.owner || "Admin",
       createdAt,
       updatedAt: createdAt,
@@ -476,7 +500,7 @@ export function AdminDealsPage({ session }) {
       openDrawer(created.id);
     } catch (err) {
       console.error("Failed to create deal:", err);
-      setCreateError("Failed to create deal");
+      setCreateError("Failed to create deal: " + (err.message || "Please check that brand and talent are selected."));
     }
   };
 
@@ -743,7 +767,7 @@ export function AdminDealsPage({ session }) {
             <TextButton onClick={closeCreate}>Cancel</TextButton>
             <PrimaryButton
               onClick={createNewDeal}
-              disabled={!createForm.dealName.trim() || !createForm.brandId}
+              disabled={!createForm.dealName.trim() || !createForm.brandId || !createForm.talentIds?.[0]}
             >
               Create deal
             </PrimaryButton>
@@ -816,6 +840,19 @@ export function AdminDealsPage({ session }) {
             options={[
               { value: "", label: "None" },
               ...campaigns.map((c) => ({ value: c.id, label: c.campaignName }))
+            ]}
+          />
+          <Select
+            label="Talent"
+            required
+            value={createForm.talentIds?.[0] || ""}
+            onChange={(v) => setCreateForm((p) => ({ ...p, talentIds: v ? [v] : [] }))}
+            options={[
+              { value: "", label: "Select a talent…" },
+              ...talents.map((t) => ({ 
+                value: t.id, 
+                label: t.name || t.User?.email || t.id 
+              }))
             ]}
           />
           <Field

@@ -26,6 +26,7 @@ import {
   fetchEvents,
 } from "../services/crmClient.js";
 import { checkForLocalStorageData } from "../lib/crmMigration.js";
+import { normalizeApiArray } from "../lib/dataNormalization.js";
 
 const BRANDS_STORAGE_KEY = "break_admin_brands_v1";
 
@@ -262,10 +263,11 @@ export function AdminDocumentsPage({ session }) {
         fetchEvents(),
       ]);
       
-      setContracts(contractsRes.contracts || []);
-      setDeals(dealsRes.deals || []);
-      setCampaigns(campaignsRes.campaigns || []);
-      setEvents(eventsRes.events || []);
+      // Use shared helper to normalize API responses (consistent with other pages)
+      setContracts(normalizeApiArray(contractsRes, 'contracts'));
+      setDeals(normalizeApiArray(dealsRes, 'deals'));
+      setCampaigns(normalizeApiArray(campaignsRes, 'campaigns'));
+      setEvents(normalizeApiArray(eventsRes, 'events'));
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -467,6 +469,7 @@ export function AdminDocumentsPage({ session }) {
       }
     } catch (error) {
       console.error("Error updating contract:", error);
+      alert("Failed to update contract. Please try again.");
     }
   };
 
@@ -479,6 +482,7 @@ export function AdminDocumentsPage({ session }) {
       if (drawerId === id) closeDrawer();
     } catch (error) {
       console.error("Error deleting contract:", error);
+      alert("Failed to delete contract. Please try again.");
     }
   };
 

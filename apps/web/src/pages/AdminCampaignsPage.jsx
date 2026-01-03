@@ -23,6 +23,7 @@ import {
   unlinkDealFromCampaign,
 } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase } from "../lib/crmMigration.js";
+import { normalizeApiArray } from "../lib/dataNormalization.js";
 
 function Pill({ children }) {
   return (
@@ -259,11 +260,11 @@ export function AdminCampaignsPage({ session }) {
         fetchDeals(),
         fetchContracts(),
       ]);
-      // Defensive: Handle different response shapes
-      setCampaigns(Array.isArray(campaignsData) ? campaignsData : (campaignsData?.campaigns || []));
-      setEvents(Array.isArray(eventsData) ? eventsData : (eventsData?.events || []));
-      setDeals(Array.isArray(dealsData) ? dealsData : (dealsData?.deals || []));
-      setContracts(Array.isArray(contractsData) ? contractsData : (contractsData?.contracts || []));
+      // Use shared helper to normalize API responses (consistent with loadData)
+      setCampaigns(normalizeApiArray(campaignsData, 'campaigns'));
+      setEvents(normalizeApiArray(eventsData, 'events'));
+      setDeals(normalizeApiArray(dealsData, 'deals'));
+      setContracts(normalizeApiArray(contractsData, 'contracts'));
     } catch (error) {
       console.error("Failed to refresh data:", error);
       // Ensure all are arrays on error
