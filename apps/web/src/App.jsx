@@ -79,6 +79,7 @@ import { AdminSettingsPage } from "./pages/AdminSettingsPage.jsx";
 import { AdminUserFeedPage } from "./pages/AdminUserFeedPage.jsx";
 import { OpportunitiesAdmin } from "./pages/admin/OpportunitiesAdmin.jsx";
 import { AdminDocumentsPage } from "./pages/AdminDocumentsPage.jsx";
+import { AdminContentPage } from "./pages/AdminContentPage.jsx";
 import AdminResourceHub from "./pages/AdminResourceHub.jsx";
 import { ProfilePage } from "./pages/ProfilePage.jsx";
 import { ProfilePageNew } from "./pages/ProfilePageNew.jsx";
@@ -896,7 +897,23 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <AdminDocumentsPage session={session} />
+              <RouteErrorBoundaryWrapper routeName="Documents">
+                <AdminDocumentsPage session={session} />
+              </RouteErrorBoundaryWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/content"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="Content Manager">
+                <AdminContentPage session={session} />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />

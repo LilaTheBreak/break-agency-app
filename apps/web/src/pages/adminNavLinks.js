@@ -25,6 +25,7 @@ export const ADMIN_NAV_LINKS = [
   { label: "Reports", to: "/admin/reports" },
   
   // System
+  { label: "Content Manager", to: "/admin/content" },
   { label: "Queues", to: "/admin/queues" },
   { label: "Users", to: "/admin/users" },
   { label: "Settings", to: "/admin/settings" }

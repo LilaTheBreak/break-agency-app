@@ -1473,6 +1473,8 @@ model User {
   Submission                              Submission[]
   Talent                                  Talent?
   TalentAssignment                        TalentAssignment[]
+  PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
+  PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
 }
 
 model WellnessCheckin {
@@ -1690,4 +1692,77 @@ enum SocialPlatform {
   LINKEDIN
   FACEBOOK
   GMAIL
+}
+
+// ============================================
+// CMS: Block-Based Content Management
+// ============================================
+
+enum PageRoleScope {
+  PUBLIC
+  CREATOR
+  FOUNDER
+  ADMIN
+}
+
+enum BlockType {
+  HERO
+  TEXT
+  IMAGE
+  SPLIT
+  ANNOUNCEMENT
+  SPACER
+}
+
+model Page {
+  id        String           @id @default(cuid())
+  slug      String           @unique
+  title     String
+  roleScope PageRoleScope    @default(PUBLIC)
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  blocks    PageBlock[]
+  drafts    PageBlockDraft[]
+
+  @@index([slug])
+  @@index([roleScope])
+  @@index([isActive])
+}
+
+model PageBlock {
+  id          String    @id @default(cuid())
+  pageId      String
+  blockType   BlockType
+  contentJson Json // Validated per block type
+  order       Int       @default(0)
+  isVisible   Boolean   @default(true)
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Page        Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  CreatedBy   User?     @relation("PageBlockCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([pageId])
+  @@index([pageId, order])
+  @@index([blockType])
+}
+
+// Draft state for preview mode (optional, can use isPublished flag on PageBlock if preferred)
+model PageBlockDraft {
+  id          String    @id @default(cuid())
+  pageId      String
+  blockId     String? // null for new blocks
+  blockType   BlockType
+  contentJson Json
+  order       Int
+  isVisible   Boolean   @default(true)
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Page        Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  CreatedBy   User?     @relation("PageBlockDraftCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([pageId])
+  @@index([pageId, order])
 }

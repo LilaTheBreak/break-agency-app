@@ -97,6 +97,9 @@ import adminFinanceRouter from "./routes/admin/finance.js";
 // Admin Talent
 import adminTalentRouter from "./routes/admin/talent.js";
 
+// CMS: Block-Based Content Management
+import contentRouter from "./routes/content.js";
+
 // Admin Users
 import adminUsersRouter from "./routes/adminUsers.js";
 
@@ -577,6 +580,9 @@ app.use("/api/crm-deals", crmDealsRouter);
 app.use("/api/crm-contracts", crmContractsRouter);
 app.use("/api/crm-tasks", crmTasksRouter);
 app.use("/api/notifications", notificationsRouter);
+
+// CMS: Block-Based Content Management
+app.use("/api/content", contentRouter);
 
 // ------------------------------------------------------
 // BUNDLES
