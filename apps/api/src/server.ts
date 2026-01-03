@@ -780,8 +780,16 @@ console.log("[SERVER] About to start listening on port", PORT);
 // ------------------------------------------------------
 // SERVER START
 // ------------------------------------------------------
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`API running on port ${PORT}`);
+  
+  // Ensure CMS system pages exist (idempotent, safe to run on every boot)
+  try {
+    await ensureCmsPagesExist();
+  } catch (error) {
+    console.error("[CMS] Failed to seed CMS pages on startup:", error);
+    // Don't crash server - CMS will work once pages are manually seeded
+  }
 });
 
 // ------------------------------------------------------
