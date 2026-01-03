@@ -99,6 +99,7 @@ import adminTalentRouter from "./routes/admin/talent.js";
 
 // CMS: Block-Based Content Management
 import contentRouter from "./routes/content.js";
+import { ensureCmsPagesExist } from "./lib/cmsSeeder.js";
 
 // Admin Users
 import adminUsersRouter from "./routes/adminUsers.js";
