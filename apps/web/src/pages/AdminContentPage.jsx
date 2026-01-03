@@ -412,6 +412,33 @@ export function AdminContentPage({ session }) {
     }
   };
 
+  const hydratePages = async () => {
+    try {
+      const response = await apiFetch("/api/content/hydrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}), // Hydrate all pages
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("[CMS] Hydration result:", data);
+        toast.success(`Hydrated ${data.totalHydrated} pages, created ${data.totalBlocksCreated} blocks`);
+        // Refresh pages and blocks after hydration
+        await loadPages();
+        if (selectedPage) {
+          await loadPageBlocks(selectedPage.slug);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("[CMS] Hydration failed:", errorData);
+        toast.error(errorData.error || "Failed to hydrate pages");
+      }
+    } catch (error) {
+      console.error("[CMS] Error hydrating pages:", error);
+      toast.error("Failed to hydrate pages");
+    }
+  };
+
   const loadPages = async () => {
     try {
       setLoading(true);
