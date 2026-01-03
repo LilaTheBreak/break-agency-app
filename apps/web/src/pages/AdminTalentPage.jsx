@@ -6,6 +6,7 @@ import { apiFetch } from "../services/apiClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { Plus, User, UserX, Edit2, Archive } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { normalizeApiArray } from "../lib/dataNormalization.js";
 
 const REPRESENTATION_TYPES = [
   { value: "EXCLUSIVE", label: "Exclusive", color: "bg-brand-red text-white" },
