@@ -5,6 +5,23 @@ import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { z } from "zod";
 
+/**
+ * System-defined CMS pages that cannot be deleted or modified (slug/roleScope)
+ * These are the only approved pages for CMS editing
+ */
+const SYSTEM_PAGE_SLUGS = [
+  "welcome",
+  "creator-dashboard",
+  "founder-dashboard",
+  "resources",
+  "announcements",
+  "empty-states",
+];
+
+function isSystemPage(slug: string): boolean {
+  return SYSTEM_PAGE_SLUGS.includes(slug);
+}
+
 const router = Router();
 
 // All CMS routes require superadmin access
