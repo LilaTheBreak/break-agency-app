@@ -4,6 +4,7 @@ import prisma from "../lib/prisma.js";
 import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { z } from "zod";
+import { ensureCmsPagesExist } from "../lib/cmsSeeder.js";
 
 /**
  * System-defined CMS pages that cannot be deleted or modified (slug/roleScope)
@@ -152,6 +153,28 @@ function sanitizeContent(content: any): any {
 // ============================================
 // PAGE ROUTES
 // ============================================
+
+/**
+ * POST /api/content/seed
+ * Manually trigger CMS page seeding (Superadmin only, for immediate seeding)
+ */
+router.post("/seed", async (req: Request, res: Response) => {
+  try {
+    const result = await ensureCmsPagesExist();
+    return res.json({
+      success: true,
+      message: `CMS pages verified. Created: ${result.created}, Skipped: ${result.skipped}`,
+      created: result.created,
+      skipped: result.skipped,
+    });
+  } catch (error) {
+    console.error("[CMS] Manual seeding failed:", error);
+    return res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to seed CMS pages",
+    });
+  }
+});
 
 /**
  * GET /api/content/pages

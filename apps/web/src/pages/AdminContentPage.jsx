@@ -645,12 +645,15 @@ export function AdminContentPage({ session }) {
               </div>
             ) : pages.length === 0 ? (
               <div className="mt-2 rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-6 text-center">
-                <p className="text-sm text-brand-black/70">
-                  No CMS pages available yet.
+                <p className="text-sm text-brand-black/70 mb-4">
+                  No CMS pages available yet. Click below to seed system pages.
                 </p>
-                <p className="mt-1 text-xs text-brand-black/50">
-                  Pages will appear here once created.
-                </p>
+                <button
+                  onClick={seedPages}
+                  className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black transition-colors"
+                >
+                  Seed CMS Pages
+                </button>
               </div>
             ) : (
               <select
