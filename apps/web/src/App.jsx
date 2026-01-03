@@ -911,7 +911,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               allowed={[Roles.SUPERADMIN]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
-              <RouteErrorBoundaryWrapper routeName="Content Manager">
+              <RouteErrorBoundaryWrapper routeName="CMS">
                 <AdminContentPage session={session} />
               </RouteErrorBoundaryWrapper>
             </ProtectedRoute>

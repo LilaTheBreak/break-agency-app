@@ -619,7 +619,7 @@ export function AdminContentPage({ session }) {
   const displayBlocks = previewMode ? draftBlocks : blocks;
 
   return (
-    <DashboardShell title="Content Manager" subtitle="Edit page content without code changes" navLinks={ADMIN_NAV_LINKS} session={session}>
+    <DashboardShell title="CMS" subtitle="Edit page content without code changes" navLinks={ADMIN_NAV_LINKS} session={session}>
       <div className="space-y-6">
         {/* Page Selector */}
         <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
