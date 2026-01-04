@@ -1,7 +1,26 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { BlockRenderer } from "../components/BlockRenderer.jsx";
+import { usePublicCmsPage } from "../hooks/usePublicCmsPage.js";
 
 export function PrivacyPolicyPage() {
+  // Fetch CMS content for privacy policy page (public, no auth required)
+  const cms = usePublicCmsPage("privacy-policy");
+
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-white text-slate-900 min-h-screen">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <PrivacyPolicyPageHardcoded />;
+}
+
+function PrivacyPolicyPageHardcoded() {
   return (
     <div className="bg-white text-slate-900 min-h-screen">
       <header className="border-b border-slate-200 bg-white">

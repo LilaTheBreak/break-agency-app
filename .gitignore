@@ -27,3 +27,8 @@ apps/web/.env
 *.tsbuildinfo
 .vercel
 .env*.local
+
+# Playwright auth state (never commit)
+playwright/.auth/*.json
+test-results/
+playwright-report/

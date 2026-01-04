@@ -38,7 +38,7 @@ export default async function socialRefreshProcessor(job: any) {
         break;
       case "youtube":
         await youtubeSync.syncProfile(connectionId);
-        await youtubeSync.syncPosts(connectionId, 25);
+        await youtubeSync.syncVideos(connectionId, 25);
         break;
       default:
         throw new Error(`Unsupported platform: ${platform}`);

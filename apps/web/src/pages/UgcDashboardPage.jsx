@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export default function UGCDashboard() {
+export default function UgcDashboardPage() {
   // In a real app, you'd fetch active requests, deliverables, etc.
   return (
     <div className="p-8">
@@ -19,3 +19,4 @@ export default function UGCDashboard() {
     </div>
   );
 }
+

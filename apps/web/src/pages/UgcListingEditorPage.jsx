@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function UGCListingEditor() {
+export default function UgcListingEditorPage() {
   const [formData, setFormData] = useState({
     bio: '',
     categories: [],
@@ -54,3 +54,4 @@ export default function UGCListingEditor() {
     </div>
   );
 }
+

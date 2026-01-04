@@ -1,3 +1,18 @@
+/**
+ * STATUS: BROKEN / UNUSED
+ * 
+ * This file is a legacy/broken version of analytics routes.
+ * It is NOT imported or referenced anywhere in the codebase.
+ * 
+ * Current analytics routes are in:
+ * - apps/api/src/routes/analytics.ts (active)
+ * - apps/api/src/routes/analytics/socials.ts (active)
+ * - apps/api/src/routes/analytics/topPosts.ts (active)
+ * 
+ * This file is kept for reference only and should not be used.
+ * It can be safely deleted in a future cleanup pass.
+ */
+
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import prisma from '../lib/prisma.js';

@@ -42,6 +42,7 @@ import cronRouter from "./routes/cron.js";
 import inboxAwaitingRouter from "./routes/inboxAwaitingReply.js";
 import inboxPriorityRouter from "./routes/inboxPriority.js";
 import inboxTrackingRouter from "./routes/inboxTracking.js";
+import inboxClickTrackingRouter from "./routes/inboxClickTracking.js";
 import inboxAnalyticsRouter from "./routes/inboxAnalytics.js";
 import inboxPriorityFeedRouter from "./routes/inboxPriorityFeed.js";
 import inboxCountersRouter from "./routes/inboxCounters.js";
@@ -50,6 +51,11 @@ import inboxRescanRouter from "./routes/inboxRescan.js";
 import inboxCategoriesRouter from "./routes/inboxCategories.js";
 import unifiedInboxRouter from "./routes/unifiedInbox.js";
 import emailOpportunitiesRouter from "./routes/emailOpportunities.js";
+
+// Platform Inboxes (V1.1)
+import instagramInboxRouter from "./routes/instagramInbox.js";
+import tiktokInboxRouter from "./routes/tiktokInbox.js";
+import whatsappInboxRouter from "./routes/whatsappInbox.js";
 
 // AI
 import aiRouter from "./routes/ai.js";
@@ -112,6 +118,7 @@ import wellnessCheckinsRouter from "./routes/wellnessCheckins.js";
 import dealsRouter from "./routes/deals.js";
 import dealTimelineRouter from "./routes/dealTimeline.js";
 import dealInsightsRouter from "./routes/dealInsights.js";
+import dealIntelligenceRouter from "./routes/dealIntelligence.js";
 // dealPackagesRouter removed - deal packages schema models were removed
 
 // Deliverables / Contracts
@@ -150,6 +157,9 @@ import notificationsRouter from "./routes/notifications.js";
 // Calendar Intelligence
 import calendarIntelligenceRouter from "./routes/calendarIntelligence.js";
 import calendarRouter from "./routes/calendar.js";
+
+// Integrations (V1.1)
+import integrationsRouter from "./routes/integrations.js";
 
 // Outreach System
 import outreachRouter from "./routes/outreach.js";
@@ -357,6 +367,7 @@ app.use(helmet({
       connectSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
       scriptSrc: ["'self'"],
+      workerSrc: ["'self'", "blob:"], // CRITICAL: Allow blob workers for Sentry/similar
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
     }
@@ -423,6 +434,13 @@ app.use("/api/inbox", inboxCategoriesRouter);
 app.use("/api/inbox/unified", unifiedInboxRouter);
 
 // ------------------------------------------------------
+// PLATFORM INBOXES (V1.1)
+// ------------------------------------------------------
+app.use("/api/instagram-inbox", instagramInboxRouter);
+app.use("/api/tiktok-inbox", tiktokInboxRouter);
+app.use("/api/whatsapp-inbox", whatsappInboxRouter);
+
+// ------------------------------------------------------
 // GMAIL
 // ------------------------------------------------------
 app.use("/api/gmail/auth", gmailAuthRouter);
@@ -443,6 +461,11 @@ app.use("/api/cron", cronRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/calendar", calendarIntelligenceRouter);
 app.use("/api/calendar", calendarRouter); // Real calendar CRUD routes
+
+// ------------------------------------------------------
+// INTEGRATIONS (V1.1)
+// ------------------------------------------------------
+app.use("/api/integrations", integrationsRouter);
 
 // ------------------------------------------------------
 // OPPORTUNITIES & SUBMISSIONS
@@ -516,6 +539,7 @@ app.use("/api/admin", adminUsersRouter);
 // ADMIN TALENT MANAGEMENT
 // ------------------------------------------------------
 app.use("/api/admin/talent", adminTalentRouter);
+app.use("/api/admin/diagnostics", adminDiagnosticsRouter);
 
 // ------------------------------------------------------
 // AI
@@ -535,6 +559,7 @@ app.use("/api/suitability", suitabilityRouter);
 app.use("/api/deals", dealsRouter);
 app.use("/api/deal-timeline", dealTimelineRouter);
 app.use("/api/deal-insights", dealInsightsRouter);
+app.use("/api/deals/intelligence", dealIntelligenceRouter);
 // /api/deal-packages route removed - deal packages feature was removed from schema
 
 // ------------------------------------------------------

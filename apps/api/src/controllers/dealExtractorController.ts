@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma.js";
 import { extractDealFromEmail } from "../services/ai/dealExtractor.js";
+import { logAIInteraction } from "../lib/aiHistoryLogger.js";
 
 const ExtractDealSchema = z.object({
   emailId: z.string().cuid()
@@ -19,9 +20,21 @@ export async function extractDealData(req: Request, res: Response, next: NextFun
       return res.status(404).json({ ok: false, error: "Email not found or has no content" });
     }
 
+    const userId = (req as any).user?.id;
     const startTime = Date.now();
     const data = await extractDealFromEmail(email.body);
     const latency = Date.now() - startTime;
+
+    // Log AI history
+    if (userId) {
+      await logAIInteraction(
+        userId,
+        `Extract deal from email: ${email.subject || "No subject"}`,
+        JSON.stringify(data),
+        "deal_extraction",
+        { emailId: parsed.data.emailId, latency }
+      ).catch(err => console.error("[AI History] Failed to log deal extraction:", err));
+    }
 
     return res.json({ ok: true, data, meta: { latency } });
   } catch (error) {

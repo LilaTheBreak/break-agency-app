@@ -718,7 +718,7 @@ export function AdminContentPage({ session }) {
                 <option value="">Choose a page...</option>
                 {pages.map((page) => (
                   <option key={page.id} value={page.id}>
-                    {page.title} ({page.roleScope})
+                    {page.title} {page.route ? `(${page.route})` : ""}
                   </option>
                 ))}
               </select>
@@ -732,6 +732,11 @@ export function AdminContentPage({ session }) {
             <div className="flex items-center justify-between rounded-3xl border border-brand-black/10 bg-brand-white p-4">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold">{selectedPage.title}</span>
+                {selectedPage.route && (
+                  <span className="rounded-full bg-brand-black/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/70">
+                    {selectedPage.route}
+                  </span>
+                )}
                 <span className="rounded-full bg-brand-black/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/70">
                   {selectedPage.roleScope}
                 </span>

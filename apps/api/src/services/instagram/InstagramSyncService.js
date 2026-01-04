@@ -57,15 +57,33 @@ export class InstagramSyncService {
         }
       });
 
-      // Save historical metric snapshot
-      await prisma.socialMetric.create({
-        data: {
-          profileId: savedProfile.id,
-          platform: 'instagram',
-          metricType: 'follower_count',
-          value: profile.followers_count || 0,
-          snapshotDate: new Date()
-        }
+      // Save historical metric snapshots
+      const now = new Date();
+      await prisma.socialMetric.createMany({
+        data: [
+          {
+            profileId: savedProfile.id,
+            platform: 'instagram',
+            metricType: 'follower_count',
+            value: profile.followers_count || 0,
+            snapshotDate: now
+          },
+          {
+            profileId: savedProfile.id,
+            platform: 'instagram',
+            metricType: 'following_count',
+            value: profile.follows_count || 0,
+            snapshotDate: now
+          },
+          {
+            profileId: savedProfile.id,
+            platform: 'instagram',
+            metricType: 'post_count',
+            value: profile.media_count || 0,
+            snapshotDate: now
+          }
+        ],
+        skipDuplicates: true
       });
 
       // Update connection lastSyncedAt

@@ -1,8 +1,18 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
+import { createRateLimiter, RATE_LIMITS } from "../middleware/rateLimit.js";
 import * as gmailInboxController from "../controllers/gmailInboxController.js";
 
 const router = Router();
+
+// Rate limiter for inbox sync operations (conservative: 5 per 5 minutes)
+const inboxSyncLimiter = createRateLimiter({
+  ...RATE_LIMITS.EMAIL_SEND, // Reuse email send limits (20 per hour)
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  maxRequests: 5, // 5 syncs per 5 minutes
+  message: "Too many inbox sync requests. Please wait before syncing again.",
+  keyGenerator: (req) => (req as any).user?.id || req.ip || "unknown",
+});
 
 // GET /api/gmail/inbox - Get paginated inbox threads
 router.get("/", requireAuth, gmailInboxController.getInbox);
@@ -21,6 +31,6 @@ router.get(
 );
 
 // POST /api/gmail/inbox/sync - Manually trigger a sync with the user's Gmail account
-router.post("/sync", requireAuth, gmailInboxController.syncInbox);
+router.post("/sync", requireAuth, inboxSyncLimiter, gmailInboxController.syncInbox);
 
 export default router;

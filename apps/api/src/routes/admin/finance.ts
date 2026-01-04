@@ -83,12 +83,33 @@ router.get("/summary", async (req: Request, res: Response) => {
 
     const net_position = total_cash_in - total_cash_out;
 
+    // Fetch commission metrics
+    const commissionWhere: any = {};
+    if (startDate || endDate) {
+      const dateFilter: any = {};
+      if (startDate) dateFilter.gte = new Date(startDate as string);
+      if (endDate) dateFilter.lte = new Date(endDate as string);
+      commissionWhere.calculatedAt = dateFilter;
+    }
+    if (dealId) commissionWhere.dealId = dealId;
+    if (creatorId) commissionWhere.talentId = creatorId;
+
+    const commissions = await prisma.commission.findMany({ where: commissionWhere });
+    const total_commissions_pending = commissions
+      .filter(c => c.status === 'pending')
+      .reduce((sum, c) => sum + c.amount, 0);
+    const total_commissions_paid = commissions
+      .filter(c => c.status === 'paid')
+      .reduce((sum, c) => sum + c.amount, 0);
+
     res.json({
       total_cash_in,
       total_cash_out,
       net_position,
       outstanding_liabilities,
       outstanding_receivables,
+      total_commissions_pending,
+      total_commissions_paid,
       currency: "USD" // Default currency - could be enhanced to support multi-currency
     });
   } catch (error) {
@@ -201,7 +222,15 @@ router.get("/payouts", async (req: Request, res: Response) => {
             id: true,
             name: true
           }
-        }
+        },
+        Commission: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            type: true,
+          },
+        },
       }
     });
 
@@ -665,8 +694,33 @@ router.patch("/invoices/:id", async (req: Request, res: Response) => {
 
     // Prevent updates to paid invoices (immutable once paid)
     const existing = await prisma.invoice.findUnique({ where: { id: req.params.id } });
-    if (existing?.status === "paid") {
+    if (!existing) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+    
+    if (existing.status === "paid") {
       return res.status(403).json({ error: "Cannot modify paid invoices" });
+    }
+
+    // Enforce status lifecycle: draft → sent → due → overdue → paid
+    if (parsed.data.status && existing.status !== parsed.data.status) {
+      const validTransitions: Record<string, string[]> = {
+        draft: ["sent", "draft"],
+        sent: ["due", "overdue", "paid", "sent"],
+        due: ["overdue", "paid", "due"],
+        overdue: ["paid", "overdue"],
+        paid: [] // No transitions from paid
+      };
+
+      const allowedNextStatuses = validTransitions[existing.status] || [];
+      if (!allowedNextStatuses.includes(parsed.data.status)) {
+        return res.status(400).json({ 
+          error: "Invalid status transition", 
+          currentStatus: existing.status,
+          attemptedStatus: parsed.data.status,
+          allowedTransitions: allowedNextStatuses
+        });
+      }
     }
 
     const invoice = await prisma.invoice.update({
@@ -677,8 +731,87 @@ router.patch("/invoices/:id", async (req: Request, res: Response) => {
       }
     });
 
+    // Auto-update status based on due date if status is "sent" or "due"
+    if (invoice.status === "sent" || invoice.status === "due") {
+      const now = new Date();
+      if (invoice.dueAt && invoice.dueAt < now && invoice.status !== "paid") {
+        await prisma.invoice.update({
+          where: { id: invoice.id },
+          data: { status: "overdue", updatedAt: new Date() }
+        });
+        invoice.status = "overdue";
+      }
+    }
+
+    // Push to Xero if status changed from draft and Xero is enabled
+    if (parsed.data.status && existing.status === "draft" && parsed.data.status !== "draft") {
+      const xeroEnabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+      if (xeroEnabled && !invoice.xeroId) {
+        try {
+          const { pushInvoiceToXero } = await import("../../services/xero/xeroInvoiceSync.js");
+          const xeroResult = await pushInvoiceToXero(invoice.id);
+          if (xeroResult.success && xeroResult.xeroId) {
+            // Update invoice with Xero ID
+            await prisma.invoice.update({
+              where: { id: invoice.id },
+              data: { xeroId: xeroResult.xeroId }
+            });
+            invoice.xeroId = xeroResult.xeroId;
+          }
+        } catch (xeroError) {
+          console.error("[Finance] Failed to push invoice to Xero:", xeroError);
+          // Don't fail the invoice update if Xero push fails
+        }
+      }
+    }
+
+    // WORKFLOW ASSERTION: Invoice → Paid → Commission must be created
+    if (parsed.data.status === "paid" && existing.status !== "paid") {
+      try {
+        // Get deal associated with invoice
+        const deal = invoice.dealId ? await prisma.deal.findUnique({
+          where: { id: invoice.dealId },
+          include: { Talent: true }
+        }) : null;
+        
+        if (deal && deal.Talent) {
+          const { createCommissionsForPaidInvoice } = await import("../../services/commissionService.js");
+          const commissions = await createCommissionsForPaidInvoice(
+            invoice.id,
+            invoice.dealId!,
+            deal.Talent.id,
+            deal.userId,
+            invoice.amount
+          );
+          
+          console.log(`[Finance] ✅ Commissions created for paid invoice ${invoice.invoiceNumber}:`, commissions.length);
+          
+          // Assertion: Verify commissions were actually created
+          if (!commissions || commissions.length === 0) {
+            throw new Error("Commission creation returned empty array");
+          }
+        } else {
+          console.warn(`[Finance] ⚠️  Invoice ${invoice.invoiceNumber} marked as paid but no deal/talent found - commissions not created`);
+          logError("Invoice paid but commissions not created - missing deal/talent", new Error("Missing deal or talent"), {
+            invoiceId: invoice.id,
+            dealId: invoice.dealId,
+            route: req.path
+          });
+        }
+      } catch (commissionError) {
+        const errorMessage = commissionError instanceof Error ? commissionError.message : String(commissionError);
+        console.error("[Finance] ❌ CRITICAL: Commission creation failed for paid invoice:", errorMessage);
+        logError("Commission creation failed for paid invoice - WORKFLOW BREAK", commissionError, {
+          invoiceId: invoice.id,
+          dealId: invoice.dealId,
+          route: req.path
+        });
+        // Don't fail invoice update, but log critical warning
+      }
+    }
+
     // Audit logging for status changes
-    if (parsed.data.status && existing?.status && existing.status !== parsed.data.status) {
+    if (parsed.data.status && existing.status !== parsed.data.status) {
       try {
         await logAuditEvent(req as any, {
           action: "INVOICE_STATUS_UPDATED",
@@ -686,13 +819,35 @@ router.patch("/invoices/:id", async (req: Request, res: Response) => {
           entityId: invoice.id,
           metadata: {
             previousStatus: existing.status,
-            newStatus: parsed.data.status,
+            newStatus: invoice.status,
             dealId: invoice.dealId,
             amount: invoice.amount
           }
         });
       } catch (logError) {
         console.error("[Audit] Failed to log invoice status update:", logError);
+      }
+    }
+
+    // Push to Xero if status changed from draft and Xero is enabled
+    if (parsed.data.status && existing.status === "draft" && parsed.data.status !== "draft") {
+      const xeroEnabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+      if (xeroEnabled && !invoice.xeroId) {
+        try {
+          const { pushInvoiceToXero } = await import("../../services/xero/xeroInvoiceSync.js");
+          const xeroResult = await pushInvoiceToXero(invoice.id);
+          if (xeroResult.success && xeroResult.xeroId) {
+            // Update invoice with Xero ID
+            const updatedInvoice = await prisma.invoice.update({
+              where: { id: invoice.id },
+              data: { xeroId: xeroResult.xeroId }
+            });
+            invoice.xeroId = updatedInvoice.xeroId;
+          }
+        } catch (xeroError) {
+          console.error("[Finance] Failed to push invoice to Xero:", xeroError);
+          // Don't fail the invoice update if Xero push fails
+        }
       }
     }
 
@@ -707,15 +862,74 @@ router.post("/invoices/:id/mark-paid", async (req: Request, res: Response) => {
   try {
     const { amount, method, notes } = req.body;
 
+    // Get existing invoice with deal info
+    const existing = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      include: {
+        Deal: {
+          select: {
+            id: true,
+            userId: true, // Agent ID
+            talentId: true,
+            value: true,
+            currency: true,
+          },
+        },
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    if (existing.status === "paid") {
+      return res.status(400).json({ error: "Invoice is already marked as paid" });
+    }
+
     // Update invoice to paid
     const invoice = await prisma.invoice.update({
       where: { id: req.params.id },
       data: {
         status: "paid",
         paidAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     });
+
+    // Auto-create commissions when invoice is marked as paid
+    try {
+      const { createCommissionsForPaidInvoice } = await import("../services/commissionService.js");
+      
+      // Check if commissions already exist for this invoice
+      const existingCommissions = await prisma.commission.findMany({
+        where: { invoiceId: invoice.id },
+      });
+
+      if (existingCommissions.length === 0) {
+        // Create commissions
+        const dealValue = existing.Deal?.value || invoice.amount;
+        const agentId = existing.Deal?.userId || null;
+        const talentId = existing.Deal?.talentId;
+
+        if (!talentId) {
+          console.warn(`[Finance] Cannot create commissions: Deal ${existing.dealId} has no talentId`);
+        } else {
+          await createCommissionsForPaidInvoice(
+            invoice.id,
+            existing.dealId,
+            talentId,
+            agentId,
+            dealValue
+          );
+          console.log(`[Finance] Created commissions for invoice ${invoice.id}`);
+        }
+      } else {
+        console.log(`[Finance] Commissions already exist for invoice ${invoice.id}, skipping creation`);
+      }
+    } catch (commissionError) {
+      console.error("[Finance] Failed to create commissions for paid invoice:", commissionError);
+      // Don't fail the invoice payment if commission creation fails
+    }
 
     // Audit logging
     try {
@@ -727,8 +941,8 @@ router.post("/invoices/:id/mark-paid", async (req: Request, res: Response) => {
           dealId: invoice.dealId,
           amount: amount || invoice.amount,
           method: method || "manual",
-          notes
-        }
+          notes,
+        },
       });
     } catch (logError) {
       console.error("[Audit] Failed to log invoice payment:", logError);
@@ -786,6 +1000,7 @@ const PayoutCreateSchema = z.object({
   currency: z.string().default("USD"),
   status: z.enum(["pending", "approved", "scheduled", "paid"]).default("pending"),
   expectedPayoutAt: z.string().transform(s => new Date(s)).optional(),
+  commissionIds: z.array(z.string()).optional(), // Optional: link specific commissions
 });
 
 router.post("/payouts", async (req: Request, res: Response) => {
@@ -798,11 +1013,46 @@ router.post("/payouts", async (req: Request, res: Response) => {
     const payout = await prisma.payout.create({
       data: {
         id: `payout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        ...parsed.data,
+        creatorId: parsed.data.creatorId,
+        dealId: parsed.data.dealId,
+        brandId: parsed.data.brandId,
+        amount: parsed.data.amount,
+        currency: parsed.data.currency,
+        status: parsed.data.status,
+        expectedPayoutAt: parsed.data.expectedPayoutAt,
         createdBy: req.user?.id || null,
         updatedAt: new Date()
       }
     });
+
+    // Link commissions to payout if commissionIds provided, or auto-link pending commissions for this deal/talent
+    try {
+      const { linkCommissionsToPayout } = await import("../services/commissionService.js");
+      
+      if (parsed.data.commissionIds && parsed.data.commissionIds.length > 0) {
+        // Link specific commissions
+        await linkCommissionsToPayout(payout.id, parsed.data.commissionIds);
+      } else {
+        // Auto-link pending commissions for this deal and talent
+        const pendingCommissions = await prisma.commission.findMany({
+          where: {
+            dealId: parsed.data.dealId,
+            talentId: parsed.data.creatorId,
+            status: "pending",
+            payoutId: null,
+          },
+        });
+
+        if (pendingCommissions.length > 0) {
+          const commissionIds = pendingCommissions.map(c => c.id);
+          await linkCommissionsToPayout(payout.id, commissionIds);
+          console.log(`[Finance] Auto-linked ${commissionIds.length} commissions to payout ${payout.id}`);
+        }
+      }
+    } catch (commissionError) {
+      console.error("[Finance] Failed to link commissions to payout:", commissionError);
+      // Don't fail payout creation if commission linking fails
+    }
 
     // Audit logging
     try {
@@ -839,7 +1089,17 @@ router.get("/payouts/:id", async (req: Request, res: Response) => {
             Brand: true,
             Talent: true
           }
-        }
+        },
+        Commission: {
+          include: {
+            Invoice: {
+              select: {
+                id: true,
+                invoiceNumber: true,
+              },
+            },
+          },
+        },
       }
     });
 
@@ -868,6 +1128,16 @@ router.post("/payouts/:id/mark-paid", async (req: Request, res: Response) => {
       }
     });
 
+    // Mark linked commissions as paid
+    try {
+      const { markCommissionsAsPaid } = await import("../services/commissionService.js");
+      await markCommissionsAsPaid(payout.id);
+      console.log(`[Finance] Marked commissions as paid for payout ${payout.id}`);
+    } catch (commissionError) {
+      console.error("[Finance] Failed to mark commissions as paid:", commissionError);
+      // Don't fail payout update if commission update fails
+    }
+
     // Audit logging
     try {
       await logAuditEvent(req as any, {
@@ -894,44 +1164,129 @@ router.post("/payouts/:id/mark-paid", async (req: Request, res: Response) => {
 });
 
 // ============================================================================
-// PHASE 4 - XERO INTEGRATION (STRUCTURAL ONLY)
+// COMMISSIONS APIs
 // ============================================================================
 
-router.get("/xero/status", async (_req: Request, res: Response) => {
-  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
-  if (!enabled) {
-    return res.status(503).json({ 
-      error: "Xero integration is disabled",
-      message: "This feature is currently disabled. Contact an administrator to enable it.",
-      code: "FEATURE_DISABLED"
+router.get("/commissions", async (req: Request, res: Response) => {
+  try {
+    const { dealId, talentId, agentId, status, limit = "100" } = req.query;
+
+    const where: any = {};
+    if (dealId) where.dealId = dealId as string;
+    if (talentId) where.talentId = talentId as string;
+    if (agentId) where.agentId = agentId as string;
+    if (status) where.status = status as string;
+
+    const commissions = await prisma.commission.findMany({
+      where,
+      take: parseInt(limit as string),
+      orderBy: { calculatedAt: "desc" },
+      include: {
+        Deal: {
+          select: {
+            id: true,
+            brandName: true,
+            value: true,
+          },
+        },
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        User: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        Invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+          },
+        },
+        Payout: {
+          select: {
+            id: true,
+            status: true,
+            paidAt: true,
+          },
+        },
+      },
+    });
+
+    res.json({ commissions });
+  } catch (error) {
+    logError("Failed to fetch commissions", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch commissions",
+      message: error instanceof Error ? error.message : "Unknown error"
     });
   }
-  // REMOVED: Xero integration not implemented - endpoint returns 410
-  res.status(410).json({ 
-    error: "Xero integration removed",
-    message: "Xero integration is not yet implemented. This endpoint has been removed.",
-    alternative: "Use manual invoice tracking until Xero integration is complete"
-  });
 });
 
-router.post("/xero/connect", async (_req: Request, res: Response) => {
-  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
-  if (!enabled) {
-    return res.status(503).json({ 
-      error: "Xero integration is disabled",
-      message: "This feature is currently disabled. Contact an administrator to enable it.",
-      code: "FEATURE_DISABLED"
+router.get("/commissions/:id", async (req: Request, res: Response) => {
+  try {
+    const commission = await prisma.commission.findUnique({
+      where: { id: req.params.id },
+      include: {
+        Deal: {
+          include: {
+            Brand: true,
+            Talent: true,
+          },
+        },
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        User: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        Invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            amount: true,
+          },
+        },
+        Payout: {
+          select: {
+            id: true,
+            status: true,
+            paidAt: true,
+            amount: true,
+          },
+        },
+      },
     });
+
+    if (!commission) {
+      return res.status(404).json({ error: "Commission not found" });
+    }
+
+    res.json(commission);
+  } catch (error) {
+    logError("Error fetching commission", error, { commissionId: req.params.id });
+    res.status(500).json({ error: "Failed to fetch commission" });
   }
-  // REMOVED: Xero integration not implemented - endpoint returns 410
-  res.status(410).json({ 
-    error: "Xero integration removed",
-    message: "Xero integration is not yet implemented. This endpoint has been removed.",
-    alternative: "Use manual invoice tracking until Xero integration is complete"
-  });
 });
 
-router.post("/xero/sync", async (_req: Request, res: Response) => {
+// ============================================================================
+// ============================================================================
+// XERO INTEGRATION (V1.1)
+// ============================================================================
+
+router.get("/xero/status", async (req: Request, res: Response) => {
   const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
   if (!enabled) {
     return res.status(503).json({ 
@@ -940,15 +1295,52 @@ router.post("/xero/sync", async (_req: Request, res: Response) => {
       code: "FEATURE_DISABLED"
     });
   }
-  // REMOVED: Placeholder sync endpoint - only updated timestamp, no real sync
-  res.status(410).json({ 
-    error: "Xero sync endpoint removed",
-    message: "This endpoint was a placeholder and has been removed. Xero integration is not yet implemented.",
-    alternative: "Use manual invoice tracking until Xero integration is complete"
-  });
+
+  try {
+    const connection = await prisma.xeroConnection.findFirst({
+      where: { connected: true }
+    });
+
+    if (!connection) {
+      return res.json({
+        connected: false,
+        status: "disconnected",
+        message: "Xero account not connected. Please authenticate to continue."
+      });
+    }
+
+    // Count synced invoices
+    const syncedInvoices = await prisma.invoice.count({
+      where: { xeroId: { not: null } }
+    });
+
+    // Count invoices with sync errors
+    const errorInvoices = await prisma.invoice.count({
+      where: { xeroSyncError: { not: null } }
+    });
+
+    res.json({
+      connected: true,
+      status: connection.expiresAt && connection.expiresAt < new Date() ? "expired" : "connected",
+      message: "Xero connected successfully",
+      tenantId: connection.tenantId,
+      expiresAt: connection.expiresAt,
+      lastSyncedAt: connection.lastSyncedAt,
+      stats: {
+        syncedInvoices,
+        errorInvoices
+      }
+    });
+  } catch (error) {
+    logError("Error checking Xero status", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to check Xero status",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });
 
-router.get("/xero/invoice/:id", async (_req: Request, res: Response) => {
+router.get("/xero/connect", async (req: Request, res: Response) => {
   const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
   if (!enabled) {
     return res.status(503).json({ 
@@ -957,12 +1349,124 @@ router.get("/xero/invoice/:id", async (_req: Request, res: Response) => {
       code: "FEATURE_DISABLED"
     });
   }
-  // REMOVED: Placeholder invoice fetch endpoint - no real Xero API integration
-  res.status(410).json({ 
-    error: "Xero invoice endpoint removed",
-    message: "This endpoint was a placeholder and has been removed. Xero integration is not yet implemented.",
-    alternative: "Use manual invoice tracking until Xero integration is complete"
-  });
+
+  try {
+    const { getXeroAuthUrl } = await import("../../services/xero/xeroAuth.js");
+    const authUrl = getXeroAuthUrl();
+    res.json({ success: true, url: authUrl });
+  } catch (error: any) {
+    logError("Error initiating Xero connection", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to initiate Xero connection",
+      message: error.message
+    });
+  }
+});
+
+router.get("/xero/callback", async (req: Request, res: Response) => {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    const { getFrontendUrl } = await import("../../config/frontendUrl.js");
+    return res.redirect(`${getFrontendUrl()}/admin/finance?error=xero_disabled`);
+  }
+
+  try {
+    const { code, error } = req.query;
+
+    const { getFrontendUrl } = await import("../../config/frontendUrl.js");
+    const frontendUrl = getFrontendUrl();
+
+    if (error) {
+      return res.redirect(`${frontendUrl}/admin/finance?error=xero_auth_denied`);
+    }
+
+    if (!code || typeof code !== "string") {
+      return res.redirect(`${frontendUrl}/admin/finance?error=xero_auth_failed`);
+    }
+
+    const { exchangeXeroCode, storeXeroConnection } = await import("../../services/xero/xeroAuth.js");
+    const { accessToken, refreshToken, expiresIn, tenantId, tenantName } = await exchangeXeroCode(code);
+    
+    await storeXeroConnection(accessToken, refreshToken, expiresIn, tenantId, tenantName);
+
+    res.redirect(`${frontendUrl}/admin/finance?success=xero_connected`);
+  } catch (error: any) {
+    logError("Error in Xero callback", error, {});
+    const { getFrontendUrl } = await import("../../config/frontendUrl.js");
+    res.redirect(`${getFrontendUrl()}/admin/finance?error=xero_auth_failed`);
+  }
+});
+
+router.post("/xero/sync", async (req: Request, res: Response) => {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Xero integration is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
+
+  try {
+    const { syncAllXeroInvoices } = await import("../../services/xero/xeroInvoiceSync.js");
+    const stats = await syncAllXeroInvoices();
+    
+    res.json({
+      success: true,
+      message: "Xero sync completed",
+      stats
+    });
+  } catch (error) {
+    logError("Error syncing Xero invoices", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to sync Xero invoices",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+router.get("/xero/invoice/:id", async (req: Request, res: Response) => {
+  const enabled = process.env.XERO_INTEGRATION_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Xero integration is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
+
+  try {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: req.params.id },
+      select: { xeroId: true }
+    });
+
+    if (!invoice || !invoice.xeroId) {
+      return res.status(404).json({ 
+        error: "Invoice not found or not synced to Xero",
+        message: "This invoice has not been synced to Xero yet."
+      });
+    }
+
+    const { getXeroInvoiceStatus } = await import("../../services/xero/xeroService.js");
+    const xeroStatus = await getXeroInvoiceStatus(invoice.xeroId);
+
+    res.json({
+      success: true,
+      xeroId: invoice.xeroId,
+      status: xeroStatus.status,
+      paidAt: xeroStatus.paidAt,
+      totalPaid: xeroStatus.totalPaid
+    });
+  } catch (error) {
+    logError("Error fetching Xero invoice", error, { invoiceId: req.params.id });
+    res.status(500).json({ 
+      error: "Failed to fetch Xero invoice",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
 });
 
 export default router;

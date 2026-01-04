@@ -36,19 +36,31 @@ export default function DealAIPanel({ emailId, dealId }) {
   const handleGetInsights = async () => {
     if (!dealId) return;
     setError("");
+    setInsights(null);
+    
     try {
-      const response = await apiFetch("/api/ai/deal/negotiation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dealId }),
-      });
+      // First try to get existing intelligence
+      let response = await apiFetch(`/api/deals/intelligence/${dealId}`);
+      
+      if (response.status === 404) {
+        // Generate new intelligence
+        response = await apiFetch(`/api/deals/intelligence/run/${dealId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+      
       if (!response.ok) {
+        if (response.status === 503) {
+          throw new Error("Deal intelligence feature is disabled. Contact an administrator.");
+        }
         throw new Error(`Failed to get insights: ${response.status}`);
       }
+      
       const result = await response.json();
-      setInsights(result.data);
+      setInsights(result.intelligence || result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to get negotiation insights");
+      setError(err instanceof Error ? err.message : "Failed to get insights");
     }
   };
 
@@ -74,7 +86,7 @@ export default function DealAIPanel({ emailId, dealId }) {
             <button
               type="button"
               onClick={handleGetInsights}
-              className="rounded-full border border-brand-red bg-brand-red px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-white hover:bg-brand-red/90"
+              className="rounded-full border border-brand-black/20 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-brand-black hover:bg-brand-black/5 disabled:opacity-50"
             >
               Get Insights
             </button>
@@ -131,12 +143,97 @@ export default function DealAIPanel({ emailId, dealId }) {
         </div>
       )}
 
-      {insights && insights.message && (
-        <div className="rounded-xl border border-brand-black/10 bg-white p-4 space-y-2">
+      {insights && (
+        <div className="rounded-xl border border-brand-black/10 bg-white p-4 space-y-4">
           <h4 className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-black">
-            Negotiation Insights
+            Deal Negotiation Intelligence
           </h4>
-          <p className="text-sm text-brand-black/80">{insights.message}</p>
+          
+          {insights.explanation && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-brand-black">Recommendation</p>
+              <p className="text-sm text-brand-black/80">{insights.explanation}</p>
+            </div>
+          )}
+
+          {insights.suggestedValueRange && (
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-brand-black/10 bg-brand-linen/30 p-3">
+                <p className="text-xs uppercase tracking-[0.25em] text-brand-black/60">Minimum</p>
+                <p className="text-lg font-semibold text-brand-black mt-1">
+                  ${insights.suggestedValueRange.min?.toLocaleString() || "N/A"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-brand-red/20 bg-brand-red/5 p-3">
+                <p className="text-xs uppercase tracking-[0.25em] text-brand-red">Ideal</p>
+                <p className="text-lg font-semibold text-brand-red mt-1">
+                  ${insights.suggestedValueRange.ideal?.toLocaleString() || "N/A"}
+                </p>
+              </div>
+              <div className="rounded-lg border border-brand-black/10 bg-brand-linen/30 p-3">
+                <p className="text-xs uppercase tracking-[0.25em] text-brand-black/60">Maximum</p>
+                <p className="text-lg font-semibold text-brand-black mt-1">
+                  ${insights.suggestedValueRange.max?.toLocaleString() || "N/A"}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {insights.confidenceScore !== undefined && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.25em] text-brand-black/60">Confidence Score</p>
+                <p className="text-sm font-semibold text-brand-black">{insights.confidenceScore}%</p>
+              </div>
+              <div className="h-2 w-full rounded-full bg-brand-black/10 overflow-hidden">
+                <div 
+                  className="h-full bg-brand-red transition-all"
+                  style={{ width: `${insights.confidenceScore}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {insights.reasoning && (
+            <div className="space-y-3 pt-2 border-t border-brand-black/10">
+              <p className="text-xs uppercase tracking-[0.25em] text-brand-black/60">Reasoning</p>
+              
+              {insights.reasoning.historicalBenchmark && (
+                <div>
+                  <p className="text-xs font-semibold text-brand-black mb-1">Historical Benchmark</p>
+                  <p className="text-sm text-brand-black/80">{insights.reasoning.historicalBenchmark}</p>
+                </div>
+              )}
+              
+              {insights.reasoning.brandCategoryBenchmark && (
+                <div>
+                  <p className="text-xs font-semibold text-brand-black mb-1">Brand Category</p>
+                  <p className="text-sm text-brand-black/80">{insights.reasoning.brandCategoryBenchmark}</p>
+                </div>
+              )}
+              
+              {insights.reasoning.talentPerformance && (
+                <div>
+                  <p className="text-xs font-semibold text-brand-black mb-1">Talent Performance</p>
+                  <p className="text-sm text-brand-black/80">{insights.reasoning.talentPerformance}</p>
+                </div>
+              )}
+
+              {insights.riskFlags && insights.riskFlags.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-brand-red mb-1">Risk Factors</p>
+                  <ul className="space-y-1">
+                    {insights.riskFlags.map((risk, idx) => (
+                      <li key={idx} className="text-sm text-brand-red/80 flex items-start gap-2">
+                        <span className="text-brand-red mt-0.5">•</span>
+                        <span>{risk}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

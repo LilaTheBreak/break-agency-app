@@ -14,25 +14,28 @@ import { PageRoleScope } from "@prisma/client";
 /**
  * System-defined CMS pages that must always exist.
  * These are the ONLY pages approved for CMS editing.
+ * 
+ * Note: Only PUBLIC pages in CMS_PUBLIC_PAGES registry are editable via CMS.
+ * Dashboard pages (creator-dashboard, founder-dashboard) are NOT editable.
  */
 const SYSTEM_CMS_PAGES = [
   {
     slug: "welcome",
     title: "Welcome",
     roleScope: "PUBLIC" as PageRoleScope,
-    description: "Logged-in welcome screen",
+    description: "Landing page",
   },
   {
     slug: "creator-dashboard",
     title: "Creator Dashboard Intro",
     roleScope: "CREATOR" as PageRoleScope,
-    description: "Top intro content only",
+    description: "Top intro content only (NOT editable via CMS)",
   },
   {
     slug: "founder-dashboard",
     title: "Founder Dashboard Intro",
     roleScope: "FOUNDER" as PageRoleScope,
-    description: "Top intro content only",
+    description: "Top intro content only (NOT editable via CMS)",
   },
   {
     slug: "resources",
@@ -41,16 +44,52 @@ const SYSTEM_CMS_PAGES = [
     description: "Static educational content",
   },
   {
+    slug: "careers",
+    title: "Careers",
+    roleScope: "PUBLIC" as PageRoleScope,
+    description: "Careers page",
+  },
+  {
+    slug: "press",
+    title: "Press",
+    roleScope: "PUBLIC" as PageRoleScope,
+    description: "Press and media enquiries",
+  },
+  {
+    slug: "help",
+    title: "Help Center",
+    roleScope: "PUBLIC" as PageRoleScope,
+    description: "Help center and support",
+  },
+  {
+    slug: "contact",
+    title: "Contact",
+    roleScope: "PUBLIC" as PageRoleScope,
+    description: "Contact page",
+  },
+  {
+    slug: "legal",
+    title: "Legal + Privacy",
+    roleScope: "PUBLIC" as PageRoleScope,
+    description: "Legal and privacy information",
+  },
+  {
+    slug: "privacy-policy",
+    title: "Privacy Policy",
+    roleScope: "PUBLIC" as PageRoleScope,
+    description: "Privacy policy",
+  },
+  {
     slug: "announcements",
     title: "Announcements",
     roleScope: "PUBLIC" as PageRoleScope,
-    description: "Global banner messaging",
+    description: "Global banner messaging (NOT editable via CMS)",
   },
   {
     slug: "empty-states",
     title: "Empty States",
     roleScope: "PUBLIC" as PageRoleScope,
-    description: "No deals / no campaigns copy",
+    description: "No deals / no campaigns copy (NOT editable via CMS)",
   },
 ];
 

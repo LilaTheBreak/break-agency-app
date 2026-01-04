@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
+import { oauthCallbackLimiter } from '../../middleware/rateLimiter.js';
 import prisma from '../../lib/prisma.js';
 import axios from 'axios';
 
@@ -78,7 +79,7 @@ router.get('/connect', requireAuth, (req: Request, res: Response) => {
  * GET /api/auth/instagram/callback
  * Handle Instagram OAuth callback
  */
-router.get('/callback', async (req: Request, res: Response) => {
+router.get('/callback', oauthCallbackLimiter, async (req: Request, res: Response) => {
   if (!isConfigured) {
     return res.redirect('/dashboard?error=instagram_not_configured');
   }

@@ -1,16 +1,25 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { createRateLimiter, RATE_LIMITS } from "../middleware/rateLimit.js";
 import { classifyMessage } from "../services/inboxClassifier.js";
 import { scanGmail } from "../services/gmailScanner.js";
 import { autoLinkDeal } from "../services/dealLinker.js";
 
 const router = Router();
 
+// Rate limiter for inbox scan operations (conservative: 3 per 10 minutes)
+const inboxScanLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  maxRequests: 3, // 3 scans per 10 minutes
+  message: "Too many inbox scan requests. Please wait before scanning again.",
+  keyGenerator: (req) => (req as any).user?.id || req.ip || "unknown",
+});
+
 /**
  * Trigger unified inbox scan
  */
-router.post("/api/inbox/scan", requireAuth, async (req, res) => {
+router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) => {
   try {
     const gmailMessages = await scanGmail(req.user!);
 

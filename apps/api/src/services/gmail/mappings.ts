@@ -85,6 +85,7 @@ export function mapGmailMessageToDb(
   // Data for the thread (InboxMessage)
   const inboxMessageData: InboxMessageUpdateInput = {
     threadId: message.threadId!,
+    platform: "gmail", // Explicitly set platform
     subject: getHeader(headers, "Subject"),
     snippet: message.snippet || "",
     lastMessageAt: messageDate,
@@ -112,6 +113,7 @@ export function mapGmailMessageToDb(
   
   const inboundEmailData: InboundEmailCreateInput = {
     userId,
+    platform: "gmail", // Explicitly set platform
     gmailId: message.id!,
     threadId: message.threadId!,
     subject: getHeader(headers, "Subject") || null,

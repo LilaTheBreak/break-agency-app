@@ -58,7 +58,7 @@ export async function syncGmailForUser(userId: string): Promise<SyncStats> {
           const thread = await tx.inboxMessage.upsert({
             where: { threadId: inboxMessageData.threadId },
             update: inboxMessageData,
-            create: { ...inboxMessageData, userId }
+            create: { ...inboxMessageData, userId, platform: "gmail" }
           });
 
           // Use upsert to handle race conditions (concurrent syncs)

@@ -1,6 +1,25 @@
 import React from "react";
+import { BlockRenderer } from "../components/BlockRenderer.jsx";
+import { usePublicCmsPage } from "../hooks/usePublicCmsPage.js";
 
 export function PressPage() {
+  // Fetch CMS content for press page (public, no auth required)
+  const cms = usePublicCmsPage("press");
+
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-white text-slate-900 min-h-screen">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <PressPageHardcoded />;
+}
+
+function PressPageHardcoded() {
   return (
     <div className="bg-white text-slate-900">
       <header className="border-b border-slate-200 bg-white">

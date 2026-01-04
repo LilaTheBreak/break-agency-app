@@ -148,6 +148,7 @@ model Brand {
   Outreach              Outreach[]
   Payout                Payout[]
   SuitabilityResult     SuitabilityResult[]
+  Contract              Contract[]
 }
 
 model BrandCampaign {
@@ -202,9 +203,12 @@ model ContractReview {
 model Contract {
   id             String    @id
   dealId         String
+  brandId        String?   // Explicit brand linkage for direct queries
   title          String
   fileUrl        String?
   pdfUrl         String?
+  signedPdfUrl   String?   // Signed PDF from e-signature provider
+  envelopeId     String?   // DocuSign envelope ID (or other provider ID)
   status         String    @default("draft")
   sentAt         DateTime?
   talentSignedAt DateTime?
@@ -216,10 +220,13 @@ model Contract {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime
   Deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Brand          Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
 
   @@index([dealId])
+  @@index([brandId])
   @@index([status])
   @@index([sentAt])
+  @@index([envelopeId])
 }
 
 // STATUS: FUTURE
@@ -560,6 +567,8 @@ model Deal {
   Invoice                 Invoice[]
   Payment                 Payment[]
   Payout                  Payout[]
+  Commission              Commission[]
+  InboundEmail            InboundEmail[]
 
   @@index([opportunityId])
 }
@@ -767,15 +776,36 @@ model GmailToken {
   User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model GoogleAccount {
+  userId       String    @id
+  email        String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  scope        String?
+  tokenType    String?
+  idToken      String?
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
 model InboundEmail {
   id                  String               @id
   userId              String?
   inboxMessageId      String?
+  platform            String               @default("gmail") // "gmail", "instagram", "tiktok", "whatsapp"
   fromEmail           String
   toEmail             String
   subject             String?
   body                String?
   gmailId             String?              @unique
+  instagramId         String?              @unique
+  tiktokId            String?              @unique
+  whatsappId          String?              @unique
   threadId            String?
   receivedAt          DateTime             @default(now())
   direction           String               @default("inbound")
@@ -789,19 +819,30 @@ model InboundEmail {
   aiConfidence        Float?
   aiJson              Json?
   snippet             String?
+  dealId              String?              // Explicit deal linkage
+  talentId            String?              // Explicit talent linkage
+  brandId             String?              // Explicit brand linkage (from metadata.crmBrandId)
   InboxMessage        InboxMessage?        @relation(fields: [inboxMessageId], references: [id], onDelete: Cascade)
   User                User?                @relation(fields: [userId], references: [id])
+  Deal                Deal?                 @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  Talent              Talent?               @relation(fields: [talentId], references: [id], onDelete: SetNull)
   TrackingPixelEvent  TrackingPixelEvent[]
+  EmailClickEvent     EmailClickEvent[]
 
   @@index([receivedAt])
   @@index([threadId])
   @@index([userId])
+  @@index([dealId])
+  @@index([talentId])
+  @@index([brandId])
+  @@index([platform])
 }
 
 model InboxMessage {
   id              String           @id
   threadId        String           @unique
   userId          String
+  platform        String           @default("gmail") // "gmail", "instagram", "tiktok", "whatsapp"
   subject         String?
   snippet         String?
   isRead          Boolean          @default(false)
@@ -817,6 +858,7 @@ model InboxMessage {
   @@index([lastMessageAt])
   @@index([receivedAt])
   @@index([userId])
+  @@index([platform])
 }
 
 model InboxThreadMeta {
@@ -844,12 +886,17 @@ model Invoice {
   brandId       String?
   currency      String    @default("USD")
   invoiceNumber String    @unique
+  xeroId        String?   @unique // Xero invoice ID (external reference)
+  xeroSyncError String?   // Last sync error message
+  lastSyncedAt  DateTime? // Last successful sync with Xero
   Brand         Brand?    @relation(fields: [brandId], references: [id])
   Deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Commission    Commission[]
 
   @@index([brandId])
   @@index([dealId])
   @@index([dueAt])
+  @@index([xeroId])
   @@index([status])
 }
 
@@ -1080,6 +1127,37 @@ model Payment {
   @@index([stripePaymentIntentId])
 }
 
+model Commission {
+  id            String    @id
+  dealId        String
+  invoiceId     String?
+  talentId      String
+  agentId       String?   // Agent who managed the deal
+  amount        Float     // Commission amount
+  percentage    Float     // Commission percentage (e.g., 15.0 for 15%)
+  currency      String    @default("USD")
+  status        String    @default("pending") // pending, approved, paid
+  payoutId      String?   // Linked payout when commission is paid
+  calculatedAt  DateTime  @default(now())
+  approvedAt    DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  Deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Invoice       Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  Talent        Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  Payout        Payout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  User          User?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@index([dealId])
+  @@index([invoiceId])
+  @@index([talentId])
+  @@index([agentId])
+  @@index([payoutId])
+  @@index([status])
+  @@index([calculatedAt])
+}
+
 model Payout {
   id               String    @id
   userId           String?
@@ -1099,6 +1177,7 @@ model Payout {
   User             User?     @relation(fields: [createdBy], references: [id])
   Talent           Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   Deal             Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Commission       Commission[] // One payout can cover multiple commissions
 
   @@index([brandId])
   @@index([creatorId])
@@ -1376,6 +1455,8 @@ model Talent {
   Deal                    Deal[]
   Payment                 Payment[]
   Payout                  Payout[]
+  Commission              Commission[]
+  InboundEmail            InboundEmail[]
   SocialAccountConnection SocialAccountConnection[]
   SuitabilityResult       SuitabilityResult[]
   User                    User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1400,7 +1481,25 @@ model TrackingPixelEvent {
   openedAt     DateTime     @default(now())
   ip           String?
   userAgent    String?
+  metadata     Json?
   InboundEmail InboundEmail @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([emailId])
+  @@index([openedAt])
+}
+
+model EmailClickEvent {
+  id           String       @id
+  emailId      String
+  clickedAt    DateTime     @default(now())
+  linkUrl      String       // The URL that was clicked
+  ip           String?
+  userAgent    String?
+  metadata     Json?
+  InboundEmail InboundEmail @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([emailId])
+  @@index([clickedAt])
 }
 
 model User {
@@ -1459,6 +1558,7 @@ model User {
   FinanceDocument                         FinanceDocument[]
   FinanceReconciliation                   FinanceReconciliation[]
   GmailToken                              GmailToken?
+  GoogleAccount                           GoogleAccount?
   InboundEmail                            InboundEmail[]
   InternalTasksAssigned                   InternalQueueTask[]      @relation("InternalTaskAssignedTo")
   InternalTasksCreated                    InternalQueueTask[]      @relation("InternalTaskCreatedBy")
@@ -1467,6 +1567,7 @@ model User {
   Outreach_Outreach_createdByToUser       Outreach[]               @relation("Outreach_createdByToUser")
   Outreach_Outreach_linkedCreatorIdToUser Outreach[]               @relation("Outreach_linkedCreatorIdToUser")
   Payout                                  Payout[]
+  Commission                              Commission[]
   Resource                                Resource[]
   ResourceRsvp                            ResourceRsvp[]
   RiskEvent                               RiskEvent[]
@@ -1475,6 +1576,7 @@ model User {
   TalentAssignment                        TalentAssignment[]
   PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
   PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
+  IntegrationConnection                   IntegrationConnection[]
 }
 
 model WellnessCheckin {
@@ -1499,6 +1601,29 @@ model XeroConnection {
   lastSyncedAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime
+}
+
+// V1.1: Integration Connection Model for Slack, Notion, Google Drive
+model IntegrationConnection {
+  id            String   @id @default(cuid())
+  userId        String
+  platform      String   // "slack", "notion", "google_drive"
+  connected     Boolean   @default(false)
+  accessToken   String?
+  refreshToken  String?
+  expiresAt     DateTime?
+  webhookUrl    String?   // For Slack webhooks
+  workspaceId   String?   // For Notion workspace
+  workspaceName String?   // For Notion workspace name
+  metadata      Json?     // Platform-specific data
+  lastSyncedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  User          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@index([userId, connected])
+  @@index([platform])
 }
 
 model BrandSavedTalent {

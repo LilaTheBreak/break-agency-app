@@ -97,10 +97,23 @@ export async function generatePDF(id: string) {
 }
 
 export async function create(data: { dealId?: string; title: string }) {
+  // If dealId is provided, fetch the deal to get brandId
+  let brandId: string | undefined = undefined;
+  if (data.dealId) {
+    const deal = await prisma.deal.findUnique({
+      where: { id: data.dealId },
+      select: { brandId: true }
+    });
+    if (deal) {
+      brandId = deal.brandId;
+    }
+  }
+
   const contract = await prisma.contract.create({
     data: {
       id: generateId(),
       dealId: data.dealId,
+      brandId: brandId,
       title: data.title
     }
   });
@@ -296,10 +309,49 @@ export async function finalise(id: string, userId: string = "system") {
   return contract;
 }
 
-export async function analyse(id: string) {
-  // Implement AI analysis logic here
-  console.log(`[Contracts] Starting AI analysis for contract ${id}`);
-  return;
+export async function analyse(id: string, userId?: string) {
+  const contract = await prisma.contract.findUnique({
+    where: { id },
+    include: {
+      Deal: {
+        select: {
+          id: true,
+          brandId: true,
+        }
+      }
+    }
+  });
+
+  if (!contract) {
+    throw new Error(`Contract ${id} not found`);
+  }
+
+  if (!contract.fileUrl) {
+    throw new Error(`Contract ${id} has no file to analyze`);
+  }
+
+  // Use contractReader service for AI analysis
+  const { processContract } = await import("./contractReader.js");
+  
+  const analysis = await processContract(
+    contract.fileUrl,
+    contract.dealId || id, // Use dealId if available, otherwise contract id
+    userId || "system"
+  );
+
+  // Log AI history if userId provided
+  if (userId) {
+    const { logAIInteraction } = await import("../lib/aiHistoryLogger.js");
+    await logAIInteraction(
+      userId,
+      `Analyze contract: ${contract.title}`,
+      JSON.stringify(analysis),
+      "contract_analysis",
+      { contractId: id, dealId: contract.dealId }
+    ).catch(err => console.error("[AI History] Failed to log contract analysis:", err));
+  }
+
+  return analysis;
 }
 
 export async function listForDeal(dealId: string) {

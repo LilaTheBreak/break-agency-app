@@ -36,6 +36,7 @@ router.get("/", async (req: Request, res: Response) => {
     console.log("[TALENT] Total talent count in database:", totalCount);
     
     // Try fetching without User relation first to see if that's the issue
+    // Note: Talent model doesn't have createdAt/updatedAt fields, so we order by id instead
     const talentsWithoutUser = await prisma.talent.findMany({
       select: {
         id: true,
@@ -43,11 +44,9 @@ router.get("/", async (req: Request, res: Response) => {
         userId: true,
         categories: true,
         stage: true,
-        createdAt: true,
-        updatedAt: true,
       },
       orderBy: {
-        createdAt: "desc",
+        id: "desc", // Order by id since createdAt doesn't exist on Talent model
       },
     });
     console.log("[TALENT] Found", talentsWithoutUser.length, "talents without User relation");
@@ -134,8 +133,7 @@ router.get("/", async (req: Request, res: Response) => {
                 totalTasks: taskCount,
                 totalRevenue: 0, // Will be calculated below
               },
-              createdAt: talent.createdAt,
-              updatedAt: talent.updatedAt,
+              // Note: Talent model doesn't have createdAt/updatedAt fields
             };
           } catch (talentError) {
             console.error("[TALENT] Failed to enrich talent", talent.id, talentError);
@@ -155,8 +153,7 @@ router.get("/", async (req: Request, res: Response) => {
                 totalTasks: 0,
                 totalRevenue: 0,
               },
-              createdAt: talent.createdAt,
-              updatedAt: talent.updatedAt,
+              // Note: Talent model doesn't have createdAt/updatedAt fields
             };
           }
         })
@@ -184,50 +181,13 @@ router.get("/", async (req: Request, res: Response) => {
             totalTasks: 0,
             totalRevenue: 0,
           },
-          createdAt: t.createdAt,
-          updatedAt: t.updatedAt,
+          // Note: Talent model doesn't have createdAt/updatedAt fields
         }));
       }
       
       talents = enrichedTalents;
     }
     
-    // OLD CODE - Keep for reference but use enriched approach above
-    // Now fetch with User relation (optional - won't filter out talents if User is missing)
-    // Use left join behavior by making User optional
-    // const talentsWithRelation = await prisma.talent.findMany({
-    //   include: {
-    //     User: {
-    //       select: {
-    //         id: true,
-    //         email: true,
-    //         name: true,
-    //         avatarUrl: true,
-    //       },
-    //     },
-    //     Deal: {
-    //       where: {
-    //         stage: {
-    //           notIn: ["COMPLETED", "LOST"],
-    //         },
-    //       },
-    //       select: {
-    //         id: true,
-    //         stage: true,
-    //       },
-    //     },
-    //     _count: {
-    //       select: {
-    //         Deal: true,
-    //         CreatorTask: true,
-    //       },
-    //     },
-    //   },
-    //   orderBy: {
-    //     createdAt: "desc",
-    //   },
-    // });
-
     console.log("[TALENT] Found", talents.length, "talents after enrichment");
     
     // CRITICAL FIX: Never return empty list if database has records
@@ -262,8 +222,7 @@ router.get("/", async (req: Request, res: Response) => {
           totalTasks: 0,
           totalRevenue: 0,
         },
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
+        // Note: Talent model doesn't have createdAt/updatedAt fields
       }));
       
       console.log("[TALENT] Returning", baseTalents.length, "base talents (enrichment failed)");
@@ -502,8 +461,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         payments: talent.Payment.slice(0, 10),
         payoutsList: talent.Payout.slice(0, 10),
       },
-      createdAt: talent.createdAt,
-      updatedAt: talent.updatedAt,
+      // Note: Talent model doesn't have createdAt/updatedAt fields
     };
 
     sendSuccess(res, { talent: talentData });
@@ -696,7 +654,7 @@ router.post("/", async (req: Request, res: Response) => {
               name: talent.User.name,
             }
           : null,
-        createdAt: talent.createdAt,
+        // Note: Talent model doesn't have createdAt/updatedAt fields
       },
     });
   } catch (error) {
@@ -800,7 +758,7 @@ router.put("/:id", async (req: Request, res: Response) => {
               name: updatedTalent.User.name,
             }
           : null,
-        updatedAt: updatedTalent.updatedAt,
+        // Note: Talent model doesn't have updatedAt field
       },
     });
   } catch (error) {

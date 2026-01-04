@@ -74,7 +74,27 @@ const SUPPORT_TOPICS = [
   }
 ];
 
+import { BlockRenderer } from "../components/BlockRenderer.jsx";
+import { usePublicCmsPage } from "../hooks/usePublicCmsPage.js";
+
 export function HelpCenterPage() {
+  // Fetch CMS content for help center page (public, no auth required)
+  const cms = usePublicCmsPage("help");
+
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-white text-slate-900 min-h-screen">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <HelpCenterPageHardcoded />;
+}
+
+function HelpCenterPageHardcoded() {
   return (
     <div className="bg-white text-slate-900">
       <header className="border-b border-slate-200 bg-white">

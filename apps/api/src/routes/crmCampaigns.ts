@@ -23,12 +23,18 @@ router.use((req, res, next) => {
  */
 router.get("/", async (req, res) => {
   try {
-    const { brandId, status, owner } = req.query;
+    const { brandId, status, owner, talentId } = req.query;
 
     const where: any = {};
     if (brandId) where.brandId = brandId as string;
     if (status) where.status = status as string;
     if (owner) where.owner = owner as string;
+    // Filter by talent if talentId provided (searches linkedTalentIds array)
+    if (talentId) {
+      where.linkedTalentIds = {
+        has: talentId as string
+      };
+    }
 
     const campaigns = await prisma.crmCampaign.findMany({
       where,

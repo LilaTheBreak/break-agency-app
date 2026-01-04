@@ -19,7 +19,7 @@ const CreatorCard = ({ listing }) => (
   </Link>
 );
 
-export default function UGCMarketplace() {
+export default function UgcMarketplacePage() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,3 +59,4 @@ export default function UGCMarketplace() {
     </div>
   );
 }
+

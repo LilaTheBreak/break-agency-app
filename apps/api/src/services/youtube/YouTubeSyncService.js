@@ -11,11 +11,10 @@ class YouTubeSyncService {
 
   /**
    * Sync YouTube channel profile data
-   * @param {number} userId - User ID
-   * @param {number} connectionId - Social account connection ID
+   * @param {string} connectionId - Social account connection ID
    * @returns {Promise<Object>} Sync result
    */
-  async syncProfile(userId, connectionId) {
+  async syncProfile(connectionId) {
     try {
       // Get connection with valid token
       const connection = await prisma.socialAccountConnection.findUnique({
@@ -32,49 +31,59 @@ class YouTubeSyncService {
       // Fetch channel data
       const channelData = await this.fetchChannelData(accessToken);
 
-      // Upsert social profile
+      // Upsert social profile (using connectionId-based schema)
       const profile = await prisma.socialProfile.upsert({
-        where: {
-          userId_platform: {
-            userId,
-            platform: 'YOUTUBE'
-          }
-        },
-        update: {
-          username: channelData.username,
+        where: { connectionId },
+        create: {
+          connectionId,
+          platform: 'youtube',
+          handle: channelData.username || connection.handle,
           displayName: channelData.displayName,
-          profilePicture: channelData.profilePicture,
-          followers: channelData.subscribers,
-          totalPosts: channelData.videoCount,
+          profileImageUrl: channelData.profilePicture,
+          followerCount: channelData.subscribers || 0,
+          postCount: channelData.videoCount || 0,
           bio: channelData.description,
-          metadata: channelData.metadata,
+          externalId: channelData.platformId,
           lastSyncedAt: new Date()
         },
-        create: {
-          userId,
-          platform: 'YOUTUBE',
-          platformId: channelData.platformId,
-          username: channelData.username,
+        update: {
+          handle: channelData.username || connection.handle,
           displayName: channelData.displayName,
-          profilePicture: channelData.profilePicture,
-          followers: channelData.subscribers,
-          totalPosts: channelData.videoCount,
+          profileImageUrl: channelData.profilePicture,
+          followerCount: channelData.subscribers || 0,
+          postCount: channelData.videoCount || 0,
           bio: channelData.description,
-          metadata: channelData.metadata,
           lastSyncedAt: new Date()
         }
       });
 
-      // Save current metrics snapshot
-      await prisma.socialMetric.create({
-        data: {
-          profileId: profile.id,
-          followers: channelData.subscribers,
-          totalPosts: channelData.videoCount,
-          totalViews: channelData.totalViews,
-          averageEngagement: 0, // Will be calculated after syncing videos
-          recordedAt: new Date()
-        }
+      // Save historical metric snapshots
+      const now = new Date();
+      await prisma.socialMetric.createMany({
+        data: [
+          {
+            profileId: profile.id,
+            platform: 'youtube',
+            metricType: 'follower_count',
+            value: channelData.subscribers || 0,
+            snapshotDate: now
+          },
+          {
+            profileId: profile.id,
+            platform: 'youtube',
+            metricType: 'post_count',
+            value: channelData.videoCount || 0,
+            snapshotDate: now
+          },
+          ...(channelData.totalViews ? [{
+            profileId: profile.id,
+            platform: 'youtube',
+            metricType: 'total_views',
+            value: channelData.totalViews,
+            snapshotDate: now
+          }] : [])
+        ],
+        skipDuplicates: true
       });
 
       await this.logSync(connectionId, 'profile', true);
@@ -89,35 +98,27 @@ class YouTubeSyncService {
 
   /**
    * Sync YouTube videos
-   * @param {number} userId - User ID
-   * @param {number} connectionId - Social account connection ID
+   * @param {string} connectionId - Social account connection ID
    * @param {number} limit - Max number of videos to sync
    * @returns {Promise<Object>} Sync result
    */
-  async syncVideos(userId, connectionId, limit = 50) {
+  async syncVideos(connectionId, limit = 50) {
     try {
       // Get connection with valid token
       const connection = await prisma.socialAccountConnection.findUnique({
-        where: { id: connectionId }
+        where: { id: connectionId },
+        include: { SocialProfile: true }
       });
 
       if (!connection) {
         throw new Error('YouTube connection not found');
       }
 
-      // Get profile
-      const profile = await prisma.socialProfile.findUnique({
-        where: {
-          userId_platform: {
-            userId,
-            platform: 'YOUTUBE'
-          }
-        }
-      });
-
-      if (!profile) {
+      if (!connection.SocialProfile) {
         throw new Error('YouTube profile not found. Sync profile first.');
       }
+
+      const profile = connection.SocialProfile;
 
       // Ensure token is valid
       const accessToken = await YouTubeAuthService.ensureValidToken(connection);

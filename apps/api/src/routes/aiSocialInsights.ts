@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
 import { generateSocialInsights, InvalidSocialAiResponseError } from "../services/aiSocialInsightsService.js";
 import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
+import { logAIInteraction } from "../lib/aiHistoryLogger.js";
 
 const router = Router();
 
@@ -22,6 +23,16 @@ router.post("/ai/social-insights/:userId", requireAuth, async (req: Request, res
 
   try {
     const result = await generateSocialInsights(targetUserId);
+
+    // Log AI history (log for the target user, not the requester)
+    await logAIInteraction(
+      targetUserId,
+      "Generate social insights",
+      JSON.stringify(result),
+      "social_insights",
+      { requestedBy: currentUser.id }
+    ).catch(err => console.error("[AI History] Failed to log social insights:", err));
+
     return res.json(result);
   } catch (error) {
     if (error instanceof InvalidSocialAiResponseError) {

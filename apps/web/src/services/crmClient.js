@@ -158,6 +158,7 @@ export async function fetchCampaigns(filters = {}) {
   if (filters.brandId) params.set("brandId", filters.brandId);
   if (filters.status) params.set("status", filters.status);
   if (filters.owner) params.set("owner", filters.owner);
+  if (filters.talentId) params.set("talentId", filters.talentId); // Filter campaigns by linked talent
 
   const url = `/api/crm-campaigns${params.toString() ? `?${params}` : ""}`;
   return fetchWithAuth(url);

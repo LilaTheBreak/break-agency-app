@@ -24,13 +24,14 @@ router.use(requireAuth, checkDealIntelligenceEnabled);
 
 /**
  * POST /api/deals/intelligence/run/:dealId
- * Generate or regenerate intelligence for a deal (admin only)
+ * Generate or regenerate AI-powered intelligence for a deal
  */
-router.post("/run/:dealId", requireRole(['ADMIN', 'SUPERADMIN']), async (req: Request, res: Response) => {
+router.post("/run/:dealId", async (req: Request, res: Response) => {
   try {
     const { dealId } = req.params;
+    const userId = (req as any).user?.id;
 
-    // Verify deal exists
+    // Verify deal exists and user has access
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },
       include: {
@@ -49,72 +50,38 @@ router.post("/run/:dealId", requireRole(['ADMIN', 'SUPERADMIN']), async (req: Re
       });
     }
 
-    // Generate intelligence summary
-    const summary = `Deal: ${deal.dealName || 'Unnamed'}\nBrand: ${deal.Brand?.name || 'Unknown'}\nStatus: ${deal.status || 'Unknown'}\nValue: ${deal.estimatedValue || 'Not set'}`;
-
-    // Analyze risk flags
-    const riskFlags: string[] = [];
-    if (deal.expectedCloseDate && new Date(deal.expectedCloseDate) < new Date()) {
-      riskFlags.push("Expected close date has passed");
-    }
-    if (deal.confidence === "Low") {
-      riskFlags.push("Low confidence deal");
-    }
-    if (!deal.estimatedValue || deal.estimatedValue === 0) {
-      riskFlags.push("No estimated value set");
+    // Check user access (deal owner or admin)
+    if (deal.userId !== userId && !(req as any).user?.role?.includes("ADMIN")) {
+      return res.status(403).json({ 
+        error: "Access denied" 
+      });
     }
 
-    // Performance notes
-    const performanceNotes: string[] = [];
-    if (deal.status === "Closed Won") {
-      performanceNotes.push("Deal successfully closed");
-    } else if (deal.status === "Closed Lost") {
-      performanceNotes.push("Deal was lost");
-    }
-
-    // Upsert intelligence
-    const intelligence = await prisma.dealIntelligence.upsert({
-      where: { dealId },
-      create: {
-        id: `intel_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        dealId,
-        summary,
-        riskFlags,
-        performanceNotes,
-        insights: {
-          dealName: deal.dealName,
-          brandName: deal.Brand?.name,
-          status: deal.status,
-          estimatedValue: deal.estimatedValue
-        }
-      },
-      update: {
-        summary,
-        riskFlags,
-        performanceNotes,
-        insights: {
-          dealName: deal.dealName,
-          brandName: deal.Brand?.name,
-          status: deal.status,
-          estimatedValue: deal.estimatedValue
-        },
-        updatedAt: new Date()
-      }
-    });
+    // Generate AI intelligence
+    const { generateDealIntelligence, saveDealIntelligence } = await import("../services/dealIntelligenceService.js");
+    const intelligence = await generateDealIntelligence(dealId);
+    const saved = await saveDealIntelligence(dealId, intelligence);
 
     // Audit log
     try {
       await logAuditEvent(req as any, {
         action: "DEAL_INTELLIGENCE_GENERATED",
         entityType: "DealIntelligence",
-        entityId: intelligence.id,
+        entityId: saved.id,
         metadata: { dealId }
       });
     } catch (logError) {
       console.error("Failed to log audit event:", logError);
     }
 
-    res.json({ intelligence });
+    res.json({ 
+      success: true,
+      intelligence: {
+        ...intelligence,
+        id: saved.id,
+        generatedAt: saved.generatedAt
+      }
+    });
   } catch (error) {
     logError("Failed to generate deal intelligence", error, { dealId: req.params.dealId });
     res.status(500).json({ 
@@ -131,8 +98,9 @@ router.post("/run/:dealId", requireRole(['ADMIN', 'SUPERADMIN']), async (req: Re
 router.get("/:dealId", async (req: Request, res: Response) => {
   try {
     const { dealId } = req.params;
+    const userId = (req as any).user?.id;
 
-    // Verify deal exists
+    // Verify deal exists and user has access
     const deal = await prisma.deal.findUnique({
       where: { id: dealId }
     });
@@ -143,6 +111,13 @@ router.get("/:dealId", async (req: Request, res: Response) => {
       });
     }
 
+    // Check user access
+    if (deal.userId !== userId && !(req as any).user?.role?.includes("ADMIN")) {
+      return res.status(403).json({ 
+        error: "Access denied" 
+      });
+    }
+
     const intelligence = await prisma.dealIntelligence.findUnique({
       where: { dealId }
     });
@@ -150,11 +125,26 @@ router.get("/:dealId", async (req: Request, res: Response) => {
     if (!intelligence) {
       return res.status(404).json({ 
         error: "Intelligence not found for this deal",
-        message: "Run /api/deals/intelligence/run/:dealId to generate intelligence"
+        message: "Run POST /api/deals/intelligence/run/:dealId to generate intelligence"
       });
     }
 
-    res.json({ intelligence });
+    // Return structured intelligence
+    const insights = intelligence.insights as any;
+    res.json({ 
+      success: true,
+      intelligence: {
+        id: intelligence.id,
+        dealId: intelligence.dealId,
+        suggestedValueRange: insights?.suggestedValueRange || null,
+        confidenceScore: insights?.confidenceScore || 0,
+        explanation: intelligence.summary || insights?.explanation || "",
+        reasoning: insights?.reasoning || {},
+        riskFlags: intelligence.riskFlags || [],
+        generatedAt: intelligence.generatedAt,
+        updatedAt: intelligence.updatedAt
+      }
+    });
   } catch (error) {
     logError("Failed to fetch deal intelligence", error, { dealId: req.params.dealId });
     res.status(500).json({ 

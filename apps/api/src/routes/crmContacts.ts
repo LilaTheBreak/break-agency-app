@@ -40,9 +40,14 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json({ contacts: contacts || [] });
   } catch (error) {
-    console.error("[CRM CONTACTS] Error fetching contacts:", error);
-    // Return empty array instead of 500 - graceful degradation
-    res.status(200).json({ contacts: [] });
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch contacts";
+    logError("Failed to fetch contacts", error, { userId: req.user?.id, route: req.path });
+    res.status(500).json({ 
+      success: false,
+      error: errorMessage,
+      message: errorMessage,
+      code: "CONTACTS_FETCH_FAILED"
+    });
   }
 });
 

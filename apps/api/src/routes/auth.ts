@@ -68,7 +68,7 @@ router.get("/google/url", (_req, res) => {
 /* ---------------------------------------------------------
    2. GOOGLE OAUTH CALLBACK
 --------------------------------------------------------- */
-router.get("/google/callback", async (req: Request, res: Response) => {
+router.get("/google/callback", authRateLimiter, async (req: Request, res: Response) => {
   console.log("[INTEGRATION] Google OAuth callback received", {
     hasCode: !!req.query.code,
     timestamp: new Date().toISOString()
@@ -160,32 +160,40 @@ router.get("/google/callback", async (req: Request, res: Response) => {
 
     /* ------------------------------------------
        Store Google Account tokens for Calendar sync
-       NOTE: GoogleAccount model doesn't exist in schema yet
-       TODO: Add GoogleAccount model to schema for calendar sync
     ------------------------------------------ */
-    // if (tokens.refresh_token || tokens.access_token) {
-    //   await prisma.googleAccount.upsert({
-    //     where: { userId: user.id },
-    //     update: {
-    //       email: normalizedEmail,
-    //       accessToken: tokens.access_token || null,
-    //       refreshToken: tokens.refresh_token || null,
-    //       expiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
-    //       scope: tokens.scope || null,
-    //       updatedAt: new Date(),
-    //     },
-    //     create: {
-    //       userId: user.id,
-    //       email: normalizedEmail,
-    //       accessToken: tokens.access_token || null,
-    //       refreshToken: tokens.refresh_token || null,
-    //       expiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
-    //       scope: tokens.scope || null,
-    //     },
-    //   });
-    //   console.log("✔ Google Account tokens stored for calendar sync");
-    // }
-    console.log("⚠ Google Account tokens NOT stored (GoogleAccount model not in schema)");
+    if (tokens.refresh_token || tokens.access_token) {
+      // Check if calendar scope is included
+      const hasCalendarScope = tokens.scope?.includes("calendar") || false;
+      
+      if (hasCalendarScope) {
+        await prisma.googleAccount.upsert({
+          where: { userId: user.id },
+          update: {
+            email: normalizedEmail,
+            accessToken: tokens.access_token || null,
+            refreshToken: tokens.refresh_token || null,
+            expiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+            scope: tokens.scope || null,
+            tokenType: tokens.token_type || null,
+            idToken: tokens.id_token || null,
+            updatedAt: new Date(),
+          },
+          create: {
+            userId: user.id,
+            email: normalizedEmail,
+            accessToken: tokens.access_token || null,
+            refreshToken: tokens.refresh_token || null,
+            expiresAt: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+            scope: tokens.scope || null,
+            tokenType: tokens.token_type || null,
+            idToken: tokens.id_token || null,
+          },
+        });
+        console.log("✔ Google Account tokens stored for calendar sync");
+      } else {
+        console.log("⚠ Google OAuth tokens received but calendar scope not included");
+      }
+    }
 
     /* ------------------------------------------
        Set JWT cookie for session

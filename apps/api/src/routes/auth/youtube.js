@@ -29,7 +29,7 @@ router.get('/connect', requireAuth, async (req, res) => {
  * GET /api/auth/youtube/callback
  * Handle YouTube OAuth callback
  */
-router.get('/callback', async (req, res) => {
+router.get('/callback', oauthCallbackLimiter, async (req, res) => {
   try {
     const { code, state, error } = req.query;
 

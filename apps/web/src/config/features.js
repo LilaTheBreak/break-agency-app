@@ -58,7 +58,7 @@ export const features = {
    * - Social sync services implemented
    * - Platform API integrations connected
    */
-  SOCIAL_ANALYTICS_ENABLED: false, // Social schema models removed, needs reimplementation
+  SOCIAL_ANALYTICS_ENABLED: true, // ✅ V1.1: Social analytics with time-series data
   SOCIAL_INSIGHTS_ENABLED: false, // Social insights not yet implemented
   TOP_PERFORMING_POSTS_ENABLED: false, // Requires social platform connections
 
@@ -70,7 +70,7 @@ export const features = {
    * - /api/inbox/scan endpoint functional
    * - InboundEmail table populated with real emails
    */
-  INBOX_SCANNING_ENABLED: false,
+  INBOX_SCANNING_ENABLED: true, // ✅ Unlocked: Gmail integration fully implemented
   EMAIL_CLASSIFICATION_ENABLED: false,
 
   /**
@@ -84,6 +84,38 @@ export const features = {
   INSTAGRAM_INTEGRATION_ENABLED: false,
   TIKTOK_INTEGRATION_ENABLED: false,
   YOUTUBE_INTEGRATION_ENABLED: false,
+
+  /**
+   * Platform Inboxes (V1.1)
+   * UNLOCK WHEN:
+   * - OAuth connection implemented (read-only)
+   * - Message sync service implemented
+   * - Messages stored in InboundEmail model
+   */
+  INSTAGRAM_INBOX_ENABLED: false, // V1.1: Instagram inbox (read-only DMs)
+  TIKTOK_INBOX_ENABLED: false, // V1.1: TikTok inbox (read-only messages/comments)
+  WHATSAPP_INBOX_ENABLED: false, // V1.1: WhatsApp inbox (placeholder)
+
+  /**
+   * Deal Intelligence
+   * UNLOCK WHEN:
+   * - AI deal intelligence service implemented
+   * - Historical deal data available
+   * - Brand category benchmarks calculated
+   * - Talent performance metrics available
+   */
+  DEAL_INTELLIGENCE_ENABLED: true, // ✅ V1.1: Deal negotiation intelligence with AI
+
+  /**
+   * Productivity Integrations (V1.1)
+   * UNLOCK WHEN:
+   * - Integration services implemented
+   * - OAuth flows configured
+   * - API endpoints tested
+   */
+  SLACK_INTEGRATION_ENABLED: true, // ✅ V1.1: Slack notifications for deals, invoices, approvals
+  NOTION_INTEGRATION_ENABLED: true, // ✅ V1.1: Sync brand/deal summaries to Notion
+  GOOGLE_DRIVE_INTEGRATION_ENABLED: true, // ✅ V1.1: Link external files to CRM records
 
   /**
    * Contract Management
@@ -182,9 +214,7 @@ export const features = {
   GLOBAL_SEARCH_ENABLED: true, // ✅ Phase 5: Global search implemented
   TRENDING_CONTENT_ENABLED: false, // Phase 5: Trending content feed
   ADVANCED_ANALYTICS_ENABLED: false, // Phase 5: Backend analytics aggregation
-  SLACK_INTEGRATION_ENABLED: false, // Phase 5: Slack notifications integration
-  NOTION_INTEGRATION_ENABLED: false, // Phase 5: Notion sync integration
-  GOOGLE_DRIVE_INTEGRATION_ENABLED: false, // Phase 5: Google Drive file linking
+  // Note: Slack, Notion, Google Drive flags moved to V1.1 Productivity Integrations section (lines 116-118)
 };
 
 /**

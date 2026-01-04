@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import OpenAI from "openai";
+import { logAIInteraction } from "../lib/aiHistoryLogger.js";
 
 const router = Router();
 const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
@@ -36,6 +37,18 @@ router.get("/api/inbox/ai-suggestions/:emailId", requireAuth, async (req: Reques
     });
 
     const suggestions = JSON.parse(completion.choices[0].message.content || "{}");
+
+    // Log AI history
+    const userId = (req as any).user?.id;
+    if (userId) {
+      await logAIInteraction(
+        userId,
+        `Generate suggestions for email: ${email.subject || "No subject"}`,
+        JSON.stringify(suggestions),
+        "inbox_suggestions",
+        { emailId }
+      ).catch(err => console.error("[AI History] Failed to log inbox suggestions:", err));
+    }
 
     res.json({ success: true, data: suggestions });
   } catch (error) {

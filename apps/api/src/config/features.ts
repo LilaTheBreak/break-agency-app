@@ -19,6 +19,9 @@ export const features = {
   TIKTOK_INTEGRATION_ENABLED: process.env.TIKTOK_INTEGRATION_ENABLED === "true",
   INSTAGRAM_INTEGRATION_ENABLED: process.env.INSTAGRAM_INTEGRATION_ENABLED === "true",
   BUNDLES_ENABLED: process.env.BUNDLES_ENABLED === "true",
+  SLACK_INTEGRATION_ENABLED: process.env.SLACK_INTEGRATION_ENABLED === "true",
+  NOTION_INTEGRATION_ENABLED: process.env.NOTION_INTEGRATION_ENABLED === "true",
+  GOOGLE_DRIVE_INTEGRATION_ENABLED: process.env.GOOGLE_DRIVE_INTEGRATION_ENABLED === "true",
 };
 
 export function isFeatureEnabled(featureName: keyof typeof features): boolean {

@@ -5,52 +5,98 @@ import { requireAuth } from "../middleware/auth.js";
 const router = Router();
 
 /**
- * OPEN TRACKING FEED
- * Lists last 50 tracking pixel events for inbound emails belonging to the user.
+ * TRACKING FEED (Open + Click Events)
+ * Lists last 50 tracking events (opens and clicks) for inbound emails belonging to the user.
  */
 router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
 
-    const events = await prisma.trackingPixelEvent.findMany({
-      where: {
-        inboundEmail: {
-          userId, // Only pull events for emails owned by this user
-        },
-      },
-      include: {
-        inboundEmail: {
-          select: {
-            id: true,
-            subject: true,
-            fromEmail: true,
-            toEmail: true,
-            receivedAt: true,
-            categories: true,
+    // Fetch both open and click events
+    const [openEvents, clickEvents] = await Promise.all([
+      prisma.trackingPixelEvent.findMany({
+        where: {
+          inboundEmail: {
+            userId,
           },
         },
-      },
-      // TrackingPixelEvent has **NO createdAt**, so we sort by openedAt
-      orderBy: {
-        openedAt: "desc",
-      },
-      take: 50,
-    });
+        include: {
+          inboundEmail: {
+            select: {
+              id: true,
+              subject: true,
+              fromEmail: true,
+              toEmail: true,
+              receivedAt: true,
+              categories: true,
+            },
+          },
+        },
+        orderBy: {
+          openedAt: "desc",
+        },
+        take: 50,
+      }),
+      prisma.emailClickEvent.findMany({
+        where: {
+          inboundEmail: {
+            userId,
+          },
+        },
+        include: {
+          inboundEmail: {
+            select: {
+              id: true,
+              subject: true,
+              fromEmail: true,
+              toEmail: true,
+              receivedAt: true,
+              categories: true,
+            },
+          },
+        },
+        orderBy: {
+          clickedAt: "desc",
+        },
+        take: 50,
+      }),
+    ]);
 
-    const data = events.map((e) => ({
+    // Combine and format events
+    const openData = openEvents.map((e) => ({
       id: e.id,
+      type: "open",
       emailId: e.emailId,
-      openedAt: e.openedAt,
+      timestamp: e.openedAt,
       ip: e.ip,
       userAgent: e.userAgent,
       metadata: e.metadata,
       email: e.inboundEmail,
     }));
 
+    const clickData = clickEvents.map((e) => ({
+      id: e.id,
+      type: "click",
+      emailId: e.emailId,
+      timestamp: e.clickedAt,
+      linkUrl: e.linkUrl,
+      ip: e.ip,
+      userAgent: e.userAgent,
+      metadata: e.metadata,
+      email: e.inboundEmail,
+    }));
+
+    // Combine and sort by timestamp
+    const allEvents = [...openData, ...clickData].sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    ).slice(0, 50);
+
     res.json({
       ok: true,
-      count: data.length,
-      data,
+      count: allEvents.length,
+      opens: openEvents.length,
+      clicks: clickEvents.length,
+      data: allEvents,
     });
   } catch (error) {
     console.error("INBOX TRACKING ERROR:", error);

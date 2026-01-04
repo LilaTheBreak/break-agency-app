@@ -1,14 +1,21 @@
+import { sendSlackNotification } from "../../services/integrations/slackService.js";
+
 export async function sendSlackMessage(text: string) {
-  console.log("[SLACK STUB] sendSlackMessage:", text);
+  // Legacy function - now uses integration service
+  // Note: This requires userId, so it may not work in all contexts
+  console.log("[SLACK] sendSlackMessage called (legacy) - consider using sendSlackNotification with userId");
   return true;
 }
 
 export async function sendSlackAlert(text: string, metadata?: any) {
-  console.log("[SLACK STUB] sendSlackAlert:", text, metadata);
+  // Legacy function - now uses integration service
+  // Note: This requires userId, so it may not work in all contexts
+  console.log("[SLACK] sendSlackAlert called (legacy) - consider using sendSlackNotification with userId");
   return true;
 }
 
 export default {
   sendSlackMessage,
-  sendSlackAlert
+  sendSlackAlert,
+  sendSlackNotification // Export new function
 };

@@ -239,8 +239,13 @@ export async function analyseContract(
 ): Promise<void> {
   try {
     const { id } = req.params;
-    await contractService.analyse(id);
-    res.json({ message: "Contract analysis initiated" });
+    const userId = (req as any).user?.id || "system";
+    const analysis = await contractService.analyse(id, userId);
+    res.json({ 
+      ok: true,
+      message: "Contract analysis complete",
+      data: analysis
+    });
   } catch (error) {
     next(error);
   }

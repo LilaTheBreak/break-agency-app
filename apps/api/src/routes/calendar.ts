@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { z } from "zod";
+import { getGoogleCalendarClient, syncGoogleCalendarEvents } from "../lib/google.js";
+import { checkEventConflicts, checkAvailability } from "../services/calendarConflictService.js";
 
 const router = Router();
 
@@ -94,6 +96,19 @@ router.post("/events", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
 
+    // Check for conflicts before creating
+    const startAt = new Date(parsed.data.startTime);
+    const endAt = new Date(parsed.data.endTime);
+    const conflictResult = await checkEventConflicts(userId, startAt, endAt);
+
+    // Store conflict info in metadata
+    const metadata = {
+      ...parsed.data.metadata,
+      category: parsed.data.category || parsed.data.type,
+      hasConflict: conflictResult.hasConflict,
+      conflictingEventIds: conflictResult.conflictingEvents.map(e => e.id),
+    };
+
     const newEvent = await prisma.calendarEvent.create({
       data: {
         title: parsed.data.title,
@@ -106,10 +121,7 @@ router.post("/events", async (req: Request, res: Response) => {
         source: "internal",
         status: "scheduled",
         createdBy: userId,
-        metadata: {
-          ...parsed.data.metadata,
-          category: parsed.data.category || parsed.data.type,
-        },
+        metadata,
         relatedBrandIds: parsed.data.relatedBrandIds,
         relatedCreatorIds: parsed.data.relatedCreatorIds,
         relatedDealIds: parsed.data.relatedDealIds,
@@ -131,9 +143,16 @@ router.post("/events", async (req: Request, res: Response) => {
       title: newEvent.title,
       type: newEvent.type,
       startAt: newEvent.startAt,
+      hasConflict: conflictResult.hasConflict,
     });
 
-    res.status(201).json({ success: true, data: { event: newEvent } });
+    res.status(201).json({
+      success: true,
+      data: {
+        event: newEvent,
+        conflicts: conflictResult.hasConflict ? conflictResult : null,
+      },
+    });
   } catch (error) {
     console.error("Failed to create calendar event:", error);
     res.status(500).json({ success: false, error: "Could not create event." });
@@ -182,11 +201,23 @@ router.put("/events/:id", async (req: Request, res: Response) => {
     if (parsed.data.relatedDealIds !== undefined) updateData.relatedDealIds = parsed.data.relatedDealIds;
     if (parsed.data.relatedCampaignIds !== undefined) updateData.relatedCampaignIds = parsed.data.relatedCampaignIds;
     
-    if (parsed.data.metadata !== undefined || parsed.data.category !== undefined) {
+    // Check for conflicts if time is being updated
+    let conflictResult = null;
+    if (parsed.data.startTime !== undefined || parsed.data.endTime !== undefined) {
+      const startAt = parsed.data.startTime ? new Date(parsed.data.startTime) : existingEvent.startAt;
+      const endAt = parsed.data.endTime ? new Date(parsed.data.endTime) : existingEvent.endAt;
+      conflictResult = await checkEventConflicts(userId, startAt, endAt, eventId);
+    }
+
+    if (parsed.data.metadata !== undefined || parsed.data.category !== undefined || conflictResult) {
       updateData.metadata = {
         ...(existingEvent.metadata as any || {}),
         ...parsed.data.metadata,
         category: parsed.data.category || (existingEvent.metadata as any)?.category,
+        ...(conflictResult ? {
+          hasConflict: conflictResult.hasConflict,
+          conflictingEventIds: conflictResult.conflictingEvents.map(e => e.id),
+        } : {}),
       };
     }
 
@@ -208,9 +239,16 @@ router.put("/events/:id", async (req: Request, res: Response) => {
     await logCalendarAudit(userId, "CALENDAR_EVENT_UPDATED", updatedEvent.id, {
       title: updatedEvent.title,
       changes: Object.keys(updateData),
+      hasConflict: conflictResult?.hasConflict || false,
     });
 
-    res.json({ success: true, data: { event: updatedEvent } });
+    res.json({
+      success: true,
+      data: {
+        event: updatedEvent,
+        conflicts: conflictResult?.hasConflict ? conflictResult : null,
+      },
+    });
   } catch (error) {
     console.error("Failed to update calendar event:", error);
     res.status(500).json({ success: false, error: "Could not update event." });

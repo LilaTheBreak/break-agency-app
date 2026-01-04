@@ -219,3 +219,34 @@ export async function markPayoutPaid(id, data = {}) {
   }
   return response.json();
 }
+
+/**
+ * GET /api/admin/finance/commissions
+ * Get all commissions with optional filters
+ */
+export async function fetchCommissions(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.dealId) params.append("dealId", filters.dealId);
+  if (filters.talentId) params.append("talentId", filters.talentId);
+  if (filters.agentId) params.append("agentId", filters.agentId);
+  if (filters.status) params.append("status", filters.status);
+  if (filters.limit) params.append("limit", filters.limit);
+
+  const response = await apiFetch(`/api/admin/finance/commissions?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch commissions: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * GET /api/admin/finance/commissions/:id
+ * Get a single commission by ID
+ */
+export async function fetchCommission(id) {
+  const response = await apiFetch(`/api/admin/finance/commissions/${id}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch commission: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}

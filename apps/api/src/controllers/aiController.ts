@@ -4,14 +4,27 @@ import * as insightLLM from "../services/ai/insightLLM.js";
 import * as dealExtractor from "../services/ai/dealExtractor.js";
 import { getAssistantResponse } from "../services/ai/aiAssistant.js";
 import prisma from "../lib/prisma.js";
+import { logAIInteraction } from "../lib/aiHistoryLogger.js";
 
 export async function generateBusinessSummary(req: Request, res: Response, next: NextFunction) {
   try {
+    const userId = (req as any).user?.id;
     // In a real app, you'd aggregate real data here.
     const mockInsightsData = { totalRevenue: 100000, newDeals: 25, inboxVolume: 500 };
     const startTime = Date.now();
     const data = await insightLLM.generateBusinessSummary(mockInsightsData);
     const latency = Date.now() - startTime;
+
+    // Log AI history
+    if (userId) {
+      await logAIInteraction(
+        userId,
+        "Generate business summary",
+        JSON.stringify(data),
+        "business_summary",
+        { latency, mockData: true }
+      ).catch(err => console.error("[AI History] Failed to log business summary:", err));
+    }
 
     res.json({ ok: true, data, meta: { latency } });
   } catch (error) {
@@ -56,13 +69,13 @@ export async function generateNegotiationInsights(req: Request, res: Response, n
       return res.status(400).json({ ok: false, error: "Invalid payload" });
     }
 
-    const startTime = Date.now();
-    // TODO: This service needs to be refactored to use the `Deal` model.
-    // For now, return a placeholder response.
-    const data = { message: "Negotiation insights feature coming soon" };
-    const latency = Date.now() - startTime;
-
-    res.json({ ok: true, data, meta: { latency } });
+    // Feature disabled - return 503
+    return res.status(503).json({ 
+      ok: false, 
+      error: "Feature temporarily disabled",
+      message: "Negotiation insights feature is coming soon. This feature is temporarily disabled.",
+      code: "FEATURE_DISABLED"
+    });
   } catch (error) {
     next(error);
   }
@@ -97,6 +110,15 @@ export async function askAssistant(req: Request, res: Response, next: NextFuncti
       userInput: parsed.data.userInput,
     });
     const latency = Date.now() - startTime;
+
+    // Log AI history
+    await logAIInteraction(
+      userId,
+      parsed.data.userInput,
+      result.text,
+      `assistant_${role || "admin"}`,
+      { latency, role: role || "admin", contextId: parsed.data.contextId }
+    ).catch(err => console.error("[AI History] Failed to log assistant interaction:", err));
 
     res.json({ ok: true, suggestions: result.text, meta: { latency } });
   } catch (error) {

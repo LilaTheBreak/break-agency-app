@@ -297,7 +297,7 @@ export function AdminEventsPage({ session }) {
       await loadEvents();
     } catch (err) {
       console.error("Migration failed:", err);
-      alert("Migration failed. Check console for details.");
+      toast.error("Migration failed. Check console for details.");
     } finally {
       setIsMigrating(false);
     }

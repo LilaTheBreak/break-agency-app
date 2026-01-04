@@ -34,13 +34,27 @@ router.post("/:id/upload", contractController.uploadContract);
 router.post("/:id/send", contractController.sendContract);
 
 // POST /api/contracts/:id/sign/talent - Talent signs the contract
-// Phase 5: Implemented e-signature using existing providers
 router.post("/:id/sign/talent", requireAuth, async (req, res) => {
+  const enabled = process.env.CONTRACT_SIGNING_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Contract signing is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
+
   try {
     const { id } = req.params;
     const contract = await prisma.contract.findUnique({ 
       where: { id },
-      include: { Deal: { select: { talentId: true } } }
+      include: { 
+        Deal: { 
+          include: {
+            Talent: { select: { email: true, name: true } }
+          }
+        }
+      }
     });
     
     if (!contract) {
@@ -51,21 +65,24 @@ router.post("/:id/sign/talent", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Contract PDF missing" });
     }
 
-    // Phase 5: Use existing initiateSignature function
+    // Get talent email and name
+    const talentEmail = contract.Deal?.Talent?.email || (contract.terms as any)?.talentEmail;
+    const talentName = contract.Deal?.Talent?.name || (contract.terms as any)?.talentName || "Talent";
+
+    if (!talentEmail) {
+      return res.status(400).json({ error: "Talent email not found" });
+    }
+
+    // Use existing initiateSignature function
     const { initiateSignature } = await import("../services/signature/orchestrator.js");
     const result = await initiateSignature({
       ...contract,
-      terms: contract.terms || {},
+      terms: {
+        ...(contract.terms as any || {}),
+        talentEmail,
+        talentName
+      },
       userId: contract.Deal?.talentId || req.user?.id || ""
-    });
-
-    // Update contract status
-    await prisma.contract.update({
-      where: { id },
-      data: { 
-        status: "pending_signature",
-        updatedAt: new Date()
-      }
     });
 
     res.json({ 
@@ -84,13 +101,24 @@ router.post("/:id/sign/talent", requireAuth, async (req, res) => {
 });
 
 // POST /api/contracts/:id/sign/brand - Brand signs the contract
-// Phase 5: Implemented e-signature using existing providers
 router.post("/:id/sign/brand", requireAuth, async (req, res) => {
+  const enabled = process.env.CONTRACT_SIGNING_ENABLED === "true";
+  if (!enabled) {
+    return res.status(503).json({ 
+      error: "Contract signing is disabled",
+      message: "This feature is currently disabled. Contact an administrator to enable it.",
+      code: "FEATURE_DISABLED"
+    });
+  }
+
   try {
     const { id } = req.params;
     const contract = await prisma.contract.findUnique({ 
       where: { id },
-      include: { Brand: { select: { id: true, name: true } } }
+      include: { 
+        Brand: { select: { id: true, name: true, email: true } },
+        Deal: { select: { brandId: true } }
+      }
     });
     
     if (!contract) {
@@ -101,21 +129,24 @@ router.post("/:id/sign/brand", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Contract PDF missing" });
     }
 
-    // Phase 5: Use existing initiateSignature function
+    // Get brand email and name
+    const brandEmail = contract.Brand?.email || (contract.terms as any)?.brandEmail;
+    const brandName = contract.Brand?.name || (contract.terms as any)?.brandName || "Brand";
+
+    if (!brandEmail) {
+      return res.status(400).json({ error: "Brand email not found" });
+    }
+
+    // Use existing initiateSignature function
     const { initiateSignature } = await import("../services/signature/orchestrator.js");
     const result = await initiateSignature({
       ...contract,
-      terms: contract.terms || {},
-      userId: contract.brandId || req.user?.id || ""
-    });
-
-    // Update contract status
-    await prisma.contract.update({
-      where: { id },
-      data: { 
-        status: "pending_signature",
-        updatedAt: new Date()
-      }
+      terms: {
+        ...(contract.terms as any || {}),
+        brandEmail,
+        brandName
+      },
+      userId: contract.brandId || contract.Deal?.brandId || req.user?.id || ""
     });
 
     res.json({ 

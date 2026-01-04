@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { BrandChip } from "../components/BrandChip.jsx";
@@ -18,7 +19,7 @@ import {
   validateDeal
 } from "../lib/crmDeals.js";
 import { formatEventDateTimeRange } from "../lib/crmEvents.js";
-import { fetchDeals, createDeal, updateDeal, deleteDeal, fetchEvents, fetchCampaigns, fetchContracts } from "../services/crmClient.js";
+import { fetchDeals, createDeal, updateDeal, deleteDeal, fetchEvents, fetchCampaigns, fetchContracts, fetchBrands } from "../services/crmClient.js";
 import { fetchTaskTalents } from "../services/crmTasksClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase, clearLocalStorageData } from "../lib/crmMigration.js";
 import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
@@ -514,7 +515,8 @@ export function AdminDealsPage({ session }) {
       await loadDeals();
     } catch (err) {
       console.error("Failed to update deal:", err);
-      alert("Failed to update deal");
+      const errorMessage = err instanceof Error ? err.message : "Failed to update deal";
+      toast.error(errorMessage);
     }
   };
 

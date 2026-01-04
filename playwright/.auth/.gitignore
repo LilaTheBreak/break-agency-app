@@ -1,0 +1,3 @@
+# Authentication state files - DO NOT COMMIT
+*.json
+

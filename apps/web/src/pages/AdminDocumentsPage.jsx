@@ -469,7 +469,7 @@ export function AdminDocumentsPage({ session }) {
       }
     } catch (error) {
       console.error("Error updating contract:", error);
-      alert("Failed to update contract. Please try again.");
+      toast.error("Failed to update contract. Please try again.");
     }
   };
 
@@ -482,7 +482,7 @@ export function AdminDocumentsPage({ session }) {
       if (drawerId === id) closeDrawer();
     } catch (error) {
       console.error("Error deleting contract:", error);
-      alert("Failed to delete contract. Please try again.");
+      toast.error("Failed to delete contract. Please try again.");
     }
   };
 

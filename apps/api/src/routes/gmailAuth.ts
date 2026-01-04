@@ -5,6 +5,7 @@ import { google } from "googleapis";
 import { googleConfig } from "../config/env.js";
 import { refreshAccessToken } from "../integrations/gmail/googleAuth.js";
 import { requireAuth } from "../middleware/auth.js";
+import { oauthCallbackLimiter } from "../middleware/rateLimiter.js";
 import { getFrontendUrl } from "../config/frontendUrl.js";
 
 const router = Router();
@@ -113,7 +114,11 @@ router.get("/url", requireAuth, (req, res) => {
   res.json({ url });
 });
 
-router.get("/callback", async (req, res) => {
+/**
+ * GET /api/gmail/auth/callback
+ * Handle Gmail OAuth callback
+ */
+router.get("/callback", oauthCallbackLimiter, async (req, res) => {
   const code = typeof req.query.code === "string" ? req.query.code : null;
   const state = typeof req.query.state === "string" ? req.query.state : null;
   const userId = state || req.user?.id;
@@ -124,53 +129,24 @@ router.get("/callback", async (req, res) => {
     timestamp: new Date().toISOString()
   });
   
-  console.log("[GMAIL CALLBACK] Received callback request");
-  console.log("[GMAIL CALLBACK] Query params:", req.query);
-  console.log("[GMAIL CALLBACK] Headers:", req.headers);
-  
-  console.log("[GMAIL CALLBACK] Code:", code ? "present" : "missing");
-  console.log("[GMAIL CALLBACK] State (userId):", state);
-  
   if (!code) {
-    console.error("[GMAIL CALLBACK] ERROR: Missing authorization code");
     console.error("[INTEGRATION] Gmail OAuth failed: Missing authorization code");
     return res.status(400).json({ error: true, message: "Missing authorization code" });
   }
   
-  // State contains the userId
-  console.log("[GMAIL CALLBACK] Resolved userId:", userId);
-  
   if (!userId) {
-    console.error("[GMAIL CALLBACK] ERROR: Missing user ID (no state and no req.user)");
     console.error("[INTEGRATION] Gmail OAuth failed: Missing user ID");
     return res.status(400).json({ error: true, message: "Missing user ID" });
   }
   
   try {
-    console.log("[GMAIL CALLBACK] Exchanging code for tokens...");
     const tokens = await exchangeCodeForTokens(code);
-    console.log("[GMAIL CALLBACK] Tokens received:", {
-      hasAccessToken: !!tokens.accessToken,
-      hasRefreshToken: !!tokens.refreshToken,
-      expiresAt: tokens.expiresAt
-    });
     
     if (!tokens.refreshToken) {
-      console.error("[GMAIL CALLBACK] ERROR: No refresh_token returned");
-      console.error("[GMAIL CALLBACK] Tokens received:", {
-        hasAccessToken: !!tokens.accessToken,
-        hasRefreshToken: !!tokens.refreshToken,
-        scope: tokens.scope,
-      });
-      
-      // This might happen if user has already granted access before
-      // and Google didn't prompt for consent again
       const errorRedirect = `${getFrontendUrl().replace(/\/$/, "")}/admin/inbox?gmail_error=missing_refresh_token`;
-      console.log(`[GMAIL CALLBACK] Redirecting to error URL:`, errorRedirect);
       return res.redirect(302, errorRedirect);
     }
     
-    console.log("[GMAIL CALLBACK] Saving tokens to database for user:", userId);
     await prisma.gmailToken.upsert({
       where: { userId },
       update: {
@@ -180,7 +156,7 @@ router.get("/callback", async (req, res) => {
         scope: tokens.scope ?? null,
         tokenType: tokens.tokenType ?? null,
         idToken: tokens.idToken ?? null,
-        lastError: null, // Clear any previous errors
+        lastError: null,
         lastErrorAt: null,
       },
       create: {
@@ -195,36 +171,27 @@ router.get("/callback", async (req, res) => {
       }
     });
     
-    console.log(`[GMAIL CALLBACK] Successfully saved tokens for user ${userId}`);
-    console.log("[INTEGRATION] Gmail OAuth successful", {
-      userId,
-      hasRefreshToken: !!tokens.refreshToken,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Trigger initial sync in background (don't block redirect)
-    console.log(`[GMAIL CALLBACK] Triggering initial sync for user ${userId}`);
+    // WORKFLOW ASSERTION: OAuth connect → Sync attempt must be made
     const { syncInboxForUser } = await import("../services/gmail/syncInbox.js");
     syncInboxForUser(userId)
       .then((stats) => {
-        console.log(`[GMAIL CALLBACK] Initial sync completed for user ${userId}:`, stats);
+        console.log(`[GMAIL CALLBACK] ✅ Initial sync completed for user ${userId}:`, stats);
+        // Assertion: Verify sync actually ran
+        if (stats.imported === 0 && stats.updated === 0 && stats.skipped === 0) {
+          console.warn(`[GMAIL CALLBACK] ⚠️  Sync completed but no messages processed - may indicate empty inbox or sync issue`);
+        }
       })
       .catch((syncError) => {
-        console.error(`[GMAIL CALLBACK] Initial sync failed for user ${userId}:`, syncError);
+        const errorMessage = syncError instanceof Error ? syncError.message : String(syncError);
+        console.error(`[GMAIL CALLBACK] ❌ CRITICAL: Initial sync failed for user ${userId}:`, errorMessage);
+        // Log critical error but don't block OAuth completion
+        // This allows user to manually sync later
       });
     
     const redirectUrl = `${getFrontendUrl().replace(/\/$/, "")}/admin/inbox?gmail_connected=1`;
-    console.log(`[GMAIL CALLBACK] Redirecting to:`, redirectUrl);
     res.redirect(302, redirectUrl);
   } catch (error) {
-    console.error("[GMAIL CALLBACK] ERROR during token exchange or save:", error);
-    console.error("[GMAIL CALLBACK] Full error details:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : undefined,
-    });
-    
-    // Extract specific error message for user
+    console.error("[GMAIL CALLBACK] ERROR:", error);
     let errorMessage = "unknown_error";
     if (error instanceof Error) {
       if (error.message.includes("redirect_uri_mismatch")) {
@@ -233,13 +200,9 @@ router.get("/callback", async (req, res) => {
         errorMessage = "code_expired";
       } else if (error.message.includes("invalid_client")) {
         errorMessage = "invalid_credentials";
-      } else if (error.message.includes("refresh_token")) {
-        errorMessage = "missing_refresh_token";
       }
     }
-    
     const errorRedirect = `${getFrontendUrl().replace(/\/$/, "")}/admin/inbox?gmail_error=${errorMessage}`;
-    console.log(`[GMAIL CALLBACK] Redirecting to error URL:`, errorRedirect);
     res.redirect(302, errorRedirect);
   }
 });

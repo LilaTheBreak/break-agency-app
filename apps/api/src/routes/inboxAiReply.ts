@@ -3,6 +3,7 @@ import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { openai, generateChatCompletion } from "../lib/openai.js";
 import { sendOutboundEmail } from "../services/email/sendOutbound.js"; // optional – only if Gmail send is implemented
+import { logAIInteraction } from "../lib/aiHistoryLogger.js";
 
 const router = Router();
 
@@ -96,7 +97,18 @@ Reply tone:
     }
 
     // --------------------------------------------------------------------
-    // STEP 4: Return result to UI
+    // STEP 4: Log AI history
+    // --------------------------------------------------------------------
+    await logAIInteraction(
+      userId,
+      `Generate reply for email: ${email.subject || "No subject"}\n${prompt || ""}`,
+      aiReply,
+      "email_reply",
+      { emailId, autoSend, sent: !!sendResult }
+    ).catch(err => console.error("[AI History] Failed to log email reply:", err));
+
+    // --------------------------------------------------------------------
+    // STEP 5: Return result to UI
     // --------------------------------------------------------------------
     res.json({
       ok: true,

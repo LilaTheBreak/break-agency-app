@@ -21,16 +21,20 @@
     "clean": "pnpm -r exec -- rimraf dist",
     "seed:auth": "pnpm --filter @breakagency/api seed:auth",
     "db:seed": "pnpm --filter @breakagency/api exec -- prisma db seed",
-    "dev:local": "bash -lc 'ulimit -n 4096 || true; pnpm dev'"
+    "dev:local": "bash -lc 'ulimit -n 4096 || true; pnpm dev'",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug"
   },
   "engines": {
     "node": ">=22.21.1",
     "pnpm": ">=8.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "dotenv-cli": "^7.4.2",
     "prisma": "^5.15.1",
-    "rimraf": "^5.0.5",
-    "dotenv-cli": "^7.4.2"
+    "rimraf": "^5.0.5"
   },
   "dependencies": {
     "@types/node-cron": "^3.0.11",

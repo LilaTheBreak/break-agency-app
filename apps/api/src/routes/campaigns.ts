@@ -93,7 +93,11 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     
     // Non-admin users requesting 'all' get empty array (graceful degradation)
     if (targetId === "all" && !isAdmin(requester)) {
-      return res.status(200).json({ campaigns: [] });
+      logError("Failed to fetch campaigns", error, { userId: req.user?.id });
+      return res.status(500).json({ 
+        error: "Failed to fetch campaigns",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
     }
     
     // Build where clause

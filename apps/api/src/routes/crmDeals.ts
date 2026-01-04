@@ -6,6 +6,7 @@ import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
 import { DealStage } from "@prisma/client";
 import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
+import * as dealWorkflowService from "../services/deals/dealWorkflowService.js";
 
 const router = express.Router();
 
@@ -74,10 +75,13 @@ router.get("/", async (req, res) => {
     const safeDeals = Array.isArray(transformedDeals) ? transformedDeals : [];
     res.json(safeDeals);
   } catch (error) {
-    logError("Failed to fetch deals", error, { userId: req.user?.id });
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch deals";
+    logError("Failed to fetch deals", error, { userId: req.user?.id, route: req.path });
     res.status(500).json({ 
-      error: "Failed to fetch deals",
-      message: error instanceof Error ? error.message : "Unknown error"
+      success: false,
+      error: errorMessage,
+      message: errorMessage,
+      code: "DEALS_FETCH_FAILED"
     });
   }
 });
@@ -236,9 +240,7 @@ router.patch("/:id", async (req, res) => {
     const { id } = req.params;
     const { dealName, brandId, status, estimatedValue, expectedCloseDate, notes } = req.body;
 
-    const updateData: any = {};
-    if (dealName !== undefined) updateData.brandName = dealName.trim();
-    if (brandId !== undefined) updateData.brandId = brandId;
+    // If status is being changed, use workflow service to trigger invoice creation
     if (status !== undefined) {
       const stageMap: Record<string, DealStage> = {
         "Prospect": DealStage.NEW_LEAD,
@@ -251,12 +253,99 @@ router.patch("/:id", async (req, res) => {
         "Completed": DealStage.COMPLETED,
         "Lost": DealStage.LOST,
       };
-      updateData.stage = stageMap[status] || DealStage.NEW_LEAD;
+      const newStage = stageMap[status] || DealStage.NEW_LEAD;
+      
+      // Use workflow service for stage changes to trigger invoice creation
+      const workflowResult = await dealWorkflowService.changeStage(id, newStage, req.user!.id);
+      
+      if (!workflowResult.success) {
+        return res.status(workflowResult.status || 500).json({ 
+          error: workflowResult.error || "Failed to update deal stage"
+        });
+      }
+      
+      // Continue with other field updates if provided
+      const updateData: any = { updatedAt: new Date() };
+      if (dealName !== undefined) updateData.brandName = dealName.trim();
+      if (brandId !== undefined) updateData.brandId = brandId;
+      if (estimatedValue !== undefined) updateData.value = estimatedValue;
+      if (expectedCloseDate !== undefined) updateData.expectedClose = expectedCloseDate ? new Date(expectedCloseDate) : null;
+      if (notes !== undefined) updateData.notes = notes;
+      
+      // If other fields need updating, update them
+      if (Object.keys(updateData).length > 1) { // More than just updatedAt
+        const deal = await prisma.deal.update({
+          where: { id },
+          data: updateData,
+          include: {
+            Brand: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            Talent: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
+        
+        // Log activity
+        try {
+          await Promise.all([
+            logAdminActivity(req as any, {
+              event: "CRM_DEAL_UPDATED",
+              metadata: { dealId: deal.id, dealName: deal.brandName, changes: Object.keys(updateData) }
+            }),
+            logAuditEvent(req as any, {
+              action: "DEAL_UPDATED",
+              entityType: "Deal",
+              entityId: deal.id,
+              metadata: { dealName: deal.brandName, changes: Object.keys(updateData) }
+            })
+          ]);
+        } catch (logError) {
+          console.error("Failed to log activity/audit:", logError);
+        }
+        
+        // Transform response
+        const transformedDeal = {
+          ...deal,
+          dealName: deal.brandName,
+          status: deal.stage,
+          estimatedValue: deal.value,
+          expectedCloseDate: deal.expectedClose,
+        };
+        
+        return res.json(transformedDeal);
+      } else {
+        // Only stage was changed, return workflow result
+        const transformedDeal = {
+          ...workflowResult.deal,
+          dealName: workflowResult.deal.brandName,
+          status: workflowResult.deal.stage,
+          estimatedValue: workflowResult.deal.value,
+          expectedCloseDate: workflowResult.deal.expectedClose,
+        };
+        return res.json(transformedDeal);
+      }
     }
+    
+    // No status change - update other fields normally
+    const updateData: any = {};
+    if (dealName !== undefined) updateData.brandName = dealName.trim();
+    if (brandId !== undefined) updateData.brandId = brandId;
     if (estimatedValue !== undefined) updateData.value = estimatedValue;
     if (expectedCloseDate !== undefined) updateData.expectedClose = expectedCloseDate ? new Date(expectedCloseDate) : null;
     if (notes !== undefined) updateData.notes = notes;
     updateData.updatedAt = new Date();
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
+    }
 
     const deal = await prisma.deal.update({
       where: { id },
@@ -307,6 +396,7 @@ router.patch("/:id", async (req, res) => {
     res.json(transformedDeal);
   } catch (error) {
     console.error("[crmDeals] Error updating deal:", error);
+    logError("Failed to update deal", error, { dealId: req.params.id, userId: req.user?.id });
     res.status(500).json({ 
       error: "Failed to update deal",
       message: error instanceof Error ? error.message : "Unknown error"

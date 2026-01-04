@@ -6,10 +6,13 @@ import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { z } from "zod";
 import { ensureCmsPagesExist } from "../lib/cmsSeeder.js";
 import { hydrateAllCmsPages, hydrateCmsPage } from "../lib/cmsHydration.js";
+import { CMS_PUBLIC_PAGES, getEditableSlugs, isEditableCmsPage } from "../lib/cmsPageRegistry.js";
 
 /**
  * System-defined CMS pages that cannot be deleted or modified (slug/roleScope)
  * These are the only approved pages for CMS editing
+ * 
+ * @deprecated Use CMS_PUBLIC_PAGES registry instead for editable pages
  */
 const SYSTEM_PAGE_SLUGS = [
   "welcome",
@@ -33,8 +36,18 @@ const router = Router();
 
 /**
  * Public CMS allowlist - only these slugs are accessible via public endpoint
+ * This should match CMS_PUBLIC_PAGES registry slugs
  */
-const PUBLIC_CMS_ALLOWLIST = ["welcome", "resources"] as const;
+const PUBLIC_CMS_ALLOWLIST = [
+  "welcome",
+  "resources",
+  "careers",
+  "press",
+  "help",
+  "contact",
+  "legal",
+  "privacy-policy",
+] as const;
 
 /**
  * GET /api/content/public/:slug
@@ -290,11 +303,31 @@ router.post("/hydrate", async (req: Request, res: Response) => {
 
 /**
  * GET /api/content/pages
- * List all pages
+ * List only editable CMS pages (filtered by registry)
+ * 
+ * This endpoint returns ONLY pages that are:
+ * - In the CMS_PUBLIC_PAGES registry
+ * - Actually editable via CMS
+ * - Mapped to real routes/components
+ * 
+ * Dashboard pages, admin pages, and internal pages are excluded.
  */
 router.get("/pages", async (req: Request, res: Response) => {
   try {
-    const pages = await prisma.page.findMany({
+    // Get editable slugs from registry
+    const editableSlugs = getEditableSlugs();
+    
+    if (editableSlugs.length === 0) {
+      console.log("[CMS] GET /pages: No editable pages in registry");
+      return res.json({ pages: [] });
+    }
+
+    // Fetch only pages that are in the registry
+    const dbPages = await prisma.page.findMany({
+      where: {
+        slug: { in: editableSlugs },
+        isActive: true, // Only active pages
+      },
       include: {
         _count: {
           select: {
@@ -307,8 +340,29 @@ router.get("/pages", async (req: Request, res: Response) => {
       },
     });
 
-    console.log(`[CMS] GET /pages: Found ${pages.length} pages`);
-    res.json({ pages });
+    // Enrich with registry data (route, component, display title)
+    const enrichedPages = dbPages
+      .map((dbPage) => {
+        const registryPage = CMS_PUBLIC_PAGES.find((p) => p.slug === dbPage.slug);
+        if (!registryPage) {
+          // This shouldn't happen if filtering works, but log if it does
+          console.warn(`[CMS] Page ${dbPage.slug} found in DB but not in registry`);
+          return null;
+        }
+        return {
+          ...dbPage,
+          // Override title with registry title (friendly display name)
+          title: registryPage.title,
+          // Add route and component from registry
+          route: registryPage.route,
+          component: registryPage.component,
+          editable: registryPage.editable,
+        };
+      })
+      .filter((page): page is NonNullable<typeof page> => page !== null);
+
+    console.log(`[CMS] GET /pages: Found ${enrichedPages.length} editable pages (filtered from ${dbPages.length} DB pages)`);
+    res.json({ pages: enrichedPages });
   } catch (error) {
     console.error("[CMS] Failed to fetch pages:", error);
     res.status(500).json({ error: "Failed to fetch pages" });
@@ -327,6 +381,12 @@ router.get("/pages/:slug", async (req: Request, res: Response) => {
     // Preview mode requires superadmin access
     if (preview && !isSuperAdmin(req.user!)) {
       return res.status(403).json({ error: "Forbidden: Preview mode requires superadmin access" });
+    }
+
+    // Validate that this slug is editable (in registry)
+    if (!isEditableCmsPage(slug)) {
+      console.warn(`[CMS] Attempt to access non-editable page: ${slug}`);
+      return res.status(404).json({ error: "Page not found or not editable" });
     }
 
     const page = await prisma.page.findUnique({
@@ -348,6 +408,9 @@ router.get("/pages/:slug", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Page not found" });
     }
 
+    // Get registry data for this page
+    const registryPage = CMS_PUBLIC_PAGES.find((p) => p.slug === slug);
+
     // If preview mode, return drafts; otherwise return published blocks
     const blocks = preview ? page.drafts : page.blocks;
 
@@ -355,9 +418,11 @@ router.get("/pages/:slug", async (req: Request, res: Response) => {
       page: {
         id: page.id,
         slug: page.slug,
-        title: page.title,
+        title: registryPage?.title || page.title, // Use registry title if available
         roleScope: page.roleScope,
         isActive: page.isActive,
+        route: registryPage?.route, // Include route from registry
+        component: registryPage?.component, // Include component from registry
       },
       blocks: blocks.map((block: any) => ({
         id: block.id,
@@ -385,6 +450,12 @@ router.post("/pages/:slug/blocks", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
     const { blockType, contentJson, order, isVisible } = req.body;
+
+    // Validate that this slug is editable (in registry)
+    if (!isEditableCmsPage(slug)) {
+      console.warn(`[CMS] Attempt to create block on non-editable page: ${slug}`);
+      return res.status(404).json({ error: "Page not found or not editable" });
+    }
 
     // Validate page exists
     const page = await prisma.page.findUnique({ where: { slug } });
@@ -626,6 +697,12 @@ router.post("/pages/:slug/blocks/reorder", async (req: Request, res: Response) =
       return res.status(400).json({ error: "blockIds must be an array" });
     }
 
+    // Validate that this slug is editable (in registry)
+    if (!isEditableCmsPage(slug)) {
+      console.warn(`[CMS] Attempt to reorder blocks on non-editable page: ${slug}`);
+      return res.status(404).json({ error: "Page not found or not editable" });
+    }
+
     const page = await prisma.page.findUnique({ where: { slug } });
     if (!page) {
       return res.status(404).json({ error: "Page not found" });
@@ -669,6 +746,8 @@ router.post("/pages/:slug/blocks/reorder", async (req: Request, res: Response) =
 /**
  * POST /api/content/pages/:slug/drafts
  * Save draft blocks for preview
+ * 
+ * Only allows editing pages that are in the CMS_PUBLIC_PAGES registry.
  */
 router.post("/pages/:slug/drafts", async (req: Request, res: Response) => {
   try {
@@ -677,6 +756,12 @@ router.post("/pages/:slug/drafts", async (req: Request, res: Response) => {
 
     if (!Array.isArray(blocks)) {
       return res.status(400).json({ error: "blocks must be an array" });
+    }
+
+    // Validate that this slug is editable (in registry)
+    if (!isEditableCmsPage(slug)) {
+      console.warn(`[CMS] Attempt to save drafts on non-editable page: ${slug}`);
+      return res.status(404).json({ error: "Page not found or not editable" });
     }
 
     const page = await prisma.page.findUnique({ where: { slug } });
@@ -725,10 +810,18 @@ router.post("/pages/:slug/drafts", async (req: Request, res: Response) => {
 /**
  * POST /api/content/pages/:slug/publish
  * Publish draft blocks to live blocks
+ * 
+ * Only allows editing pages that are in the CMS_PUBLIC_PAGES registry.
  */
 router.post("/pages/:slug/publish", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
+
+    // Validate that this slug is editable (in registry)
+    if (!isEditableCmsPage(slug)) {
+      console.warn(`[CMS] Attempt to publish non-editable page: ${slug}`);
+      return res.status(404).json({ error: "Page not found or not editable" });
+    }
 
     const page = await prisma.page.findUnique({
       where: { slug },

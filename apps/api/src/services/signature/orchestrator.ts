@@ -57,5 +57,17 @@ export async function initiateSignature(contract: any) {
     }
   });
 
+  // Update contract with envelope ID
+  if (contract.id) {
+    await prisma.contract.update({
+      where: { id: contract.id },
+      data: {
+        envelopeId: envelopeId,
+        status: "pending_signature",
+        updatedAt: new Date()
+      }
+    });
+  }
+
   return { envelopeId, requestId: record.id };
 }

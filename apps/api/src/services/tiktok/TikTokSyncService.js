@@ -72,15 +72,34 @@ export class TikTokSyncService {
         }
       });
 
-      // Save historical metric snapshot
-      await prisma.socialMetric.create({
-        data: {
-          profileId: savedProfile.id,
-          platform: 'tiktok',
-          metricType: 'follower_count',
-          value: profile.follower_count || 0,
-          snapshotDate: new Date()
-        }
+      // Save historical metric snapshots
+      const now = new Date();
+      await prisma.socialMetric.createMany({
+        data: [
+          {
+            profileId: savedProfile.id,
+            platform: 'tiktok',
+            metricType: 'follower_count',
+            value: profile.follower_count || 0,
+            snapshotDate: now
+          },
+          {
+            profileId: savedProfile.id,
+            platform: 'tiktok',
+            metricType: 'following_count',
+            value: profile.following_count || 0,
+            snapshotDate: now
+          },
+          {
+            profileId: savedProfile.id,
+            platform: 'tiktok',
+            metricType: 'likes_count',
+            value: profile.likes_count || 0,
+            snapshotDate: now,
+            metadata: { unionId: profile.union_id }
+          }
+        ],
+        skipDuplicates: true
       });
 
       // Update connection lastSyncedAt

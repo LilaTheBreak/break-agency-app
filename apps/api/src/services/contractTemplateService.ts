@@ -254,6 +254,7 @@ Creator: ____________________  Date: __________
       data: {
         id: generateId(),
         dealId: deal.id,
+        brandId: deal.brandId, // Explicit brand linkage
         title: `${deal.Brand.name} x ${dealData.creatorName} Agreement`,
         status: 'draft',
         terms: {

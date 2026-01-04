@@ -1,6 +1,26 @@
 import React, { useState } from "react";
+import { BlockRenderer } from "../components/BlockRenderer.jsx";
+import { usePublicCmsPage } from "../hooks/usePublicCmsPage.js";
 
 export function ContactPage() {
+  // Fetch CMS content for contact page (public, no auth required)
+  const cms = usePublicCmsPage("contact");
+
+  // If CMS has blocks, render them instead of hardcoded content
+  // Note: Contact form functionality is preserved in hardcoded fallback
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-white text-slate-900 min-h-screen">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <ContactPageHardcoded />;
+}
+
+function ContactPageHardcoded() {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -16,7 +36,7 @@ export function ContactPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Placeholder: integrate with API/email if available.
-    alert("Thanks for reaching out. We’ll reply shortly.");
+    alert("Thanks for reaching out. We'll reply shortly.");
   };
 
   return (

@@ -26,6 +26,26 @@ export async function getGoogleAuthClient(userId: string) {
     refresh_token: googleAccount.refreshToken,
   });
 
+  // Handle automatic token refresh for Google Calendar
+  oauth2Client.on("tokens", async (newTokens) => {
+    try {
+      const current = await prisma.googleAccount.findUnique({ where: { userId } });
+      if (!current) return;
+
+      await prisma.googleAccount.update({
+        where: { userId },
+        data: {
+          accessToken: newTokens.access_token || current.accessToken,
+          refreshToken: newTokens.refresh_token || current.refreshToken,
+          expiresAt: newTokens.expiry_date ? new Date(newTokens.expiry_date) : current.expiresAt,
+          updatedAt: new Date()
+        }
+      });
+    } catch (err) {
+      console.error("[GOOGLE CALENDAR] Token refresh save failed:", err);
+    }
+  });
+
   return oauth2Client;
 }
 
@@ -62,53 +82,77 @@ export async function syncGoogleCalendarEvents(userId: string, calendar: ReturnT
 
   const events = response.data.items;
   if (!events || events.length === 0) {
-    return;
+    return { synced: 0, errors: [] };
   }
 
-  // Find talent profile (optional - events can exist without talent profile)
-  const talent = await prisma.talent.findUnique({ where: { userId } });
+  let synced = 0;
+  const errors: string[] = [];
 
   for (const event of events) {
     if (!event.id || !event.summary) continue;
     
-    // Handle both all-day events and timed events
-    const startTime = event.start?.dateTime || event.start?.date;
-    const endTime = event.end?.dateTime || event.end?.date;
-    
-    if (!startTime || !endTime) continue;
+    try {
+      // Handle both all-day events and timed events
+      const startTime = event.start?.dateTime || event.start?.date;
+      const endTime = event.end?.dateTime || event.end?.date;
+      
+      if (!startTime || !endTime) continue;
 
-    const isAllDay = !event.start?.dateTime;
+      const isAllDay = !event.start?.dateTime;
+      const startAt = new Date(startTime);
+      const endAt = new Date(endTime);
 
-    await prisma.talentEvent.upsert({
-      where: { 
-        sourceId_userId: { 
-          sourceId: event.id,
-          userId: userId
-        }
-      },
-      update: {
-        title: event.summary,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
-        isAllDay: isAllDay,
-        description: event.description || null,
-        location: event.location || null,
-        updatedAt: new Date(),
-      },
-      create: {
-        userId: userId,
-        talentId: talent?.id || null,
-        title: event.summary,
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
-        isAllDay: isAllDay,
-        description: event.description || null,
-        location: event.location || null,
-        source: "google",
-        sourceId: event.id,
-      },
-    });
+      // Use sourceId as unique identifier for Google events
+      const sourceId = `google_${event.id}`;
+
+      await prisma.calendarEvent.upsert({
+        where: { id: sourceId },
+        update: {
+          title: event.summary,
+          startAt,
+          endAt,
+          isAllDay,
+          description: event.description || null,
+          location: event.location || null,
+          source: "google",
+          updatedAt: new Date(),
+        },
+        create: {
+          id: sourceId,
+          title: event.summary,
+          startAt,
+          endAt,
+          isAllDay,
+          description: event.description || null,
+          location: event.location || null,
+          type: "event",
+          source: "google",
+          status: "scheduled",
+          createdBy: userId,
+          metadata: {
+            googleEventId: event.id,
+            googleCalendarId: "primary",
+            htmlLink: event.htmlLink || null,
+          },
+        },
+      });
+
+      synced++;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      errors.push(`Failed to sync event ${event.id}: ${errorMsg}`);
+      console.error(`[Calendar Sync] Error syncing event ${event.id}:`, error);
+    }
   }
 
-  console.log(`Synced ${events.length} Google Calendar events for user ${userId}`);
+  // Update lastSyncedAt
+  await prisma.googleAccount.updateMany({
+    where: { userId },
+    data: { lastSyncedAt: new Date() },
+  }).catch(() => {
+    // Ignore if GoogleAccount doesn't exist yet
+  });
+
+  console.log(`[Calendar Sync] Synced ${synced} Google Calendar events for user ${userId}`);
+  return { synced, errors };
 }

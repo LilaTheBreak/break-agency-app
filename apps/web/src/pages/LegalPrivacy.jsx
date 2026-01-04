@@ -1,7 +1,26 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { BlockRenderer } from "../components/BlockRenderer.jsx";
+import { usePublicCmsPage } from "../hooks/usePublicCmsPage.js";
 
 export function LegalPrivacyPage() {
+  // Fetch CMS content for legal page (public, no auth required)
+  const cms = usePublicCmsPage("legal");
+
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-white text-slate-900 min-h-screen">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <LegalPrivacyPageHardcoded />;
+}
+
+function LegalPrivacyPageHardcoded() {
   return (
     <div className="bg-white text-slate-900">
       <header className="border-b border-slate-200 bg-white">

@@ -5,6 +5,7 @@ import { getDownloadUrl } from "../services/fileService.js";
 import { cleanText, detectFileType, extractText, splitIntoChunks } from "../lib/fileExtract.js";
 import { generateFileInsights, InvalidAiResponseError } from "../services/aiFileInsightsService.js";
 import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
+import { logAIInteraction } from "../lib/aiHistoryLogger.js";
 
 const router = Router();
 
@@ -49,6 +50,16 @@ router.post("/ai/file-insights", requireAuth, async (req: Request, res: Response
         filename: file.filename,
         detectedType: file.type || detectedType
       });
+
+      // Log AI history
+      await logAIInteraction(
+        currentUser.id,
+        `Analyze file: ${file.filename}`,
+        JSON.stringify(aiResult),
+        "file_insights",
+        { fileId: parsed.data.fileId, filename: file.filename, detectedType }
+      ).catch(err => console.error("[AI History] Failed to log file insights:", err));
+
       return res.json(aiResult);
     } catch (error) {
       if (error instanceof InvalidAiResponseError) {

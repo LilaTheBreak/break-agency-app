@@ -152,11 +152,43 @@ router.post(
       return res.status(400).json({ error: "Invalid stripe signature" });
     }
 
+    // Idempotency check: Check if this event was already processed
+    const existingLog = await prisma.auditLog.findFirst({
+      where: {
+        action: "PAYMENT_WEBHOOK_PROCESSED",
+        metadata: {
+          path: ["eventId"],
+          equals: event.id
+        }
+      }
+    });
+
+    if (existingLog) {
+      console.log(`[STRIPE WEBHOOK] Event ${event.id} already processed, skipping (idempotency)`);
+      return res.json({ received: true, duplicate: true });
+    }
+
     await recordPaymentLog("stripe", event.type, event.id, event);
 
     try {
       await handleStripeEvent(event);
       await processStripePaymentEvent(event);
+      
+      // Mark event as processed for idempotency
+      await prisma.auditLog.create({
+        data: {
+          id: `payment_webhook_${event.id}_${Date.now()}`,
+          action: "PAYMENT_WEBHOOK_PROCESSED",
+          entityType: "Payment",
+          metadata: {
+            provider: "stripe",
+            eventId: event.id,
+            eventType: event.type,
+            processedAt: new Date().toISOString()
+          }
+        }
+      });
+      
       return res.json({ received: true });
     } catch (error) {
       logError("Failed to process stripe payment event", error, { eventId: event.id });
@@ -184,10 +216,48 @@ router.post(
       return res.status(400).json({ error: "Invalid payload" });
     }
 
+    if (!payload.id) {
+      return res.status(400).json({ error: "Missing PayPal event ID" });
+    }
+
+    // Idempotency check: Check if this event was already processed
+    const existingLog = await prisma.auditLog.findFirst({
+      where: {
+        action: "PAYMENT_WEBHOOK_PROCESSED",
+        metadata: {
+          path: ["provider"],
+          equals: "paypal",
+          path2: ["eventId"],
+          equals: payload.id
+        }
+      }
+    });
+
+    if (existingLog) {
+      console.log(`[PAYPAL WEBHOOK] Event ${payload.id} already processed, skipping (idempotency)`);
+      return res.json({ received: true, duplicate: true });
+    }
+
     await recordPaymentLog("paypal", payload.event_type || "unknown", payload.id, payload);
 
     try {
       await processPayPalEvent(payload);
+      
+      // Mark event as processed for idempotency
+      await prisma.auditLog.create({
+        data: {
+          id: `payment_webhook_${payload.id}_${Date.now()}`,
+          action: "PAYMENT_WEBHOOK_PROCESSED",
+          entityType: "Payment",
+          metadata: {
+            provider: "paypal",
+            eventId: payload.id,
+            eventType: payload.event_type || "unknown",
+            processedAt: new Date().toISOString()
+          }
+        }
+      });
+      
       return res.json({ received: true });
     } catch (error) {
       logError("Failed to process PayPal event", error, { eventId: payload.id });

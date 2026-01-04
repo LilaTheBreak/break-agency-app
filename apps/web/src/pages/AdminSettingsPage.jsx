@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
@@ -25,6 +26,42 @@ export function AdminSettingsPage() {
       .catch((error) => {
         console.error("[SETTINGS] Failed to check Gmail status:", error);
       });
+
+    // Check Slack status
+    apiFetch("/api/integrations/slack/status")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data && data.connected) {
+          setIntegrationStatuses((prev) => ({ ...prev, Slack: true }));
+        }
+      })
+      .catch(() => {
+        // Silently fail if integration disabled
+      });
+
+    // Check Notion status
+    apiFetch("/api/integrations/notion/status")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data && data.connected) {
+          setIntegrationStatuses((prev) => ({ ...prev, Notion: true }));
+        }
+      })
+      .catch(() => {
+        // Silently fail if integration disabled
+      });
+
+    // Check Google Drive status
+    apiFetch("/api/integrations/google-drive/status")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data && data.connected) {
+          setIntegrationStatuses((prev) => ({ ...prev, "Google Drive": true }));
+        }
+      })
+      .catch(() => {
+        // Silently fail if integration disabled
+      });
   }, []);
 
   const handleConnect = async (serviceName) => {
@@ -43,7 +80,7 @@ export function AdminSettingsPage() {
           return; // Don't reset loading state since we're redirecting
         } else {
           console.error("[CONNECT] No URL in response:", data);
-          alert("Failed to get Gmail OAuth URL");
+          toast.error("Failed to get Gmail OAuth URL");
         }
       } else if (serviceName === "Google Calendar") {
         // Google Calendar uses the same OAuth flow as login with calendar scopes
@@ -57,18 +94,74 @@ export function AdminSettingsPage() {
           return; // Don't reset loading state since we're redirecting
         } else {
           console.error("[CONNECT] No URL in response:", data);
-          alert("Failed to get Google Calendar OAuth URL");
+          toast.error("Failed to get Google Calendar OAuth URL");
         }
       } else if (serviceName === "Slack") {
-        alert("Slack integration is not yet available. This feature is coming soon.");
+        const webhookUrl = prompt("Enter your Slack webhook URL:");
+        if (!webhookUrl) return;
+        
+        const response = await apiFetch("/api/integrations/slack/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ webhookUrl })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          setIntegrationStatuses((prev) => ({ ...prev, Slack: true }));
+          toast.success("Slack connected successfully!");
+        } else {
+          toast.error(`Failed to connect Slack: ${result.error || result.message}`);
+        }
       } else if (serviceName === "Notion") {
-        alert("Notion integration is not yet available. This feature is coming soon.");
+        const accessToken = prompt("Enter your Notion integration token:");
+        if (!accessToken) return;
+        
+        const workspaceName = prompt("Enter workspace name (optional):");
+        
+        const response = await apiFetch("/api/integrations/notion/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            accessToken,
+            workspaceName: workspaceName || undefined
+          })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          setIntegrationStatuses((prev) => ({ ...prev, Notion: true }));
+          toast.success("Notion connected successfully!");
+        } else {
+          toast.error(`Failed to connect Notion: ${result.error || result.message}`);
+        }
       } else if (serviceName === "Google Drive") {
-        alert("Google Drive integration is not yet available. This feature is coming soon.");
+        const accessToken = prompt("Enter your Google Drive access token:");
+        if (!accessToken) return;
+        
+        const refreshToken = prompt("Enter refresh token (optional):");
+        
+        const response = await apiFetch("/api/integrations/google-drive/connect", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            accessToken,
+            refreshToken: refreshToken || undefined
+          })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          setIntegrationStatuses((prev) => ({ ...prev, "Google Drive": true }));
+          toast.success("Google Drive connected successfully!");
+        } else {
+          toast.error(`Failed to connect Google Drive: ${result.error || result.message}`);
+        }
       }
     } catch (error) {
       console.error(`Failed to connect ${serviceName}:`, error);
-      alert(`Failed to connect ${serviceName}. Please try again.`);
+      const errorMessage = error instanceof Error ? error.message : `Failed to connect ${serviceName}`;
+      toast.error(errorMessage);
     } finally {
       setLoading((prev) => ({ ...prev, [serviceName]: false }));
     }
@@ -87,8 +180,25 @@ export function AdminSettingsPage() {
         const result = await response.json();
         console.log("[DISCONNECT] Gmail disconnected:", result);
         setIntegrationStatuses((prev) => ({ ...prev, Gmail: false }));
+      } else if (serviceName === "Slack") {
+        const response = await apiFetch("/api/integrations/slack/disconnect", { method: "POST" });
+        const result = await response.json();
+        if (result.success) {
+          setIntegrationStatuses((prev) => ({ ...prev, Slack: false }));
+        }
+      } else if (serviceName === "Notion") {
+        const response = await apiFetch("/api/integrations/notion/disconnect", { method: "POST" });
+        const result = await response.json();
+        if (result.success) {
+          setIntegrationStatuses((prev) => ({ ...prev, Notion: false }));
+        }
+      } else if (serviceName === "Google Drive") {
+        const response = await apiFetch("/api/integrations/google-drive/disconnect", { method: "POST" });
+        const result = await response.json();
+        if (result.success) {
+          setIntegrationStatuses((prev) => ({ ...prev, "Google Drive": false }));
+        }
       }
-      // Add disconnect logic for other services as needed
     } catch (error) {
       console.error(`[DISCONNECT] Failed to disconnect ${serviceName}:`, error);
       alert(`Failed to disconnect ${serviceName}. Please try again.`);
@@ -165,9 +275,9 @@ export function AdminSettingsPage() {
             {[
               { name: "Gmail", defaultStatus: "Not connected", available: true },
               { name: "Google Calendar", defaultStatus: "Not connected", available: true },
-              { name: "Slack", defaultStatus: "Coming soon", available: false },
-              { name: "Notion", defaultStatus: "Coming soon", available: false },
-              { name: "Google Drive", defaultStatus: "Coming soon", available: false }
+              { name: "Slack", defaultStatus: "Not connected", available: true },
+              { name: "Notion", defaultStatus: "Not connected", available: true },
+              { name: "Google Drive", defaultStatus: "Not connected", available: true }
             ].map((integration) => {
               const isConnected = integrationStatuses[integration.name];
               const isLoading = loading[integration.name];

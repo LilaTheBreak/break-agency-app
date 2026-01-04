@@ -301,19 +301,71 @@ export async function linkEmailToCrm(inboundEmail: {
       }
     }
 
-    // Step 4: Update InboundEmail with metadata linking
+    // Step 4: Update InboundEmail with explicit linking (brandId, and potentially dealId/talentId)
+    const updateData: any = {
+      brandId: result.brandId, // Explicit brand linkage
+      metadata: {
+        ...(typeof inboundEmail === "object" && inboundEmail !== null && "metadata" in inboundEmail
+          ? (inboundEmail as any).metadata
+          : {}),
+        crmContactId: result.contactId,
+        crmBrandId: result.brandId,
+        linkedAt: new Date().toISOString(),
+      },
+    };
+
+    // Try to link to deal if brand has active deals
+    if (result.brandId) {
+      try {
+        const activeDeal = await prisma.deal.findFirst({
+          where: {
+            brandId: result.brandId,
+            stage: { notIn: ["CLOSED_LOST", "CANCELLED"] },
+          },
+          orderBy: { updatedAt: "desc" },
+        });
+        if (activeDeal) {
+          updateData.dealId = activeDeal.id;
+          updateData.metadata.linkedDealId = activeDeal.id;
+          updateData.metadata.linkedDealAt = new Date().toISOString();
+        }
+      } catch (dealError) {
+        console.warn(`[GMAIL → CRM] Failed to link deal for email ${inboundEmail.id}:`, dealError);
+      }
+
+      // Try to link to talent if contact is associated with a talent
+      try {
+        const contact = await prisma.crmBrandContact.findUnique({
+          where: { id: result.contactId! },
+          include: {
+            CrmBrand: {
+              include: {
+                Deal: {
+                  where: {
+                    stage: { notIn: ["CLOSED_LOST", "CANCELLED"] },
+                  },
+                  take: 1,
+                  orderBy: { updatedAt: "desc" },
+                  select: { talentId: true },
+                },
+              },
+            },
+          },
+        });
+
+        if (contact?.CrmBrand?.Deal?.[0]?.talentId) {
+          updateData.talentId = contact.CrmBrand.Deal[0].talentId;
+          updateData.metadata.linkedTalentId = contact.CrmBrand.Deal[0].talentId;
+          updateData.metadata.linkedTalentAt = new Date().toISOString();
+        }
+      } catch (talentError) {
+        console.warn(`[GMAIL → CRM] Failed to link talent for email ${inboundEmail.id}:`, talentError);
+      }
+    }
+
     await prisma.inboundEmail.update({
       where: { id: inboundEmail.id },
-      data: {
-        metadata: {
-          ...(typeof inboundEmail === "object" && inboundEmail !== null && "metadata" in inboundEmail
-            ? (inboundEmail as any).metadata
-            : {}),
-          crmContactId: result.contactId,
-          crmBrandId: result.brandId,
-          linkedAt: new Date().toISOString(),
-        },
-      },
+      data: updateData,
     });
 
     console.log(

@@ -18,7 +18,9 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     const userId = req.user!.id;
 
     const messages = await prisma.inboxMessage.findMany({
-      where: {},
+      where: {
+        userId, // Filter by user
+      },
       include: {
         classified: true,
         linkedDeals: {

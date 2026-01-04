@@ -26,17 +26,24 @@ router.get("/", async (req, res) => {
     const where: any = {};
     if (dealId) where.dealId = dealId as string;
     if (status) where.status = status as string;
-    // If brandId is provided, filter by Deal.brandId through relation
+    // Use direct brandId field if available, fallback to Deal relation for backward compatibility
     if (brandId) {
-      where.Deal = {
-        brandId: brandId as string
-      };
+      where.OR = [
+        { brandId: brandId as string }, // Direct brand linkage (preferred)
+        { Deal: { brandId: brandId as string } } // Fallback for contracts without brandId
+      ];
     }
 
     const contracts = await prisma.contract.findMany({
       where,
       orderBy: { createdAt: "desc" },
       include: {
+        Brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         Deal: {
           include: {
             Brand: {
@@ -54,8 +61,8 @@ router.get("/", async (req, res) => {
     const transformedContracts = contracts.map(contract => ({
       ...contract,
       contractName: contract.title,
-      brandId: contract.Deal?.brandId || null,
-      Brand: contract.Deal?.Brand || null,
+      brandId: contract.brandId || contract.Deal?.brandId || null, // Use direct brandId if available
+      Brand: contract.Brand || contract.Deal?.Brand || null, // Use direct Brand relation if available
     }));
 
     sendList(res, transformedContracts || []);
@@ -73,6 +80,12 @@ router.get("/:id", async (req, res) => {
     const contract = await prisma.contract.findUnique({
       where: { id },
       include: {
+        Brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         Deal: {
           include: {
             Brand: {
@@ -94,8 +107,8 @@ router.get("/:id", async (req, res) => {
     const transformedContract = {
       ...contract,
       contractName: contract.title,
-      brandId: contract.Deal?.brandId || null,
-      Brand: contract.Deal?.Brand || null,
+      brandId: contract.brandId || contract.Deal?.brandId || null, // Use direct brandId if available
+      Brand: contract.Brand || contract.Deal?.Brand || null, // Use direct Brand relation if available
     };
 
     res.json({ contract: transformedContract });
@@ -147,11 +160,15 @@ router.post("/", async (req, res) => {
       brandId: brandId || deal.brandId, // Store brandId in metadata for filtering
     };
 
+    // Derive brandId from deal if not provided
+    const finalBrandId = brandId || deal.brandId;
+
     const contract = await prisma.contract.create({
       data: {
         id: `contract_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title: contractName.trim(), // Contract model uses title, not contractName
         dealId,
+        brandId: finalBrandId, // Explicit brand linkage
         status,
         metadata,
         updatedAt: new Date(),
@@ -226,15 +243,20 @@ router.patch("/:id", async (req, res) => {
       updateData.status = updates.status;
     }
     
-    // Update dealId if provided (verify deal exists)
+    // Update dealId if provided (verify deal exists and update brandId)
     if (updates.dealId !== undefined && updates.dealId !== existing.dealId) {
       const deal = await prisma.deal.findUnique({
         where: { id: updates.dealId },
+        select: { id: true, brandId: true },
       });
       if (!deal) {
         return res.status(404).json({ error: "Deal not found" });
       }
       updateData.dealId = updates.dealId;
+      // Update brandId to match new deal's brand
+      if (deal.brandId) {
+        updateData.brandId = deal.brandId;
+      }
     }
     
     // Store extra CRM fields in metadata
@@ -449,11 +471,15 @@ router.post("/batch-import", async (req, res) => {
           brandId: contract.brandId || deal.brandId,
         };
 
+        // Derive brandId from deal
+        const finalBrandId = contract.brandId || deal.brandId;
+
         const created = await prisma.contract.create({
           data: {
             id: `contract_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             title: contract.contractName || "Untitled Contract",
             dealId: contract.dealId,
+            brandId: finalBrandId, // Explicit brand linkage
             status: contract.status || "draft",
             metadata,
             updatedAt: new Date(),

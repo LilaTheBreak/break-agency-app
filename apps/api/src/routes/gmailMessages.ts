@@ -100,7 +100,7 @@ router.get("/threads/:id", requireAuth, async (req, res, next) => {
 });
 
 // POST /sync — trigger Gmail sync manually
-router.post("/sync", requireAuth, async (req, res, next) => {
+router.post("/sync", requireAuth, gmailSyncLimiter, async (req, res, next) => {
   try {
     const stats = await syncGmailForUser(req.user!.id);
     res.json({ message: "Gmail sync completed successfully.", ...stats });

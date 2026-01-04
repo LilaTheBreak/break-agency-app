@@ -21,9 +21,9 @@ const TAB_OPTIONS = [
 const CHANNEL_FILTERS = [
   { id: "all", label: "All" },
   { id: "email", label: "Email" },
-  { id: "instagram", label: "Instagram" },
-  { id: "whatsapp", label: "WhatsApp" },
-  { id: "tiktok", label: "TikTok" }
+  { id: "instagram", label: "Instagram", disabled: true, comingSoon: true },
+  { id: "whatsapp", label: "WhatsApp", disabled: true, comingSoon: true },
+  { id: "tiktok", label: "TikTok", disabled: true, comingSoon: true }
 ];
 
 export default function Inbox() {
@@ -215,14 +215,19 @@ export default function Inbox() {
             <button
               key={ch.id}
               type="button"
-              onClick={() => setChannelFilter(ch.id)}
+              onClick={() => !ch.disabled && setChannelFilter(ch.id)}
+              disabled={ch.disabled}
               className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] transition ${
-                channelFilter === ch.id
-                  ? "border-brand-red bg-brand-red text-white"
-                  : "border-brand-black/20 bg-white text-brand-black hover:bg-brand-red/10"
+                ch.disabled
+                  ? "border-brand-black/10 bg-brand-linen/40 text-brand-black/40 cursor-not-allowed"
+                  : channelFilter === ch.id
+                    ? "border-brand-red bg-brand-red text-white"
+                    : "border-brand-black/20 bg-white text-brand-black hover:bg-brand-red/10"
               }`}
+              title={ch.disabled ? (ch.comingSoon ? "Coming Soon" : "Disabled") : undefined}
             >
               {ch.label}
+              {ch.comingSoon && <span className="ml-1 text-[0.6rem]">(Soon)</span>}
             </button>
           ))}
         </div>

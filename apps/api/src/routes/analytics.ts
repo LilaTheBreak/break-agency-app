@@ -2,11 +2,17 @@ import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getRevenueMetrics } from '../services/revenueCalculationService.js';
+import socialsRouter from './analytics/socials.js';
+import topPostsRouter from './analytics/topPosts.js';
 
 const router = Router();
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
+
+// Mount social analytics routes
+router.use('/socials', socialsRouter);
+router.use('/top-posts', topPostsRouter);
 
 /**
  * GET /api/analytics/revenue
@@ -102,26 +108,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/analytics/socials
- * Social platform performance data
- */
-router.get('/socials', async (req: Request, res: Response) => {
-  try {
-    // Return sample data
-    const platforms = [
-      { platform: 'Instagram', followers: 45000, engagement: '3.2%', growth: '+12%' },
-      { platform: 'TikTok', followers: 32000, engagement: '4.5%', growth: '+18%' },
-      { platform: 'YouTube', followers: 28000, engagement: '2.8%', growth: '+8%' }
-    ];
-
-    res.json({ platforms });
-
-  } catch (error) {
-    console.error('[ANALYTICS SOCIALS]', error);
-    res.status(500).json({ error: 'Failed to fetch social analytics' });
-  }
-});
+// Social analytics routes are now handled by socialsRouter (mounted above)
 
 /**
  * GET /api/analytics/growth
