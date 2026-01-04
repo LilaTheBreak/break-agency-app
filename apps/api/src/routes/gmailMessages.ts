@@ -3,8 +3,19 @@ import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { syncGmailForUser } from "../services/gmail/syncGmail.js";
 import { getOAuthClientForUser } from "../services/gmail/tokens.js";
+import { createRateLimiter, userKeyGenerator } from "../middleware/rateLimit.js";
 
 const router = Router();
+
+// Gmail sync rate limiter: 5 syncs per hour per user
+// Production-grade rate limiting to prevent abuse and API quota exhaustion
+const gmailSyncLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  maxRequests: 5, // 5 syncs per hour per user
+  keyGenerator: (req) => `gmail-sync:${userKeyGenerator(req)}`,
+  message: "Too many Gmail sync requests. Please wait before syncing again.",
+  statusCode: 429,
+});
 
 // GET /messages — list last 50 inbox messages
 router.get("/messages", requireAuth, async (req, res, next) => {
