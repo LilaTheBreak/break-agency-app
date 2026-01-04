@@ -62,7 +62,10 @@ router.get("/", async (req: Request, res: Response) => {
     // If we have talents, enrich them with User and Deal data
     if (talents.length > 0) {
       // Enrich with User data separately to avoid relation failures
-      const enrichedTalents = await Promise.all(
+      // CRITICAL: Wrap in try-catch to prevent Promise.all from failing entirely
+      let enrichedTalents: any[] = [];
+      try {
+        enrichedTalents = await Promise.all(
         talents.map(async (talent) => {
           try {
             // Fetch User separately (may fail for placeholder users, that's OK)
@@ -157,7 +160,34 @@ router.get("/", async (req: Request, res: Response) => {
             };
           }
         })
-      );
+        );
+      } catch (enrichmentError) {
+        // CRITICAL FIX: If enrichment fails, log error but don't lose the base talents
+        console.error("[TALENT] Enrichment Promise.all failed:", enrichmentError);
+        logError("Talent enrichment Promise.all failed", enrichmentError, {
+          talentCount: talents.length,
+          userId: req.user?.id
+        });
+        // Use base talents without enrichment rather than empty array
+        enrichedTalents = talents.map(t => ({
+          id: t.id,
+          name: t.name || "Unknown",
+          displayName: t.name || "Unknown",
+          representationType: "NON_EXCLUSIVE",
+          status: "ACTIVE",
+          linkedUser: null,
+          managerId: null,
+          metrics: {
+            openOpportunities: 0,
+            activeDeals: 0,
+            totalDeals: 0,
+            totalTasks: 0,
+            totalRevenue: 0,
+          },
+          createdAt: t.createdAt,
+          updatedAt: t.updatedAt,
+        }));
+      }
       
       talents = enrichedTalents;
     }
@@ -200,12 +230,44 @@ router.get("/", async (req: Request, res: Response) => {
 
     console.log("[TALENT] Found", talents.length, "talents after enrichment");
     
-    // If we have talents but count doesn't match, log a warning
+    // CRITICAL FIX: Never return empty list if database has records
+    // If enrichment fails, return base talents without enrichment rather than empty array
     if (totalCount > 0 && talents.length === 0) {
-      console.error("[TALENT] WARNING: Count shows", totalCount, "talents but enrichment returned 0!");
-      console.error("[TALENT] This suggests an issue with the enrichment process");
-      // Return empty list but log the issue
-      return sendEmptyList(res);
+      console.error("[TALENT] CRITICAL: Count shows", totalCount, "talents but enrichment returned 0!");
+      console.error("[TALENT] Enrichment failed - returning base talents without enrichment");
+      logError("Talent enrichment failed - returning base query results", new Error("Enrichment returned empty array"), {
+        totalCount,
+        userId: req.user?.id,
+        route: req.path
+      });
+      Sentry.captureException(new Error("Talent enrichment failed"), {
+        tags: { route: '/admin/talent', method: 'GET' },
+        extra: { totalCount, enrichedCount: 0 }
+      });
+      
+      // Return base talents without enrichment rather than empty array
+      // This ensures read-after-write consistency
+      const baseTalents = talentsWithoutUser.map(t => ({
+        id: t.id,
+        name: t.name || "Unknown",
+        displayName: t.name || "Unknown",
+        representationType: "NON_EXCLUSIVE",
+        status: "ACTIVE",
+        linkedUser: null,
+        managerId: null,
+        metrics: {
+          openOpportunities: 0,
+          activeDeals: 0,
+          totalDeals: 0,
+          totalTasks: 0,
+          totalRevenue: 0,
+        },
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      }));
+      
+      console.log("[TALENT] Returning", baseTalents.length, "base talents (enrichment failed)");
+      return sendList(res, baseTalents);
     }
     
     if (totalCount !== talents.length) {
@@ -213,7 +275,10 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     // Calculate additional metrics for each talent (openOpportunities, totalRevenue)
-    const talentsWithMetrics = await Promise.all(
+    // CRITICAL: Wrap in try-catch to prevent Promise.all from failing entirely
+    let talentsWithMetrics: any[] = [];
+    try {
+      talentsWithMetrics = await Promise.all(
       talents.map(async (talent) => {
         try {
           // Count open opportunities for this talent
@@ -264,15 +329,35 @@ router.get("/", async (req: Request, res: Response) => {
           return talent; // Return the talent we already have
         }
       })
-    );
+      );
+    } catch (metricsError) {
+      // CRITICAL FIX: If metrics calculation fails, return talents without metrics rather than empty array
+      console.error("[TALENT] Metrics calculation Promise.all failed:", metricsError);
+      logError("Talent metrics calculation failed", metricsError, {
+        talentCount: talents.length,
+        userId: req.user?.id
+      });
+      // Return talents without additional metrics rather than empty array
+      talentsWithMetrics = talents;
+    }
 
     console.log("[TALENT] Returning", talentsWithMetrics?.length || 0, "talents with metrics");
     sendList(res, talentsWithMetrics || []);
   } catch (error) {
     console.error("[TALENT] Error fetching talent list:", error);
-    logError("Failed to fetch talent list", error, { userId: req.user?.id });
-    // Return empty list on error - graceful degradation
-    sendEmptyList(res);
+    logError("Failed to fetch talent list", error, { userId: req.user?.id, route: req.path });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/admin/talent', method: 'GET' },
+    });
+    
+    // CRITICAL FIX: Never return empty list on error - return proper error response
+    // Silent failures mask real issues and break read-after-write consistency
+    return res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to fetch talent list",
+      message: error instanceof Error ? error.message : "Failed to fetch talent list",
+      code: "TALENT_FETCH_FAILED"
+    });
   }
 });
 
