@@ -328,6 +328,8 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // Note: findUnique doesn't support orderBy on relations, so we fetch talent first
+    // then fetch relations separately with ordering
     const talent = await prisma.talent.findUnique({
       where: { id },
       include: {
@@ -339,37 +341,6 @@ router.get("/:id", async (req: Request, res: Response) => {
             avatarUrl: true,
             role: true,
           },
-        },
-        Deal: {
-          include: {
-            Brand: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-        CreatorTask: {
-          orderBy: {
-            dueDate: "desc",
-          },
-          take: 20,
-        },
-        Payment: {
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 50,
-        },
-        Payout: {
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 20,
         },
         _count: {
           select: {
@@ -386,10 +357,58 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Talent not found" });
     }
 
-    // Calculate snapshot metrics
-    const activeDeals = talent.Deal.filter((d) => d.stage !== "COMPLETED" && d.stage !== "LOST").length;
-    const totalRevenue = talent.Payment.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const totalPayouts = talent.Payout.reduce((sum, p) => sum + (p.amount || 0), 0);
+    // Fetch relations separately with ordering (findUnique doesn't support orderBy on relations)
+    const [deals, tasks, payments, payouts] = await Promise.all([
+      prisma.deal.findMany({
+        where: { talentId: id },
+        include: {
+          Brand: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+      prisma.creatorTask.findMany({
+        where: { creatorId: id },
+        orderBy: {
+          dueDate: "desc",
+        },
+        take: 20,
+      }),
+      prisma.payment.findMany({
+        where: { talentId: id },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 50,
+      }),
+      prisma.payout.findMany({
+        where: { creatorId: id },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 20,
+      }),
+    ]);
+
+    // Attach relations to talent object
+    const talentWithRelations = {
+      ...talent,
+      Deal: deals,
+      CreatorTask: tasks,
+      Payment: payments,
+      Payout: payouts,
+    };
+
+    // Calculate snapshot metrics (use talentWithRelations instead of talent)
+    const activeDeals = deals.filter((d) => d.stage !== "COMPLETED" && d.stage !== "LOST").length;
+    const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalPayouts = payouts.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     // Count open opportunities (placeholder - will be implemented when Opportunity model is updated)
     const openOpportunities = 0;
@@ -433,7 +452,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         totalPayouts,
         netRevenue: totalRevenue - totalPayouts,
       },
-      deals: talent.Deal.map((deal) => ({
+      deals: deals.map((deal) => ({
         id: deal.id,
         title: deal.brandName || `Deal ${deal.id.slice(0, 8)}`,
         stage: deal.stage,
@@ -447,7 +466,7 @@ router.get("/:id", async (req: Request, res: Response) => {
           : null,
         createdAt: deal.createdAt,
       })),
-      tasks: talent.CreatorTask.slice(0, 10).map((task) => ({
+      tasks: tasks.slice(0, 10).map((task) => ({
         id: task.id,
         title: task.title,
         status: task.status,
@@ -458,8 +477,8 @@ router.get("/:id", async (req: Request, res: Response) => {
         total: totalRevenue,
         payouts: totalPayouts,
         net: totalRevenue - totalPayouts,
-        payments: talent.Payment.slice(0, 10),
-        payoutsList: talent.Payout.slice(0, 10),
+        payments: payments.slice(0, 10),
+        payoutsList: payouts.slice(0, 10),
       },
       // Note: Talent model doesn't have createdAt/updatedAt fields
     };
