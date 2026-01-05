@@ -1131,12 +1131,24 @@ router.delete("/:id", async (req: Request, res: Response) => {
     // Check for related records before deletion
     // Note: Most relations have onDelete: Cascade, but we check critical business data
     // that should prevent deletion or require user confirmation
+    
+    // Helper to safely count commissions (table may not exist)
+    async function safeCommissionCount(talentId: string): Promise<number> {
+      try {
+        return await prisma.commission.count({ where: { talentId } });
+      } catch (err) {
+        // Commission table doesn't exist or query failed - ignore
+        console.warn("[TALENT DELETE] Commission count unavailable (table may not exist):", err instanceof Error ? err.message : String(err));
+        return 0;
+      }
+    }
+    
     const [dealCount, taskCount, paymentCount, payoutCount, commissionCount] = await Promise.all([
       prisma.deal.count({ where: { talentId: id } }),
       prisma.creatorTask.count({ where: { creatorId: id } }),
       prisma.payment.count({ where: { talentId: id } }),
       prisma.payout.count({ where: { creatorId: id } }),
-      prisma.commission.count({ where: { talentId: id } }),
+      safeCommissionCount(id),
     ]);
 
     console.log("[TALENT DELETE] Related records count:", {
