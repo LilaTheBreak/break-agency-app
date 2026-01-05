@@ -754,8 +754,8 @@ function DealsTab({ talent }) {
             </thead>
             <tbody>
               {sortedDeals.map((deal) => {
-                // Get scope from Deliverable or notes
-                const scope = deal.Deliverable?.[0]?.title || deal.aiSummary || deal.notes || "—";
+                // Get scope from notes or aiSummary (Deliverable relation not included in API response)
+                const scope = deal.aiSummary || deal.notes || "—";
                 const dueDate = deal.expectedClose 
                   ? new Date(deal.expectedClose).toLocaleDateString()
                   : "—";
