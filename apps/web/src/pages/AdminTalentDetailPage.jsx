@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
@@ -225,7 +225,13 @@ export function AdminTalentDetailPage() {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const fetchTalentData = async () => {
+  // Use ref to prevent multiple simultaneous fetches
+  const fetchingRef = useRef(false);
+
+  const fetchTalentData = useCallback(async () => {
+    if (!talentId || fetchingRef.current) return;
+    
+    fetchingRef.current = true;
     try {
       setLoading(true);
       setError("");
@@ -235,7 +241,30 @@ export function AdminTalentDetailPage() {
       if (!talentData || !talentData.id) {
         throw new Error("Talent not found");
       }
-      setTalent(talentData);
+      // Safely clone data to break any potential circular references
+      // Use structuredClone if available (handles circular refs), otherwise use JSON
+      let sanitizedTalent;
+      try {
+        if (typeof structuredClone !== 'undefined') {
+          sanitizedTalent = structuredClone(talentData);
+        } else {
+          sanitizedTalent = JSON.parse(JSON.stringify(talentData));
+        }
+      } catch (cloneError) {
+        // If cloning fails (circular reference), create a safe copy manually
+        console.warn("[TALENT] Could not clone talent data, creating safe copy:", cloneError);
+        sanitizedTalent = {
+          ...talentData,
+          deals: talentData.deals ? talentData.deals.map(d => ({ ...d })) : [],
+          tasks: talentData.tasks ? talentData.tasks.map(t => ({ ...t })) : [],
+          revenue: talentData.revenue ? {
+            ...talentData.revenue,
+            payments: talentData.revenue.payments ? talentData.revenue.payments.map(p => ({ ...p })) : [],
+            payoutsList: talentData.revenue.payoutsList ? talentData.revenue.payoutsList.map(p => ({ ...p })) : [],
+          } : null,
+        };
+      }
+      setTalent(sanitizedTalent);
     } catch (err) {
       console.error("[TALENT] Error fetching talent:", err);
       const errorMessage = err.message || "Failed to load talent";
@@ -250,14 +279,13 @@ export function AdminTalentDetailPage() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (talentId) {
-      fetchTalentData();
+      fetchingRef.current = false;
     }
   }, [talentId, navigate]);
+
+  useEffect(() => {
+    fetchTalentData();
+  }, [fetchTalentData]);
 
   const isExclusive = talent?.representationType === "EXCLUSIVE";
 
