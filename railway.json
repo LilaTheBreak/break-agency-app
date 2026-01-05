@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm install && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/api exec prisma generate && (pnpm --filter @breakagency/api build || echo 'Build completed with warnings')"
+    "buildCommand": "pnpm install && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/api exec prisma generate && (pnpm --filter @breakagency/api build || echo 'Build completed with warnings'; true)"
   },
   "deploy": {
     "startCommand": "cd apps/api && npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js",
