@@ -180,7 +180,14 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     }
 
     const data = await response.json();
-    expect(data.talent?.id || data.id).toBe(talentId);
+    
+    // Explicit assertions matching the real API contract: { success: true, data: { talent: {...} } }
+    expect(data).toHaveProperty('success');
+    expect(data.success).toBe(true);
+    expect(data).toHaveProperty('data');
+    expect(data.data).toHaveProperty('talent');
+    expect(data.data.talent).toHaveProperty('id');
+    expect(data.data.talent.id).toBe(talentId);
 
     console.log(`✅ PASSED: Fetched talent ${talentId}`);
   });

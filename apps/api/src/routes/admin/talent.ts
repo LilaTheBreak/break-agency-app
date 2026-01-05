@@ -571,7 +571,10 @@ router.get("/:id", async (req: Request, res: Response) => {
     };
 
     console.log("[TALENT GET] Successfully retrieved talent:", id);
-    sendSuccess(res, { talent: talentData });
+    // Return same shape as POST endpoint for consistency: { talent: {...} }
+    return res.status(200).json({
+      talent: talentData,
+    });
   } catch (error) {
     console.error("[TALENT GET ERROR]", {
       message: error instanceof Error ? error.message : String(error),
