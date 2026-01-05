@@ -14,10 +14,9 @@ import {
   createCrmTask, 
   updateCrmTask, 
   deleteCrmTask,
-  fetchTaskUsers,
-  fetchTaskTalents 
+  fetchTaskUsers
 } from "../services/crmTasksClient.js";
-import { fetchDeals, fetchCampaigns, fetchEvents, fetchContracts, fetchBrands } from "../services/crmClient.js";
+import { fetchDeals, fetchCampaigns, fetchEvents, fetchContracts, fetchBrands, fetchTalents } from "../services/crmClient.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
 
@@ -234,16 +233,30 @@ export function AdminTasksPage() {
 
     const loadTalents = async () => {
       try {
-        const data = await fetchTaskTalents();
-        setTalents(data);
+        const data = await fetchTalents();
+        setTalents(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to load talents:", err);
         setError("Failed to load talents");
+        setTalents([]); // Fallback to empty array
       }
     };
 
     loadUsers();
     loadTalents();
+    
+    // Listen for talent create/delete events to refetch talents
+    const handleTalentChange = () => {
+      loadTalents();
+    };
+
+    window.addEventListener('talent-created', handleTalentChange);
+    window.addEventListener('talent-deleted', handleTalentChange);
+
+    return () => {
+      window.removeEventListener('talent-created', handleTalentChange);
+      window.removeEventListener('talent-deleted', handleTalentChange);
+    };
     
     // Load CRM data from API
     async function loadCrmData() {

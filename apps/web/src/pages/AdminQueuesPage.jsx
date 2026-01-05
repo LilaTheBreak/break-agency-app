@@ -4,15 +4,7 @@ import { Badge } from "../components/Badge.jsx";
 import { ContactAutocomplete } from "../components/ContactAutocomplete.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
-
-const TALENT_DIRECTORY = [
-  "Lila Prasad",
-  "Mo Al Ghazi",
-  "Exclusive Creator",
-  "UGC Creator",
-  "Finance Bot",
-  "Automation Pod"
-];
+import { fetchTalents } from "../services/crmClient.js";
 
 export function AdminQueuesPage() {
   // Queue items state
@@ -27,6 +19,10 @@ export function AdminQueuesPage() {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [tasksError, setTasksError] = useState(null);
   
+  // Talent directory - API-BACKED (replaces hardcoded TALENT_DIRECTORY)
+  const [talents, setTalents] = useState([]);
+  const [talentsLoading, setTalentsLoading] = useState(true);
+  
   // Modal state
   const [activeTask, setActiveTask] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -37,7 +33,41 @@ export function AdminQueuesPage() {
   useEffect(() => {
     fetchQueueItems();
     fetchInternalTasks();
+    fetchTalentsList();
   }, []);
+
+  // Listen for talent create/delete events to refetch talents
+  useEffect(() => {
+    const handleTalentChange = () => {
+      fetchTalentsList();
+    };
+
+    window.addEventListener('talent-created', handleTalentChange);
+    window.addEventListener('talent-deleted', handleTalentChange);
+
+    return () => {
+      window.removeEventListener('talent-created', handleTalentChange);
+      window.removeEventListener('talent-deleted', handleTalentChange);
+    };
+  }, []);
+
+  // Fetch talents from API (single source of truth)
+  const fetchTalentsList = async () => {
+    try {
+      setTalentsLoading(true);
+      const data = await fetchTalents();
+      // Transform to format expected by ContactAutocomplete: array of strings (talent names)
+      const talentNames = Array.isArray(data) 
+        ? data.map(t => t.name || t.displayName || t.User?.email || t.id).filter(Boolean)
+        : [];
+      setTalents(talentNames);
+    } catch (err) {
+      console.error("Failed to load talents:", err);
+      setTalents([]); // Fallback to empty array on error
+    } finally {
+      setTalentsLoading(false);
+    }
+  };
 
   const fetchQueueItems = async () => {
     try {
@@ -578,9 +608,10 @@ export function AdminQueuesPage() {
                 <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Associated contact</p>
                 <div className="mt-2 space-y-2">
                   <ContactAutocomplete
-                    options={TALENT_DIRECTORY}
+                    options={talents}
                     value={(formState.talent || [])[0] || ""}
                     onSelect={(value) => setFormState((prev) => ({ ...prev, talent: value ? [value] : [] }))}
+                    disabled={talentsLoading}
                   />
                 </div>
               </div>

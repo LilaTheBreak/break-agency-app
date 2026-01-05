@@ -374,3 +374,54 @@ export async function importContractsFromLocalStorage(contracts) {
   });
 }
 
+// ============================================
+// TALENT
+// ============================================
+
+/**
+ * Fetch all talents (for admin list, dropdowns, etc.)
+ * Single source of truth for talent data
+ */
+export async function fetchTalents() {
+  return fetchWithAuth(`/api/admin/talent`);
+}
+
+/**
+ * Fetch a single talent by ID
+ */
+export async function fetchTalent(id) {
+  return fetchWithAuth(`/api/admin/talent/${id}`);
+}
+
+/**
+ * Create a new talent
+ */
+export async function createTalent(data) {
+  return fetchWithAuth(`/api/admin/talent`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Update an existing talent
+ */
+export async function updateTalent(id, data) {
+  return fetchWithAuth(`/api/admin/talent/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Delete a talent
+ * Returns 409 if talent has related records (deals, tasks)
+ * Returns 404 if talent not found
+ * Returns 200 on successful deletion
+ */
+export async function deleteTalent(id) {
+  return fetchWithAuth(`/api/admin/talent/${id}`, {
+    method: "DELETE",
+  });
+}
+

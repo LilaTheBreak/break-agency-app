@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
+import { fetchTalent } from "../services/crmClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { 
   User, UserX, Edit2, Link2, Unlink, 
@@ -224,19 +225,29 @@ export function AdminTalentDetailPage() {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const fetchTalent = async () => {
+  const fetchTalentData = async () => {
     try {
       setLoading(true);
       setError("");
-      const response = await apiFetch(`/api/admin/talent/${talentId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch talent");
+      const data = await fetchTalent(talentId);
+      // Handle both { talent: {...} } and direct talent object responses
+      const talentData = data.talent || data;
+      if (!talentData || !talentData.id) {
+        throw new Error("Talent not found");
       }
-      const data = await response.json();
-      setTalent(data.talent);
+      setTalent(talentData);
     } catch (err) {
-      console.error("Error fetching talent:", err);
-      setError(err.message || "Failed to load talent");
+      console.error("[TALENT] Error fetching talent:", err);
+      const errorMessage = err.message || "Failed to load talent";
+      setError(errorMessage);
+      
+      // If talent not found (404), redirect to list after a short delay
+      if (errorMessage.includes("404") || errorMessage.includes("not found") || errorMessage.includes("NOT_FOUND")) {
+        toast.error("Talent not found. It may have been deleted.");
+        setTimeout(() => {
+          navigate("/admin/talent");
+        }, 2000);
+      }
     } finally {
       setLoading(false);
     }
@@ -244,9 +255,9 @@ export function AdminTalentDetailPage() {
 
   useEffect(() => {
     if (talentId) {
-      fetchTalent();
+      fetchTalentData();
     }
-  }, [talentId]);
+  }, [talentId, navigate]);
 
   const isExclusive = talent?.representationType === "EXCLUSIVE";
 
@@ -495,7 +506,7 @@ export function AdminTalentDetailPage() {
         open={linkModalOpen}
         onClose={() => setLinkModalOpen(false)}
         talentId={talentId}
-        onSuccess={fetchTalent}
+        onSuccess={fetchTalentData}
       />
     </DashboardShell>
   );

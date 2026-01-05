@@ -2,9 +2,9 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
-import { apiFetch } from "../services/apiClient.js";
+import { fetchTalents, deleteTalent } from "../services/crmClient.js";
 import { Badge } from "../components/Badge.jsx";
-import { Plus, User, UserX, Search, Filter } from "lucide-react";
+import { Plus, User, UserX, Search, Filter, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
 
@@ -143,6 +143,8 @@ function AddTalentModal({ open, onClose, onSuccess }) {
       toast.success("Talent created successfully");
       await new Promise(resolve => setTimeout(resolve, 1000));
       await onSuccess();
+      // Broadcast creation event to other pages/components
+      window.dispatchEvent(new CustomEvent('talent-created', { detail: { talentId: result.id } }));
       onClose();
       setFormData({
         displayName: "",
@@ -339,14 +341,7 @@ export function AdminTalentPage() {
     try {
       setLoading(true);
       setError("");
-      const response = await apiFetch("/api/admin/talent");
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Failed to fetch talent (${response.status})`);
-      }
-      
-      const data = await response.json();
+      const data = await fetchTalents();
       const talentsArray = normalizeApiArray(data, 'talents');
       setTalents(talentsArray);
     } catch (err) {
@@ -355,6 +350,37 @@ export function AdminTalentPage() {
       setTalents([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTalent = async (talentId, talentName) => {
+    if (!confirm(`Are you sure you want to delete "${talentName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteTalent(talentId);
+      toast.success("Talent deleted successfully");
+      // Refetch talent list to remove deleted talent
+      await fetchTalents();
+      // Broadcast deletion event to other pages/components
+      window.dispatchEvent(new CustomEvent('talent-deleted', { detail: { talentId } }));
+      // Note: If user is on detail page, they should be redirected
+      // This is handled by the detail page's error handling
+    } catch (err) {
+      console.error("[TALENT] Error deleting talent:", err);
+      const errorMessage = err.message || "Failed to delete talent";
+      
+      // Handle specific error cases
+      if (errorMessage.includes("409") || errorMessage.includes("CONFLICT")) {
+        toast.error("Cannot delete talent: Related deals or tasks exist. Please remove them first.");
+      } else if (errorMessage.includes("404") || errorMessage.includes("NOT_FOUND")) {
+        toast.error("Talent not found. It may have already been deleted.");
+        // Refetch anyway to ensure UI is in sync
+        await fetchTalents();
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
@@ -503,14 +529,16 @@ export function AdminTalentPage() {
                   <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
                     Metrics
                   </th>
+                  <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTalents.map((talent) => (
                   <tr
                     key={talent.id}
-                    onClick={() => handleRowClick(talent.id)}
-                    className="cursor-pointer hover:bg-brand-black/5 transition-colors border-b border-brand-black/5"
+                    className="hover:bg-brand-black/5 transition-colors border-b border-brand-black/5"
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -551,6 +579,31 @@ export function AdminTalentPage() {
                       <div className="text-xs text-brand-black/60 space-y-1">
                         <div>{talent.metrics?.activeDeals || 0} active deals</div>
                         <div>{talent.metrics?.openOpportunities || 0} opportunities</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRowClick(talent.id);
+                          }}
+                          className="px-3 py-1.5 text-xs uppercase tracking-[0.2em] rounded-lg border border-brand-black/20 hover:bg-brand-black/5 transition-colors"
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTalent(talent.id, talent.displayName || talent.name);
+                          }}
+                          className="p-1.5 text-brand-red hover:bg-brand-red/10 rounded-lg transition-colors"
+                          title="Delete talent"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

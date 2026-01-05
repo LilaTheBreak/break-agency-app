@@ -20,7 +20,7 @@ import {
 } from "../lib/crmDeals.js";
 import { formatEventDateTimeRange } from "../lib/crmEvents.js";
 import { fetchDeals, createDeal, updateDeal, deleteDeal, fetchEvents, fetchCampaigns, fetchContracts, fetchBrands } from "../services/crmClient.js";
-import { fetchTaskTalents } from "../services/crmTasksClient.js";
+import { fetchTalents } from "../services/crmClient.js";
 import { checkForLocalStorageData, migrateLocalStorageToDatabase, clearLocalStorageData } from "../lib/crmMigration.js";
 import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
@@ -266,7 +266,7 @@ export function AdminDealsPage({ session }) {
         fetchCampaigns(),
         fetchContracts(),
         fetchBrands(),
-        fetchTaskTalents().catch(() => []), // Load talents for deal creation
+        fetchTalents().catch(() => []), // Load talents for deal creation (single source of truth)
       ]);
       // Use shared helper to normalize API responses
       setDeals(normalizeApiArray(dealsData, 'deals'));
@@ -294,6 +294,26 @@ export function AdminDealsPage({ session }) {
       setLoading(false);
     }
   };
+
+  // Listen for talent create/delete events to refetch talents
+  useEffect(() => {
+    const handleTalentChange = () => {
+      // Refetch talents when talent is created or deleted
+      fetchTalents()
+        .then(data => setTalents(Array.isArray(data) ? data : []))
+        .catch(err => {
+          console.error("Failed to refetch talents after change:", err);
+        });
+    };
+
+    window.addEventListener('talent-created', handleTalentChange);
+    window.addEventListener('talent-deleted', handleTalentChange);
+
+    return () => {
+      window.removeEventListener('talent-created', handleTalentChange);
+      window.removeEventListener('talent-deleted', handleTalentChange);
+    };
+  }, []);
 
   useEffect(() => {
     loadDeals();

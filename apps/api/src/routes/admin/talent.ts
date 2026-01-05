@@ -1068,19 +1068,28 @@ router.delete("/:id", async (req: Request, res: Response) => {
     }
 
     // Check for related records before deletion
-    const dealCount = await prisma.deal.count({
-      where: { talentId: id },
-    });
+    // Note: Most relations have onDelete: Cascade, but we check critical business data
+    // that should prevent deletion or require user confirmation
+    const [dealCount, taskCount, paymentCount, payoutCount, commissionCount] = await Promise.all([
+      prisma.deal.count({ where: { talentId: id } }),
+      prisma.creatorTask.count({ where: { creatorId: id } }),
+      prisma.payment.count({ where: { talentId: id } }),
+      prisma.payout.count({ where: { creatorId: id } }),
+      prisma.commission.count({ where: { talentId: id } }),
+    ]);
 
-    const taskCount = await prisma.creatorTask.count({
-      where: { creatorId: id },
-    });
+    const blockingCounts = [];
+    if (dealCount > 0) blockingCounts.push(`${dealCount} deal(s)`);
+    if (taskCount > 0) blockingCounts.push(`${taskCount} task(s)`);
+    if (paymentCount > 0) blockingCounts.push(`${paymentCount} payment(s)`);
+    if (payoutCount > 0) blockingCounts.push(`${payoutCount} payout(s)`);
+    if (commissionCount > 0) blockingCounts.push(`${commissionCount} commission(s)`);
 
-    if (dealCount > 0 || taskCount > 0) {
+    if (blockingCounts.length > 0) {
       return sendError(
         res,
         "CONFLICT",
-        `Cannot delete talent: ${dealCount} deal(s) and ${taskCount} task(s) are linked to this talent. Please remove these relationships first.`,
+        `Cannot delete talent: ${blockingCounts.join(", ")} are linked to this talent. Please remove these relationships first.`,
         409
       );
     }
