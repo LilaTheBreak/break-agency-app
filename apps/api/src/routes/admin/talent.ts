@@ -512,8 +512,28 @@ router.get("/:id", async (req: Request, res: Response) => {
         total: totalRevenue,
         payouts: totalPayouts,
         net: totalRevenue - totalPayouts,
-        payments: payments.slice(0, 10),
-        payoutsList: payouts.slice(0, 10),
+        // Sanitize Prisma objects to plain objects to prevent circular references
+        payments: payments.slice(0, 10).map(p => ({
+          id: p.id,
+          amount: p.amount,
+          currency: p.currency,
+          status: p.status,
+          talentId: p.talentId,
+          dealId: p.dealId,
+          createdAt: p.createdAt,
+          paidAt: p.paidAt,
+        })),
+        payoutsList: payouts.slice(0, 10).map(p => ({
+          id: p.id,
+          amount: p.amount,
+          currency: p.currency,
+          status: p.status,
+          creatorId: p.creatorId,
+          dealId: p.dealId,
+          createdAt: p.createdAt,
+          paidAt: p.paidAt,
+          expectedPayoutAt: p.expectedPayoutAt,
+        })),
       },
       // Note: Talent model doesn't have createdAt/updatedAt fields
     };

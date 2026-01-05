@@ -241,27 +241,45 @@ export function AdminTalentDetailPage() {
       if (!talentData || !talentData.id) {
         throw new Error("Talent not found");
       }
-      // Safely clone data to break any potential circular references
-      // Use structuredClone if available (handles circular refs), otherwise use JSON
+      // API now sanitizes data, but add extra safety for any remaining circular refs
+      // Use structuredClone if available (handles circular refs), otherwise shallow copy
       let sanitizedTalent;
       try {
+        // Try structuredClone first (available in modern browsers, handles circular refs)
         if (typeof structuredClone !== 'undefined') {
           sanitizedTalent = structuredClone(talentData);
         } else {
-          sanitizedTalent = JSON.parse(JSON.stringify(talentData));
+          // Fallback: shallow copy with explicit field mapping for safety
+          sanitizedTalent = {
+            ...talentData,
+            deals: Array.isArray(talentData.deals) ? talentData.deals.map(d => ({ ...d })) : [],
+            tasks: Array.isArray(talentData.tasks) ? talentData.tasks.map(t => ({ ...t })) : [],
+            revenue: talentData.revenue ? {
+              total: talentData.revenue.total,
+              payouts: talentData.revenue.payouts,
+              net: talentData.revenue.net,
+              payments: Array.isArray(talentData.revenue.payments) 
+                ? talentData.revenue.payments.map(p => ({ ...p })) 
+                : [],
+              payoutsList: Array.isArray(talentData.revenue.payoutsList) 
+                ? talentData.revenue.payoutsList.map(p => ({ ...p })) 
+                : [],
+            } : null,
+          };
         }
       } catch (cloneError) {
-        // If cloning fails (circular reference), create a safe copy manually
-        console.warn("[TALENT] Could not clone talent data, creating safe copy:", cloneError);
+        // Last resort: create minimal safe copy
+        console.warn("[TALENT] Could not clone talent data, creating minimal safe copy:", cloneError);
         sanitizedTalent = {
-          ...talentData,
-          deals: talentData.deals ? talentData.deals.map(d => ({ ...d })) : [],
-          tasks: talentData.tasks ? talentData.tasks.map(t => ({ ...t })) : [],
-          revenue: talentData.revenue ? {
-            ...talentData.revenue,
-            payments: talentData.revenue.payments ? talentData.revenue.payments.map(p => ({ ...p })) : [],
-            payoutsList: talentData.revenue.payoutsList ? talentData.revenue.payoutsList.map(p => ({ ...p })) : [],
-          } : null,
+          id: talentData.id,
+          name: talentData.name,
+          displayName: talentData.displayName,
+          representationType: talentData.representationType,
+          status: talentData.status,
+          linkedUser: talentData.linkedUser,
+          deals: [],
+          tasks: [],
+          revenue: null,
         };
       }
       setTalent(sanitizedTalent);
