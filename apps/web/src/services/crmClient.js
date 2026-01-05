@@ -7,16 +7,52 @@ async function fetchWithAuth(url, options = {}) {
     const response = await apiFetch(fullUrl, options);
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Request failed" }));
-      console.warn(`[CRM] ${options.method || 'GET'} ${url} failed:`, response.status);
-      throw new Error(error.error || "Request failed");
+      const errorBody = await response.json().catch(() => ({ error: "Request failed" }));
+      console.error(`[CRM] ${options.method || 'GET'} ${url} failed:`, response.status, errorBody);
+      
+      // Extract human-readable error message from structured API response
+      let errorMessage = `Request failed with status ${response.status}`;
+      
+      // Handle structured error responses from our API
+      if (errorBody?.error?.message) {
+        errorMessage = errorBody.error.message;
+      } else if (errorBody?.error?.code) {
+        // Fallback to code if message not available
+        errorMessage = errorBody.error.code;
+      } else if (errorBody?.error && typeof errorBody.error === 'string') {
+        // Handle string error format
+        errorMessage = errorBody.error;
+      } else if (errorBody?.message) {
+        errorMessage = errorBody.message;
+      } else if (errorBody?.details) {
+        errorMessage = errorBody.details;
+      }
+      
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.response = errorBody;
+      error.code = errorBody?.error?.code;
+      throw error;
     }
 
     return response.json();
   } catch (error) {
-    // Log error but don't crash - let caller handle gracefully
-    console.warn(`[CRM] Request failed for ${url}:`, error.message);
-    throw error;
+    // Re-throw with proper structure so callers can handle it
+    if (error instanceof Error) {
+      const errorMessage = error.message || String(error);
+      console.error(`[CRM] Request failed for ${url}:`, {
+        message: errorMessage,
+        status: (error as any).status,
+        code: (error as any).code,
+        response: (error as any).response,
+      });
+      throw error;
+    }
+    
+    // Handle non-Error exceptions
+    const unknownError = new Error('Unknown request error');
+    console.error(`[CRM] Unknown error for ${url}:`, error);
+    throw unknownError;
   }
 }
 

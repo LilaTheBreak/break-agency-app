@@ -350,6 +350,7 @@ router.get("/", async (req: Request, res: Response) => {
 router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    console.log("[TALENT GET] Fetching talent details for ID:", id);
 
     // Note: findUnique doesn't support orderBy on relations, so we fetch talent first
     // then fetch relations separately with ordering
@@ -377,8 +378,11 @@ router.get("/:id", async (req: Request, res: Response) => {
     });
 
     if (!talent) {
+      console.warn("[TALENT GET] Talent not found:", id);
       return res.status(404).json({ error: "Talent not found" });
     }
+
+    console.log("[TALENT GET] Found talent, fetching relations for ID:", id);
 
     // Fetch relations separately with ordering (findUnique doesn't support orderBy on relations)
     const [deals, tasks, payments, payouts, socialAccounts] = await Promise.all([
@@ -538,8 +542,15 @@ router.get("/:id", async (req: Request, res: Response) => {
       // Note: Talent model doesn't have createdAt/updatedAt fields
     };
 
+    console.log("[TALENT GET] Successfully retrieved talent:", id);
     sendSuccess(res, { talent: talentData });
   } catch (error) {
+    console.error("[TALENT GET ERROR]", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: req.user?.id,
+      talentId: req.params.id,
+    });
     logError("Failed to fetch talent details", error, { userId: req.user?.id, talentId: req.params.id });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/admin/talent/:id', method: 'GET' },
@@ -1073,6 +1084,7 @@ router.get("/:id/inbox", async (req: Request, res: Response) => {
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    console.log("[TALENT DELETE] Starting deletion for ID:", id);
 
     const talent = await prisma.talent.findUnique({
       where: { id },
@@ -1084,6 +1096,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
     });
 
     if (!talent) {
+      console.warn("[TALENT DELETE] Talent not found:", id);
       return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
 
@@ -1098,6 +1111,14 @@ router.delete("/:id", async (req: Request, res: Response) => {
       prisma.commission.count({ where: { talentId: id } }),
     ]);
 
+    console.log("[TALENT DELETE] Related records count:", {
+      deals: dealCount,
+      tasks: taskCount,
+      payments: paymentCount,
+      payouts: payoutCount,
+      commissions: commissionCount,
+    });
+
     const blockingCounts = [];
     if (dealCount > 0) blockingCounts.push(`${dealCount} deal(s)`);
     if (taskCount > 0) blockingCounts.push(`${taskCount} task(s)`);
@@ -1106,15 +1127,47 @@ router.delete("/:id", async (req: Request, res: Response) => {
     if (commissionCount > 0) blockingCounts.push(`${commissionCount} commission(s)`);
 
     if (blockingCounts.length > 0) {
-      return sendError(
-        res,
-        "CONFLICT",
-        `Cannot delete talent: ${blockingCounts.join(", ")} are linked to this talent. Please remove these relationships first.`,
-        409
-      );
+      const conflictMessage = `Cannot delete talent: ${blockingCounts.join(", ")} are linked to this talent. Please remove these relationships first.`;
+      console.warn("[TALENT DELETE] Conflict - blocking counts found:", conflictMessage);
+      return sendError(res, "CONFLICT", conflictMessage, 409);
     }
 
-    await prisma.talent.delete({ where: { id } });
+    console.log("[TALENT DELETE] No blocking records found, proceeding with deletion:", id);
+    
+    try {
+      await prisma.talent.delete({ where: { id } });
+      console.log("[TALENT DELETE] Talent deleted successfully:", id);
+    } catch (deleteError) {
+      // Handle specific Prisma errors
+      if (deleteError instanceof Error && 'code' in deleteError) {
+        const prismaError = deleteError as any;
+        
+        // P2003: Foreign key constraint failed
+        if (prismaError.code === 'P2003') {
+          console.warn("[TALENT DELETE] Foreign key constraint violation:", {
+            id,
+            meta: prismaError.meta,
+            message: prismaError.message,
+          });
+          return sendError(
+            res,
+            "CONFLICT",
+            "Cannot delete talent: This talent has related records that must be removed first.",
+            409,
+            { details: prismaError.meta }
+          );
+        }
+        
+        // P2025: Record not found (shouldn't happen, but handle it)
+        if (prismaError.code === 'P2025') {
+          console.warn("[TALENT DELETE] Record not found during deletion:", id);
+          return sendError(res, "NOT_FOUND", "Talent not found", 404);
+        }
+      }
+      
+      // Re-throw for general error handling
+      throw deleteError;
+    }
 
     // Log destructive action
     try {
@@ -1136,11 +1189,18 @@ router.delete("/:id", async (req: Request, res: Response) => {
         }),
       ]);
     } catch (logError) {
-      console.error("Failed to log talent deletion:", logError);
+      console.error("[TALENT DELETE] Failed to log talent deletion:", logError);
     }
 
-    sendSuccess(res, { message: "Talent deleted successfully" });
+    sendSuccess(res, { message: "Talent deleted successfully" }, 204);
   } catch (error) {
+    console.error("[TALENT DELETE ERROR]", {
+      message: error instanceof Error ? error.message : String(error),
+      code: (error as any)?.code,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: req.user?.id,
+      talentId: req.params.id,
+    });
     logError("Failed to delete talent", error, { userId: req.user?.id, talentId: req.params.id });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/admin/talent/:id', method: 'DELETE' },
