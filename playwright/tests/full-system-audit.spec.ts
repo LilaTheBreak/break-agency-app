@@ -261,7 +261,6 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Delete Idempotency ${Date.now()}`,
-        email: `audit-idempotent-${Date.now()}@test.com`,
         representationType: 'NON_EXCLUSIVE'
       }
     });
@@ -377,7 +376,6 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Status Code Test ${Date.now()}`,
-        email: `audit-status-${Date.now()}@test.com`,
         representationType: 'NON_EXCLUSIVE'
       }
     });
