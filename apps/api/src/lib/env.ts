@@ -18,14 +18,25 @@ function getEnv(name: string, fallback?: string): string {
   return value || "";
 }
 
+function getEnvRequired(name: string, productionOnly: boolean = true): string {
+  const value = process.env[name];
+  
+  if (!value && (productionOnly ? process.env.NODE_ENV === 'production' : true)) {
+    throw new Error(`REQUIRED: ${name} environment variable is not set. Cannot start in ${process.env.NODE_ENV || 'unknown'} mode.`);
+  }
+  
+  return value || "";
+}
+
 // Unified Google OAuth config
+const redirectUri = process.env.NODE_ENV === 'production'
+  ? getEnvRequired('GOOGLE_REDIRECT_URI')
+  : process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/api/auth/google/callback';
+
 export const googleConfig = {
   clientId: getEnv("GOOGLE_CLIENT_ID"),
   clientSecret: getEnv("GOOGLE_CLIENT_SECRET"),
-  redirectUri: getEnv(
-    "GOOGLE_REDIRECT_URI",
-    "http://localhost:5001/api/auth/google/callback"
-  ),
+  redirectUri: redirectUri,
 };
 
 console.log(">>> GOOGLE CONFIG LOADED:");

@@ -350,8 +350,13 @@ export function AdminTalentPage() {
       setTalents(talentsArray);
       console.log('[TALENT] Successfully loaded', talentsArray.length, 'talents');
     } catch (err) {
-      console.error("[TALENT] Error fetching talent:", err);
-      setError(err.message || "Failed to load talent");
+      console.error("[TALENT] Error fetching talent:", {
+        message: err?.message,
+        status: err?.status,
+        response: err?.response,
+      });
+      const errorMessage = err?.message || "Failed to load talent";
+      setError(errorMessage);
       setTalents([]);
     } finally {
       setLoading(false);
@@ -364,25 +369,32 @@ export function AdminTalentPage() {
     }
 
     try {
+      console.log('[TALENT] Attempting to delete talent:', talentId);
       await deleteTalent(talentId);
+      console.log('[TALENT] Talent deleted successfully:', talentId);
       toast.success("Talent deleted successfully");
-      // Refetch talent list to remove deleted talent
-      await loadTalents(); // Use renamed function
+      // Remove talent from local state immediately (don't refetch)
+      setTalents(prev => prev.filter(t => t.id !== talentId));
       // Broadcast deletion event to other pages/components
       window.dispatchEvent(new CustomEvent('talent-deleted', { detail: { talentId } }));
       // Note: If user is on detail page, they should be redirected
       // This is handled by the detail page's error handling
     } catch (err) {
-      console.error("[TALENT] Error deleting talent:", err);
-      const errorMessage = err.message || "Failed to delete talent";
+      console.error("[TALENT] Error deleting talent:", {
+        message: err?.message,
+        status: err?.status,
+        response: err?.response,
+        fullError: err,
+      });
+      const errorMessage = err?.message || "Failed to delete talent";
       
       // Handle specific error cases
-      if (errorMessage.includes("409") || errorMessage.includes("CONFLICT")) {
+      if (err?.status === 409 || errorMessage.includes("CONFLICT")) {
         toast.error("Cannot delete talent: Related deals or tasks exist. Please remove them first.");
-      } else if (errorMessage.includes("404") || errorMessage.includes("NOT_FOUND")) {
+      } else if (err?.status === 404 || errorMessage.includes("NOT_FOUND")) {
         toast.error("Talent not found. It may have already been deleted.");
-        // Refetch anyway to ensure UI is in sync
-        await loadTalents(); // Use renamed function
+        // Remove from local state anyway to ensure UI is in sync
+        setTalents(prev => prev.filter(t => t.id !== talentId));
       } else {
         toast.error(errorMessage);
       }

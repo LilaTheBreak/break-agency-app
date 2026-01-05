@@ -3,7 +3,13 @@ import { encode as base64Encode } from "js-base64";
 import { google } from "googleapis";
 import { getOAuthClientForUser } from "../gmail/tokens.js";
 
-const BASE_URL = process.env.API_URL || "http://localhost:5001";
+let BASE_URL = process.env.API_URL;
+
+if (!BASE_URL && process.env.NODE_ENV === 'production') {
+  throw new Error('API_URL environment variable is required in production. App cannot start.');
+}
+
+BASE_URL = BASE_URL || "http://localhost:5001";
 
 /**
  * Shape returned to messageService

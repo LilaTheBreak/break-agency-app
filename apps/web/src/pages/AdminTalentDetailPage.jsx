@@ -284,12 +284,17 @@ export function AdminTalentDetailPage() {
       }
       setTalent(sanitizedTalent);
     } catch (err) {
-      console.error("[TALENT] Error fetching talent:", err);
-      const errorMessage = err.message || "Failed to load talent";
+      console.error("[TALENT] Error fetching talent:", {
+        message: err?.message,
+        status: err?.status,
+        response: err?.response,
+        fullError: err,
+      });
+      const errorMessage = err?.message || "Failed to load talent";
       setError(errorMessage);
       
       // If talent not found (404), redirect to list after a short delay
-      if (errorMessage.includes("404") || errorMessage.includes("not found") || errorMessage.includes("NOT_FOUND")) {
+      if (err?.status === 404 || errorMessage.includes("not found") || errorMessage.includes("NOT_FOUND")) {
         toast.error("Talent not found. It may have been deleted.");
         setTimeout(() => {
           navigate("/admin/talent");

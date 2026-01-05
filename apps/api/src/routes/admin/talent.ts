@@ -385,54 +385,65 @@ router.get("/:id", async (req: Request, res: Response) => {
     console.log("[TALENT GET] Found talent, fetching relations for ID:", id);
 
     // Fetch relations separately with ordering (findUnique doesn't support orderBy on relations)
-    const [deals, tasks, payments, payouts, socialAccounts] = await Promise.all([
-      prisma.deal.findMany({
-        where: { talentId: id },
-        include: {
-          Brand: {
-            select: {
-              id: true,
-              name: true,
+    let deals, tasks, payments, payouts, socialAccounts;
+    try {
+      [deals, tasks, payments, payouts, socialAccounts] = await Promise.all([
+        prisma.deal.findMany({
+          where: { talentId: id },
+          include: {
+            Brand: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      }),
-      prisma.creatorTask.findMany({
-        where: { creatorId: id },
-        orderBy: {
-          dueDate: "desc",
-        },
-        take: 20,
-      }),
-      prisma.payment.findMany({
-        where: { talentId: id },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 50,
-      }),
-      prisma.payout.findMany({
-        where: { creatorId: id },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 20,
-      }),
-      prisma.socialAccountConnection.findMany({
-        where: { creatorId: id, connected: true },
-        select: {
-          id: true,
-          platform: true,
-          handle: true,
-          connected: true,
-          lastSyncedAt: true,
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-    ]);
+          orderBy: {
+            createdAt: "desc",
+          },
+        }),
+        prisma.creatorTask.findMany({
+          where: { creatorId: id },
+          orderBy: {
+            dueDate: "desc",
+          },
+          take: 20,
+        }),
+        prisma.payment.findMany({
+          where: { talentId: id },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 50,
+        }),
+        prisma.payout.findMany({
+          where: { creatorId: id },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 20,
+        }),
+        prisma.socialAccountConnection.findMany({
+          where: { creatorId: id, connected: true },
+          select: {
+            id: true,
+            platform: true,
+            handle: true,
+            connected: true,
+            lastSyncedAt: true,
+          },
+          orderBy: { createdAt: "asc" },
+        }),
+      ]);
+    } catch (relationsError) {
+      console.warn("[TALENT GET] Failed to fetch relations, returning talent with empty relations:", relationsError);
+      // If relations fail, return talent with empty relations instead of 500
+      deals = [];
+      tasks = [];
+      payments = [];
+      payouts = [];
+      socialAccounts = [];
+    }
 
     // Attach relations to talent object
     const talentWithRelations = {

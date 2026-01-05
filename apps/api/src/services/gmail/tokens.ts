@@ -25,10 +25,16 @@ export async function getOAuthClientForUser(userId: string) {
   }
 
   // Use same redirect URI derivation as auth flow
-  const gmailRedirectUri = process.env.GMAIL_REDIRECT_URI || 
+  let gmailRedirectUri = process.env.GMAIL_REDIRECT_URI || 
     (googleConfig.redirectUri 
       ? googleConfig.redirectUri.replace('/api/auth/google/callback', '/api/gmail/auth/callback')
-      : 'http://localhost:5001/api/gmail/auth/callback');
+      : null);
+  
+  if (!gmailRedirectUri && process.env.NODE_ENV === 'production') {
+    throw new Error('MAIL_API_GOOGLE_REDIRECT_URI is required in production but no redirect URI could be derived. Set GMAIL_REDIRECT_URI or GOOGLE_REDIRECT_URI in environment.');
+  }
+  
+  gmailRedirectUri = gmailRedirectUri || 'http://localhost:5001/api/gmail/auth/callback';
 
   console.log(`[GMAIL TOKEN] Creating OAuth client for user ${userId}`, {
     hasAccessToken: !!token.accessToken,

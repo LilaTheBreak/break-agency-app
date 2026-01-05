@@ -1,25 +1,33 @@
 import toast from 'react-hot-toast';
 
-// Clean and validate the API URL
+// CRITICAL: Enforce VITE_API_URL in all environments
 const RAW_API_BASE = import.meta.env?.VITE_API_URL;
-let API_BASE = "/api"; // Default fallback
 
-if (RAW_API_BASE && RAW_API_BASE.length) {
-  // Remove any trailing newlines, whitespace, or escaped characters
-  const cleaned = RAW_API_BASE.replace(/\\n|\\r|\n|\r/g, '').trim();
-  
-  // If it's a full URL (starts with http)
-  if (/^https?:\/\//i.test(cleaned)) {
-    // Remove trailing slash
-    let base = cleaned.replace(/\/$/, '');
-    // Only append /api if it doesn't already end with /api
-    if (!base.endsWith('/api')) {
-      base = base + '/api';
-    }
-    API_BASE = base;
-  } else {
-    API_BASE = cleaned || "/api";
+if (!RAW_API_BASE || !RAW_API_BASE.trim()) {
+  throw new Error(
+    'VITE_API_URL environment variable is required. App cannot start. ' +
+    'Set VITE_API_URL in your .env file (e.g., VITE_API_URL=https://api.example.com/api)'
+  );
+}
+
+// Clean and validate the API URL
+const cleaned = RAW_API_BASE.replace(/\\n|\\r|\n|\r/g, '').trim();
+
+let API_BASE = "/api"; // Should never use this
+
+if (/^https?:\/\//i.test(cleaned)) {
+  // Remove trailing slash
+  let base = cleaned.replace(/\/$/, '');
+  // Only append /api if it doesn't already end with /api
+  if (!base.endsWith('/api')) {
+    base = base + '/api';
   }
+  API_BASE = base;
+} else {
+  // Non-HTTP URLs are not allowed in production
+  throw new Error(
+    `VITE_API_URL must be a full HTTP(S) URL, not a relative path. Got: "${cleaned}"`
+  );
 }
 
 const NORMALIZED_BASE = API_BASE.replace(/\/$/, "");

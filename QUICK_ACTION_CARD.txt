@@ -1,0 +1,177 @@
+🚀 PRODUCTION HARDENING COMPLETE - QUICK ACTION CARD
+
+================================================================================
+WHAT WAS DONE
+================================================================================
+
+✅ Removed 5 localhost/relative path fallbacks
+✅ Added fail-fast configuration validation  
+✅ All critical URLs now require explicit environment variables
+✅ App crashes loudly on misconfiguration instead of silently falling back
+✅ Development experience unchanged (localhost fallbacks still work locally)
+
+FILES MODIFIED: 5
+- apps/api/src/lib/env.ts
+- apps/api/src/services/gmail/tokens.ts
+- apps/api/src/services/email/sendOutbound.ts
+- apps/api/src/config/frontendUrl.ts
+- apps/web/src/services/apiClient.js
+
+================================================================================
+NEXT STEPS (15 minutes total)
+================================================================================
+
+STEP 1: Add 4 Env Vars to Railway (5 min)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Go to https://railway.app
+2. Select "The Break Agency API" project
+3. Click "Variables" tab
+4. Add these 4 variables (exact values below):
+
+   GOOGLE_REDIRECT_URI
+   └─ Value: https://breakagencyapi-production.up.railway.app/api/auth/google/callback
+
+   MAIL_API_GOOGLE_REDIRECT_URI
+   └─ Value: https://breakagencyapi-production.up.railway.app/api/gmail/auth/callback
+
+   API_URL
+   └─ Value: https://breakagencyapi-production.up.railway.app
+
+   WEB_URL
+   └─ Value: https://www.tbctbctbc.online
+
+STEP 2: Push Code (1 min)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   git add apps/api/src/lib/env.ts
+   git add apps/api/src/services/gmail/tokens.ts
+   git add apps/api/src/services/email/sendOutbound.ts
+   git add apps/api/src/config/frontendUrl.ts
+   git add apps/web/src/services/apiClient.js
+   git commit -m "🔒 Prod: Enforce fail-fast env validation, remove localhost fallbacks"
+   git push origin main
+
+STEP 3: Verify Railway Deployment (3 min)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Go to https://railway.app
+2. Check latest deployment - should be 🟢 Green
+3. Click into deployment → Logs
+4. Look for: "[FRONTEND_URL] Canonical frontend URL: https://..."
+5. If you see error about missing env var, you skipped Step 1 (go back)
+
+STEP 4: Verify Vercel Deployment (2 min)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Go to https://vercel.com
+2. Select break-agency-app project
+3. Check latest deployment - should be 🟢 Ready
+4. Build log should show "Build complete" with no errors
+
+STEP 5: Test (5 min)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open fresh incognito window
+2. Go to https://www.tbctbctbc.online
+3. Click Login
+4. Should redirect to Google OAuth, then back to tbctbctbc.online
+5. Open DevTools → Console
+6. Should see: "[apiClient] Using API base URL: https://breakagencyapi-production.up.railway.app/api"
+7. Open Network tab → make any action (e.g., go to Talent page)
+8. All XHR requests should go to https://breakagencyapi-production.up.railway.app/*
+
+DONE! ✅
+
+================================================================================
+WHAT TO EXPECT
+================================================================================
+
+✅ SUCCESS INDICATORS:
+   - [FRONTEND_URL] message in Railway logs
+   - All API calls to https://breakagencyapi-production.up.railway.app
+   - No localhost in any logs or network requests
+   - Login works and redirects to production domain
+   - No console errors about VITE_API_URL
+
+❌ FAILURE INDICATORS (These mean config was missed):
+   - Error: GOOGLE_REDIRECT_URI is required in production
+   - Error: MAIL_API_GOOGLE_REDIRECT_URI is required in production
+   - Error: API_URL environment variable is required in production
+   - Error: WEB_URL environment variable is required in production
+   - Error: VITE_API_URL environment variable is required
+
+   → If you see these, go back to Step 1 and add the missing env var
+
+================================================================================
+UNDERSTANDING THE HARDENING
+================================================================================
+
+BEFORE (RISKY):
+  ❌ OAuth would silently fall back to http://localhost:5001
+  ❌ Gmail auth would silently fall back to http://localhost:5001
+  ❌ Email links would point to http://localhost:5001
+  ❌ Frontend API calls would use relative /api path
+  ❌ Hard to debug if config is wrong - might work by accident
+
+AFTER (SAFE):
+  ✅ OAuth requires explicit GOOGLE_REDIRECT_URI - crashes if missing
+  ✅ Gmail auth requires explicit MAIL_API_GOOGLE_REDIRECT_URI - crashes if missing
+  ✅ Email requires explicit API_URL - crashes if missing
+  ✅ Frontend requires explicit VITE_API_URL - crashes if missing
+  ✅ Easy to debug - clear error message on startup if config wrong
+
+KEY PRINCIPLE: Fail loudly and early rather than silently and late.
+
+================================================================================
+DOCUMENTATION FOR DETAILS
+================================================================================
+
+For complete information, see:
+
+1. HARDENING_PRODUCTION_COMPLETE.md
+   └─ Main document with all details
+
+2. DEPLOYMENT_GUIDE.md
+   └─ Step-by-step with screenshots/troubleshooting
+
+3. HARDENING_VERIFICATION_REPORT.md
+   └─ Technical deep-dive and verification
+
+4. FINAL_HARDENING_REPORT.txt
+   └─ Comprehensive implementation report
+
+================================================================================
+QUESTIONS?
+================================================================================
+
+Q: What if one of my API calls hits /api (relative path)?
+A: Now that VITE_API_URL is required, all calls must go through the explicit
+   Railway URL. If you see 404s on /api, it means your browser isn't sending
+   VITE_API_URL. Clear cache and refresh.
+
+Q: Can I go back to localhost fallbacks?
+A: Not recommended - they hide bugs. Instead, set env vars correctly.
+   But if needed, git revert and redeploy (takes 10 minutes).
+
+Q: What if Railway deployment fails?
+A: Check logs for the error message. Most likely you missed a step 1 env var.
+   Add it and re-deploy.
+
+Q: Is production ready now?
+A: Yes. Complete steps 1-5 above and you're live. The app is hardened against
+   misconfiguration. Can't start without correct config.
+
+================================================================================
+GO TIME 🚀
+================================================================================
+
+You have everything you need. The 15 minutes will secure production.
+
+Start with Step 1: Add env vars to Railway.
+
+Then proceed through steps 2-5.
+
+Done in 15 minutes. Live in production. Hardened against misconfiguration.
+
+Go! 🚀

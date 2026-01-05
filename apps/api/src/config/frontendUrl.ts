@@ -81,9 +81,11 @@ export function getCanonicalFrontendUrl(): string {
   }
 
   // Development fallback
-  return process.env.NODE_ENV === "production" 
-    ? PRODUCTION_DOMAIN 
-    : "http://localhost:5173";
+  if (process.env.NODE_ENV === "production") {
+    // In production, must have explicit config
+    throw new Error('WEB_URL environment variable is required in production. Cannot determine canonical frontend URL.');
+  }
+  return "http://localhost:5173";
 }
 
 /**
