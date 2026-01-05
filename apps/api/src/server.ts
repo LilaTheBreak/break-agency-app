@@ -103,6 +103,9 @@ import adminFinanceRouter from "./routes/admin/finance.js";
 // Admin Talent
 import adminTalentRouter from "./routes/admin/talent.js";
 
+// Admin Diagnostics
+import adminDiagnosticsRouter from "./routes/admin/diagnostics.js";
+
 // CMS: Block-Based Content Management
 import contentRouter from "./routes/content.js";
 import { ensureCmsPagesExist } from "./lib/cmsSeeder.js";

@@ -22,10 +22,8 @@ export async function syncAllUsers(): Promise<SyncResult[]> {
   console.log("[GMAIL BACKGROUND SYNC] Starting sync for all users...");
 
   // Get all users with Gmail tokens
+  // Note: refreshToken is required (not nullable) in schema, so we don't need to check for null
   const gmailTokens = await prisma.gmailToken.findMany({
-    where: {
-      refreshToken: { not: null }
-    },
     select: { userId: true }
   });
 
