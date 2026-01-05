@@ -131,8 +131,11 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
   // 3️⃣ TALENT CRUD AUDIT - CREATE, READ, DELETE (Critical)
   // ============================================================================
 
-  test('4. Talent CRUD: Create new talent', async ({ request }) => {
-    const response = await request.post(`${BACKEND_API_URL}/admin/talent`, {
+  test('4. Talent CRUD: Create new talent', async ({ page, request }) => {
+    // Use the page's context which has auth cookies
+    const contextRequest = page.context().request;
+    
+    const response = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Talent ${Date.now()}`,
         representationType: 'NON_EXCLUSIVE',
@@ -151,9 +154,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     console.log(`✅ PASSED: Created talent ${testTalentId}`);
   });
 
-  test('5. Talent CRUD: Fetch created talent', async ({ request }) => {
+  test('5. Talent CRUD: Fetch created talent', async ({ page }) => {
     // Create a test talent to fetch
-    const createRes = await request.post(`${BACKEND_API_URL}/admin/talent`, {
+    const contextRequest = page.context().request;
+    const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Fetch Test ${Date.now()}`,
         representationType: 'NON_EXCLUSIVE'
@@ -168,7 +172,7 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     }
 
     // Now fetch it
-    const response = await request.get(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    const response = await contextRequest.get(`${BACKEND_API_URL}/admin/talent/${talentId}`);
 
     // Expect 200 success
     if (response.status() !== 200) {
@@ -181,9 +185,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     console.log(`✅ PASSED: Fetched talent ${talentId}`);
   });
 
-  test('6. Talent CRUD: Delete talent (idempotent)', async ({ request }) => {
+  test('6. Talent CRUD: Delete talent (idempotent)', async ({ page }) => {
     // Create a test talent to delete
-    const createRes = await request.post(`${BACKEND_API_URL}/admin/talent`, {
+    const contextRequest = page.context().request;
+    const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Delete Test ${Date.now()}`,
         representationType: 'NON_EXCLUSIVE'
@@ -198,7 +203,7 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     }
 
     // Delete it
-    const response = await request.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    const response = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
 
     // Expect 204 or 200 success (not 500)
     if (response.status() >= 400 && response.status() !== 404) {
@@ -212,9 +217,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     console.log(`✅ PASSED: Deleted talent ${talentId} with status ${response.status()}`);
   });
 
-  test('7. Talent CRUD: Verify talent is deleted', async ({ request }) => {
+  test('7. Talent CRUD: Verify talent is deleted', async ({ page }) => {
     // Create a test talent, delete it, then verify it's gone
-    const createRes = await request.post(`${BACKEND_API_URL}/admin/talent`, {
+    const contextRequest = page.context().request;
+    const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Verify Delete ${Date.now()}`,
         representationType: 'NON_EXCLUSIVE'
@@ -229,10 +235,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     }
 
     // Delete it
-    await request.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
 
     // Verify it's gone
-    const response = await request.get(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    const response = await contextRequest.get(`${BACKEND_API_URL}/admin/talent/${talentId}`);
 
     // Should be 404 (not found)
     if (response.status() !== 404) {
@@ -249,9 +255,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
   // 4️⃣ DELETE SAFETY & IDEMPOTENCY
   // ============================================================================
 
-  test('8. Delete Safety: Deleting same talent twice does NOT 500', async ({ request }) => {
+  test('8. Delete Safety: Deleting same talent twice does NOT 500', async ({ page }) => {
     // Create a test talent
-    const createRes = await request.post(`${BACKEND_API_URL}/admin/talent`, {
+    const contextRequest = page.context().request;
+    const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Delete Idempotency ${Date.now()}`,
         email: `audit-idempotent-${Date.now()}@test.com`,
@@ -267,14 +274,14 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     const talentId = data?.id || data?.talent?.id;
 
     // First delete
-    const delete1 = await request.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    const delete1 = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
     
     if (delete1.status() >= 500) {
       throw new Error(`First DELETE returned ${delete1.status()}`);
     }
 
     // Second delete (idempotency check)
-    const delete2 = await request.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    const delete2 = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
 
     // Should NOT be 500. Should be 204, 200, or 404
     if (delete2.status() >= 500) {
@@ -289,8 +296,9 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     console.log(`✅ PASSED: DELETE is idempotent (1st: ${delete1.status()}, 2nd: ${delete2.status()})`);
   });
 
-  test('9. Delete Safety: Deleting non-existent talent returns 404, not 500', async ({ request }) => {
-    const response = await request.delete(`${BACKEND_API_URL}/admin/talent/fake-nonexistent-id-12345`);
+  test('9. Delete Safety: Deleting non-existent talent returns 404, not 500', async ({ page }) => {
+    const contextRequest = page.context().request;
+    const response = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/fake-nonexistent-id-12345`);
 
     if (response.status() === 500) {
       const body = await response.text();
@@ -308,8 +316,9 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
   // 5️⃣ ERROR HANDLING AUDIT - Errors must be readable
   // ============================================================================
 
-  test('10. Errors: Delete with invalid ID returns readable error, not [object Object]', async ({ request }) => {
-    const response = await request.delete(`${BACKEND_API_URL}/admin/talent/invalid-id`);
+  test('10. Errors: Delete with invalid ID returns readable error, not [object Object]', async ({ page }) => {
+    const contextRequest = page.context().request;
+    const response = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/invalid-id`);
 
     // Get error message
     let errorBody: any = {};
@@ -339,9 +348,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     console.log(`✅ PASSED: Error message readable: "${errorMessage}"`);
   });
 
-  test('11. Errors: API returns structured error response', async ({ request }) => {
+  test('11. Errors: API returns structured error response', async ({ page }) => {
     // Try to access a non-existent resource
-    const response = await request.get(`${BACKEND_API_URL}/admin/talent/nonexistent-123`);
+    const contextRequest = page.context().request;
+    const response = await contextRequest.get(`${BACKEND_API_URL}/admin/talent/nonexistent-123`);
 
     const body = await response.json();
 
@@ -361,9 +371,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
   // 6️⃣ HTTP STATUS CODES AUDIT
   // ============================================================================
 
-  test('12. HTTP Status: DELETE returns 204, not 200', async ({ request }) => {
+  test('12. HTTP Status: DELETE returns 204, not 200', async ({ page }) => {
     // Create a talent
-    const createRes = await request.post(`${BACKEND_API_URL}/admin/talent`, {
+    const contextRequest = page.context().request;
+    const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
         displayName: `[AUDIT] Status Code Test ${Date.now()}`,
         email: `audit-status-${Date.now()}@test.com`,
@@ -384,7 +395,7 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     }
 
     // Delete it
-    const deleteRes = await request.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    const deleteRes = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
 
     // Spec: DELETE should return 204 No Content
     if (deleteRes.status() !== 204 && deleteRes.status() !== 200) {
@@ -396,8 +407,9 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     console.log(`✅ PASSED: DELETE returned ${deleteRes.status()}`);
   });
 
-  test('13. HTTP Status: GET non-existent returns 404', async ({ request }) => {
-    const response = await request.get(`${BACKEND_API_URL}/admin/talent/nonexistent-999`);
+  test('13. HTTP Status: GET non-existent returns 404', async ({ page }) => {
+    const contextRequest = page.context().request;
+    const response = await contextRequest.get(`${BACKEND_API_URL}/admin/talent/nonexistent-999`);
 
     if (response.status() !== 404) {
       throw new Error(
@@ -412,8 +424,9 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
   // 7️⃣ LOGGING AUDIT - Verify errors are logged properly
   // ============================================================================
 
-  test('14. Logging: No console errors during DELETE', async ({ page, request }) => {
+  test('14. Logging: No console errors during DELETE', async ({ page }) => {
     const consoleErrors: string[] = [];
+    const contextRequest = page.context().request;
     
     page.on('console', msg => {
       if (msg.type() === 'error') {
@@ -422,12 +435,10 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     });
 
     // Create and delete a talent
-    const createRes = await request.post(`${BACKEND_API_URL}/admin/talent`, {
+    const createRes = await contextRequest.post(`${BACKEND_API_URL}/admin/talent`, {
       data: {
-        name: `[AUDIT] Logging Test ${Date.now()}`,
-        email: `audit-log-${Date.now()}@test.com`,
-        phone: '555-0003',
-        tier: 'TIER_1'
+        displayName: `[AUDIT] Logging Test ${Date.now()}`,
+        representationType: 'NON_EXCLUSIVE'
       }
     });
 
@@ -438,7 +449,7 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     await page.goto('/admin/talent', { waitUntil: 'networkidle' });
 
     // Delete via API
-    const deleteRes = await request.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
+    const deleteRes = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/${talentId}`);
 
     // Check for errors
     if (consoleErrors.length > 0) {
@@ -502,7 +513,8 @@ test.describe('🔍 FULL SYSTEM AUDIT', () => {
     await page.goto('/admin/talent', { waitUntil: 'networkidle' });
 
     // Try to delete a non-existent talent via the API (to trigger error)
-    const deleteRes = await page.request.delete(`${BACKEND_API_URL}/admin/talent/fake-123`);
+    const contextRequest = page.context().request;
+    const deleteRes = await contextRequest.delete(`${BACKEND_API_URL}/admin/talent/fake-123`);
 
     let errorMessage = '';
     try {
