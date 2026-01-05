@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
@@ -337,13 +337,18 @@ export function AdminTalentPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
 
-  const fetchTalents = async () => {
+  // CRITICAL FIX: Renamed to avoid shadowing imported fetchTalents
+  // The local function was calling itself recursively, causing infinite loop
+  // Root cause: Variable shadowing - local fetchTalents shadowed imported fetchTalents
+  const loadTalents = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
-      const data = await fetchTalents();
+      console.log('[TALENT] loadTalents called - fetching from API');
+      const data = await fetchTalents(); // Now correctly calls imported function from crmClient
       const talentsArray = normalizeApiArray(data, 'talents');
       setTalents(talentsArray);
+      console.log('[TALENT] Successfully loaded', talentsArray.length, 'talents');
     } catch (err) {
       console.error("[TALENT] Error fetching talent:", err);
       setError(err.message || "Failed to load talent");
@@ -351,7 +356,7 @@ export function AdminTalentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty deps - only fetch once on mount
 
   const handleDeleteTalent = async (talentId, talentName) => {
     if (!confirm(`Are you sure you want to delete "${talentName}"? This action cannot be undone.`)) {
@@ -362,7 +367,7 @@ export function AdminTalentPage() {
       await deleteTalent(talentId);
       toast.success("Talent deleted successfully");
       // Refetch talent list to remove deleted talent
-      await fetchTalents();
+      await loadTalents(); // Use renamed function
       // Broadcast deletion event to other pages/components
       window.dispatchEvent(new CustomEvent('talent-deleted', { detail: { talentId } }));
       // Note: If user is on detail page, they should be redirected
@@ -377,7 +382,7 @@ export function AdminTalentPage() {
       } else if (errorMessage.includes("404") || errorMessage.includes("NOT_FOUND")) {
         toast.error("Talent not found. It may have already been deleted.");
         // Refetch anyway to ensure UI is in sync
-        await fetchTalents();
+        await loadTalents(); // Use renamed function
       } else {
         toast.error(errorMessage);
       }
@@ -385,8 +390,8 @@ export function AdminTalentPage() {
   };
 
   useEffect(() => {
-    fetchTalents();
-  }, []);
+    loadTalents(); // Use renamed function
+  }, [loadTalents]);
 
   const filteredTalents = useMemo(() => {
     return talents.filter((talent) => {
@@ -617,7 +622,7 @@ export function AdminTalentPage() {
       <AddTalentModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onSuccess={fetchTalents}
+        onSuccess={loadTalents}
       />
     </DashboardShell>
   );
