@@ -42,9 +42,9 @@ async function fetchWithAuth(url, options = {}) {
       const errorMessage = error.message || String(error);
       console.error(`[CRM] Request failed for ${url}:`, {
         message: errorMessage,
-        status: (error as any).status,
-        code: (error as any).code,
-        response: (error as any).response,
+        status: error.status,
+        code: error.code,
+        response: error.response,
       });
       throw error;
     }
