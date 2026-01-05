@@ -30,14 +30,13 @@ const STATUS_OPTIONS = [
 
 const TABS = [
   { id: "overview", label: "Overview", icon: User },
+  { id: "deals", label: "Deal Tracker", icon: Briefcase },
   { id: "opportunities", label: "Opportunities", icon: TrendingUp },
-  { id: "deals", label: "Deals", icon: Briefcase },
-  { id: "campaigns", label: "Campaigns", icon: FileText },
+  { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
   { id: "contracts", label: "Contracts", icon: FileText },
-  { id: "inbox", label: "Inbox", icon: Mail },
-  { id: "tasks", label: "Tasks", icon: CheckSquare },
-  { id: "revenue", label: "Revenue", icon: DollarSign },
+  { id: "payments", label: "Payments & Finance", icon: DollarSign },
   { id: "notes", label: "Notes & History", icon: FileEdit },
+  { id: "files", label: "Files & Assets", icon: Archive },
 ];
 
 function RepresentationBadge({ type }) {
@@ -469,29 +468,26 @@ export function AdminTalentDetailPage() {
         {activeTab === "overview" && (
           <OverviewTab talent={talent} isExclusive={isExclusive} />
         )}
-        {activeTab === "opportunities" && (
-          <OpportunitiesTab talentId={talentId} isExclusive={isExclusive} />
-        )}
         {activeTab === "deals" && (
           <DealsTab talent={talent} />
         )}
-        {activeTab === "campaigns" && (
-          <CampaignsTab talentId={talentId} />
+        {activeTab === "opportunities" && (
+          <OpportunitiesTab talentId={talentId} isExclusive={isExclusive} />
+        )}
+        {activeTab === "deliverables" && (
+          <DeliverablesTab talent={talent} />
         )}
         {activeTab === "contracts" && (
           <ContractsTab talentId={talentId} />
         )}
-        {activeTab === "inbox" && (
-          <InboxTab talentId={talentId} />
-        )}
-        {activeTab === "tasks" && (
-          <TasksTab talent={talent} />
-        )}
-        {activeTab === "revenue" && (
+        {activeTab === "payments" && (
           <RevenueTab talent={talent} isExclusive={isExclusive} />
         )}
         {activeTab === "notes" && (
           <NotesTab talentId={talentId} />
+        )}
+        {activeTab === "files" && (
+          <FilesTab talentId={talentId} />
         )}
       </div>
 
@@ -1047,6 +1043,123 @@ function RevenueTab({ talent, isExclusive }) {
           </div>
         </div>
       )}
+    </section>
+  );
+}
+
+function DeliverablesTab({ talent }) {
+  const deals = talent.deals || [];
+  const [deliverables, setDeliverables] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDeliverables = async () => {
+      try {
+        const allDeliverables = [];
+        for (const deal of deals) {
+          try {
+            const response = await apiFetch(`/api/deliverables?dealId=${deal.id}`);
+            if (response.ok) {
+              const data = await response.json();
+              const dealDeliverables = Array.isArray(data.deliverables) ? data.deliverables : [];
+              allDeliverables.push(...dealDeliverables.map(d => ({ ...d, dealId: deal.id, dealBrand: deal.brand?.name || deal.brandName })));
+            }
+          } catch (err) {
+            console.warn(`Error fetching deliverables for deal ${deal.id}:`, err);
+          }
+        }
+        setDeliverables(allDeliverables);
+      } catch (err) {
+        console.error("Error fetching deliverables:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (deals.length > 0) {
+      fetchDeliverables();
+    } else {
+      setLoading(false);
+    }
+  }, [deals]);
+
+  return (
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Content Deliverables</p>
+      {loading ? (
+        <p className="text-brand-black/60">Loading deliverables...</p>
+      ) : deliverables.length === 0 ? (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-brand-black/60 mb-2">No deliverables found.</p>
+          <p className="text-xs text-brand-black/50">
+            Deliverables will appear here when deals have content items assigned.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-brand-white border-b border-brand-black/10">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Deal / Brand</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Deliverable Type</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Due Date</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Status</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Platform</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deliverables.map((deliverable) => (
+                <tr key={deliverable.id} className="border-b border-brand-black/5 hover:bg-brand-black/5">
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-brand-black">{deliverable.dealBrand || "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-brand-black/80">{deliverable.title || deliverable.deliverableType || "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-brand-black/60 text-xs">
+                      {deliverable.dueAt || deliverable.dueDate 
+                        ? new Date(deliverable.dueAt || deliverable.dueDate).toLocaleDateString()
+                        : "—"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                      deliverable.approvedAt ? "bg-green-100 text-green-700" :
+                      deliverable.status === "posted" ? "bg-blue-100 text-blue-700" :
+                      "bg-yellow-100 text-yellow-700"
+                    }`}>
+                      {deliverable.approvedAt ? "Approved" : deliverable.status || "Pending"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-brand-black/60 text-xs uppercase">
+                      {deliverable.platform || "—"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function FilesTab({ talentId }) {
+  return (
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Files & Assets</p>
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <Archive className="h-12 w-12 text-brand-black/40 mx-auto mb-4" />
+        <p className="text-brand-black/60 mb-2">Files & Assets</p>
+        <p className="text-xs text-brand-black/50 mb-4">
+          Coming soon: Media kit, rate card, past campaign assets, and press imagery will be available here.
+        </p>
+        <p className="text-xs text-brand-black/40">
+          This section will support uploading and managing talent assets when the API endpoint is implemented.
+        </p>
+      </div>
     </section>
   );
 }
