@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
 import { Badge } from "../components/Badge.jsx";
-import { Plus, User, UserX, Edit2, Archive } from "lucide-react";
+import { Plus, User, UserX, Search, Filter } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
 
@@ -34,7 +34,56 @@ function RepresentationBadge({ type }) {
 function StatusBadge({ status }) {
   const statusOption = STATUS_OPTIONS.find((s) => s.value === status) || STATUS_OPTIONS[0];
   return (
-    <span className={`inline-block h-2 w-2 rounded-full ${statusOption.color} mr-2`} />
+    <div className="flex items-center gap-2">
+      <span className={`inline-block h-2 w-2 rounded-full ${statusOption.color}`} />
+      <span className="text-xs uppercase tracking-[0.2em]">{statusOption.label}</span>
+    </div>
+  );
+}
+
+function Avatar({ user, name, size = "w-10 h-10" }) {
+  const initials = useMemo(() => {
+    const displayName = user?.name || name || "?";
+    return displayName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }, [user?.name, name]);
+
+  if (user?.avatarUrl) {
+    return (
+      <img
+        src={user.avatarUrl}
+        alt={user.name || name}
+        className={`${size} rounded-full object-cover border border-brand-black/10`}
+      />
+    );
+  }
+
+  return (
+    <div className={`${size} rounded-full bg-brand-red/10 flex items-center justify-center border border-brand-black/10`}>
+      <span className="text-xs font-semibold text-brand-red">{initials}</span>
+    </div>
+  );
+}
+
+function SocialHandle({ handle, platform }) {
+  if (!handle) return null;
+  
+  const platformIcon = {
+    INSTAGRAM: "📷",
+    TIKTOK: "🎵",
+    YOUTUBE: "▶️",
+    X: "🐦",
+  }[platform] || "@";
+  
+  return (
+    <span className="text-xs text-brand-black/60 flex items-center gap-1">
+      <span>{platformIcon}</span>
+      <span>@{handle}</span>
+    </span>
   );
 }
 
@@ -50,63 +99,26 @@ function AddTalentModal({ open, onClose, onSuccess }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Close on ESC key
   useEffect(() => {
     if (!open) return;
     const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [open, onClose]);
-
-  // Trap focus within modal
-  useEffect(() => {
-    if (!open) return;
-    const modal = document.querySelector('[data-modal="add-talent"]');
-    if (modal) {
-      const focusableElements = modal.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-      
-      const handleTab = (e) => {
-        if (e.key !== "Tab") return;
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement?.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement?.focus();
-          }
-        }
-      };
-      
-      firstElement?.focus();
-      document.addEventListener("keydown", handleTab);
-      return () => document.removeEventListener("keydown", handleTab);
-    }
-  }, [open]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSaving(true);
 
-    // Frontend validation
     if (!formData.displayName || !formData.displayName.trim()) {
       setError("Display name is required");
       setSaving(false);
       return;
     }
 
-    // Email is optional, but if provided, validate format
     if (formData.primaryEmail && formData.primaryEmail.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.primaryEmail.trim())) {
@@ -117,44 +129,20 @@ function AddTalentModal({ open, onClose, onSuccess }) {
     }
 
     try {
-      console.log("[TALENT] Creating talent with data:", { 
-        displayName: formData.displayName, 
-        representationType: formData.representationType,
-        hasEmail: !!formData.primaryEmail 
-      });
-      
       const response = await apiFetch("/api/admin/talent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      console.log("[TALENT] Response status:", response.status, response.statusText);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("[TALENT] Error response:", errorData);
-        // Backend returns { code, message } format, fallback to error field for compatibility
-        throw new Error(errorData.message || errorData.error || `Failed to create talent (${errorData.code || response.status})`);
+        throw new Error(errorData.message || errorData.error || `Failed to create talent (${response.status})`);
       }
 
-      const data = await response.json();
-      console.log("[TALENT] Response data:", data);
-      console.log("[TALENT] Created talent ID:", data.talent?.id);
-      
-      // Optimistically add the talent to the list if we have the data
-      if (data.talent) {
-        console.log("[TALENT] Adding talent optimistically to list");
-        // onSuccess will refresh the full list, but we can add it immediately for better UX
-      }
-      
       toast.success("Talent created successfully");
-      // Call onSuccess to refresh the list - wait for it to complete
-      console.log("[TALENT] Calling onSuccess to refresh list...");
-      // Add delay to ensure database transaction is committed and visible to read queries
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay to 1 second
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await onSuccess();
-      console.log("[TALENT] List refresh completed");
       onClose();
       setFormData({
         displayName: "",
@@ -178,29 +166,19 @@ function AddTalentModal({ open, onClose, onSuccess }) {
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
+        if (e.target === e.currentTarget) onClose();
       }}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="modal-title"
     >
       <div 
-        data-modal="add-talent"
         className="w-full max-w-[720px] rounded-[36px] border border-brand-black/15 bg-brand-white shadow-[0_40px_120px_rgba(0,0,0,0.35)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="border-b border-brand-black/10 px-8 py-6">
           <div className="flex items-start justify-between">
             <div>
-              <h3 
-                id="modal-title"
-                className="font-display text-3xl uppercase text-brand-black"
-              >
-                Create Talent Record
-              </h3>
+              <h3 className="font-display text-3xl uppercase text-brand-black">Create Talent Record</h3>
               <p className="mt-2 text-sm text-brand-black/70">
                 Add a new talent profile to manage representation and relationships
               </p>
@@ -208,15 +186,13 @@ function AddTalentModal({ open, onClose, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="ml-4 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/60 hover:bg-brand-black/5 hover:text-brand-black transition-colors"
-              aria-label="Close modal"
+              className="ml-4 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/60 hover:bg-brand-black/5"
             >
               Close
             </button>
           </div>
         </div>
 
-        {/* Body - Scrollable */}
         <div className="max-h-[calc(90vh-200px)] overflow-y-auto px-8 py-6">
           <form id="add-talent-form" onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -225,12 +201,8 @@ function AddTalentModal({ open, onClose, onSuccess }) {
               </div>
             )}
 
-            {/* Display Name */}
             <div>
-              <label 
-                htmlFor="displayName"
-                className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
-              >
+              <label htmlFor="displayName" className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
                 Display Name *
               </label>
               <input
@@ -245,13 +217,9 @@ function AddTalentModal({ open, onClose, onSuccess }) {
               />
             </div>
 
-            {/* Legal Name and Email - Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label 
-                  htmlFor="legalName"
-                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
-                >
+                <label htmlFor="legalName" className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
                   Legal Name
                 </label>
                 <input
@@ -265,10 +233,7 @@ function AddTalentModal({ open, onClose, onSuccess }) {
               </div>
 
               <div>
-                <label 
-                  htmlFor="primaryEmail"
-                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
-                >
+                <label htmlFor="primaryEmail" className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
                   Primary Email
                 </label>
                 <input
@@ -279,19 +244,12 @@ function AddTalentModal({ open, onClose, onSuccess }) {
                   className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
                   placeholder="Optional - link to existing user"
                 />
-                <p className="mt-1 text-xs text-brand-black/50">
-                  Optional. If provided, must match an existing user account.
-                </p>
               </div>
             </div>
 
-            {/* Representation Type and Status - Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label 
-                  htmlFor="representationType"
-                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
-                >
+                <label htmlFor="representationType" className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
                   Representation Type
                 </label>
                 <select
@@ -309,10 +267,7 @@ function AddTalentModal({ open, onClose, onSuccess }) {
               </div>
 
               <div>
-                <label 
-                  htmlFor="status"
-                  className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
-                >
+                <label htmlFor="status" className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
                   Status
                 </label>
                 <select
@@ -330,12 +285,8 @@ function AddTalentModal({ open, onClose, onSuccess }) {
               </div>
             </div>
 
-            {/* Internal Notes */}
             <div>
-              <label 
-                htmlFor="notes"
-                className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2"
-              >
+              <label htmlFor="notes" className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
                 Internal Notes
               </label>
               <textarea
@@ -350,13 +301,12 @@ function AddTalentModal({ open, onClose, onSuccess }) {
           </form>
         </div>
 
-        {/* Footer */}
         <div className="border-t border-brand-black/10 px-8 py-6 bg-brand-white">
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-brand-black/20 px-6 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5 hover:text-brand-black transition-colors"
+              className="rounded-full border border-brand-black/20 px-6 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 hover:bg-brand-black/5"
             >
               Cancel
             </button>
@@ -364,7 +314,7 @@ function AddTalentModal({ open, onClose, onSuccess }) {
               type="submit"
               form="add-talent-form"
               disabled={saving}
-              className="rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black disabled:opacity-50"
             >
               {saving ? "Creating..." : "Create Talent"}
             </button>
@@ -381,31 +331,23 @@ export function AdminTalentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [typeFilter, setTypeFilter] = useState("ALL");
 
   const fetchTalents = async () => {
     try {
       setLoading(true);
       setError("");
-      console.log("[TALENT] Fetching talent list...");
       const response = await apiFetch("/api/admin/talent");
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("[TALENT] Error response:", response.status, errorData);
         throw new Error(errorData.message || errorData.error || `Failed to fetch talent (${response.status})`);
       }
       
       const data = await response.json();
-      console.log("[TALENT] Fetched data:", data);
-      console.log("[TALENT] Data type:", typeof data, "Is array:", Array.isArray(data));
-      
-      // Use shared helper to normalize API responses (consistent with other pages)
       const talentsArray = normalizeApiArray(data, 'talents');
-      
-      console.log("[TALENT] Parsed talents array:", talentsArray.length, "talents");
-      if (talentsArray.length > 0) {
-        console.log("[TALENT] First talent:", talentsArray[0]);
-      }
       setTalents(talentsArray);
     } catch (err) {
       console.error("[TALENT] Error fetching talent:", err);
@@ -420,6 +362,20 @@ export function AdminTalentPage() {
     fetchTalents();
   }, []);
 
+  const filteredTalents = useMemo(() => {
+    return talents.filter((talent) => {
+      const matchesSearch = !searchQuery || 
+        (talent.displayName || talent.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (talent.linkedUser?.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (talent.primarySocialHandle || "").toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === "ALL" || (talent.status || "ACTIVE") === statusFilter;
+      const matchesType = typeFilter === "ALL" || (talent.representationType || "NON_EXCLUSIVE") === typeFilter;
+      
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [talents, searchQuery, statusFilter, typeFilter]);
+
   const handleRowClick = (talentId) => {
     navigate(`/admin/talent/${talentId}`);
   };
@@ -427,138 +383,181 @@ export function AdminTalentPage() {
   return (
     <DashboardShell
       title="Talent Management"
-      subtitle="Manage all talent records, representation types, and relationships. Talent can exist independently of user accounts."
+      subtitle="Manage all talent records, representation types, and relationships"
       navLinks={ADMIN_NAV_LINKS}
     >
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-brand-black/60">
-            {talents.length} {talents.length === 1 ? "talent" : "talents"}
-          </p>
+      {/* Header with filters and add button */}
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-brand-black/60">
+              {filteredTalents.length} {filteredTalents.length === 1 ? "talent" : "talents"}
+              {searchQuery || statusFilter !== "ALL" || typeFilter !== "ALL" ? ` (filtered from ${talents.length})` : ""}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Talent
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setAddModalOpen(true)}
-          className="flex items-center gap-2 rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Add New Talent
-        </button>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex-1 min-w-[200px] relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-brand-black/40" />
+            <input
+              type="text"
+              placeholder="Search by name, email, or handle..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 rounded-2xl border border-brand-black/10 bg-brand-white text-sm focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
+          >
+            <option value="ALL">All Statuses</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
+          >
+            <option value="ALL">All Types</option>
+            {REPRESENTATION_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
+      {/* Loading State */}
       {loading && (
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-8 text-center">
           <p className="text-brand-black/60">Loading talent...</p>
         </section>
       )}
 
+      {/* Error State */}
       {error && !loading && (
         <section className="rounded-3xl border border-brand-red/20 bg-brand-red/10 p-8 text-center">
           <p className="text-brand-red">{error}</p>
         </section>
       )}
 
-      {!loading && !error && talents.length === 0 && (
+      {/* Empty State */}
+      {!loading && !error && filteredTalents.length === 0 && (
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-12 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-brand-black/10 bg-brand-linen/50">
             <User className="h-8 w-8 text-brand-black/40" />
           </div>
-          <h3 className="font-display text-xl uppercase mb-2">No talent yet</h3>
+          <h3 className="font-display text-xl uppercase mb-2">
+            {talents.length === 0 ? "No talent yet" : "No matching talent"}
+          </h3>
           <p className="text-sm text-brand-black/60 mb-6">
-            Create your first talent record to start managing representation and relationships.
+            {talents.length === 0 
+              ? "Create your first talent record to start managing representation and relationships."
+              : "Try adjusting your search or filters."}
           </p>
-          <button
-            type="button"
-            onClick={() => setAddModalOpen(true)}
-            className="rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black"
-          >
-            <Plus className="inline h-4 w-4 mr-2" />
-            Add New Talent
-          </button>
+          {talents.length === 0 && (
+            <button
+              type="button"
+              onClick={() => setAddModalOpen(true)}
+              className="rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black"
+            >
+              <Plus className="inline h-4 w-4 mr-2" />
+              Add New Talent
+            </button>
+          )}
         </section>
       )}
 
-      {!loading && !error && talents.length > 0 && (
+      {/* Talent Table - Responsive Grid Layout */}
+      {!loading && !error && filteredTalents.length > 0 && (
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white overflow-hidden">
-          <table className="w-full text-left text-sm text-brand-black/80">
-            <thead>
-              <tr>
-                <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[25%]">
-                  Talent Name
-                </th>
-                <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[15%]">
-                  Type
-                </th>
-                <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[10%]">
-                  Status
-                </th>
-                <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[20%]">
-                  Linked User
-                </th>
-                <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[15%]">
-                  Metrics
-                </th>
-                <th className="border-b border-brand-black/10 px-4 py-3 text-right w-[15%]">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {talents.map((talent) => (
-                <tr
-                  key={talent.id}
-                  onClick={() => handleRowClick(talent.id)}
-                  className="cursor-pointer hover:bg-brand-black/5 transition-colors"
-                >
-                  <td className="border-b border-brand-black/5 px-4 py-4">
-                    <div className="font-semibold text-brand-black">{talent.displayName || talent.name}</div>
-                  </td>
-                  <td className="border-b border-brand-black/5 px-4 py-4">
-                    <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
-                  </td>
-                  <td className="border-b border-brand-black/5 px-4 py-4">
-                    <div className="flex items-center">
-                      <StatusBadge status={talent.status || "ACTIVE"} />
-                      <span className="text-xs uppercase tracking-[0.2em]">
-                        {talent.status || "ACTIVE"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="border-b border-brand-black/5 px-4 py-4">
-                    {talent.linkedUser ? (
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-brand-black/40" />
-                        <span className="text-sm">{talent.linkedUser.email}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-brand-black/40">
-                        <UserX className="h-4 w-4" />
-                        <span className="text-xs italic">Not linked</span>
-                      </div>
-                    )}
-                  </td>
-                  <td className="border-b border-brand-black/5 px-4 py-4">
-                    <div className="text-xs text-brand-black/60">
-                      <div>{talent.metrics?.activeDeals || 0} active deals</div>
-                      <div>{talent.metrics?.openOpportunities || 0} opportunities</div>
-                    </div>
-                  </td>
-                  <td className="border-b border-brand-black/5 px-4 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRowClick(talent.id);
-                      }}
-                      className="rounded-full border border-brand-black/20 px-3 py-1 text-xs uppercase tracking-[0.2em] hover:bg-brand-black/5"
-                    >
-                      View
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 z-10 bg-brand-white border-b border-brand-black/10">
+                <tr>
+                  <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
+                    Talent
+                  </th>
+                  <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
+                    Linked User
+                  </th>
+                  <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
+                    Metrics
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredTalents.map((talent) => (
+                  <tr
+                    key={talent.id}
+                    onClick={() => handleRowClick(talent.id)}
+                    className="cursor-pointer hover:bg-brand-black/5 transition-colors border-b border-brand-black/5"
+                  >
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar user={talent.linkedUser} name={talent.displayName || talent.name} />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-brand-black truncate">
+                            {talent.displayName || talent.name}
+                          </div>
+                          {talent.primarySocialHandle && (
+                            <SocialHandle 
+                              handle={talent.primarySocialHandle} 
+                              platform={talent.socialAccounts?.find(s => s.handle === talent.primarySocialHandle)?.platform}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
+                    </td>
+                    <td className="px-4 py-4">
+                      <StatusBadge status={talent.status || "ACTIVE"} />
+                    </td>
+                    <td className="px-4 py-4">
+                      {talent.linkedUser ? (
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-brand-black/40" />
+                          <span className="text-sm truncate max-w-[200px]">{talent.linkedUser.email}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-brand-black/40">
+                          <UserX className="h-4 w-4" />
+                          <span className="text-xs italic">Not linked</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="text-xs text-brand-black/60 space-y-1">
+                        <div>{talent.metrics?.activeDeals || 0} active deals</div>
+                        <div>{talent.metrics?.openOpportunities || 0} opportunities</div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
@@ -570,4 +569,3 @@ export function AdminTalentPage() {
     </DashboardShell>
   );
 }
-

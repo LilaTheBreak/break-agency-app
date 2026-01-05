@@ -8,7 +8,7 @@ import {
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle 
+  ArrowLeft, Archive, AlertCircle, Plus
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
@@ -307,13 +307,60 @@ export function AdminTalentDetailPage() {
         </div>
       </div>
 
-      {/* Snapshot Overview */}
+      {/* Header Section with Profile Image and Social Handles */}
       <section className="mb-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Talent Snapshot</p>
-            <h3 className="font-display text-3xl uppercase mt-2">{talent.displayName || talent.name}</h3>
-            <div className="mt-4 flex items-center gap-4">
+        <div className="mb-6 flex items-start gap-6">
+          {/* Profile Image */}
+          <div className="flex-shrink-0">
+            {talent.linkedUser?.avatarUrl ? (
+              <img
+                src={talent.linkedUser.avatarUrl}
+                alt={talent.displayName || talent.name}
+                className="w-24 h-24 rounded-full object-cover border-2 border-brand-black/10"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-brand-red/10 flex items-center justify-center border-2 border-brand-black/10">
+                <span className="text-2xl font-semibold text-brand-red">
+                  {(talent.displayName || talent.name || "?").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                </span>
+              </div>
+            )}
+          </div>
+          
+          {/* Talent Info */}
+          <div className="flex-1 min-w-0">
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-2">Talent Profile</p>
+            <h3 className="font-display text-3xl uppercase mb-4">{talent.displayName || talent.name}</h3>
+            
+            {/* Social Handles */}
+            {talent.socialAccounts && talent.socialAccounts.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                {talent.socialAccounts.map((social) => {
+                  const platformIcon = {
+                    INSTAGRAM: "📷",
+                    TIKTOK: "🎵",
+                    YOUTUBE: "▶️",
+                    X: "🐦",
+                    LINKEDIN: "💼",
+                  }[social.platform] || "@";
+                  return (
+                    <a
+                      key={social.id}
+                      href={`https://${social.platform.toLowerCase()}.com/${social.handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-full border border-brand-black/10 px-3 py-1.5 text-xs hover:bg-brand-black/5 transition-colors"
+                    >
+                      <span>{platformIcon}</span>
+                      <span className="font-medium">@{social.handle}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+            
+            {/* Badges */}
+            <div className="flex items-center gap-4">
               <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
               <StatusBadge status={talent.status || "ACTIVE"} />
             </div>
@@ -549,31 +596,236 @@ function OpportunitiesTab({ talentId, isExclusive }) {
 
 function DealsTab({ talent }) {
   const deals = talent.deals || [];
+  const [stageFilter, setStageFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("dueDate");
+
+  // Map DealStage enum to display labels
+  const stageLabels = {
+    NEW_LEAD: "In discussion",
+    NEGOTIATION: "In discussion",
+    CONTRACT_SENT: "Awaiting contract",
+    CONTRACT_SIGNED: "Contract signed",
+    DELIVERABLES_IN_PROGRESS: "Live",
+    PAYMENT_PENDING: "Live",
+    PAYMENT_RECEIVED: "Completed",
+    COMPLETED: "Completed",
+    LOST: "Declined",
+  };
+
+  const filteredDeals = useMemo(() => {
+    let filtered = deals;
+    if (stageFilter !== "ALL") {
+      filtered = filtered.filter(d => d.stage === stageFilter);
+    }
+    return filtered;
+  }, [deals, stageFilter]);
+
+  const sortedDeals = useMemo(() => {
+    const sorted = [...filteredDeals];
+    if (sortBy === "dueDate") {
+      sorted.sort((a, b) => {
+        const dateA = a.expectedClose ? new Date(a.expectedClose) : new Date(0);
+        const dateB = b.expectedClose ? new Date(b.expectedClose) : new Date(0);
+        return dateA - dateB;
+      });
+    } else if (sortBy === "brand") {
+      sorted.sort((a, b) => {
+        const nameA = (a.brand?.name || a.brandName || "").toLowerCase();
+        const nameB = (b.brand?.name || b.brandName || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    }
+    return sorted;
+  }, [filteredDeals, sortBy]);
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    const pipeline = sortedDeals.filter(d => 
+      !["COMPLETED", "LOST", "PAYMENT_RECEIVED"].includes(d.stage)
+    );
+    const confirmed = sortedDeals.filter(d => 
+      ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(d.stage)
+    );
+    
+    const pipelineValue = pipeline.reduce((sum, d) => sum + (d.value || 0), 0);
+    const confirmedRevenue = confirmed.reduce((sum, d) => sum + (d.value || 0), 0);
+    
+    // Get payment status from Payment relation (if available in API response)
+    const paid = sortedDeals.filter(d => d.stage === "PAYMENT_RECEIVED" || d.stage === "COMPLETED");
+    const unpaid = sortedDeals.filter(d => 
+      ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(d.stage)
+    );
+    
+    const paidValue = paid.reduce((sum, d) => sum + (d.value || 0), 0);
+    const unpaidValue = unpaid.reduce((sum, d) => sum + (d.value || 0), 0);
+    
+    return { pipelineValue, confirmedRevenue, paidValue, unpaidValue };
+  }, [sortedDeals]);
 
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Deals</p>
-      {deals.length === 0 ? (
-        <p className="text-brand-black/60">No deals found for this talent.</p>
+      <div className="mb-6 flex items-center justify-between">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Deal Tracker</p>
+        <div className="flex items-center gap-3">
+          <select
+            value={stageFilter}
+            onChange={(e) => setStageFilter(e.target.value)}
+            className="rounded-2xl border border-brand-black/10 bg-brand-white px-3 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
+          >
+            <option value="ALL">All Stages</option>
+            <option value="NEW_LEAD">In discussion</option>
+            <option value="NEGOTIATION">In discussion</option>
+            <option value="CONTRACT_SENT">Awaiting contract</option>
+            <option value="CONTRACT_SIGNED">Contract signed</option>
+            <option value="DELIVERABLES_IN_PROGRESS">Live</option>
+            <option value="PAYMENT_PENDING">Live</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="LOST">Declined</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="rounded-2xl border border-brand-black/10 bg-brand-white px-3 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
+          >
+            <option value="dueDate">Sort by Due Date</option>
+            <option value="brand">Sort by Brand</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              // TODO: Open add deal modal
+              toast.info("Add deal functionality coming soon");
+            }}
+            className="flex items-center gap-2 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black"
+          >
+            <Plus className="h-4 w-4" />
+            Add Deal
+          </button>
+        </div>
+      </div>
+
+      {/* Totals Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Pipeline Value</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            {talent.revenue?.currency || "USD"} {totals.pipelineValue.toLocaleString()}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Confirmed Revenue</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            {talent.revenue?.currency || "USD"} {totals.confirmedRevenue.toLocaleString()}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Paid</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            {talent.revenue?.currency || "USD"} {totals.paidValue.toLocaleString()}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Unpaid</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            {talent.revenue?.currency || "USD"} {totals.unpaidValue.toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      {/* Deal Tracker Table */}
+      {sortedDeals.length === 0 ? (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <p className="text-brand-black/60">
+            {deals.length === 0 
+              ? "No deals found for this talent."
+              : "No deals match the current filter."}
+          </p>
+        </div>
       ) : (
-        <div className="space-y-3">
-          {deals.map((deal) => (
-            <div key={deal.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-brand-black">{deal.title}</p>
-                  {deal.brand && (
-                    <p className="text-xs text-brand-black/60 mt-1">Brand: {deal.brand.name}</p>
-                  )}
-                  <p className="text-xs text-brand-black/60 mt-1">Status: {deal.status}</p>
-                  {deal.value && (
-                    <p className="text-xs text-brand-black/60 mt-1">Value: £{deal.value}</p>
-                  )}
-                </div>
-                <DealChip deal={deal} />
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-brand-white border-b border-brand-black/10">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Brand</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Scope of Work</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Currency</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Fee</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Stage</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Due Date</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Payment Status</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedDeals.map((deal) => {
+                // Get scope from Deliverable or notes
+                const scope = deal.Deliverable?.[0]?.title || deal.aiSummary || deal.notes || "—";
+                const dueDate = deal.expectedClose 
+                  ? new Date(deal.expectedClose).toLocaleDateString()
+                  : "—";
+                
+                // Determine payment status from Payment relation or stage
+                let paymentStatus = "Pending";
+                if (deal.stage === "PAYMENT_RECEIVED" || deal.stage === "COMPLETED") {
+                  paymentStatus = "Paid";
+                } else if (deal.stage === "PAYMENT_PENDING") {
+                  paymentStatus = "Unpaid";
+                } else if (["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS"].includes(deal.stage)) {
+                  paymentStatus = "Awaiting";
+                }
+
+                return (
+                  <tr key={deal.id} className="border-b border-brand-black/5 hover:bg-brand-black/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-brand-black">
+                        {deal.brand?.name || deal.brandName || "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-brand-black/80 text-xs max-w-[200px] truncate block" title={scope}>
+                        {scope}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-brand-black/60 uppercase text-xs">{deal.currency || "USD"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-brand-black">
+                        {deal.value ? `${deal.currency || "USD"} ${deal.value.toLocaleString()}` : "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
+                        deal.stage === "COMPLETED" ? "bg-green-100 text-green-700" :
+                        deal.stage === "LOST" ? "bg-gray-100 text-gray-700" :
+                        ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(deal.stage) ? "bg-blue-100 text-blue-700" :
+                        "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {stageLabels[deal.stage] || deal.stage}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-brand-black/60 text-xs">{dueDate}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                        paymentStatus === "Paid" ? "bg-green-100 text-green-700" :
+                        paymentStatus === "Unpaid" ? "bg-red-100 text-red-700" :
+                        "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {paymentStatus}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-brand-black/60 text-xs max-w-[200px] truncate block" title={deal.notes || ""}>
+                        {deal.notes || "—"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </section>

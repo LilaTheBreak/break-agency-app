@@ -111,6 +111,27 @@ router.get("/", async (req: Request, res: Response) => {
               console.warn("[TALENT] Failed to fetch CreatorTasks for talent", talent.id);
             }
             
+            // Fetch social accounts for primary handle display
+            let socialAccounts = [];
+            let primarySocialHandle = null;
+            try {
+              socialAccounts = await prisma.socialAccountConnection.findMany({
+                where: { creatorId: talent.id, connected: true },
+                select: {
+                  platform: true,
+                  handle: true,
+                },
+                orderBy: { createdAt: "asc" },
+                take: 5, // Limit to primary platforms
+              });
+              // Get first available handle as primary (prefer Instagram, then TikTok, then others)
+              const instagram = socialAccounts.find(s => s.platform === "INSTAGRAM");
+              const tiktok = socialAccounts.find(s => s.platform === "TIKTOK");
+              primarySocialHandle = instagram?.handle || tiktok?.handle || socialAccounts[0]?.handle || null;
+            } catch (socialError) {
+              console.warn("[TALENT] Failed to fetch social accounts for talent", talent.id);
+            }
+            
             return {
               id: talent.id,
               name: talent.name || "Unknown",
@@ -125,6 +146,8 @@ router.get("/", async (req: Request, res: Response) => {
                     avatarUrl: userData.avatarUrl,
                   }
                 : null,
+              socialAccounts,
+              primarySocialHandle,
               managerId: null,
               metrics: {
                 openOpportunities: 0, // Will be calculated below
@@ -358,7 +381,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     }
 
     // Fetch relations separately with ordering (findUnique doesn't support orderBy on relations)
-    const [deals, tasks, payments, payouts] = await Promise.all([
+    const [deals, tasks, payments, payouts, socialAccounts] = await Promise.all([
       prisma.deal.findMany({
         where: { talentId: id },
         include: {
@@ -394,6 +417,17 @@ router.get("/:id", async (req: Request, res: Response) => {
         },
         take: 20,
       }),
+      prisma.socialAccountConnection.findMany({
+        where: { creatorId: id, connected: true },
+        select: {
+          id: true,
+          platform: true,
+          handle: true,
+          connected: true,
+          lastSyncedAt: true,
+        },
+        orderBy: { createdAt: "asc" },
+      }),
     ]);
 
     // Attach relations to talent object
@@ -403,6 +437,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       CreatorTask: tasks,
       Payment: payments,
       Payout: payouts,
+      socialAccounts,
     };
 
     // Calculate snapshot metrics (use talentWithRelations instead of talent)
