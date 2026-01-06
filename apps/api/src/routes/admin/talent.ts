@@ -1235,7 +1235,8 @@ router.delete("/:id", async (req: Request, res: Response) => {
       console.error("[TALENT DELETE] Failed to log talent deletion:", logError);
     }
 
-    sendSuccess(res, { message: "Talent deleted successfully" }, 204);
+    // Always return 200 with JSON body - never 204 No Content
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error("[TALENT DELETE ERROR]", {
       message: error instanceof Error ? error.message : String(error),

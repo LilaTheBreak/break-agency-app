@@ -119,7 +119,8 @@ export async function deleteContract(
   try {
     const { id } = req.params;
     await contractService.remove(id);
-    res.status(204).send();
+    // Always return 200 with JSON - never 204 No Content
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }

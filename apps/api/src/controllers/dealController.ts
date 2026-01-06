@@ -76,7 +76,8 @@ export async function deleteDeal(req: Request, res: Response, next: NextFunction
     if (!success) {
       return res.status(404).json({ error: "Deal not found or insufficient permissions" });
     }
-    res.status(204).send();
+    // Always return 200 with JSON - never 204 No Content
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }

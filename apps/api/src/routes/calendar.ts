@@ -287,7 +287,8 @@ router.delete("/events/:id", async (req: Request, res: Response) => {
       startAt: eventToDelete.startAt,
     });
 
-    res.status(204).send(); // No content
+    // Always return 200 with JSON - never 204 No Content
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error("Failed to delete calendar event:", error);
     res.status(500).json({ success: false, error: "Could not delete event." });

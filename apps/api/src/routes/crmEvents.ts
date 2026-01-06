@@ -386,7 +386,8 @@ router.delete("/:id", async (req: Request, res: Response) => {
       console.error("Failed to log activity/audit:", logError);
     }
 
-    res.status(204).send();
+    // Always return 200 with JSON - never 204 No Content
+    res.status(200).json({ success: true });
   } catch (error) {
     logError("Failed to delete CRM event", error, { eventId: req.params.id, userId: req.user?.id });
     res.status(500).json({ 

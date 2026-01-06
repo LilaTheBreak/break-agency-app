@@ -26,12 +26,12 @@ router.post("/notification", async (req: Request, res: Response) => {
       });
     }
 
-    // Acknowledge receipt immediately
-    res.status(204).send();
+    // Acknowledge receipt immediately - always return 200 with JSON
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error("[GMAIL WEBHOOK] Error processing notification:", error);
-    // Still return 204 to acknowledge receipt and prevent retries
-    res.status(204).send();
+    // Still return 200 with JSON to acknowledge receipt and prevent retries
+    res.status(200).json({ success: true });
   }
 });
 
