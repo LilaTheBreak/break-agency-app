@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { fetchTalents, deleteTalent } from "../services/crmClient.js";
+import { apiFetch } from "../services/apiClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { Plus, User, UserX, Search, Filter, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -140,6 +141,7 @@ function AddTalentModal({ open, onClose, onSuccess }) {
         throw new Error(errorData.message || errorData.error || `Failed to create talent (${response.status})`);
       }
 
+      const result = await response.json();
       toast.success("Talent created successfully");
       await new Promise(resolve => setTimeout(resolve, 1000));
       await onSuccess();
@@ -155,6 +157,7 @@ function AddTalentModal({ open, onClose, onSuccess }) {
         notes: "",
       });
     } catch (err) {
+      console.error("CREATE TALENT FAILED", err);
       setError(err.message || "Failed to create talent");
       toast.error(err.message || "Failed to create talent");
     } finally {
