@@ -286,26 +286,9 @@ function App() {
   const [splashFade, setSplashFade] = useState(false);
   const remoteMessaging = useRemoteMessaging(session);
   
-  // TEMPORARY — SENTRY VERIFICATION: Force a guaranteed Sentry event on app mount
-  // Note: Using window.location.pathname since we're outside Router context here
-  useEffect(() => {
-    try {
-      Sentry.captureException(
-        new Error("Sentry frontend HARD verification test - app mount"),
-        {
-          level: "info",
-          tags: {
-            verification: "hard_test",
-            source: "app_mount",
-            route: typeof window !== "undefined" ? window.location.pathname : "/",
-          },
-        }
-      );
-      console.log("[Sentry] Hard verification event sent from App.jsx on mount");
-    } catch (error) {
-      console.warn("[Sentry] Failed to send hard verification event:", error);
-    }
-  }, []); // Run once on mount
+  // Removed: TEMPORARY Sentry verification test (was flooding production with fake errors)
+  // This verification test was left in production code and caused Sentry signal pollution.
+  // Real errors are now visible again.
 
   useEffect(() => {
     if (session && authModalOpen) {
