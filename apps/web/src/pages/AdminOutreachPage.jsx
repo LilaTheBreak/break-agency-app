@@ -7,6 +7,7 @@ import { CampaignChip } from "../components/CampaignChip.jsx";
 import DeckDrawer from "../components/DeckDrawer.jsx";
 import DealAIPanel from "../components/DealAIPanel.jsx";
 import GmailThreadLinker from "../components/GmailThreadLinker.jsx";
+import { apiFetch } from "../services/apiClient.js";
 import { linkDealToCampaign, unlinkDealFromCampaign, fetchCampaigns, fetchDeals, createDeal } from "../services/crmClient.js";
 import {
   fetchOutreachRecords,
