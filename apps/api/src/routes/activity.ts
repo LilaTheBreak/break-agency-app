@@ -14,6 +14,11 @@ router.get("/", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req: R
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 5, 100);
 
+    // Safety check: ensure limit is a valid number
+    if (!Number.isFinite(limit) || limit < 1) {
+      return sendList(res, []);
+    }
+
     // Note: adminActivity model doesn't exist - using AuditLog instead
     const activity = await prisma.auditLog.findMany({
       where: {
@@ -25,9 +30,12 @@ router.get("/", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req: R
       },
     });
 
+    // Ensure activity is always an array
+    const safeActivity = Array.isArray(activity) ? activity : [];
+
     // Manually fetch user data if userId exists (defensive approach)
     const activityWithUsers = await Promise.all(
-      activity.map(async (item: any) => {
+      safeActivity.map(async (item: any) => {
         if (item.userId) {
           try {
             const user = await prisma.user.findUnique({
@@ -43,14 +51,18 @@ router.get("/", requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req: R
       })
     );
 
-    sendList(res, activityWithUsers || []);
+    // Ensure activityWithUsers is always an array before sending
+    const safeActivityWithUsers = Array.isArray(activityWithUsers) ? activityWithUsers : [];
+    sendList(res, safeActivityWithUsers);
   } catch (error) {
-    // Graceful degradation: return empty array instead of 500
-    logError("Failed to fetch activity feed", error, { userId: req.user?.id });
+    // Log the error with Prisma error code if available
+    logError("Failed to fetch activity feed", error, { userId: req.user?.id, code: (error as any)?.code });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
-      tags: { route: '/activity', method: 'GET' },
+      tags: { route: '/activity', method: 'GET', prismaCode: (error as any)?.code },
     });
-    sendEmptyList(res);
+    // Return empty array instead of 500 - graceful degradation
+    // Activity feed is non-critical, should not crash the dashboard
+    return sendList(res, []);
   }
 });
 

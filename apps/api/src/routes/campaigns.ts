@@ -5,7 +5,9 @@ import { SessionUser } from "../lib/session.js"; // Import SessionUser type
 import { z } from "zod";
 import { isSuperAdmin, isAdmin, isManager } from "../lib/roleHelpers.js";
 import { logError } from "../lib/logger.js";
-import { sendSuccess, sendList, sendEmptyList } from "../utils/apiResponse.js";
+import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from "../utils/apiResponse.js";
+import { validateRequestSafe, CampaignCreateSchema } from "../utils/validationSchemas.js";
+import * as Sentry from "@sentry/node";
 
 const router = Router();
 
@@ -93,11 +95,7 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     
     // Non-admin users requesting 'all' get empty array (graceful degradation)
     if (targetId === "all" && !isAdmin(requester)) {
-      logError("Failed to fetch campaigns", error, { userId: req.user?.id });
-      return res.status(500).json({ 
-        error: "Failed to fetch campaigns",
-        message: error instanceof Error ? error.message : "Unknown error"
-      });
+      return sendEmptyList(res);
     }
     
     // Build where clause
@@ -118,13 +116,22 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
       take: 25
     });
     
+    // Ensure campaigns is always an array (safe against null/undefined)
+    const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    
     // Format and return
-    const formatted = campaigns.map((campaign) => formatCampaign(campaign));
-    sendList(res, formatted || []);
+    const formatted = safeCampaigns.map((campaign) => formatCampaign(campaign));
+    sendList(res, formatted);
   } catch (error) {
-    // Always return empty list on error - never crash dashboard
+    // Log with explicit error code
     logError("Failed to fetch campaigns", error, { userId: req.user?.id, targetId });
-    sendEmptyList(res);
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/campaigns/user/:userId', method: 'GET' },
+    });
+    return res.status(500).json({
+      error: "CAMPAIGNS_QUERY_FAILED",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
