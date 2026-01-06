@@ -11,6 +11,25 @@ import { MEETING_SUMMARIES } from "./constants/meetingSummaries.js";
 import { initSentry } from "./lib/sentry.js";
 import { getAllFeatureFlags } from "./config/features.js";
 
+// ASSET HARDENING: Validate that asset strategy is correct
+import { asset } from "./lib/assetHelper.js";
+
+// Verify core logo loads from correct origin (not API domain)
+if (typeof window !== "undefined" && import.meta.env.MODE === "development") {
+  try {
+    const logoPath = asset("/White Logo.png");
+    if (logoPath.includes("breakagencyapi") || logoPath.includes("railway.app")) {
+      throw new Error(
+        `[ASSET REGRESSION] Logo path resolved to API domain: ${logoPath}`
+      );
+    }
+    console.log("[assetHelper] ✅ Asset paths validated - loading from frontend origin");
+  } catch (e) {
+    console.error("[FATAL] Asset configuration error:", e);
+    throw e;
+  }
+}
+
 // Capture feature flags snapshot for error context
 if (typeof window !== "undefined") {
   try {

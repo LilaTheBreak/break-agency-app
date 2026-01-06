@@ -1,9 +1,20 @@
 import React from "react";
+import { asset } from "../lib/assetHelper.js";
 
+/**
+ * LOGO COMPONENT - Asset Strategy
+ * 
+ * ✅ CORRECT: Logo paths use absolute root-relative paths
+ * These load from the frontend origin (www.tbctbctbc.online),
+ * never from the API domain (railway.app).
+ * 
+ * If VITE_API_URL ever changed, logos would still load correctly
+ * because they don't depend on env vars.
+ */
 const LOGO_SOURCES = {
-  light: "/White Logo.png",
-  dark: "/Black Logo.png",
-  mark: "/B Logo Mark.png"
+  light: asset("/White Logo.png"),
+  dark: asset("/Black Logo.png"),
+  mark: asset("/B Logo Mark.png")
 };
 
 export function LogoWordmark({ variant = "light", className = "", ...props }) {
