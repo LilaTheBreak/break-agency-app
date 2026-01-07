@@ -14,7 +14,8 @@ import { asset } from "../lib/assetHelper.js";
 const LOGO_SOURCES = {
   light: asset("/White Logo.png"),
   dark: asset("/Black Logo.png"),
-  mark: asset("/B Logo Mark.png")
+  // Note: B Logo Mark icon doesn't exist yet; using Black Logo as fallback
+  mark: asset("/Black Logo.png")
 };
 
 export function LogoWordmark({ variant = "light", className = "", ...props }) {
