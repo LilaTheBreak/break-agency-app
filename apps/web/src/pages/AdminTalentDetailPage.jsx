@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
-import { fetchTalent } from "../services/crmClient.js";
+import { fetchTalent, createDeal } from "../services/crmClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { 
   User, UserX, Edit2, Link2, Unlink, 
@@ -1362,6 +1362,95 @@ function DealsTab({ talent }) {
   const deals = talent.deals || [];
   const [stageFilter, setStageFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("dueDate");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    dealName: "",
+    brandId: "",
+    status: "NEW_LEAD",
+    estimatedValue: "",
+    currency: "USD",
+    expectedCloseDate: "",
+    notes: ""
+  });
+  const [createError, setCreateError] = useState("");
+  const [brands, setBrands] = useState([]);
+  const [brandsLoading, setBrandsLoading] = useState(false);
+
+  // Load brands when modal opens
+  useEffect(() => {
+    if (!createOpen) return;
+    
+    const loadBrands = async () => {
+      setBrandsLoading(true);
+      try {
+        const response = await apiFetch("/api/admin/brands?limit=100");
+        if (response.ok) {
+          const data = await response.json();
+          setBrands(Array.isArray(data.brands) ? data.brands : (Array.isArray(data) ? data : []));
+        }
+      } catch (err) {
+        console.error("[BRANDS] Load error:", err);
+      } finally {
+        setBrandsLoading(false);
+      }
+    };
+    
+    loadBrands();
+  }, [createOpen]);
+
+  const handleCreateDeal = async () => {
+    setCreateError("");
+    
+    if (!createForm.dealName.trim()) {
+      setCreateError("Deal name is required");
+      return;
+    }
+    if (!createForm.brandId) {
+      setCreateError("Brand is required");
+      return;
+    }
+
+    const dealPayload = {
+      dealName: createForm.dealName.trim(),
+      brandId: createForm.brandId,
+      userId: "", // Will be set by API
+      talentId: talent.id,
+      status: createForm.status,
+      estimatedValue: createForm.estimatedValue ? parseFloat(createForm.estimatedValue) : null,
+      currency: createForm.currency || "USD",
+      expectedCloseDate: createForm.expectedCloseDate || null,
+      notes: createForm.notes || null,
+    };
+
+    try {
+      const created = await createDeal(dealPayload);
+      if (!created || !created.id) {
+        throw new Error("Server returned no deal data");
+      }
+      
+      toast.success("Deal created successfully");
+      setCreateOpen(false);
+      
+      // Reset form
+      setCreateForm({
+        dealName: "",
+        brandId: "",
+        status: "NEW_LEAD",
+        estimatedValue: "",
+        currency: "USD",
+        expectedCloseDate: "",
+        notes: ""
+      });
+      
+      // Refresh talent data by navigating to trigger a reload
+      // This is a workaround since we don't have direct access to refresh talent here
+      window.location.reload();
+    } catch (err) {
+      console.error("[CREATE DEAL ERROR]", err);
+      setCreateError("Failed to create deal: " + (err.message || "Unknown error"));
+      toast.error("Failed to create deal: " + err.message);
+    }
+  };
 
   // Map DealStage enum to display labels
   const stageLabels = {
@@ -1456,10 +1545,7 @@ function DealsTab({ talent }) {
           </select>
           <button
             type="button"
-            onClick={() => {
-              // TODO: Open add deal modal
-              toast.info("Add deal functionality coming soon");
-            }}
+            onClick={() => setCreateOpen(true)}
             className="flex items-center gap-2 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black"
           >
             <Plus className="h-4 w-4" />
@@ -1590,6 +1676,171 @@ function DealsTab({ talent }) {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Add Deal Modal */}
+      {createOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative w-full max-w-md rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-xl">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setCreateOpen(false)}
+              className="absolute right-4 top-4 text-brand-black/40 hover:text-brand-black"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Title */}
+            <h2 className="mb-4 font-subtitle text-base uppercase tracking-[0.35em] text-brand-red">Create New Deal</h2>
+
+            {/* Error Message */}
+            {createError && (
+              <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3">
+                <p className="text-sm text-red-700">{createError}</p>
+              </div>
+            )}
+
+            {/* Form */}
+            <div className="space-y-4">
+              {/* Deal Name */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                  Deal Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter deal name"
+                  value={createForm.dealName}
+                  onChange={(e) => setCreateForm({...createForm, dealName: e.target.value})}
+                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+              </div>
+
+              {/* Brand Selection */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                  Brand *
+                </label>
+                <select
+                  value={createForm.brandId}
+                  onChange={(e) => setCreateForm({...createForm, brandId: e.target.value})}
+                  disabled={brandsLoading}
+                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none disabled:opacity-50"
+                >
+                  <option value="">{brandsLoading ? "Loading brands..." : "Select a brand"}</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                  Stage
+                </label>
+                <select
+                  value={createForm.status}
+                  onChange={(e) => setCreateForm({...createForm, status: e.target.value})}
+                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                >
+                  <option value="NEW_LEAD">In discussion</option>
+                  <option value="NEGOTIATION">Negotiation</option>
+                  <option value="CONTRACT_SENT">Contract Sent</option>
+                  <option value="CONTRACT_SIGNED">Contract Signed</option>
+                  <option value="DELIVERABLES_IN_PROGRESS">Deliverables In Progress</option>
+                  <option value="PAYMENT_PENDING">Payment Pending</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="LOST">Declined</option>
+                </select>
+              </div>
+
+              {/* Estimated Value */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                    Estimated Value
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={createForm.estimatedValue}
+                    onChange={(e) => setCreateForm({...createForm, estimatedValue: e.target.value})}
+                    className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                  />
+                </div>
+
+                {/* Currency */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                    Currency
+                  </label>
+                  <select
+                    value={createForm.currency}
+                    onChange={(e) => setCreateForm({...createForm, currency: e.target.value})}
+                    className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="CAD">CAD</option>
+                    <option value="AUD">AUD</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Expected Close Date */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                  Expected Close Date
+                </label>
+                <input
+                  type="date"
+                  value={createForm.expectedCloseDate}
+                  onChange={(e) => setCreateForm({...createForm, expectedCloseDate: e.target.value})}
+                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                  Notes
+                </label>
+                <textarea
+                  placeholder="Add notes about this deal..."
+                  value={createForm.notes}
+                  onChange={(e) => setCreateForm({...createForm, notes: e.target.value})}
+                  rows={3}
+                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCreateOpen(false)}
+                className="flex-1 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-black/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateDeal}
+                className="flex-1 rounded-lg bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-brand-black transition-colors"
+              >
+                Create Deal
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>
