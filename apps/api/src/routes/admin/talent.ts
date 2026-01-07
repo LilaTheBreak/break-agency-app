@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import { requireRole } from "../../middleware/requireRole.js";
 import prisma from "../../lib/prisma.js";
+import { TaskStatus } from "@prisma/client";
 import { z } from "zod";
 import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
 import { logAdminActivity } from "../../lib/adminActivityLogger.js";
@@ -1282,5 +1283,383 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// ============================================
+// TALENT EMAILS
+// ============================================
+
+/**
+ * POST /api/admin/talent/:id/emails
+ * Add a new email to a talent
+ */
+router.post("/:id/emails", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { email, label, isPrimary } = req.body;
+
+    // Validate talent exists
+    const talent = await prisma.talent.findUnique({ where: { id } });
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Validate email format
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return sendError(res, "INVALID_INPUT", "Invalid email address", 400);
+    }
+
+    // If marking as primary, unmark others
+    if (isPrimary) {
+      await prisma.talentEmail.updateMany({
+        where: { talentId: id, isPrimary: true },
+        data: { isPrimary: false },
+      });
+    }
+
+    const talentEmail = await prisma.talentEmail.create({
+      data: {
+        talentId: id,
+        email,
+        label: label || null,
+        isPrimary: isPrimary || false,
+      },
+    });
+
+    await logAdminActivity(req, {
+      action: "TALENT_EMAIL_ADDED",
+      entityType: "TalentEmail",
+      entityId: talentEmail.id,
+      metadata: { talentId: id, email, isPrimary },
+    });
+
+    res.status(201).json(talentEmail);
+  } catch (error) {
+    console.error("[TALENT EMAIL POST ERROR]", error);
+    handleApiError(res, error, "Failed to add email", "EMAIL_ADD_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/emails
+ * Get all emails for a talent
+ */
+router.get("/:id/emails", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const emails = await prisma.talentEmail.findMany({
+      where: { talentId: id },
+      orderBy: { isPrimary: "desc" },
+    });
+
+    res.json(emails);
+  } catch (error) {
+    console.error("[TALENT EMAILS GET ERROR]", error);
+    handleApiError(res, error, "Failed to fetch emails", "EMAILS_FETCH_FAILED");
+  }
+});
+
+/**
+ * PATCH /api/admin/talent/emails/:emailId
+ * Update an email
+ */
+router.patch("/emails/:emailId", async (req: Request, res: Response) => {
+  try {
+    const { emailId } = req.params;
+    const { label, isPrimary } = req.body;
+
+    const talentEmail = await prisma.talentEmail.findUnique({ where: { id: emailId } });
+    if (!talentEmail) {
+      return sendError(res, "NOT_FOUND", "Email not found", 404);
+    }
+
+    // If marking as primary, unmark others for same talent
+    if (isPrimary) {
+      await prisma.talentEmail.updateMany({
+        where: { talentId: talentEmail.talentId, isPrimary: true, id: { not: emailId } },
+        data: { isPrimary: false },
+      });
+    }
+
+    const updated = await prisma.talentEmail.update({
+      where: { id: emailId },
+      data: {
+        ...(label !== undefined && { label }),
+        ...(isPrimary !== undefined && { isPrimary }),
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("[TALENT EMAIL PATCH ERROR]", error);
+    handleApiError(res, error, "Failed to update email", "EMAIL_UPDATE_FAILED");
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/emails/:emailId
+ * Delete an email
+ */
+router.delete("/emails/:emailId", async (req: Request, res: Response) => {
+  try {
+    const { emailId } = req.params;
+
+    const talentEmail = await prisma.talentEmail.findUnique({ where: { id: emailId } });
+    if (!talentEmail) {
+      return sendError(res, "NOT_FOUND", "Email not found", 404);
+    }
+
+    await prisma.talentEmail.delete({ where: { id: emailId } });
+
+    await logAdminActivity(req, {
+      action: "TALENT_EMAIL_DELETED",
+      entityType: "TalentEmail",
+      entityId: emailId,
+      metadata: { talentId: talentEmail.talentId },
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("[TALENT EMAIL DELETE ERROR]", error);
+    handleApiError(res, error, "Failed to delete email", "EMAIL_DELETE_FAILED");
+  }
+});
+
+// ============================================
+// TALENT TASKS
+// ============================================
+
+/**
+ * POST /api/admin/talent/:id/tasks
+ * Create a task for a talent
+ */
+router.post("/:id/tasks", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, notes, dueDate, status } = req.body;
+
+    // Validate talent exists
+    const talent = await prisma.talent.findUnique({ where: { id } });
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Validate title
+    if (!title || typeof title !== "string") {
+      return sendError(res, "INVALID_INPUT", "Title is required", 400);
+    }
+
+    const task = await prisma.talentTask.create({
+      data: {
+        talentId: id,
+        title,
+        notes: notes || null,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        status: status || "PENDING",
+        createdBy: req.user!.id,
+      },
+    });
+
+    await logAdminActivity(req, {
+      action: "TALENT_TASK_CREATED",
+      entityType: "TalentTask",
+      entityId: task.id,
+      metadata: { talentId: id, title, dueDate, status },
+    });
+
+    res.status(201).json(task);
+  } catch (error) {
+    console.error("[TALENT TASK POST ERROR]", error);
+    handleApiError(res, error, "Failed to create task", "TASK_CREATE_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/tasks
+ * Get all tasks for a talent
+ */
+router.get("/:id/tasks", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const tasks = await prisma.talentTask.findMany({
+      where: { talentId: id },
+      orderBy: { dueDate: "asc" },
+    });
+
+    res.json(tasks);
+  } catch (error) {
+    console.error("[TALENT TASKS GET ERROR]", error);
+    handleApiError(res, error, "Failed to fetch tasks", "TASKS_FETCH_FAILED");
+  }
+});
+
+/**
+ * PATCH /api/admin/talent/tasks/:taskId
+ * Update a task
+ */
+router.patch("/tasks/:taskId", async (req: Request, res: Response) => {
+  try {
+    const { taskId } = req.params;
+    const { title, notes, dueDate, status, completedAt } = req.body;
+
+    const task = await prisma.talentTask.findUnique({ where: { id: taskId } });
+    if (!task) {
+      return sendError(res, "NOT_FOUND", "Task not found", 404);
+    }
+
+    const updated = await prisma.talentTask.update({
+      where: { id: taskId },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(notes !== undefined && { notes }),
+        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+        ...(status !== undefined && { status }),
+        ...(completedAt !== undefined && { completedAt: completedAt ? new Date(completedAt) : null }),
+      },
+    });
+
+    await logAdminActivity(req, {
+      action: "TALENT_TASK_UPDATED",
+      entityType: "TalentTask",
+      entityId: taskId,
+      metadata: { talentId: task.talentId, status },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("[TALENT TASK PATCH ERROR]", error);
+    handleApiError(res, error, "Failed to update task", "TASK_UPDATE_FAILED");
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/tasks/:taskId
+ * Delete a task
+ */
+router.delete("/tasks/:taskId", async (req: Request, res: Response) => {
+  try {
+    const { taskId } = req.params;
+
+    const task = await prisma.talentTask.findUnique({ where: { id: taskId } });
+    if (!task) {
+      return sendError(res, "NOT_FOUND", "Task not found", 404);
+    }
+
+    await prisma.talentTask.delete({ where: { id: taskId } });
+
+    await logAdminActivity(req, {
+      action: "TALENT_TASK_DELETED",
+      entityType: "TalentTask",
+      entityId: taskId,
+      metadata: { talentId: task.talentId },
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("[TALENT TASK DELETE ERROR]", error);
+    handleApiError(res, error, "Failed to delete task", "TASK_DELETE_FAILED");
+  }
+});
+
+// ============================================
+// TALENT SOCIAL PROFILES
+// ============================================
+
+/**
+ * POST /api/admin/talent/:id/socials
+ * Add a social profile to a talent
+ */
+router.post("/:id/socials", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { platform, handle, url, followers } = req.body;
+
+    // Validate talent exists
+    const talent = await prisma.talent.findUnique({ where: { id } });
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Validate inputs
+    if (!platform || !handle || !url) {
+      return sendError(res, "INVALID_INPUT", "platform, handle, and url are required", 400);
+    }
+
+    const social = await prisma.talentSocial.create({
+      data: {
+        talentId: id,
+        platform,
+        handle,
+        url,
+        followers: followers || null,
+      },
+    });
+
+    await logAdminActivity(req, {
+      action: "TALENT_SOCIAL_ADDED",
+      entityType: "TalentSocial",
+      entityId: social.id,
+      metadata: { talentId: id, platform, handle },
+    });
+
+    res.status(201).json(social);
+  } catch (error) {
+    console.error("[TALENT SOCIAL POST ERROR]", error);
+    handleApiError(res, error, "Failed to add social profile", "SOCIAL_ADD_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/socials
+ * Get all social profiles for a talent
+ */
+router.get("/:id/socials", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const socials = await prisma.talentSocial.findMany({
+      where: { talentId: id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(socials);
+  } catch (error) {
+    console.error("[TALENT SOCIALS GET ERROR]", error);
+    handleApiError(res, error, "Failed to fetch social profiles", "SOCIALS_FETCH_FAILED");
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/socials/:socialId
+ * Delete a social profile
+ */
+router.delete("/socials/:socialId", async (req: Request, res: Response) => {
+  try {
+    const { socialId } = req.params;
+
+    const social = await prisma.talentSocial.findUnique({ where: { id: socialId } });
+    if (!social) {
+      return sendError(res, "NOT_FOUND", "Social profile not found", 404);
+    }
+
+    await prisma.talentSocial.delete({ where: { id: socialId } });
+
+    await logAdminActivity(req, {
+      action: "TALENT_SOCIAL_DELETED",
+      entityType: "TalentSocial",
+      entityId: socialId,
+      metadata: { talentId: social.talentId },
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("[TALENT SOCIAL DELETE ERROR]", error);
+    handleApiError(res, error, "Failed to delete social profile", "SOCIAL_DELETE_FAILED");
+  }
+});
+
 export default router;
+
+
+
 

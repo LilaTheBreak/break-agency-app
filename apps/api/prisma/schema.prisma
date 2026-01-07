@@ -1469,6 +1469,69 @@ model Talent {
   User                    User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   TalentAssignment        TalentAssignment[]
   WellnessCheckin         WellnessCheckin[]
+  TalentEmail             TalentEmail[]
+  TalentTask              TalentTask[]
+  TalentSocial            TalentSocial[]
+}
+
+model TalentEmail {
+  id        String   @id @default(cuid())
+  talentId  String
+  email     String
+  label     String?  // e.g. "Manager", "Assistant", "Personal"
+  isPrimary Boolean  @default(false)
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  talent Talent @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([talentId, email])
+  @@index([talentId])
+  @@index([email])
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model TalentTask {
+  id          String     @id @default(cuid())
+  talentId    String
+  title       String
+  notes       String?
+  dueDate     DateTime?
+  status      TaskStatus @default(PENDING)
+  createdBy   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  completedAt DateTime?
+
+  talent Talent @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@index([talentId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model TalentSocial {
+  id        String          @id @default(cuid())
+  talentId  String
+  platform  SocialPlatform
+  handle    String
+  url       String
+  followers Int?
+  verified  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  talent Talent @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([talentId, platform, handle])
+  @@index([talentId])
+  @@index([platform])
 }
 
 model TalentAssignment {
