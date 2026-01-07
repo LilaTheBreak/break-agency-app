@@ -977,6 +977,12 @@ export function AdminTalentDetailPage() {
           revenue: null,
         };
       }
+      
+      // Log deal data for debugging
+      if (sanitizedTalent?.deals && Array.isArray(sanitizedTalent.deals)) {
+        console.log("[Deals API] Talent " + talentId + " has " + sanitizedTalent.deals.length + " deals:", sanitizedTalent.deals);
+      }
+      
       setTalent(sanitizedTalent);
     } catch (err) {
       console.error("[TALENT] Error fetching talent:", {
@@ -1323,13 +1329,16 @@ function OpportunitiesTab({ talentId, isExclusive }) {
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
+        console.log("[Deals API] OpportunitiesTab fetching opportunities for talent: " + talentId);
         const response = await apiFetch(`/api/admin/talent/${talentId}/opportunities`);
         if (response.ok) {
           const data = await response.json();
-          setOpportunities(Array.isArray(data.opportunities) ? data.opportunities : []);
+          const opps = Array.isArray(data.opportunities) ? data.opportunities : [];
+          console.log("[Deals API] Fetched " + opps.length + " opportunities");
+          setOpportunities(opps);
         }
       } catch (err) {
-        console.error("Error fetching opportunities:", err);
+        console.error("[Deals API] Error fetching opportunities:", err);
       } finally {
         setLoading(false);
       }
@@ -1360,6 +1369,10 @@ function OpportunitiesTab({ talentId, isExclusive }) {
 
 function DealsTab({ talent }) {
   const deals = talent.deals || [];
+  
+  // Log deal data for debugging
+  console.log("[Deals API] DealsTab received " + deals.length + " deals from talent object");
+  
   const [stageFilter, setStageFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("dueDate");
   const [createOpen, setCreateOpen] = useState(false);
@@ -1893,13 +1906,16 @@ function ContractsTab({ talentId }) {
   useEffect(() => {
     const fetchContracts = async () => {
       try {
+        console.log("[Deals API] ContractsTab fetching contracts for talent: " + talentId);
         const response = await apiFetch(`/api/admin/talent/${talentId}/contracts`);
         if (response.ok) {
           const data = await response.json();
-          setContracts(Array.isArray(data.contracts) ? data.contracts : []);
+          const cnts = Array.isArray(data.contracts) ? data.contracts : [];
+          console.log("[Deals API] Fetched " + cnts.length + " contracts");
+          setContracts(cnts);
         }
       } catch (err) {
-        console.error("Error fetching contracts:", err);
+        console.error("[Deals API] Error fetching contracts:", err);
       } finally {
         setLoading(false);
       }
@@ -2073,21 +2089,24 @@ function DeliverablesTab({ talent }) {
     const fetchDeliverables = async () => {
       try {
         const allDeliverables = [];
+        console.log("[Deals API] DeliverablesTab fetching deliverables for " + deals.length + " deals");
         for (const deal of deals) {
           try {
             const response = await apiFetch(`/api/deliverables?dealId=${deal.id}`);
             if (response.ok) {
               const data = await response.json();
               const dealDeliverables = Array.isArray(data.deliverables) ? data.deliverables : [];
+              console.log("[Deals API] Deal " + deal.id + " has " + dealDeliverables.length + " deliverables");
               allDeliverables.push(...dealDeliverables.map(d => ({ ...d, dealId: deal.id, dealBrand: deal.brand?.name || deal.brandName })));
             }
           } catch (err) {
-            console.warn(`Error fetching deliverables for deal ${deal.id}:`, err);
+            console.warn(`[Deals API] Error fetching deliverables for deal ${deal.id}:`, err);
           }
         }
+        console.log("[Deals API] Total deliverables fetched: " + allDeliverables.length);
         setDeliverables(allDeliverables);
       } catch (err) {
-        console.error("Error fetching deliverables:", err);
+        console.error("[Deals API] Error fetching deliverables:", err);
       } finally {
         setLoading(false);
       }

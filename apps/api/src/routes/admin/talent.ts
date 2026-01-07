@@ -522,10 +522,14 @@ router.get("/:id", async (req: Request, res: Response) => {
       },
       deals: deals.map((deal) => ({
         id: deal.id,
-        title: deal.brandName || `Deal ${deal.id.slice(0, 8)}`,
+        brandName: deal.brandName || `Deal with ${deal.Brand?.name || 'Unknown Brand'}`,
         stage: deal.stage,
         status: deal.stage, // Keep for backward compatibility with frontend
         value: deal.value,
+        currency: deal.currency || "USD",
+        expectedClose: deal.expectedClose,
+        notes: deal.notes,
+        aiSummary: deal.aiSummary,
         brand: deal.Brand
           ? {
               id: deal.Brand.id,
