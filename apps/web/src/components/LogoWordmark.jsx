@@ -12,9 +12,9 @@ import { asset } from "../lib/assetHelper.js";
  * because they don't depend on env vars.
  */
 const LOGO_SOURCES = {
-  light: asset("/White Logo.png"),
-  dark: asset("/Black Logo.png"),
-  mark: asset("/B Logo Mark.png")
+  light: asset("/White-Logo.png"),
+  dark: asset("/Black-Logo.png"),
+  mark: asset("/B-Logo-Mark.png")
 };
 
 export function LogoWordmark({ variant = "light", className = "", ...props }) {
