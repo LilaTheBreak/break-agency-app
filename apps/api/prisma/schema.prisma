@@ -1443,6 +1443,13 @@ model Talent {
   id                      String                    @id
   userId                  String                    @unique
   name                    String
+  displayName             String?                   // Display name for UI
+  legalName               String?                   // Legal name for contracts
+  primaryEmail            String?                   // Primary contact email
+  representationType      String?                   // EXCLUSIVE, NON_EXCLUSIVE, FRIEND_OF_HOUSE, UGC, FOUNDER
+  status                  String?                   // ACTIVE, PAUSED, ARCHIVED
+  managerId               String?                   // Admin manager ID
+  notes                   String?                   // Internal notes
   categories              String[]
   stage                   String?
   AIPromptHistory         AIPromptHistory[]

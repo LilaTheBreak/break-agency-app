@@ -489,14 +489,14 @@ router.get("/:id", async (req: Request, res: Response) => {
     const talentData = {
       id: talent.id,
       name: talent.name,
-      displayName: talent.name,
-      legalName: null, // Will be added in schema migration
-      primaryEmail: talent.User?.email || null,
-      representationType: "NON_EXCLUSIVE", // Default for now
-      status: "ACTIVE", // Default for now
+      displayName: talent.displayName || talent.name,
+      legalName: talent.legalName,
+      primaryEmail: talent.primaryEmail || talent.User?.email || null,
+      representationType: talent.representationType || "NON_EXCLUSIVE",
+      status: talent.status || "ACTIVE",
       userId: talent.userId,
-      managerId: null, // Will be added in schema migration
-      notes: null, // Will be added in schema migration
+      managerId: talent.managerId,
+      notes: talent.notes,
       categories: talent.categories,
       stage: talent.stage,
       linkedUser: talent.User
@@ -706,6 +706,13 @@ router.post("/", async (req: Request, res: Response) => {
         id: `talent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId: resolvedUserId!, // Schema requires userId, we've validated it exists above
         name: displayName.trim(),
+        displayName: displayName.trim(),
+        legalName: legalName || null,
+        primaryEmail: primaryEmail || email || null,
+        representationType: representationType || "NON_EXCLUSIVE",
+        status: status || "ACTIVE",
+        managerId: managerId || null,
+        notes: notes || null,
         categories: [],
         stage: null,
       },
@@ -758,11 +765,13 @@ router.post("/", async (req: Request, res: Response) => {
       talent: {
         id: talent.id,
         name: talent.name,
-        displayName: talent.name,
-        legalName: legalName || null,
-        primaryEmail: talent.User?.email || null,
-        representationType: representationType || "NON_EXCLUSIVE",
-        status: status || "ACTIVE",
+        displayName: talent.displayName || talent.name,
+        legalName: talent.legalName,
+        primaryEmail: talent.primaryEmail || talent.User?.email || null,
+        representationType: talent.representationType || "NON_EXCLUSIVE",
+        status: talent.status || "ACTIVE",
+        managerId: talent.managerId,
+        notes: talent.notes,
         linkedUser: talent.User
           ? {
               id: talent.User.id,
@@ -770,7 +779,6 @@ router.post("/", async (req: Request, res: Response) => {
               name: talent.User.name,
             }
           : null,
-        // Note: Talent model doesn't have createdAt/updatedAt fields
       },
     });
   } catch (error) {
@@ -835,13 +843,27 @@ router.put("/:id", async (req: Request, res: Response) => {
       return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
 
-    // Update talent (limited to current schema fields)
+    // Build update data with all provided fields
+    const updateData: any = {};
+    
+    // Update name (derived from displayName if provided)
+    if (displayName) updateData.name = displayName;
+    
+    // Update all extended fields
+    if (displayName !== undefined) updateData.displayName = displayName;
+    if (legalName !== undefined) updateData.legalName = legalName;
+    if (primaryEmail !== undefined) updateData.primaryEmail = primaryEmail;
+    if (representationType !== undefined) updateData.representationType = representationType;
+    if (status !== undefined) updateData.status = status;
+    if (managerId !== undefined) updateData.managerId = managerId;
+    if (notes !== undefined) updateData.notes = notes;
+
+    console.log("[TALENT PUT] Updating talent:", id, "with data:", updateData);
+
+    // Update talent with all fields
     const updatedTalent = await prisma.talent.update({
       where: { id },
-      data: {
-        name: displayName || existingTalent.name,
-        // Other fields will be added after schema migration
-      },
+      data: updateData,
       include: {
         User: {
           select: {
@@ -853,12 +875,14 @@ router.put("/:id", async (req: Request, res: Response) => {
       },
     });
 
+    console.log("[TALENT PUT] Successfully updated talent:", id);
+
     // Log admin activity
     await logAdminActivity(req, {
       event: "TALENT_UPDATED",
       metadata: {
         talentId: id,
-        changes: Object.keys(req.body),
+        changes: Object.keys(updateData),
       },
     });
 
@@ -866,7 +890,13 @@ router.put("/:id", async (req: Request, res: Response) => {
       talent: {
         id: updatedTalent.id,
         name: updatedTalent.name,
-        displayName: updatedTalent.name,
+        displayName: updatedTalent.displayName || updatedTalent.name,
+        legalName: updatedTalent.legalName,
+        primaryEmail: updatedTalent.primaryEmail || updatedTalent.User?.email,
+        representationType: updatedTalent.representationType,
+        status: updatedTalent.status,
+        managerId: updatedTalent.managerId,
+        notes: updatedTalent.notes,
         linkedUser: updatedTalent.User
           ? {
               id: updatedTalent.User.id,
@@ -874,7 +904,6 @@ router.put("/:id", async (req: Request, res: Response) => {
               name: updatedTalent.User.name,
             }
           : null,
-        // Note: Talent model doesn't have updatedAt field
       },
     });
   } catch (error) {
