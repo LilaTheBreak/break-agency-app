@@ -215,6 +215,226 @@ function LinkUserModal({ open, onClose, talentId, onSuccess }) {
   );
 }
 
+function EditTalentModal({ open, onClose, talent, onSuccess }) {
+  const [formData, setFormData] = useState({
+    displayName: "",
+    legalName: "",
+    primaryEmail: "",
+    representationType: "NON_EXCLUSIVE",
+    status: "ACTIVE",
+    notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const formRef = useRef(null);
+
+  // Initialize form when modal opens
+  useEffect(() => {
+    if (open && talent) {
+      setFormData({
+        displayName: talent.displayName || talent.name || "",
+        legalName: talent.legalName || "",
+        primaryEmail: talent.primaryEmail || talent.linkedUser?.email || "",
+        representationType: talent.representationType || "NON_EXCLUSIVE",
+        status: talent.status || "ACTIVE",
+        notes: talent.notes || "",
+      });
+      setError("");
+    }
+  }, [open, talent]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
+
+    if (!formData.displayName || !formData.displayName.trim()) {
+      setError("Display name is required");
+      setSaving(false);
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talent.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `Failed to update talent (${response.status})`);
+      }
+
+      toast.success("Talent updated successfully");
+      onClose();
+      await onSuccess();
+    } catch (err) {
+      console.error("UPDATE TALENT FAILED", err);
+      setError(err.message || "Failed to update talent");
+      toast.error(err.message || "Failed to update talent");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div 
+        className="w-full max-w-[720px] rounded-[36px] border border-brand-black/15 bg-brand-white shadow-[0_40px_120px_rgba(0,0,0,0.35)] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-brand-black/10 px-8 py-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-display text-3xl uppercase text-brand-black">Edit Talent</h3>
+              <p className="mt-2 text-sm text-brand-black/70">
+                Update talent profile information
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="ml-4 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/60 hover:bg-brand-black/5"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[calc(90vh-200px)] overflow-y-auto px-8 py-6">
+          <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="rounded-2xl border border-brand-red/20 bg-brand-red/10 p-4">
+                <p className="text-sm text-brand-red font-semibold">{error}</p>
+              </div>
+            )}
+
+            {/* Display Name */}
+            <div>
+              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Display Name *
+              </label>
+              <input
+                type="text"
+                value={formData.displayName}
+                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                className="w-full rounded-xl border border-brand-black/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+                placeholder="Enter display name"
+              />
+            </div>
+
+            {/* Legal Name */}
+            <div>
+              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Legal Name
+              </label>
+              <input
+                type="text"
+                value={formData.legalName}
+                onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
+                className="w-full rounded-xl border border-brand-black/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+                placeholder="Enter legal name"
+              />
+            </div>
+
+            {/* Primary Email */}
+            <div>
+              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Primary Email
+              </label>
+              <input
+                type="email"
+                value={formData.primaryEmail}
+                onChange={(e) => setFormData({ ...formData, primaryEmail: e.target.value })}
+                className="w-full rounded-xl border border-brand-black/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+                placeholder="Enter primary email"
+              />
+            </div>
+
+            {/* Representation Type */}
+            <div>
+              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Representation Type
+              </label>
+              <select
+                value={formData.representationType}
+                onChange={(e) => setFormData({ ...formData, representationType: e.target.value })}
+                className="w-full rounded-xl border border-brand-black/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+              >
+                {REPRESENTATION_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full rounded-xl border border-brand-black/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+              >
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Notes
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full rounded-xl border border-brand-black/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+                rows={4}
+                placeholder="Enter any notes about this talent"
+              />
+            </div>
+          </form>
+        </div>
+
+        <div className="border-t border-brand-black/10 px-8 py-6 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-brand-black/20 px-6 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => formRef.current?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))}
+            disabled={saving}
+            className="rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AdminTalentDetailPage() {
   const { talentId } = useParams();
   const navigate = useNavigate();
@@ -557,6 +777,13 @@ export function AdminTalentDetailPage() {
         open={linkModalOpen}
         onClose={() => setLinkModalOpen(false)}
         talentId={talentId}
+        onSuccess={fetchTalentData}
+      />
+
+      <EditTalentModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        talent={talent}
         onSuccess={fetchTalentData}
       />
     </DashboardShell>
