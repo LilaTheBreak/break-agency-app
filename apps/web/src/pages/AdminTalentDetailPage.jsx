@@ -1681,8 +1681,8 @@ function DealsTab({ talent }) {
 
       {/* Add Deal Modal */}
       {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="relative w-full max-w-md rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="relative w-full max-w-md mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <button
               type="button"
