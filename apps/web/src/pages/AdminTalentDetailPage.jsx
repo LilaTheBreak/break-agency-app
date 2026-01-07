@@ -266,6 +266,13 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
         throw new Error(errorData.message || errorData.error || `Failed to update talent (${response.status})`);
       }
 
+      // CRITICAL: Parse response and verify it contains data before showing success
+      const responseData = await response.json();
+      if (!responseData || !responseData.talent) {
+        throw new Error("Server returned no talent data");
+      }
+
+      // Show success only after confirming response
       toast.success("Talent updated successfully");
       onClose();
       await onSuccess();
@@ -432,6 +439,474 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ============================================
+// TALENT EMAILS SECTION
+// ============================================
+
+function TalentEmailsSection({ talentId }) {
+  const [emails, setEmails] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ email: '', label: '' });
+  const [error, setError] = useState("");
+
+  const loadEmails = async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talentId}/emails`);
+      if (response.ok) {
+        const data = await response.json();
+        setEmails(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("[EMAILS] Load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddEmail = async () => {
+    if (!form.email) return;
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talentId}/emails`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          label: form.label || null,
+          isPrimary: false
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to add email");
+      }
+
+      toast.success("Email added successfully");
+      setForm({ email: '', label: '' });
+      await loadEmails();
+    } catch (err) {
+      console.error("[ADD EMAIL ERROR]", err);
+      toast.error(err.message || "Failed to add email");
+    }
+  };
+
+  const handleSetPrimary = async (emailId) => {
+    try {
+      const response = await apiFetch(`/api/admin/talent/emails/${emailId}`, {
+        method: 'PATCH',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPrimary: true })
+      });
+
+      if (!response.ok) throw new Error("Failed to set primary");
+      toast.success("Primary email updated");
+      await loadEmails();
+    } catch (err) {
+      console.error("[SET PRIMARY ERROR]", err);
+      toast.error(err.message || "Failed to update");
+    }
+  };
+
+  const handleDelete = async (emailId) => {
+    try {
+      const response = await apiFetch(`/api/admin/talent/emails/${emailId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error("Failed to delete email");
+      toast.success("Email deleted");
+      await loadEmails();
+    } catch (err) {
+      console.error("[DELETE EMAIL ERROR]", err);
+      toast.error(err.message || "Failed to delete");
+    }
+  };
+
+  useEffect(() => {
+    loadEmails();
+  }, [talentId]);
+
+  return (
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Linked Emails</p>
+      
+      <div className="flex gap-2 mb-4">
+        <input
+          type="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          className="flex-1 px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        />
+        <input
+          type="text"
+          placeholder="Label (optional)"
+          value={form.label}
+          onChange={(e) => setForm({ ...form, label: e.target.value })}
+          className="px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        />
+        <button
+          onClick={handleAddEmail}
+          className="px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black"
+        >
+          Add
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-brand-black/60">Loading...</p>
+      ) : emails.length === 0 ? (
+        <p className="text-sm text-brand-black/60">No emails added yet</p>
+      ) : (
+        <div className="space-y-2">
+          {emails.map(email => (
+            <div key={email.id} className="flex items-center justify-between p-3 bg-brand-black/5 rounded-lg">
+              <div>
+                <p className="font-mono text-sm text-brand-black">{email.email}</p>
+                {email.label && <p className="text-xs text-brand-black/60">{email.label}</p>}
+                {email.isPrimary && <span className="text-xs bg-brand-red text-white px-2 py-1 rounded mt-1 inline-block">Primary</span>}
+              </div>
+              <div className="flex gap-2">
+                {!email.isPrimary && (
+                  <button
+                    onClick={() => handleSetPrimary(email.id)}
+                    className="text-xs text-brand-blue hover:underline"
+                  >
+                    Set Primary
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDelete(email.id)}
+                  className="text-xs text-brand-red hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ============================================
+// TALENT TASKS SECTION
+// ============================================
+
+function TalentTasksSection({ talentId }) {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ title: '', notes: '', dueDate: '' });
+
+  const loadTasks = async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talentId}/tasks`);
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("[TASKS] Load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddTask = async () => {
+    if (!form.title) return;
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talentId}/tasks`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title,
+          notes: form.notes || null,
+          dueDate: form.dueDate || null,
+          status: 'PENDING'
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to add task");
+      toast.success("Task added successfully");
+      setForm({ title: '', notes: '', dueDate: '' });
+      await loadTasks();
+    } catch (err) {
+      console.error("[ADD TASK ERROR]", err);
+      toast.error(err.message || "Failed to add task");
+    }
+  };
+
+  const handleToggleComplete = async (taskId, currentStatus) => {
+    const newStatus = currentStatus === 'PENDING' ? 'COMPLETED' : 'PENDING';
+    try {
+      const response = await apiFetch(`/api/admin/talent/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : null
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to update task");
+      toast.success(newStatus === 'COMPLETED' ? "Task completed" : "Task reopened");
+      await loadTasks();
+    } catch (err) {
+      console.error("[TOGGLE TASK ERROR]", err);
+      toast.error(err.message || "Failed to update task");
+    }
+  };
+
+  const handleDelete = async (taskId) => {
+    try {
+      const response = await apiFetch(`/api/admin/talent/tasks/${taskId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error("Failed to delete task");
+      toast.success("Task deleted");
+      await loadTasks();
+    } catch (err) {
+      console.error("[DELETE TASK ERROR]", err);
+      toast.error(err.message || "Failed to delete");
+    }
+  };
+
+  useEffect(() => {
+    loadTasks();
+  }, [talentId]);
+
+  return (
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Tasks / To-Do</p>
+      
+      <div className="space-y-2 mb-4">
+        <input
+          type="text"
+          placeholder="Task title"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        />
+        <textarea
+          placeholder="Notes (optional)"
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+          rows="2"
+        />
+        <input
+          type="date"
+          value={form.dueDate}
+          onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+          className="px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        />
+        <button
+          onClick={handleAddTask}
+          className="w-full px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black"
+        >
+          Add Task
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-brand-black/60">Loading...</p>
+      ) : tasks.length === 0 ? (
+        <p className="text-sm text-brand-black/60">No tasks yet</p>
+      ) : (
+        <div className="space-y-2">
+          {tasks.map(task => (
+            <div key={task.id} className={`p-3 rounded-lg border ${task.status === 'COMPLETED' ? 'bg-green-50 border-green-200' : 'border-brand-black/10'}`}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={task.status === 'COMPLETED'}
+                      onChange={() => handleToggleComplete(task.id, task.status)}
+                    />
+                    <span className={task.status === 'COMPLETED' ? 'line-through text-brand-black/50 text-sm' : 'text-sm text-brand-black'}>
+                      {task.title}
+                    </span>
+                  </label>
+                  {task.notes && <p className="text-xs text-brand-black/60 mt-1 ml-6">{task.notes}</p>}
+                  {task.dueDate && (
+                    <p className="text-xs text-brand-black/60 mt-1 ml-6">
+                      Due: {new Date(task.dueDate).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleDelete(task.id)}
+                  className="text-xs text-brand-red hover:underline ml-2"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ============================================
+// TALENT SOCIAL SECTION
+// ============================================
+
+function TalentSocialSection({ talentId }) {
+  const [socials, setSocials] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    platform: 'INSTAGRAM',
+    handle: '',
+    url: '',
+    followers: ''
+  });
+
+  const PLATFORMS = ['INSTAGRAM', 'TIKTOK', 'YOUTUBE', 'X', 'LINKEDIN'];
+
+  const loadSocials = async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talentId}/socials`);
+      if (response.ok) {
+        const data = await response.json();
+        setSocials(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("[SOCIALS] Load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddSocial = async () => {
+    if (!form.handle || !form.url) return;
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talentId}/socials`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: form.platform,
+          handle: form.handle,
+          url: form.url,
+          followers: form.followers ? parseInt(form.followers) : null
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to add social");
+      toast.success("Social profile added successfully");
+      setForm({ platform: 'INSTAGRAM', handle: '', url: '', followers: '' });
+      await loadSocials();
+    } catch (err) {
+      console.error("[ADD SOCIAL ERROR]", err);
+      toast.error(err.message || "Failed to add social");
+    }
+  };
+
+  const handleDelete = async (socialId) => {
+    try {
+      const response = await apiFetch(`/api/admin/talent/socials/${socialId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error("Failed to delete social");
+      toast.success("Social profile deleted");
+      await loadSocials();
+    } catch (err) {
+      console.error("[DELETE SOCIAL ERROR]", err);
+      toast.error(err.message || "Failed to delete");
+    }
+  };
+
+  useEffect(() => {
+    loadSocials();
+  }, [talentId]);
+
+  return (
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Social Profiles</p>
+      
+      <div className="space-y-2 mb-4">
+        <select
+          value={form.platform}
+          onChange={(e) => setForm({ ...form, platform: e.target.value })}
+          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        >
+          {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <input
+          type="text"
+          placeholder="Handle (e.g., talent_name)"
+          value={form.handle}
+          onChange={(e) => setForm({ ...form, handle: e.target.value })}
+          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        />
+        <input
+          type="url"
+          placeholder="Profile URL"
+          value={form.url}
+          onChange={(e) => setForm({ ...form, url: e.target.value })}
+          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        />
+        <input
+          type="number"
+          placeholder="Followers (optional)"
+          value={form.followers}
+          onChange={(e) => setForm({ ...form, followers: e.target.value })}
+          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+        />
+        <button
+          onClick={handleAddSocial}
+          className="w-full px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black"
+        >
+          Add Social Profile
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-brand-black/60">Loading...</p>
+      ) : socials.length === 0 ? (
+        <p className="text-sm text-brand-black/60">No social profiles added yet</p>
+      ) : (
+        <div className="space-y-2">
+          {socials.map(social => (
+            <a
+              key={social.id}
+              href={social.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between p-3 bg-brand-black/5 rounded-lg hover:bg-brand-black/10"
+            >
+              <div>
+                <p className="font-semibold text-sm text-brand-black">{social.platform}</p>
+                <p className="text-xs text-brand-black/60">@{social.handle}</p>
+                {social.followers && (
+                  <p className="text-xs text-brand-black/60">{social.followers.toLocaleString()} followers</p>
+                )}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDelete(social.id);
+                }}
+                className="text-xs text-brand-red hover:underline"
+              >
+                Delete
+              </button>
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -833,6 +1308,10 @@ function OverviewTab({ talent, isExclusive }) {
           <p className="text-sm text-brand-black/80 whitespace-pre-wrap">{talent.notes}</p>
         </section>
       )}
+
+      <TalentEmailsSection talentId={talent.id} />
+      <TalentTasksSection talentId={talent.id} />
+      <TalentSocialSection talentId={talent.id} />
     </div>
   );
 }

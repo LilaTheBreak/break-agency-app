@@ -481,47 +481,31 @@ export function AdminDealsPage({ session }) {
       return;
     }
 
-    const createdAt = nowIso();
-    const deal = {
-      id: `deal-${Date.now()}`,
+    // CLEAN PAYLOAD: Only send backend-required fields, no UI theatre
+    const dealPayload = {
       dealName: createForm.dealName.trim(),
       brandId: createForm.brandId,
-      userId: session.id, // ✅ Add userId from session
-      talentId: talentId, // ✅ Use first talentId from array (backend expects singular)
-      dealType: createForm.dealType,
+      userId: session.id,
+      talentId: talentId,
       status: createForm.status,
-      estimatedValueBand: createForm.estimatedValueBand,
-      confidence: createForm.confidence,
+      estimatedValue: createForm.estimatedValueBand ? parseFloat(String(createForm.estimatedValueBand).replace(/[^\d.]/g, '')) || null : null,
       expectedCloseDate: createForm.expectedCloseDate || null,
-      deliveryDate: createForm.deliveryDate || null,
-      internalSummary: createForm.internalSummary || "",
-      notes: createForm.notes || "",
-      campaignId: createForm.campaignId || null,
-      eventIds: [],
-      talentIds: createForm.talentIds || [], // Keep for frontend state
-      owner: createForm.owner || "Admin",
-      createdAt,
-      updatedAt: createdAt,
-      lastActivityAt: createdAt,
-      linkedTaskIds: [],
-      linkedOutreachIds: [],
-      activity: [{ at: createdAt, label: "Deal created" }]
+      notes: createForm.notes || null,
     };
 
-    const verdict = validateDeal(deal);
-    if (!verdict.ok) {
-      setCreateError(verdict.errors.join(" "));
-      return;
-    }
-
     try {
-      const created = await createDeal(deal);
+      const created = await createDeal(dealPayload);
+      if (!created || !created.id) {
+        throw new Error("Server returned no deal data");
+      }
+      toast.success("Deal created successfully");
       await loadDeals();
       setCreateOpen(false);
       openDrawer(created.id);
     } catch (err) {
       console.error("Failed to create deal:", err);
       setCreateError("Failed to create deal: " + (err.message || "Please check that brand and talent are selected."));
+      toast.error("Failed to create deal: " + err.message);
     }
   };
 

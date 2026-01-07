@@ -841,8 +841,19 @@ router.put("/:id", async (req: Request, res: Response) => {
     });
 
     if (!existingTalent) {
+      console.log("[TALENT PUT] Talent not found:", id);
       return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
+
+    console.log("[TALENT PUT] BEFORE UPDATE", {
+      id,
+      userId: req.user?.id,
+      existingDisplayName: existingTalent.displayName,
+      existingLegalName: existingTalent.legalName,
+      existingPrimaryEmail: existingTalent.primaryEmail,
+      existingRepresentationType: existingTalent.representationType,
+      existingStatus: existingTalent.status,
+    });
 
     // Build update data with all provided fields
     const updateData: any = {};
@@ -859,7 +870,7 @@ router.put("/:id", async (req: Request, res: Response) => {
     if (managerId !== undefined) updateData.managerId = managerId;
     if (notes !== undefined) updateData.notes = notes;
 
-    console.log("[TALENT PUT] Updating talent:", id, "with data:", updateData);
+    console.log("[TALENT PUT] UPDATE DATA TO PERSIST:", id, updateData);
 
     // Update talent with all fields
     const updatedTalent = await prisma.talent.update({
@@ -876,7 +887,14 @@ router.put("/:id", async (req: Request, res: Response) => {
       },
     });
 
-    console.log("[TALENT PUT] Successfully updated talent:", id);
+    console.log("[TALENT PUT] AFTER UPDATE SUCCESS", {
+      id,
+      updatedDisplayName: updatedTalent.displayName,
+      updatedLegalName: updatedTalent.legalName,
+      updatedPrimaryEmail: updatedTalent.primaryEmail,
+      updatedRepresentationType: updatedTalent.representationType,
+      updatedStatus: updatedTalent.status,
+    });
 
     // Log admin activity
     await logAdminActivity(req, {
@@ -908,6 +926,11 @@ router.put("/:id", async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
+    console.error("[TALENT PUT] CRITICAL ERROR", {
+      talentId: req.params.id,
+      userId: req.user?.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     logError("Failed to update talent", error, { userId: req.user?.id, talentId: req.params.id });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/admin/talent/:id', method: 'PUT' },
