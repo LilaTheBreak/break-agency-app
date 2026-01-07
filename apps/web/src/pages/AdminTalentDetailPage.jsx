@@ -450,7 +450,7 @@ function TalentEmailsSection({ talentId }) {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', label: '' });
-  const [error, setError] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const loadEmails = async () => {
     setLoading(true);
@@ -487,6 +487,7 @@ function TalentEmailsSection({ talentId }) {
 
       toast.success("Email added successfully");
       setForm({ email: '', label: '' });
+      setShowForm(false);
       await loadEmails();
     } catch (err) {
       console.error("[ADD EMAIL ERROR]", err);
@@ -530,65 +531,103 @@ function TalentEmailsSection({ talentId }) {
     loadEmails();
   }, [talentId]);
 
+  const primaryEmail = emails.find(e => e.isPrimary);
+  const secondaryEmails = emails.filter(e => !e.isPrimary);
+
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Linked Emails</p>
-      
-      <div className="flex gap-2 mb-4">
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="flex-1 px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <input
-          type="text"
-          placeholder="Label (optional)"
-          value={form.label}
-          onChange={(e) => setForm({ ...form, label: e.target.value })}
-          className="px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <button
-          onClick={handleAddEmail}
-          className="px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black"
-        >
-          Add
-        </button>
+    <section className="border-t border-brand-black/10 pt-8">
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold tracking-[0.15em] uppercase text-brand-black mb-1">Email Addresses</h3>
+        <p className="text-xs text-brand-black/50 uppercase tracking-[0.1em]">Relationship & Contact</p>
       </div>
 
       {loading ? (
         <p className="text-sm text-brand-black/60">Loading...</p>
-      ) : emails.length === 0 ? (
-        <p className="text-sm text-brand-black/60">No emails added yet</p>
-      ) : (
-        <div className="space-y-2">
-          {emails.map(email => (
-            <div key={email.id} className="flex items-center justify-between p-3 bg-brand-black/5 rounded-lg">
-              <div>
-                <p className="font-mono text-sm text-brand-black">{email.email}</p>
-                {email.label && <p className="text-xs text-brand-black/60">{email.label}</p>}
-                {email.isPrimary && <span className="text-xs bg-brand-red text-white px-2 py-1 rounded mt-1 inline-block">Primary</span>}
-              </div>
-              <div className="flex gap-2">
-                {!email.isPrimary && (
+      ) : primaryEmail ? (
+        <div className="mb-6">
+          <div className="flex items-center justify-between p-4 bg-brand-black/2 rounded-xl border border-brand-black/8 hover:border-brand-black/15 transition-colors">
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-[0.2em] text-brand-black/50 mb-2">Primary</p>
+              <p className="font-mono text-sm text-brand-black">{primaryEmail.email}</p>
+              {primaryEmail.label && <p className="text-xs text-brand-black/50 mt-1">{primaryEmail.label}</p>}
+            </div>
+            <Mail className="h-4 w-4 text-brand-black/40" />
+          </div>
+        </div>
+      ) : null}
+
+      {secondaryEmails.length > 0 && (
+        <div className="mb-6">
+          {primaryEmail && <p className="text-xs uppercase tracking-[0.2em] text-brand-black/50 mb-3">Secondary Addresses</p>}
+          <div className="space-y-2">
+            {secondaryEmails.map(email => (
+              <div key={email.id} className="flex items-center justify-between p-3 rounded-lg border border-brand-black/8 hover:border-brand-black/15 transition-colors group">
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono text-sm text-brand-black truncate">{email.email}</p>
+                  {email.label && <p className="text-xs text-brand-black/50 mt-1">{email.label}</p>}
+                </div>
+                <div className="flex items-center gap-3 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => handleSetPrimary(email.id)}
-                    className="text-xs text-brand-blue hover:underline"
+                    className="text-xs text-brand-black/50 hover:text-brand-black whitespace-nowrap font-medium"
                   >
                     Set Primary
                   </button>
-                )}
-                <button
-                  onClick={() => handleDelete(email.id)}
-                  className="text-xs text-brand-red hover:underline"
-                >
-                  Delete
-                </button>
+                  <button
+                    onClick={() => handleDelete(email.id)}
+                    className="text-xs text-brand-red/60 hover:text-brand-red whitespace-nowrap"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+      )}
+
+      {showForm ? (
+        <div className="bg-brand-black/2 rounded-xl p-4 border border-brand-black/8 space-y-3">
+          <input
+            type="email"
+            placeholder="email@example.com"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30"
+          />
+          <input
+            type="text"
+            placeholder="Label (optional)"
+            value={form.label}
+            onChange={(e) => setForm({ ...form, label: e.target.value })}
+            className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30"
+          />
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleAddEmail}
+              className="flex-1 px-4 py-2 bg-brand-black text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black/90 transition-colors"
+            >
+              Add Email
+            </button>
+            <button
+              onClick={() => {
+                setShowForm(false);
+                setForm({ email: '', label: '' });
+              }}
+              className="px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 hover:text-brand-black transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 hover:text-brand-black transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Add Email
+        </button>
       )}
     </section>
   );
@@ -602,6 +641,7 @@ function TalentTasksSection({ talentId }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ title: '', notes: '', dueDate: '' });
+  const [showForm, setShowForm] = useState(false);
 
   const loadTasks = async () => {
     setLoading(true);
@@ -635,6 +675,7 @@ function TalentTasksSection({ talentId }) {
       if (!response.ok) throw new Error("Failed to add task");
       toast.success("Task added successfully");
       setForm({ title: '', notes: '', dueDate: '' });
+      setShowForm(false);
       await loadTasks();
     } catch (err) {
       console.error("[ADD TASK ERROR]", err);
@@ -682,76 +723,146 @@ function TalentTasksSection({ talentId }) {
     loadTasks();
   }, [talentId]);
 
+  const pendingTasks = tasks.filter(t => t.status === 'PENDING');
+  const completedTasks = tasks.filter(t => t.status === 'COMPLETED');
+
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Tasks / To-Do</p>
-      
-      <div className="space-y-2 mb-4">
-        <input
-          type="text"
-          placeholder="Task title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <textarea
-          placeholder="Notes (optional)"
-          value={form.notes}
-          onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-          rows="2"
-        />
-        <input
-          type="date"
-          value={form.dueDate}
-          onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-          className="px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <button
-          onClick={handleAddTask}
-          className="w-full px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black"
-        >
-          Add Task
-        </button>
+    <section className="border-t border-brand-black/10 pt-8">
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold tracking-[0.15em] uppercase text-brand-black mb-1">Tasks & Follow-ups</h3>
+        <p className="text-xs text-brand-black/50 uppercase tracking-[0.1em]">Operational Management</p>
       </div>
 
       {loading ? (
         <p className="text-sm text-brand-black/60">Loading...</p>
-      ) : tasks.length === 0 ? (
-        <p className="text-sm text-brand-black/60">No tasks yet</p>
+      ) : pendingTasks.length === 0 && completedTasks.length === 0 ? (
+        <div className="text-center py-6">
+          <CheckSquare className="h-8 w-8 text-brand-black/20 mx-auto mb-2" />
+          <p className="text-sm text-brand-black/50">No tasks yet</p>
+        </div>
       ) : (
-        <div className="space-y-2">
-          {tasks.map(task => (
-            <div key={task.id} className={`p-3 rounded-lg border ${task.status === 'COMPLETED' ? 'bg-green-50 border-green-200' : 'border-brand-black/10'}`}>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
+        <div className="space-y-4">
+          {pendingTasks.length > 0 && (
+            <div className="space-y-2">
+              {pendingTasks.map(task => (
+                <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg border border-brand-black/8 hover:border-brand-black/15 transition-colors group">
+                  <label className="flex items-center gap-3 flex-1 cursor-pointer min-w-0 pt-0.5">
                     <input
                       type="checkbox"
-                      checked={task.status === 'COMPLETED'}
+                      checked={false}
                       onChange={() => handleToggleComplete(task.id, task.status)}
+                      className="rounded mt-1 flex-shrink-0"
                     />
-                    <span className={task.status === 'COMPLETED' ? 'line-through text-brand-black/50 text-sm' : 'text-sm text-brand-black'}>
-                      {task.title}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-brand-black font-medium">{task.title}</p>
+                      {task.notes && <p className="text-xs text-brand-black/50 mt-1">{task.notes}</p>}
+                      {task.dueDate && (
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className="inline-flex items-center text-xs px-2 py-1 rounded-md bg-brand-black/5 text-brand-black/70">
+                            Due {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </label>
-                  {task.notes && <p className="text-xs text-brand-black/60 mt-1 ml-6">{task.notes}</p>}
-                  {task.dueDate && (
-                    <p className="text-xs text-brand-black/60 mt-1 ml-6">
-                      Due: {new Date(task.dueDate).toLocaleDateString()}
-                    </p>
-                  )}
+                  <button
+                    onClick={() => handleDelete(task.id)}
+                    className="text-xs text-brand-red/60 hover:text-brand-red opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap flex-shrink-0"
+                  >
+                    Delete
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDelete(task.id)}
-                  className="text-xs text-brand-red hover:underline ml-2"
-                >
-                  Delete
-                </button>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {completedTasks.length > 0 && (
+            <details className="group">
+              <summary className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-brand-black/50 cursor-pointer py-2 hover:text-brand-black/70 transition-colors">
+                <span className="group-open:hidden">+</span>
+                <span className="hidden group-open:inline">−</span>
+                Completed ({completedTasks.length})
+              </summary>
+              <div className="space-y-2 mt-3 pt-2 border-t border-brand-black/8">
+                {completedTasks.map(task => (
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg bg-green-50/50 border border-green-200/50 group">
+                    <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={true}
+                        onChange={() => handleToggleComplete(task.id, task.status)}
+                        className="rounded flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-brand-black/50 line-through">{task.title}</p>
+                        {task.completedAt && (
+                          <p className="text-xs text-green-700/60 mt-1">Completed {new Date(task.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                        )}
+                      </div>
+                    </label>
+                    <button
+                      onClick={() => handleDelete(task.id)}
+                      className="text-xs text-brand-red/40 hover:text-brand-red opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap flex-shrink-0"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </div>
+      )}
+
+      {showForm ? (
+        <div className="bg-brand-black/2 rounded-xl p-4 border border-brand-black/8 space-y-3 mt-4">
+          <input
+            type="text"
+            placeholder="What needs to happen?"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            autoFocus
+            className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30"
+          />
+          <textarea
+            placeholder="Notes (optional)"
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30"
+            rows="2"
+          />
+          <input
+            type="date"
+            value={form.dueDate}
+            onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+            className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30"
+          />
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleAddTask}
+              className="flex-1 px-4 py-2 bg-brand-black text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black/90 transition-colors"
+            >
+              Create Task
+            </button>
+            <button
+              onClick={() => {
+                setShowForm(false);
+                setForm({ title: '', notes: '', dueDate: '' });
+              }}
+              className="px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 hover:text-brand-black transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 hover:text-brand-black transition-colors mt-4"
+        >
+          <Plus className="h-4 w-4" />
+          New Task
+        </button>
       )}
     </section>
   );
@@ -770,8 +881,16 @@ function TalentSocialSection({ talentId }) {
     url: '',
     followers: ''
   });
+  const [showForm, setShowForm] = useState(false);
 
   const PLATFORMS = ['INSTAGRAM', 'TIKTOK', 'YOUTUBE', 'X', 'LINKEDIN'];
+  const platformIcons = {
+    INSTAGRAM: '📷',
+    TIKTOK: '🎵',
+    YOUTUBE: '▶️',
+    X: '𝕏',
+    LINKEDIN: '💼'
+  };
 
   const loadSocials = async () => {
     setLoading(true);
@@ -805,6 +924,7 @@ function TalentSocialSection({ talentId }) {
       if (!response.ok) throw new Error("Failed to add social");
       toast.success("Social profile added successfully");
       setForm({ platform: 'INSTAGRAM', handle: '', url: '', followers: '' });
+      setShowForm(false);
       await loadSocials();
     } catch (err) {
       console.error("[ADD SOCIAL ERROR]", err);
@@ -832,83 +952,42 @@ function TalentSocialSection({ talentId }) {
   }, [talentId]);
 
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Social Profiles</p>
-      
-      <div className="space-y-2 mb-4">
-        <select
-          value={form.platform}
-          onChange={(e) => setForm({ ...form, platform: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        >
-          {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-        <input
-          type="text"
-          placeholder="Handle (e.g., talent_name)"
-          value={form.handle}
-          onChange={(e) => setForm({ ...form, handle: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <input
-          type="url"
-          placeholder="Profile URL"
-          value={form.url}
-          onChange={(e) => setForm({ ...form, url: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <input
-          type="number"
-          placeholder="Followers (optional)"
-          value={form.followers}
-          onChange={(e) => setForm({ ...form, followers: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <button
-          onClick={handleAddSocial}
-          className="w-full px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black"
-        >
-          Add Social Profile
-        </button>
+    <section className="border-t border-brand-black/10 pt-8">
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold tracking-[0.15em] uppercase text-brand-black mb-1">Social Profiles</h3>
+        <p className="text-xs text-brand-black/50 uppercase tracking-[0.1em]">Distribution Channels</p>
       </div>
 
       {loading ? (
         <p className="text-sm text-brand-black/60">Loading...</p>
       ) : socials.length === 0 ? (
-        <p className="text-sm text-brand-black/60">No social profiles added yet</p>
+        <div className="text-center py-6">
+          <p className="text-sm text-brand-black/50">No social profiles added</p>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           {socials.map(social => (
             <a
               key={social.id}
               href={social.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between p-3 bg-brand-black/5 rounded-lg hover:bg-brand-black/10"
+              className="flex items-start gap-3 p-4 rounded-xl border border-brand-black/8 hover:border-brand-black/20 transition-colors group bg-brand-black/1"
             >
-              <div>
-                <p className="font-semibold text-sm text-brand-black">{social.platform}</p>
-                <p className="text-xs text-brand-black/60">@{social.handle}</p>
+              <span className="text-xl flex-shrink-0">{platformIcons[social.platform] || '📱'}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs uppercase tracking-[0.2em] text-brand-black/50 mb-1">{social.platform}</p>
+                <p className="text-sm font-medium text-brand-black truncate">@{social.handle}</p>
                 {social.followers && (
-                  <p className="text-xs text-brand-black/60">{social.followers.toLocaleString()} followers</p>
+                  <p className="text-xs text-brand-black/50 mt-2">{(social.followers / 1000).toFixed(1)}K followers</p>
                 )}
               </div>
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   handleDelete(social.id);
-                }}
-                className="text-xs text-brand-red hover:underline"
-              >
-                Delete
-              </button>
-            </a>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
+                }}\n                className="text-xs text-brand-red/60 hover:text-brand-red opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap flex-shrink-0\"\n              >\n                Delete\n              </button>\n            </a>\n          ))}\n        </div>\n      )}\n\n      {showForm ? (\n        <div className=\"bg-brand-black/2 rounded-xl p-4 border border-brand-black/8 space-y-3\">\n          <select\n            value={form.platform}\n            onChange={(e) => setForm({ ...form, platform: e.target.value })}\n            className=\"w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30\"\n          >\n            {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}\n          </select>\n          <input\n            type=\"text\"\n            placeholder=\"Handle (@username)\"\n            value={form.handle}\n            onChange={(e) => setForm({ ...form, handle: e.target.value })}\n            className=\"w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30\"\n          />\n          <input\n            type=\"url\"\n            placeholder=\"Profile URL\"\n            value={form.url}\n            onChange={(e) => setForm({ ...form, url: e.target.value })}\n            className=\"w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30\"\n          />\n          <input\n            type=\"number\"\n            placeholder=\"Followers (optional)\"\n            value={form.followers}\n            onChange={(e) => setForm({ ...form, followers: e.target.value })}\n            className=\"w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm focus:outline-none focus:border-brand-black/30\"\n          />\n          <div className=\"flex gap-2 pt-2\">\n            <button\n              onClick={handleAddSocial}\n              className=\"flex-1 px-4 py-2 bg-brand-black text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black/90 transition-colors\"\n            >\n              Add Profile\n            </button>\n            <button\n              onClick={() => {\n                setShowForm(false);\n                setForm({ platform: 'INSTAGRAM', handle: '', url: '', followers: '' });\n              }}\n              className=\"px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 hover:text-brand-black transition-colors\"\n            >\n              Cancel\n            </button>\n          </div>\n        </div>\n      ) : (\n        <button\n          onClick={() => setShowForm(true)}\n          className=\"flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 hover:text-brand-black transition-colors\"\n        >\n          <Plus className=\"h-4 w-4\" />\n          Add Social Profile\n        </button>\n      )}\n    </section>\n  );\n}\n\nexport function AdminTalentDetailPage() {\n  const { talentId } = useParams();\n  const navigate = useNavigate();\n  const [talent, setTalent] = useState(null);\n  const [loading, setLoading] = useState(true);\n  const [error, setError] = useState(\"\");\n  const [activeTab, setActiveTab] = useState(\"overview\");\n  const [linkModalOpen, setLinkModalOpen] = useState(false);
+
 
 export function AdminTalentDetailPage() {
   const { talentId } = useParams();
@@ -1268,49 +1347,71 @@ export function AdminTalentDetailPage() {
 // Tab Components
 function OverviewTab({ talent, isExclusive }) {
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Representation Details</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Type</p>
-            <p className="mt-2">
+    <div className="space-y-12">
+      {/* PROFILE OVERVIEW - Read-first, authoritative section */}
+      <section className="space-y-6">
+        <div>
+          <h2 className="text-sm font-semibold tracking-[0.15em] uppercase text-brand-black mb-1">Profile Overview</h2>
+          <p className="text-xs text-brand-black/50 uppercase tracking-[0.1em]">Read-first, authoritative</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Representation Type */}
+          <div className="rounded-xl border border-brand-black/8 bg-brand-black/1 p-4 hover:border-brand-black/12 transition-colors">
+            <p className="text-xs uppercase tracking-[0.2em] text-brand-black/50 mb-3">Type</p>
+            <div>
               <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
-            </p>
-            <p className="mt-2 text-xs text-brand-black/50">
-              {REPRESENTATION_TYPES.find((t) => t.value === (talent.representationType || "NON_EXCLUSIVE"))?.description}
-            </p>
+              <p className="text-xs text-brand-black/60 mt-2">
+                {REPRESENTATION_TYPES.find((t) => t.value === (talent.representationType || "NON_EXCLUSIVE"))?.description}
+              </p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Status</p>
-            <p className="mt-2">
-              <StatusBadge status={talent.status || "ACTIVE"} />
-            </p>
+
+          {/* Status */}
+          <div className="rounded-xl border border-brand-black/8 bg-brand-black/1 p-4 hover:border-brand-black/12 transition-colors">
+            <p className="text-xs uppercase tracking-[0.2em] text-brand-black/50 mb-3">Status</p>
+            <StatusBadge status={talent.status || "ACTIVE"} />
           </div>
+
+          {/* Legal Name */}
           {talent.legalName && (
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Legal Name</p>
-              <p className="mt-2 text-sm text-brand-black">{talent.legalName}</p>
+            <div className="rounded-xl border border-brand-black/8 bg-brand-black/1 p-4 hover:border-brand-black/12 transition-colors">
+              <p className="text-xs uppercase tracking-[0.2em] text-brand-black/50 mb-2">Legal Name</p>
+              <p className="font-mono text-sm text-brand-black">{talent.legalName}</p>
             </div>
           )}
+
+          {/* Primary Email */}
           {talent.primaryEmail && (
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Primary Email</p>
-              <p className="mt-2 text-sm text-brand-black">{talent.primaryEmail}</p>
+            <div className="rounded-xl border border-brand-black/8 bg-brand-black/1 p-4 hover:border-brand-black/12 transition-colors">
+              <p className="text-xs uppercase tracking-[0.2em] text-brand-black/50 mb-2">Primary Email</p>
+              <a href={`mailto:${talent.primaryEmail}`} className="font-mono text-sm text-brand-black hover:underline">
+                {talent.primaryEmail}
+              </a>
             </div>
           )}
         </div>
       </section>
 
+      {/* INTERNAL NOTES */}
       {talent.notes && (
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Internal Notes</p>
-          <p className="text-sm text-brand-black/80 whitespace-pre-wrap">{talent.notes}</p>
+        <section className="border-t border-brand-black/10 pt-8">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold tracking-[0.15em] uppercase text-brand-black">Internal Notes</h3>
+          </div>
+          <div className="rounded-xl border border-brand-black/8 bg-brand-black/1 p-6">
+            <p className="text-sm text-brand-black/80 whitespace-pre-wrap leading-relaxed">{talent.notes}</p>
+          </div>
         </section>
       )}
 
+      {/* CONTACT & RELATIONSHIPS */}
       <TalentEmailsSection talentId={talent.id} />
+
+      {/* OPERATIONAL MANAGEMENT */}
       <TalentTasksSection talentId={talent.id} />
+
+      {/* DISTRIBUTION CHANNELS */}
       <TalentSocialSection talentId={talent.id} />
     </div>
   );
