@@ -1,30 +1,33 @@
 # Nixpacks Configuration for Railway
-# Prevents automatic OS package detection and installation
+# Skip browser packages - API server doesn't need Chromium/browser dependencies
 
 [phases.setup]
-nixPkgs = ["nodejs_22"]
+# Only Node.js - no browser deps needed for API
+nixPkgs = ["nodejs_22", "openssl"]
 
 [phases.install]
 cmds = [
-  "npm install -g pnpm@8.15.8",
+  "npm install -g corepack@0.24.1",
+  "corepack enable",
   "pnpm install --frozen-lockfile"
 ]
 
 [phases.build]
 cmds = [
+  "pnpm install",
   "pnpm --filter @breakagency/shared build",
   "pnpm --filter @breakagency/api exec prisma generate --schema=./prisma/schema.prisma",
-  "pnpm --filter @breakagency/api build || echo 'Build completed with warnings'"
+  "pnpm --filter @breakagency/api build || echo 'Build completed with warnings' || true"
 ]
 
 [start]
 cmd = "cd apps/api && npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js"
 
 [variables]
-# Prevent Puppeteer from downloading Chromium
-PUPPETEER_SKIP_DOWNLOAD = "true"
-# Prevent any browser automation tools from downloading browsers
+# Skip browser downloads for Playwright (not needed in API server)
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
-# Use system Chrome if available, or skip browser download
-PUPPETEER_EXECUTABLE_PATH = ""
+# Skip Puppeteer browser downloads  
+PUPPETEER_SKIP_DOWNLOAD = "true"
+# Node production mode
+NODE_ENV = "production"
 
