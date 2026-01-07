@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
-import { fetchTalent, createDeal } from "../services/crmClient.js";
+import { fetchTalent, createDeal, fetchBrands } from "../services/crmClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { 
   User, UserX, Edit2, Link2, Unlink, 
@@ -1383,13 +1383,11 @@ function DealsTab({ talent }) {
     const loadBrands = async () => {
       setBrandsLoading(true);
       try {
-        const response = await apiFetch("/api/admin/brands?limit=100");
-        if (response.ok) {
-          const data = await response.json();
-          setBrands(Array.isArray(data.brands) ? data.brands : (Array.isArray(data) ? data : []));
-        }
+        const data = await fetchBrands();
+        setBrands(Array.isArray(data?.brands) ? data.brands : (Array.isArray(data) ? data : []));
       } catch (err) {
         console.error("[BRANDS] Load error:", err);
+        setBrands([]);
       } finally {
         setBrandsLoading(false);
       }
