@@ -177,13 +177,16 @@ export async function ingestGmailForUser(userId: string) {
             lastMessageAt: parsed.receivedAt,
           },
           create: {
+            id: `thread_${parsed.threadId}_${Date.now()}`,
             threadId: parsed.threadId,
             userId,
             aiThreadSummary: null,
             unreadCount: 0,
             priority: 0,
             lastMessageAt: parsed.receivedAt,
-          },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          } as any,
         });
 
         const summaryText = (parsed.bodyText || parsed.bodyHtml || "").slice(0, 120);

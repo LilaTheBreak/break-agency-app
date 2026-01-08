@@ -4,5 +4,5 @@ export function generateWellnessAI() {
 }
 
 export function calculateWorkload() {
-  return { workload: 0 };
+  return "low";
 }

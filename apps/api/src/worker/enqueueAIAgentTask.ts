@@ -15,7 +15,7 @@ export async function enqueueAIAgentTask(data: {
       talentId: data.talentId,
       emailId: data.emailId ?? null,
       dealId: data.dealId ?? null,
-      payload: data.payload ?? {},
+      payload: (data.payload ?? {}) as any,
       status: AIAgentTaskStatus.PENDING
     }
   });

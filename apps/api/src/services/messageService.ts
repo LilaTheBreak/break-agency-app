@@ -188,13 +188,16 @@ export async function sendMessage(input: {
             connectOrCreate: {
               where: { threadId: finalThreadId },
               create: {
+                id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 threadId: finalThreadId,
                 userId,
                 subject: subject ?? "",
                 snippet: body.substring(0, 120),
                 lastMessageAt: new Date(),
-                participants: [user.email, to]
-              }
+                participants: [user.email, to],
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              } as any
             }
           }
         }

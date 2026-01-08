@@ -45,7 +45,7 @@ export async function createDeal(data: CreateDealInput) {
       id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       createdAt: new Date(),
       updatedAt: new Date(),
-    },
+    } as any,
   });
 }
 
@@ -66,7 +66,7 @@ export async function updateDeal(input: UpdateDealInput) {
     data: {
       ...updates,
       updatedAt: new Date(),
-    },
+    } as any,
   });
 }
 

@@ -75,14 +75,17 @@ export async function persistToken(userId: string, tokens: {
       idToken
     },
     create: {
+      id: `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
       accessToken,
       refreshToken,
       expiryDate: expiresAt,
       scope,
       tokenType,
-      idToken
-    }
+      idToken,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any
   });
 
   // Audit log: Gmail OAuth connected
