@@ -19,7 +19,7 @@ export interface DuplicateCandidate {
   name: string;
   email?: string;
   type: string;
-  createdAt: Date;
+  createdAt?: Date;
 }
 
 export interface DuplicateGroup {

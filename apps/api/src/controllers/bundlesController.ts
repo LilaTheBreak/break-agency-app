@@ -38,7 +38,10 @@ export async function createBundle(req: Request, res: Response, next: NextFuncti
     if (!parsed.success) {
       return res.status(400).json({ ok: false, error: "Invalid payload", details: parsed.error.flatten() });
     }
-    const bundle = await bundleService.create(parsed.data);
+    const bundle = await bundleService.create({
+      ...parsed.data,
+      createdBy: req.user?.id || "unknown"
+    });
     res.status(201).json({ ok: true, bundle });
   } catch (error) {
     next(error);

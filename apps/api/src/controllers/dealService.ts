@@ -19,7 +19,7 @@ export async function createDeal(userId: string, data: DealCreateData): Promise<
     data: {
       userId,
       talentId: data.talentId,
-      brandName: data.brandName,
+      brandId: data.brandName, // TODO: Map brandName to actual brandId
       value: data.value,
       notes: data.brief
     }

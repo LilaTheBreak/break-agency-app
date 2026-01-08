@@ -35,7 +35,7 @@ export async function listUnifiedThreads(options: ListThreadsOptions) {
       threadId: thread.threadId,
       platform: "gmail", // Inferred from the source table
       subject: thread.subject,
-      lastMessageAt: meta?.createdAt || thread.lastMessageAt,
+      lastMessageAt: thread.lastMessageAt,
       lastMessagePreview: thread.snippet,
       unreadCount: meta?.unreadCount ?? (thread.isRead ? 0 : 1), // Simplified logic
       priority: meta?.priority ?? 0,
@@ -70,7 +70,7 @@ export async function getUnifiedThreadById(threadId: string, userId: string) {
     threadId: gmailThread.threadId,
     platform: "gmail",
     subject: gmailThread.subject,
-    lastMessageAt: meta?.createdAt || gmailThread.lastMessageAt,
+    lastMessageAt: gmailThread.lastMessageAt,
     unreadCount: meta?.unreadCount ?? (gmailThread.isRead ? 0 : 1),
     priority: meta?.priority ?? 0,
     linkedDealId: meta?.linkedDealId,

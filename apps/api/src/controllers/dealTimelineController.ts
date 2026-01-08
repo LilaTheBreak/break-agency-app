@@ -34,7 +34,7 @@ export async function createTimelineEvent(
 export async function getTimeline(req: Request, res: Response, next: NextFunction) {
   try {
     const { dealId } = req.params;
-    const timeline = await dealTimelineService.getTimelineForDeal(dealId, req.user!.id);
+    const timeline = await dealTimelineService.getTimelineForDeal(dealId);
 
     if (timeline === null) {
       return res.status(404).json({ error: "Deal not found or access denied." });
