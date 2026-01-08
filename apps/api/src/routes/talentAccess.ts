@@ -1,12 +1,12 @@
 import { Router } from "express";
 // @ts-ignore - Module resolution issue
-import prisma from "../../lib/prisma.js";
+import prisma from "../lib/prisma.js";
 // @ts-ignore - Module resolution issue
-import { logAdminActivity } from "../../lib/adminActivityLogger.js";
+import { logAdminActivity } from "../lib/adminActivityLogger.js";
 // @ts-ignore - Module resolution issue
-import { logError } from "../../lib/logger.js";
+import { logError } from "../lib/logger.js";
 // @ts-ignore - Module resolution issue
-import { isSuperAdmin } from "../../lib/roleHelpers.js";
+import { isSuperAdmin } from "../lib/roleHelpers.js";
 import {
   ensureTalentAccess,
   setTalentAccess,
