@@ -42,9 +42,12 @@ router.get("/", async (req: Request, res: Response) => {
       select: {
         id: true,
         name: true,
+        displayName: true,
         userId: true,
         categories: true,
         stage: true,
+        representationType: true, // CRITICAL FIX: Include actual representationType instead of hardcoding
+        status: true, // CRITICAL FIX: Include actual status instead of hardcoding
       },
       orderBy: {
         id: "desc", // Order by id since createdAt doesn't exist on Talent model
@@ -136,9 +139,9 @@ router.get("/", async (req: Request, res: Response) => {
             return {
               id: talent.id,
               name: talent.name || "Unknown",
-              displayName: talent.name || "Unknown",
-              representationType: "NON_EXCLUSIVE",
-              status: "ACTIVE",
+              displayName: talent.displayName || talent.name || "Unknown",
+              representationType: talent.representationType || "NON_EXCLUSIVE", // FIXED: Use actual value from DB
+              status: talent.status || "ACTIVE", // FIXED: Use actual value from DB
               linkedUser: userData
                 ? {
                     id: userData.id,
@@ -161,13 +164,13 @@ router.get("/", async (req: Request, res: Response) => {
             };
           } catch (talentError) {
             console.error("[TALENT] Failed to enrich talent", talent.id, talentError);
-            // Return minimal data
+            // Return minimal data with actual DB values
             return {
               id: talent.id,
               name: talent.name || "Unknown",
-              displayName: talent.name || "Unknown",
-              representationType: "NON_EXCLUSIVE",
-              status: "ACTIVE",
+              displayName: talent.displayName || talent.name || "Unknown",
+              representationType: talent.representationType || "NON_EXCLUSIVE", // FIXED: Use actual value
+              status: talent.status || "ACTIVE", // FIXED: Use actual value
               linkedUser: null,
               managerId: null,
               metrics: {
@@ -193,9 +196,9 @@ router.get("/", async (req: Request, res: Response) => {
         enrichedTalents = talents.map(t => ({
           id: t.id,
           name: t.name || "Unknown",
-          displayName: t.name || "Unknown",
-          representationType: "NON_EXCLUSIVE",
-          status: "ACTIVE",
+          displayName: t.displayName || t.name || "Unknown",
+          representationType: t.representationType || "NON_EXCLUSIVE", // FIXED: Use actual value
+          status: t.status || "ACTIVE", // FIXED: Use actual value
           linkedUser: null,
           managerId: null,
           metrics: {
@@ -234,9 +237,9 @@ router.get("/", async (req: Request, res: Response) => {
       const baseTalents = talentsWithoutUser.map(t => ({
         id: t.id,
         name: t.name || "Unknown",
-        displayName: t.name || "Unknown",
-        representationType: "NON_EXCLUSIVE",
-        status: "ACTIVE",
+        displayName: t.displayName || t.name || "Unknown",
+        representationType: t.representationType || "NON_EXCLUSIVE", // FIXED: Use actual value
+        status: t.status || "ACTIVE", // FIXED: Use actual value
         linkedUser: null,
         managerId: null,
         metrics: {
