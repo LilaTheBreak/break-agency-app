@@ -10,7 +10,7 @@ export async function getGmailThread(threadId: string, userId: string) {
   return prisma.inboxMessage.findFirst({
     where: { threadId, userId },
     include: {
-      threadMeta: true // Include the unified metadata
+      InboxThreadMeta: true // Include the unified metadata
     }
   });
 }
@@ -32,6 +32,6 @@ export async function getGmailMessagesForThread(threadId: string, userId:string)
 
     return prisma.inboundEmail.findMany({
         where: { inboxMessageId: thread.id },
-        orderBy: { date: 'asc' }
+        orderBy: { receivedAt: 'asc' }
     });
 }

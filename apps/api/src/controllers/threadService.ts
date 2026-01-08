@@ -24,18 +24,18 @@ export async function listUnifiedThreads(options: ListThreadsOptions) {
     take: limit,
     include: {
       // Include metadata if it exists
-      threadMeta: true
+      InboxThreadMeta: true
     }
   });
 
   // 2. Map to a unified structure
   const unifiedThreads = inboxMessages.map((thread) => {
-    const meta = thread.threadMeta;
+    const meta = thread.InboxThreadMeta;
     return {
       threadId: thread.threadId,
       platform: "gmail", // Inferred from the source table
       subject: thread.subject,
-      lastMessageAt: meta?.lastMessageAt || thread.lastMessageAt,
+      lastMessageAt: meta?.createdAt || thread.lastMessageAt,
       lastMessagePreview: thread.snippet,
       unreadCount: meta?.unreadCount ?? (thread.isRead ? 0 : 1), // Simplified logic
       priority: meta?.priority ?? 0,
@@ -65,12 +65,12 @@ export async function getUnifiedThreadById(threadId: string, userId: string) {
     return null;
   }
 
-  const meta = gmailThread.threadMeta;
+  const meta = gmailThread.InboxThreadMeta;
   return {
     threadId: gmailThread.threadId,
     platform: "gmail",
     subject: gmailThread.subject,
-    lastMessageAt: meta?.lastMessageAt || gmailThread.lastMessageAt,
+    lastMessageAt: meta?.createdAt || gmailThread.lastMessageAt,
     unreadCount: meta?.unreadCount ?? (gmailThread.isRead ? 0 : 1),
     priority: meta?.priority ?? 0,
     linkedDealId: meta?.linkedDealId,

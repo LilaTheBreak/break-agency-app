@@ -221,14 +221,12 @@ router.post(
     }
 
     // Idempotency check: Check if this event was already processed
+    // Note: Cannot use nested JSON path queries - using simpler approach
     const existingLog = await prisma.auditLog.findFirst({
       where: {
         action: "PAYMENT_WEBHOOK_PROCESSED",
         metadata: {
-          path: ["provider"],
-          equals: "paypal",
-          path2: ["eventId"],
-          equals: payload.id
+          equals: { provider: "paypal", eventId: payload.id }
         }
       }
     });
@@ -327,13 +325,13 @@ async function handleStripeInvoiceEvent(event: Stripe.Event) {
   await prisma.reconciliation.upsert({
     where: { invoiceId: record.id },
     update: {
-      status: status === "paid" ? "invoice_paid" : status,
-      details: serializeJson({ provider: "stripe", event: event.type, invoiceId: record.externalId })
+      status: status === "paid" ? "invoice_paid" : status
     },
     create: {
       invoiceId: record.id,
-      status: status === "paid" ? "invoice_paid" : status,
-      details: serializeJson({ provider: "stripe", event: event.type, invoiceId: record.externalId })
+      type: "stripe_invoice",
+      referenceId: record.externalId || record.id,
+      status: status === "paid" ? "invoice_paid" : status
     }
   });
 
@@ -350,8 +348,7 @@ async function handleStripePayoutEvent(event: Stripe.Event) {
   await prisma.payout.updateMany({
     where: { referenceId: payout.id },
     data: {
-      status,
-      metadata: serializeJson(payout.metadata || {})
+      status
     }
   });
 
@@ -364,25 +361,15 @@ async function handleStripePayoutEvent(event: Stripe.Event) {
       await prisma.reconciliation.upsert({
         where: { invoiceId: invoiceRecord.id },
         update: {
-          payoutId: payoutRecord.id,
-          status: status === "paid" ? "payout_paid" : status,
-          details: serializeJson({
-            provider: "stripe",
-            event: event.type,
-            invoiceId: invoiceRecord.externalId,
-            payoutId: payoutRecord.referenceId
-          })
+          referenceId: payoutRecord.referenceId,
+          status: status === "paid" ? "payout_paid" : status
         },
         create: {
+          type: "stripe_payout",
+          referenceId: payoutRecord.referenceId,
           invoiceId: invoiceRecord.id,
-          payoutId: payoutRecord.id,
-          status: status === "paid" ? "payout_paid" : status,
-          details: serializeJson({
-            provider: "stripe",
-            event: event.type,
-            invoiceId: invoiceRecord.externalId,
-            payoutId: payoutRecord.referenceId
-          })
+          amount: payoutRecord.amount,
+          status: status === "paid" ? "payout_paid" : status
         }
       });
     }
@@ -549,25 +536,15 @@ async function handlePayPalPayoutEvent(event: PayPalWebhookEvent) {
       await prisma.reconciliation.upsert({
         where: { invoiceId: invoice.id },
         update: {
-          payoutId: payoutRecord.id,
-          status: status === "paid" ? "payout_paid" : status,
-          details: serializeJson({
-            provider: "paypal",
-            event: event.event_type,
-            invoiceId: invoice.externalId,
-            payoutId: payoutRecord.referenceId
-          })
+          referenceId: payoutRecord.referenceId,
+          status: status === "paid" ? "payout_paid" : status
         },
         create: {
+          type: "paypal_payout",
+          referenceId: payoutRecord.referenceId,
           invoiceId: invoice.id,
-          payoutId: payoutRecord.id,
-          status: status === "paid" ? "payout_paid" : status,
-          details: serializeJson({
-            provider: "paypal",
-            event: event.event_type,
-            invoiceId: invoice.externalId,
-            payoutId: payoutRecord.referenceId
-          })
+          amount: payoutRecord.amount,
+          status: status === "paid" ? "payout_paid" : status
         }
       });
     }

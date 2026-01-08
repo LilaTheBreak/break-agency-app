@@ -198,7 +198,7 @@ export async function detectBrandDuplicates(): Promise<DuplicateGroup[]> {
     select: {
       id: true,
       name: true,
-      createdAt: true,
+      values: true,
     },
   });
 
@@ -240,7 +240,6 @@ export async function detectBrandDuplicates(): Promise<DuplicateGroup[]> {
         id: current.id,
         name: current.name,
         type: "Brand",
-        createdAt: current.createdAt,
       },
     ];
 
@@ -270,7 +269,6 @@ export async function detectBrandDuplicates(): Promise<DuplicateGroup[]> {
           id: candidate.id,
           name: candidate.name,
           type: "Brand",
-          createdAt: candidate.createdAt,
         });
         processed.add(candidate.id);
       }
