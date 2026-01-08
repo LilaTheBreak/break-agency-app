@@ -11,7 +11,7 @@ interface SignOptions {
 
 export function createAuthToken(payload: { id: string }, options: SignOptions = {}) {
   const secret = getJwtSecret();
-  return jwt.sign(payload, secret as string, { expiresIn: options.expiresIn || DEFAULT_EXPIRY });
+  return jwt.sign(payload, secret as string, { expiresIn: options.expiresIn || DEFAULT_EXPIRY } as any);
 }
 
 export function verifyAuthToken(token: string): { id: string } {

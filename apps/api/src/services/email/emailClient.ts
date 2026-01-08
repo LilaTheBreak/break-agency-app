@@ -30,8 +30,8 @@ type SendEmailArgs = {
 export async function sendTemplatedEmail({ to, template, data = {}, subject }: SendEmailArgs) {
   const templateDef = templates[template];
   if (!templateDef) throw new Error(`Unknown template ${template}`);
-  const rendered = templateDef.render(data);
-  const resolvedSubject = subject || rendered.subject || templateDef.subject(data);
+  const rendered = templateDef.render(data as any);
+  const resolvedSubject = subject || rendered.subject || templateDef.subject(data as any);
 
   // Note: emailLog model doesn't exist - using AuditLog instead
   const logId = `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

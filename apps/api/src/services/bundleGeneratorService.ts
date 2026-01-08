@@ -28,7 +28,7 @@ export async function generateBundleForDeal(dealId: string): Promise<BundleResul
       return fallbackBundle("unknown-deal");
     }
 
-    const category = deal.category || "brand";
+    const category = (deal as any).category || deal.campaignName || "brand";
     const talentName = deal.Talent?.name || "the creator";
     const brandName = deal.Brand?.name || "the brand";
 

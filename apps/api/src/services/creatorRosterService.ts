@@ -151,7 +151,7 @@ export async function getBrandRoster(
     orderBy: {
       updatedAt: "desc"
     }
-  });
+  }) as any;
 }
 
 /**

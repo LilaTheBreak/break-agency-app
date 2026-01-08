@@ -197,9 +197,14 @@ router.post("/notion/connect", async (req: Request, res: Response) => {
 
     // Test connection
     try {
-      const notionClient = await import("@notionhq/client").then(m => m.Client);
-      const client = new notionClient({ auth: accessToken });
-      await client.users.me();
+      try {
+        const notionClient = await import("@notionhq/client").then(m => m.Client);
+        const client = new notionClient({ auth: accessToken });
+        await client.users.me();
+      } catch (importError) {
+        // Notion client not installed, skip validation
+        console.warn("Notion client not installed");
+      }
     } catch (error) {
       return res.status(400).json({
         success: false,

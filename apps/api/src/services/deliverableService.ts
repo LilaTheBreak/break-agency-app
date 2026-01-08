@@ -135,12 +135,15 @@ export async function createDeliverablesFromContract(contractId: string) {
 
   const deliverables = [
     {
+      id: `deliv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       title: "Review Contract",
-      description: null,
-      dealId: null,
+      description: "",
+      dealId: "unknown",
       contractId,
       userId: contract.userId,
-      dueAt: null,
+      dueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
   ];
 

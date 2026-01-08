@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { generateNegotiationInsights } from '../services/ai/negotiationEngine.js';
-import prisma from '../lib/prisma.js';
+import { generateNegotiationInsights } from './negotiationEngine.js';
+import prisma from '../../lib/prisma.js';
 
 const router = Router();
 

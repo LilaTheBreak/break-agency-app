@@ -40,7 +40,12 @@ export interface CreateDealInput {
 
 export async function createDeal(data: CreateDealInput) {
   return prisma.deal.create({
-    data,
+    data: {
+      ...data,
+      id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
   });
 }
 
@@ -58,7 +63,10 @@ export async function updateDeal(input: UpdateDealInput) {
 
   return prisma.deal.updateMany({
     where: { id, userId },
-    data: updates,
+    data: {
+      ...updates,
+      updatedAt: new Date(),
+    },
   });
 }
 

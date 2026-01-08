@@ -20,7 +20,7 @@ export interface ReplyVariations {
 
 export async function generateReplyVariations(input: ReplyGenerationInput) {
   const start = Date.now();
-  const prompt = buildInboxReplyPrompt(input);
+  const prompt = buildInboxReplyPrompt(input as any);
   let tokens = 0;
 
   try {

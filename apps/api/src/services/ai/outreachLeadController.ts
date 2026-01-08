@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as outreachAIService from "../services/ai/outreachAIService.js";
+import * as outreachAIService from "./outreachAIService.js";
 
 const GenerateLeadsSchema = z.object({
   niche: z.string().min(2),

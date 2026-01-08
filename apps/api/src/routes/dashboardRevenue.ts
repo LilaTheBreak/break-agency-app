@@ -19,7 +19,7 @@ router.get("/revenue-breakdown", requireAuth, async (req: Request, res: Response
       where: {
         status: "completed",
         createdAt: { gte: startOfYear },
-      },
+      } as any,
     });
 
     // 2. Revenue per talent

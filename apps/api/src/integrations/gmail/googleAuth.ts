@@ -83,7 +83,7 @@ export async function refreshAccessToken(refreshToken: string) {
   const client = new google.auth.OAuth2(clientId, clientSecret, gmailRedirectUri);
   client.setCredentials({ refresh_token: refreshToken });
   const response = await client.getAccessToken();
-  const credentials = response.credentials;
+  const credentials = (response as any)?.credentials || client.credentials;
   return {
     accessToken: (credentials as any)?.token || "",
     refreshToken,

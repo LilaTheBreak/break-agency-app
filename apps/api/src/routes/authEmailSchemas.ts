@@ -11,7 +11,7 @@ export const SignupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum([...PUBLIC_ROLES] as const, {
     errorMap: () => ({ message: "Please select a valid role" })
-  })
+  }) as any
 });
 
 export const LoginSchema = z.object({

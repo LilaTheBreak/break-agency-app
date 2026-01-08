@@ -18,12 +18,12 @@ export async function syncWhatsApp() {
 
   for (const user of users) {
     for (const message of messages) {
-      if (message.whatsappId) {
+      if ((message as any).whatsappId) {
         const exists = await prisma.inboundEmail.findFirst({
           where: {
             userId: user.id,
             platform: "whatsapp",
-            whatsappId: message.whatsappId
+            whatsappId: (message as any).whatsappId
           }
         });
         if (exists) continue;

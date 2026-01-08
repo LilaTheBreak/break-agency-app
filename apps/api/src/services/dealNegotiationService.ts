@@ -37,9 +37,12 @@ export async function extractOffer(dealId: string, userId: string) {
       offerTerms: offerTerms as any,
     },
     create: {
+      id: `neg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       dealId,
       status: "offer_received",
       offerTerms: offerTerms as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
   });
 

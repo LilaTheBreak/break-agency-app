@@ -56,7 +56,7 @@ export async function summarizeThread(
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(completion.choices[0].message.content || "{}") as ThreadSummary;
+    const result = JSON.parse((completion.choices[0].message.content as string) || "{}") as ThreadSummary;
 
     // Persist the summary to the metadata table
     await prisma.inboxThreadMeta.upsert({

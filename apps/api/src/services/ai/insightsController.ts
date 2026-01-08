@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import * as insightService from "../services/insightService.js";
+import * as insightService from "../insightService.js";
 
 /**
  * Generates and retrieves creator performance insights.
