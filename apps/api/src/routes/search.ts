@@ -147,7 +147,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
             Brand: {
               select: {
                 id: true,
-                name: true
+                brandName: true
               }
             }
           },

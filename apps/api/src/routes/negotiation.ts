@@ -17,9 +17,8 @@ router.post("/generate/:dealDraftId", async (req, res) => {
 
 router.get("/user/:userId", async (req, res) => {
   const insights = await prisma.negotiationInsight.findMany({
-    where: { dealDraft: { userId: req.params.userId } },
-    orderBy: { createdAt: "desc" },
-    include: { dealDraft: true }
+    where: { dealId: req.params.userId },
+    orderBy: { createdAt: "desc" }
   });
   res.json({ insights });
 });

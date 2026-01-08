@@ -16,7 +16,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     const submissions = await prisma.submission.findMany({
       where: { creatorId: userId },
       include: {
-        opportunity: {
+        Opportunity: {
           select: {
             id: true,
             title: true,
@@ -103,6 +103,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 
     const submission = await prisma.submission.create({
       data: {
+        id: `submission_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorId: userId,
         opportunityId: opportunityId || null,
         title,
@@ -111,6 +112,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
         files: files || [],
         revisions: [],
         contentUrl: contentUrl || null,
+        updatedAt: new Date(),
       },
       include: {
         Opportunity: true,

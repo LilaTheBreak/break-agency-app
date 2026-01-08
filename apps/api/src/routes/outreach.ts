@@ -35,7 +35,8 @@ router.post("/generate", async (req, res) => {
 
 router.post("/prospect", requireAuth, async (req, res) => {
   const { niche, count } = req.body ?? {};
-  const leads = await generateLeadProspects(req.user, niche, count || 20);
+  const leadsResponse = await generateLeadProspects(req.user, niche, count || 20);
+  const leads = leadsResponse.data || [];
   const created = await Promise.all(
     leads.map((l: any) =>
       prisma.lead.create({

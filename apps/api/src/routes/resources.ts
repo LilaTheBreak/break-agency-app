@@ -245,6 +245,9 @@ router.post("/", requireAuth, requireAdmin, async (req: Request, res: Response) 
       longDescription,
       resourceType,
       uploadUrl,
+      uploadFilename,
+      uploadFileType,
+      uploadFileSize,
       externalUrl,
       thumbnailUrl,
       status,
@@ -278,6 +281,7 @@ router.post("/", requireAuth, requireAdmin, async (req: Request, res: Response) 
 
     const resource = await prisma.resource.create({
       data: {
+        id: `resource_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title,
         shortDescription,
         longDescription,
@@ -298,6 +302,7 @@ router.post("/", requireAuth, requireAdmin, async (req: Request, res: Response) 
         rsvpEnabled: rsvpEnabled || false,
         rsvpOpen: rsvpOpen !== undefined ? rsvpOpen : true,
         createdById: user.id,
+        updatedAt: new Date(),
       },
       include: {
         User: {
@@ -461,9 +466,11 @@ router.post("/:id/rsvp", requireAuth, async (req: Request, res: Response) => {
 
     const rsvp = await prisma.resourceRsvp.create({
       data: {
+        id: `rsvp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         resourceId: id,
         userId: user.id,
         status: "confirmed",
+        updatedAt: new Date(),
       },
     });
 
