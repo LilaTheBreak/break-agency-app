@@ -112,10 +112,10 @@ export function mapGmailMessageToDb(
   }
   
   const inboundEmailData: InboundEmailCreateInput = {
+    id: `inbound_${message.id!}`,
     userId,
     platform: "gmail", // Explicitly set platform
     gmailId: message.id!,
-    threadId: message.threadId!,
     subject: getHeader(headers, "Subject") || null,
     fromEmail: fromEmail || "unknown@unknown.com", // Fallback for required field
     toEmail: toEmail || "", // Can be empty string

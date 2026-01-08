@@ -630,7 +630,8 @@ router.post("/invoices", async (req: Request, res: Response) => {
       data: {
         id: `inv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...parsed.data,
-        updatedAt: new Date()
+        issuedAt: parsed.data.issuedAt || new Date(),
+        dueAt: parsed.data.dueAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
       }
     });
 
@@ -732,12 +733,12 @@ router.patch("/invoices/:id", async (req: Request, res: Response) => {
     });
 
     // Auto-update status based on due date if status is "sent" or "due"
-    if (invoice.status === "sent" || invoice.status === "due") {
+    if (["sent", "due"].includes(String(invoice.status)) && invoice.dueAt) {
       const now = new Date();
-      if (invoice.dueAt && invoice.dueAt < now && invoice.status !== "paid") {
+      if (invoice.dueAt < now) {
         await prisma.invoice.update({
           where: { id: invoice.id },
-          data: { status: "overdue", updatedAt: new Date() }
+          data: { status: "overdue" }
         });
         invoice.status = "overdue";
       }

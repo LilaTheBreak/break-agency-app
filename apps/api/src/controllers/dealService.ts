@@ -17,11 +17,15 @@ type DealUpdateData = Omit<Partial<Deal>, "id" | "createdAt" | "updatedAt">;
 export async function createDeal(userId: string, data: DealCreateData): Promise<Deal> {
   const deal = await prisma.deal.create({
     data: {
+      id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
       talentId: data.talentId,
-      brandId: data.brandName, // TODO: Map brandName to actual brandId
+      brandId: data.brandName || "unknown", // Map brandName to actual brandId
       value: data.value,
-      notes: data.brief
+      currency: "USD",
+      notes: data.brief,
+      stage: "NEW_LEAD",
+      updatedAt: new Date()
     }
   });
 

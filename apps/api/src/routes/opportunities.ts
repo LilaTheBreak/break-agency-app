@@ -270,6 +270,7 @@ router.post('/:id/apply', requireAuth, async (req, res) => {
 
     const application = await prisma.opportunityApplication.create({
       data: {
+        id: `app_${id}_${userId}_${Date.now()}`,
         opportunityId: id,
         creatorId: userId,
         status: 'shortlisted',
@@ -360,10 +361,7 @@ router.get('/admin/applications', requireAuth, requireRole(['ADMIN', 'SUPERADMIN
             Talent: {
               select: {
                 id: true,
-                instagramHandle: true,
-                tiktokHandle: true,
-                youtubeHandle: true,
-                followers: true,
+                name: true,
               },
             },
           },
@@ -510,15 +508,14 @@ async function createDealFromApplication(application: any) {
       data: {
         id: `timeline-${Date.now()}`,
         dealId: deal.id,
-        userId: userId,
-        event: 'DEAL_CREATED',
-        description: `Deal created from approved application to opportunity: ${opportunity.title}`,
+        createdById: userId,
+        type: 'DEAL_CREATED',
+        message: `Deal created from approved application to opportunity: ${opportunity.title}`,
         metadata: {
           opportunityId: opportunity.id,
           applicationId: application.id,
           source: 'marketplace',
         },
-        createdAt: new Date(),
       },
     });
 

@@ -36,7 +36,7 @@ if (!dsn) {
     tracesSampleRate: environment === "production" ? 0.1 : 1.0, // 10% in prod, 100% in dev
     // Integrations
     integrations: [
-      Sentry.httpIntegration({ tracing: true }),
+      Sentry.httpIntegration({}),
       // Express integration will be set up via setupExpressErrorHandler in server.ts
     ],
     // Privacy: Filter sensitive data

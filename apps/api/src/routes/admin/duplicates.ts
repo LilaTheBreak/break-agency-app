@@ -123,21 +123,25 @@ router.post("/merge", async (req: Request, res: Response) => {
 
     // Validate required fields
     if (!entityType || !primaryId || !mergeIds) {
-      return sendError(res, 400, "Missing required fields: entityType, primaryId, mergeIds");
+      return sendError(res, "MISSING_FIELDS", "Missing required fields: entityType, primaryId, mergeIds", 400);
     }
 
     // Validate entityType
     if (!["talent", "brands", "deals"].includes(entityType)) {
-      return sendError(res, 400, "Invalid entityType. Must be 'talent', 'brands', or 'deals'");
+      return sendError(res, "INVALID_ENTITY", "Invalid entityType. Must be 'talent', 'brands', or 'deals'", 400);
     }
 
     // Validate mergeIds is array
     if (!Array.isArray(mergeIds) || !mergeIds.length) {
-      return sendError(res, 400, "mergeIds must be a non-empty array");
+      return sendError(res, "INVALID_MERGE_IDS", "mergeIds must be a non-empty array", 400);
     }
 
     // Perform merge
-    const mergeRequest: MergeRequest = { entityType, primaryId, mergeIds };
+    const mergeRequest: MergeRequest = { 
+      entityType, 
+      primaryId: String(primaryId), 
+      mergeIds: (mergeIds as any[]).map(id => String(id)) 
+    };
     const userId = (req as any).user?.id || "unknown";
     const result = await performMerge(mergeRequest, userId);
 

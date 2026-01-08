@@ -33,10 +33,11 @@ router.post("/users", async (req, res) => {
     // User model has a direct role field, no separate role table
     const user = await prisma.user.upsert({
       where: { email },
-      update: { role: normalizedRole },
+      update: { role: String(normalizedRole) },
       create: { 
-        email,
-        role: normalizedRole
+        email: String(email),
+        name: String(email).split("@")[0], // Use email prefix as default name
+        role: String(normalizedRole)
       }
     });
     res.status(201).json({ user: { email: user.email, role: user.role } });

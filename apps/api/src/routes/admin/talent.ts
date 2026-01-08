@@ -267,21 +267,21 @@ router.get("/", async (req: Request, res: Response) => {
     let talentsWithMetrics: any[] = [];
     try {
       talentsWithMetrics = await Promise.all(
-      talents.map(async (talent) => {
+      talents.map(async (talentWithEnrichment: any) => {
         try {
           // Count open opportunities for this talent
           // Opportunities are linked through OpportunityApplication.creatorId (which is userId)
           let openOpportunities = 0;
-          if (talent.linkedUser?.id) {
+          if (talentWithEnrichment.linkedUser?.id) {
             try {
               openOpportunities = await prisma.opportunityApplication.count({
                 where: {
-                  creatorId: talent.linkedUser.id,
+                  creatorId: talentWithEnrichment.linkedUser.id,
                   status: { not: "rejected" } // Count pending and accepted applications
                 }
               });
             } catch (oppError) {
-              console.warn("[TALENT] Failed to count opportunities for talent", talent.id);
+              console.warn("[TALENT] Failed to count opportunities for talent", talentWithEnrichment.id);
             }
           }
 
@@ -290,7 +290,7 @@ router.get("/", async (req: Request, res: Response) => {
           try {
             const revenueResult = await prisma.payment.aggregate({
               where: {
-                talentId: talent.id,
+                talentId: talentWithEnrichment.id,
               },
               _sum: {
                 amount: true,
@@ -304,17 +304,17 @@ router.get("/", async (req: Request, res: Response) => {
 
           // Return talent with updated metrics
           return {
-            ...talent,
+            ...talentWithEnrichment,
             metrics: {
-              ...talent.metrics,
+              ...(talentWithEnrichment.metrics || {}),
               openOpportunities,
               totalRevenue,
             },
           };
         } catch (talentError) {
           // If individual talent processing fails, return talent as-is
-          logError("Failed to process talent metrics", talentError, { talentId: talent.id });
-          return talent; // Return the talent we already have
+          logError("Failed to process talent metrics", talentError, { talentId: talentWithEnrichment.id });
+          return talentWithEnrichment; // Return the talent we already have
         }
       })
       );
@@ -1144,8 +1144,8 @@ router.get("/:id/contracts", async (req: Request, res: Response) => {
  * Get inbox messages for a talent
  */
 router.get("/:id/inbox", async (req: Request, res: Response) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
     const talent = await prisma.talent.findUnique({
       where: { id },
       select: { userId: true },

@@ -155,6 +155,7 @@ router.get('/callback', oauthCallbackLimiter, async (req: Request, res: Response
         connected: true,
         accessToken: longLivedToken,
         expiresAt,
+        updatedAt: new Date(),
         metadata: {
           accountType: profile.account_type,
           externalId: profile.id

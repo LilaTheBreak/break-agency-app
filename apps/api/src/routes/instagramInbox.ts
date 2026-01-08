@@ -151,6 +151,7 @@ router.get("/callback", async (req: Request, res: Response) => {
         connected: true,
         accessToken,
         expiresAt,
+        updatedAt: new Date(),
         metadata: {
           externalId: profile.id,
           purpose: "inbox"

@@ -25,7 +25,9 @@ export async function generateFollowUps() {
           id: `action-${Date.now()}`,
           sequenceId: seq.id,
           actionType: "follow_up",
-          runAt: new Date()
+          status: "pending",
+          runAt: new Date(),
+          updatedAt: new Date()
         }
       });
 
