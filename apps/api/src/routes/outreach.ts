@@ -40,12 +40,13 @@ router.post("/prospect", requireAuth, async (req, res) => {
     leads.map((l: any) =>
       prisma.lead.create({
         data: {
-          userId: req.user!.id,
+          email: l.brandEmail || `lead-${Date.now()}@example.com`,
           brandName: l.brandName,
-          brandWebsite: l.brandWebsite,
           brandEmail: l.brandEmail,
-          industry: l.industry,
-          score: l.score || 50
+          name: l.brandName,
+          company: l.brandName,
+          status: "new",
+          metadata: { score: l.score || 50, industry: l.industry, niche }
         }
       })
     )

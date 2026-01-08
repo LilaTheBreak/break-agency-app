@@ -68,7 +68,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
               { firstName: { contains: query, mode: "insensitive" } },
               { lastName: { contains: query, mode: "insensitive" } },
               { email: { contains: query, mode: "insensitive" } },
-              { jobTitle: { contains: query, mode: "insensitive" } }
+              { title: { contains: query, mode: "insensitive" } }
             ]
           },
           select: {
@@ -76,9 +76,9 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
             firstName: true,
             lastName: true,
             email: true,
-            jobTitle: true,
-            brandId: true,
-            Brand: {
+            title: true,
+            crmBrandId: true,
+            CrmBrand: {
               select: {
                 id: true,
                 brandName: true
@@ -101,22 +101,19 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
           where: {
             ...whereClause,
             OR: [
-              { dealName: { contains: query, mode: "insensitive" } },
-              { status: { contains: query, mode: "insensitive" } },
-              { dealType: { contains: query, mode: "insensitive" } }
+              { campaignName: { contains: query, mode: "insensitive" } }
             ]
           },
           select: {
             id: true,
-            dealName: true,
-            status: true,
-            dealType: true,
-            estimatedValue: true,
+            campaignName: true,
+            stage: true,
+            value: true,
             brandId: true,
             Brand: {
               select: {
                 id: true,
-                name: true
+                brandName: true
               }
             }
           },
@@ -170,24 +167,16 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
           where: {
             ...whereClause,
             OR: [
-              { eventName: { contains: query, mode: "insensitive" } },
-              { eventType: { contains: query, mode: "insensitive" } },
+              { title: { contains: query, mode: "insensitive" } },
               { status: { contains: query, mode: "insensitive" } }
             ]
           },
           select: {
             id: true,
-            eventName: true,
-            eventType: true,
+            title: true,
             status: true,
-            startDateTime: true,
-            brandId: true,
-            Brand: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
+            dueDate: true,
+            brandId: true
           },
           take: limit
         });
@@ -205,23 +194,15 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
           where: {
             ...whereClause,
             OR: [
-              { contractName: { contains: query, mode: "insensitive" } },
-              { contractType: { contains: query, mode: "insensitive" } },
+              { title: { contains: query, mode: "insensitive" } },
               { status: { contains: query, mode: "insensitive" } }
             ]
           },
           select: {
             id: true,
-            contractName: true,
-            contractType: true,
+            title: true,
             status: true,
-            brandId: true,
-            Brand: {
-              select: {
-                id: true,
-                name: true
-              }
-            }
+            brandId: true
           },
           take: limit
         });

@@ -66,18 +66,19 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
       //   },
       // });
 
-      // Auto-routing logic for priority
-      if (classification.type === "deal" || classification.type === "negotiation") {
-        await prisma.inboxMessage.update({
-          where: { id: savedMsg.id },
-          data: { priority: 2 },
-        });
-      } else if (classification.type === "event" || classification.type === "press") {
-        await prisma.inboxMessage.update({
-          where: { id: savedMsg.id },
-          data: { priority: 1 },
-        });
-      }
+      // Auto-routing logic for priority - set on InboxThreadMeta instead of InboxMessage
+      const threadMeta = await prisma.inboxThreadMeta.upsert({
+        where: { threadId: savedMsg.threadId },
+        create: {
+          threadId: savedMsg.threadId,
+          userId: req.user?.id || userId,
+          priority: (classification.type === "deal" || classification.type === "negotiation") ? 2 : 1,
+          unreadCount: 1
+        },
+        update: {
+          priority: (classification.type === "deal" || classification.type === "negotiation") ? 2 : 1
+        }
+      });
 
       // Deal linking engine
       await autoLinkDeal(savedMsg, classification);
@@ -97,7 +98,15 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
  */
 router.get("/api/inbox/priority", requireAuth, async (req, res) => {
   const messages = await prisma.inboxMessage.findMany({
-    where: { priority: { gte: 1 } },
+    where: { 
+      InboxThreadMeta: { 
+        priority: { gte: 1 },
+        userId: req.user?.id || ""
+      }
+    },
+    include: {
+      InboxThreadMeta: true
+    },
     orderBy: { receivedAt: "desc" },
     take: 50,
   });

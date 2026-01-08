@@ -43,8 +43,8 @@ router.get("/api/inbox/counters", requireAuth, async (req: Request, res: Respons
 
     const [unreadEmails, unreadDMs, highPriority, awaitingReply] = await Promise.all([
       prisma.inboundEmail.count({ where: { userId, isRead: false } }),
-      prisma.inboxMessage.count({ where: { userId, openedAt: null } }),
-      prisma.inboxMessage.count({ where: { userId, priority: 2 } }),
+      prisma.inboxMessage.count({ where: { userId, isRead: false } }),
+      prisma.inboxMessage.count({ where: { InboxThreadMeta: { priority: 2, userId } } }),
       getAwaitingReplyCount(userId, userEmail),
     ]);
 

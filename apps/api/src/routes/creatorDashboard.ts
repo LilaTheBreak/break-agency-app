@@ -29,7 +29,7 @@ router.get("/api/creator/dashboard", requireAuth, async (req: Request, res: Resp
       prisma.payment.aggregate({
         _sum: { amount: true },
         where: {
-          userId: userId,
+          talentId: userId,
           status: "completed",
           createdAt: { gte: new Date(new Date().getFullYear(), 0, 1) },
         },

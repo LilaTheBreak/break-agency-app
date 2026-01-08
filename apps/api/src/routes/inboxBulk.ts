@@ -32,11 +32,11 @@ router.post("/api/inbox/bulk", requireAuth, async (req: Request, res: Response) 
       switch (action) {
         case "mark-read":
           if (emailIds.length) await tx.inboundEmail.updateMany({ where: { id: { in: emailIds } }, data: { isRead: true } });
-          if (dmIds.length) await tx.inboxMessage.updateMany({ where: { id: { in: dmIds } }, data: { openedAt: new Date() } });
+          if (dmIds.length) await tx.inboxMessage.updateMany({ where: { id: { in: dmIds } }, data: { isRead: true } });
           break;
         case "mark-unread":
           if (emailIds.length) await tx.inboundEmail.updateMany({ where: { id: { in: emailIds } }, data: { isRead: false } });
-          if (dmIds.length) await tx.inboxMessage.updateMany({ where: { id: { in: dmIds } }, data: { openedAt: null } });
+          if (dmIds.length) await tx.inboxMessage.updateMany({ where: { id: { in: dmIds } }, data: { isRead: false } });
           break;
         case "archive":
           // Appends 'archived' to the categories array
