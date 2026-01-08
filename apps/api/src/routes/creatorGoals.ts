@@ -132,16 +132,19 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 
     const goal = await prisma.creatorGoal.create({
       data: {
+        id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...parsed.data,
         creatorId: talent.id,
+        updatedAt: new Date(),
       },
     });
 
     // Create version history entry
     await prisma.creatorGoalVersion.create({
       data: {
+        id: `goalv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorGoalId: goal.id,
-        snapshot: goal,
+        snapshot: goal as any,
         changedBy: "creator",
         changeType: "created",
       },
@@ -198,8 +201,9 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
     // Create version history entry
     await prisma.creatorGoalVersion.create({
       data: {
+        id: `goalv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorGoalId: goal.id,
-        snapshot: goal,
+        snapshot: goal as any,
         changedBy: "creator",
         changeType: "updated",
       },
@@ -252,8 +256,9 @@ router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
     // Create version history entry
     await prisma.creatorGoalVersion.create({
       data: {
+        id: `goalv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorGoalId: goal.id,
-        snapshot: goal,
+        snapshot: goal as any,
         changedBy: "creator",
         changeType: "archived",
       },

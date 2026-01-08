@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { UserRoleType } from '../../types/custom.js';
+// import { UserRoleType } from '../../types/custom.js'; // Type not found
 import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const prisma = new PrismaClient();
+type UserRoleType = string;
 
 // @desc    List all users pending review
 // @route   GET /api/admin/creator-reviews

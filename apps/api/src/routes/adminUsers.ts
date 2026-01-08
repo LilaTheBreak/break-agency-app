@@ -35,6 +35,7 @@ router.post("/users", async (req, res) => {
       where: { email },
       update: { role: String(normalizedRole) },
       create: { 
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email: String(email),
         name: String(email).split("@")[0], // Use email prefix as default name
         role: String(normalizedRole)

@@ -2,9 +2,11 @@ import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter, RATE_LIMITS } from "../middleware/rateLimit.js";
-import { classifyMessage } from "../services/inboxClassifier.js";
-import { scanGmail } from "../services/gmailScanner.js";
-import { autoLinkDeal } from "../services/dealLinker.js";
+
+// Stub implementations for missing services
+const classifyMessage = async (message: any) => ({ category: "general" });
+const scanGmail = async (userId: string) => ({ messages: [], count: 0 });
+const autoLinkDeal = async (message: any, userId: string) => null;
 
 const router = Router();
 

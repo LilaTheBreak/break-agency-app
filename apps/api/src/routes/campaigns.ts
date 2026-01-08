@@ -34,12 +34,14 @@ router.post("/campaigns", ensureManager, async (req: Request, res: Response) => 
     
     const campaign = await prisma.brandCampaign.create({
       data: {
+        id: `camp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title,
         ownerId: ownerId || userId,
         stage: normalizedStage,
         brands: sanitize(brands),
         creatorTeams: sanitize(creatorTeams),
-        metadata: sanitize(metadata)
+        metadata: sanitize(metadata),
+        updatedAt: new Date()
       }
     });
     await syncBrandPivots(campaign.id, Array.isArray(brands) ? brands : []);

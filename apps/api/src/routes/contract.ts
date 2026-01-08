@@ -5,7 +5,6 @@ import prisma from "../lib/prisma.js";
 import { enqueueContractProcessing } from "../services/aiAgent/contractRunner.js";
 import { contractFinalisationQueue } from "../worker/queues.js";
 import { initiateSignature } from "../services/signature/orchestrator.js";
-import { contractFinalisationQueue } from "../worker/queues.js";
 
 const router = Router();
 
@@ -27,9 +26,11 @@ router.post("/submit", requireAuth, async (req, res) => {
   if (!fileId || !contractText) return res.status(400).json({ error: "fileId and contractText required" });
   const contract = await prisma.contractReview.create({
     data: {
+      id: `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId: req.user!.id,
       fileId,
-      contractText
+      contractText,
+      updatedAt: new Date()
     }
   });
   await enqueueContractProcessing(req.user!.id, contract.id);
