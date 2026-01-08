@@ -1,47 +1,24 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { asyncHandler } from '../middleware/asyncHandler.js';
-import { isPremiumBrand } from '../services/brandAccessService.js';
 import { isAdmin as checkIsAdmin, isSuperAdmin } from '../lib/roleHelpers.js';
 
 const prisma = new PrismaClient();
-const BRAND_FREE_REQUEST_LIMIT = 3;
 
-// @desc    A brand requests content from a UGC creator
+// @desc    A brand requests content
 // @route   POST /api/ugc/request
 // @access  Private (Brand)
 export const createUgcRequest = asyncHandler(async (req: Request, res: Response) => {
-  const brandUser = req.user!;
-  const { creatorId, type, message, brief, deliverables } = req.body;
-
-  // Enforce monthly cap for Brand Free users
-  if (!isPremiumBrand(brandUser)) {
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const requestCount = await prisma.uGCRequest.count({
-      where: {
-        brandId: brandUser.id,
-        createdAt: { gte: startOfMonth },
-      },
-    });
-
-    if (requestCount >= BRAND_FREE_REQUEST_LIMIT) {
-      res.status(403);
-      throw new Error('You have reached your monthly limit for UGC requests. Please upgrade to Premium.');
-    }
-  }
+  const user = req.user!;
+  const { brief, budget, deadline } = req.body;
 
   const request = await prisma.uGCRequest.create({
     data: {
-      brandId: brandUser.id,
-      creatorId,
-      type,
-      message,
-      // In a real app, brief and deliverables would be more structured
-      deliverables: { brief, items: deliverables },
-      status: isPremiumBrand(brandUser) ? 'pending' : 'pending_admin_approval',
+      userId: user.id,
+      brief,
+      budget: budget || 0,
+      deadline: deadline ? new Date(deadline) : undefined,
+      status: 'pending',
     },
   });
 
@@ -50,14 +27,13 @@ export const createUgcRequest = asyncHandler(async (req: Request, res: Response)
 
 // @desc    Get details of a specific UGC request
 // @route   GET /api/ugc/requests/:id
-// @access  Private (Brand, Creator, Admin)
+// @access  Private (Brand, Admin)
 export const getUgcRequest = asyncHandler(async (req: Request, res: Response) => {
   const user = req.user!;
   const requestId = req.params.id;
 
   const request = await prisma.uGCRequest.findUnique({
     where: { id: requestId },
-    include: { brand: true, creator: true },
   });
 
   if (!request) {
@@ -66,7 +42,7 @@ export const getUgcRequest = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Visibility logic
-  if (user.id !== request.brandId && user.id !== request.creatorId && !checkIsAdmin(user)) {
+  if (user.id !== request.userId && !checkIsAdmin(user)) {
     res.status(403);
     throw new Error('You do not have permission to view this request.');
   }
@@ -74,26 +50,26 @@ export const getUgcRequest = asyncHandler(async (req: Request, res: Response) =>
   res.status(200).json(request);
 });
 
-// @desc    A creator responds to a UGC request
+// @desc    Creator responds to a UGC request
 // @route   POST /api/ugc/requests/:id/respond
 // @access  Private (Creator)
 export const respondToUgcRequest = asyncHandler(async (req: Request, res: Response) => {
-  const creatorId = req.user!.id;
+  const userId = req.user!.id;
   const requestId = req.params.id;
-  const { response } = req.body; // 'accept', 'decline', 'revise'
+  const { response } = req.body;
 
-  const request = await prisma.uGCRequest.findFirst({
-    where: { id: requestId, creatorId },
+  const request = await prisma.uGCRequest.findUnique({
+    where: { id: requestId },
   });
 
   if (!request) {
     res.status(404);
-    throw new Error('Request not found or you do not have permission to respond.');
+    throw new Error('Request not found');
   }
 
   const updatedRequest = await prisma.uGCRequest.update({
     where: { id: requestId },
-    data: { status: response }, // e.g., 'accepted', 'declined'
+    data: { status: response || 'pending' },
   });
 
   res.status(200).json(updatedRequest);

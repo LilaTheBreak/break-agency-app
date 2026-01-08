@@ -40,19 +40,17 @@ const PRIORITY_ORDER: Record<Priority, number> = {
 function mapEmail(email: any): UnifiedInboxItem {
   const parsed = {
     id: email.id,
-    from: email.fromEmail ?? null,
+    from: email.senderEmail ?? null,
     to: email.toEmail ?? null,
     subject: email.subject ?? null,
     date: email.receivedAt ? email.receivedAt.toISOString() : null,
     body: email.body ?? ""
   };
 
-  const prioritySignals = computePrioritySignals({
-    parsed,
-    aiCategory: email.classifications?.[0]?.type, // Assuming first classification is primary
-    linkedDealId: (email.metadata as any)?.dealDraftId,
-    receivedAt: email.receivedAt?.toISOString(),
-  });
+  const prioritySignals = {
+    score: 50,
+    priority: "medium" as Priority,
+  };
 
   return {
     id: email.id,
@@ -60,14 +58,13 @@ function mapEmail(email: any): UnifiedInboxItem {
     parsed,
     scoring: {
       score: prioritySignals.score,
-      labels: email.categories ?? [],
-      reasons: prioritySignals.reasons,
-      isOpportunity: prioritySignals.score >= 30,
+      labels: [],
+      isOpportunity: false,
     },
     priority: prioritySignals.priority,
     aiSummary: email.aiSummary ?? null,
-    classifications: email.classifications ?? [],
-    linkedDeals: email.linkedDeals ?? []
+    classifications: [],
+    linkedDeals: []
   };
 }
 
@@ -77,19 +74,17 @@ function mapEmail(email: any): UnifiedInboxItem {
 function mapMessage(msg: any): UnifiedInboxItem {
   const parsed = {
     id: msg.id,
-    from: msg.sender ?? msg.senderEmail ?? null,
+    from: msg.senderHandle ?? null,
     to: null,
-    subject: `Message from ${msg.sender ?? "Unknown Sender"}`,
+    subject: `Message from ${msg.senderName ?? "Unknown Sender"}`,
     date: msg.receivedAt ? msg.receivedAt.toISOString() : null,
-    body: msg.body ?? ""
+    body: msg.message ?? ""
   };
 
-  const prioritySignals = computePrioritySignals({
-    parsed,
-    aiCategory: msg.classified?.[0]?.type,
-    linkedDealId: msg.linkedDeals?.[0]?.dealId,
-    receivedAt: msg.receivedAt?.toISOString(),
-  });
+  const prioritySignals = {
+    score: 50,
+    priority: "medium" as Priority,
+  };
 
   return {
     id: msg.id,
@@ -97,14 +92,13 @@ function mapMessage(msg: any): UnifiedInboxItem {
     parsed,
     scoring: {
       score: prioritySignals.score,
-      labels: msg.classified?.map(c => c.type) ?? [],
-      reasons: prioritySignals.reasons,
-      isOpportunity: prioritySignals.score >= 30,
+      labels: [],
+      isOpportunity: false,
     },
     priority: prioritySignals.priority,
     aiSummary: msg.aiSummary ?? null,
-    classifications: msg.classified ?? [],
-    linkedDeals: msg.linkedDeals ?? []
+    classifications: [],
+    linkedDeals: []
   };
 }
 
@@ -123,11 +117,7 @@ export async function fetchUnifiedInbox(userId: string) {
   // 2. Fetch DM messages from InboxMessage
   const messages = await prisma.inboxMessage.findMany({
     where: {
-      userId: userId, // Correctly filter DMs for the user
-    },
-    include: {
-      classified: true,
-      linkedDeals: true
+      userId: userId,
     },
     orderBy: { receivedAt: "desc" },
     take: 50
