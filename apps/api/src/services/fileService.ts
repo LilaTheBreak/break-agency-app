@@ -23,11 +23,13 @@ export async function confirmUpload(userId: string, fileKey: string, filename: s
   const url = await getGCSignedUrl(fileKey, 3600); // 1 hour expiry
   const file = await prisma.file.create({
     data: {
-      userId,
+      id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId: userId || undefined,
       key: fileKey,
       url,
       filename,
-      type
+      type,
+      updatedAt: new Date()
     }
   });
   return file;
@@ -91,12 +93,14 @@ export async function saveUploadedFile(userId: string | null, file: Express.Mult
 
   const record = await prisma.file.create({
     data: {
+      id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId: userId || undefined,
       key: uploadResult.key,
       url: uploadResult.signedUrl,
       filename: file.originalname,
       type: file.mimetype,
-      size: file.size
+      size: file.size,
+      updatedAt: new Date()
     }
   });
 

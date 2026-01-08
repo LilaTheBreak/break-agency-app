@@ -175,7 +175,6 @@ export async function ingestGmailForUser(userId: string) {
           where: { threadId: parsed.threadId },
           update: {
             lastMessageAt: parsed.receivedAt,
-            subject: parsed.subject,
           },
           create: {
             threadId: parsed.threadId,
@@ -184,7 +183,6 @@ export async function ingestGmailForUser(userId: string) {
             unreadCount: 0,
             priority: 0,
             lastMessageAt: parsed.receivedAt,
-            subject: parsed.subject,
           },
         });
 
@@ -215,7 +213,8 @@ export async function ingestGmailForUser(userId: string) {
             metadata,
           },
           create: {
-            userId,
+            id: `inbound_${parsed.id}`,
+            User: userId ? { connect: { id: userId } } : undefined,
             threadId: parsed.threadId,
             gmailId: parsed.id,
             subject: parsed.subject,
@@ -223,7 +222,6 @@ export async function ingestGmailForUser(userId: string) {
             fromEmail: parsed.from ?? "",
             toEmail: parsed.to ?? "",
             receivedAt: parsed.receivedAt,
-            categories: [],
             metadata,
           },
         });

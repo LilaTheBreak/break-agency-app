@@ -113,7 +113,7 @@ export function mapGmailMessageToDb(
   
   const inboundEmailData: InboundEmailCreateInput = {
     id: `inbound_${message.id!}`,
-    userId,
+    User: userId ? { connect: { id: userId } } : undefined,
     platform: "gmail", // Explicitly set platform
     gmailId: message.id!,
     subject: getHeader(headers, "Subject") || null,
