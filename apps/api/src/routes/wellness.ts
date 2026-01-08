@@ -75,17 +75,18 @@ router.get("/api/wellness/history", async (req: Request, res: Response) => {
  */
 router.get("/api/wellness/insights", async (req: Request, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: { talentId: true }
+    // Get the talent associated with this user
+    const talent = await prisma.talent.findUnique({
+      where: { userId: req.user!.id },
+      select: { id: true }
     });
 
-    if (!user?.talentId) {
+    if (!talent) {
       return res.json({ success: true, data: { insight: null } });
     }
 
     const insight = await prisma.wellnessCheckin.findFirst({
-      where: { creatorId: user.talentId },
+      where: { creatorId: talent.id },
       orderBy: { createdAt: "desc" }
     });
 

@@ -111,7 +111,7 @@ router.get("/", async (req: Request, res: Response) => {
     const resources = await prisma.resource.findMany({
       where,
       include: {
-        createdBy: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -162,7 +162,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     const resource = await prisma.resource.findUnique({
       where: { id },
       include: {
-        createdBy: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -300,7 +300,7 @@ router.post("/", requireAuth, requireAdmin, async (req: Request, res: Response) 
         createdById: user.id,
       },
       include: {
-        createdBy: {
+        User: {
           select: {
             id: true,
             name: true,
@@ -377,7 +377,7 @@ router.put("/:id", requireAuth, requireAdmin, async (req: Request, res: Response
       where: { id },
       data: updateData,
       include: {
-        createdBy: {
+        User: {
           select: {
             id: true,
             name: true,

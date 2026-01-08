@@ -152,16 +152,16 @@ async function generateOutreach(user: any, targets: string[]) {
 }
 
 async function logAIAgent(type: string, userId: string, metadata: Record<string, any>) {
-  // aiHistory model doesn't exist - logging to AIPromptHistory instead
-  const userRecord = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { talentId: true }
+  // Log to AIPromptHistory instead
+  const talentRecord = await prisma.talent.findUnique({
+    where: { userId },
+    select: { id: true }
   });
 
-  if (userRecord?.talentId) {
+  if (talentRecord?.id) {
     await prisma.aIPromptHistory.create({
       data: {
-        creatorId: userRecord.talentId,
+        creatorId: talentRecord.id,
         prompt: type,
         response: JSON.stringify(metadata),
         category: type

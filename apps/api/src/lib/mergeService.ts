@@ -96,11 +96,11 @@ async function mergeTalent(primaryId: string, mergeIds: string[]): Promise<void>
     data: { talentId: primaryId },
   });
 
-  // Reassign all contracts
-  await prisma.contract.updateMany({
-    where: { talentId: { in: mergeIds } },
-    data: { talentId: primaryId },
-  });
+  // TODO: Reassign contracts - they're linked via Deal, not directly to Talent
+  // await prisma.contract.updateMany({
+  //   where: { talentId: { in: mergeIds } },
+  //   data: { talentId: primaryId },
+  // });
 
   // Reassign all payments
   await (prisma as any).payment?.updateMany({
