@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler.js';
-import { isPremiumBrand } from '../../services/brandAccessService.js';
-import { isAdmin as checkIsAdmin, isSuperAdmin } from '../../lib/roleHelpers.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { isPremiumBrand } from '../services/brandAccessService.js';
+import { isAdmin as checkIsAdmin, isSuperAdmin } from '../lib/roleHelpers.js';
 
 const prisma = new PrismaClient();
 const BRAND_FREE_REQUEST_LIMIT = 3;

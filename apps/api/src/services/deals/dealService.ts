@@ -6,8 +6,8 @@ export async function getAllDeals(userId: string) {
     include: {
       Talent: true,
       Brand: true,
-      deliverables: true,
-      payments: true,
+      Deliverable: true,
+      Payment: true,
     },
     orderBy: { createdAt: "desc" },
   });
@@ -19,10 +19,10 @@ export async function getDealById(id: string, userId: string) {
     include: {
       Talent: true,
       Brand: true,
-      deliverables: true,
-      payments: true,
-      timeline: true,
-      dealPackages: true,
+      Deliverable: true,
+      Payment: true,
+      DealTimeline: true,
+      // dealPackages: true, // TODO: check if this relation exists
     },
   });
 }

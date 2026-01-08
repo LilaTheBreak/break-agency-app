@@ -1099,6 +1099,7 @@ router.get("/:id/opportunities", async (req: Request, res: Response) => {
     // Placeholder - will be implemented when Opportunity model has talentId
     res.json({ opportunities: [] });
   } catch (error) {
+    const { id } = req.params;
     logError("Failed to fetch talent opportunities", error, { userId: req.user?.id, talentId: id });
     res.status(500).json({ error: "Failed to fetch talent opportunities" });
   }
@@ -1115,6 +1116,7 @@ router.get("/:id/campaigns", async (req: Request, res: Response) => {
     // Placeholder - will be implemented when Campaign model has talentId
     res.json({ campaigns: [] });
   } catch (error) {
+    const { id } = req.params;
     logError("Failed to fetch talent campaigns", error, { userId: req.user?.id, talentId: id });
     res.status(500).json({ error: "Failed to fetch talent campaigns" });
   }
@@ -1131,6 +1133,7 @@ router.get("/:id/contracts", async (req: Request, res: Response) => {
     // Placeholder - will be implemented when Contract model has talentId
     res.json({ contracts: [] });
   } catch (error) {
+    const { id } = req.params;
     logError("Failed to fetch talent contracts", error, { userId: req.user?.id, talentId: id });
     res.status(500).json({ error: "Failed to fetch talent contracts" });
   }

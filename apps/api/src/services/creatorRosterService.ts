@@ -46,7 +46,7 @@ export async function addToRoster(
 
   if (existing) {
     // Update existing entry
-    return prisma.brandSavedTalent.update({
+    const updated = await prisma.brandSavedTalent.update({
       where: {
         brandId_talentId: {
           brandId,
@@ -59,10 +59,11 @@ export async function addToRoster(
         updatedAt: new Date()
       }
     });
+    return updated as any as RosterEntry;
   }
 
   // Create new roster entry
-  return prisma.brandSavedTalent.create({
+  const created = await prisma.brandSavedTalent.create({
     data: {
       id: generateId(),
       brandId,
@@ -71,6 +72,7 @@ export async function addToRoster(
       notes: notes || null
     }
   });
+  return created as any as RosterEntry;
 }
 
 /**
@@ -101,7 +103,7 @@ export async function updateRosterEntry(
     notes?: string;
   }
 ): Promise<RosterEntry> {
-  return prisma.brandSavedTalent.update({
+  const updated = await prisma.brandSavedTalent.update({
     where: {
       brandId_talentId: {
         brandId,
@@ -113,6 +115,7 @@ export async function updateRosterEntry(
       updatedAt: new Date()
     }
   });
+  return updated as any as RosterEntry;
 }
 
 /**

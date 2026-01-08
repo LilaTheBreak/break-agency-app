@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler.js';
-import { filterProfileForBrand } from '../../services/brandAccessService.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { filterProfileForBrand } from '../services/brandAccessService.js';
 
 const prisma = new PrismaClient();
 

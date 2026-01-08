@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { UserRoleType } from '../../types/custom.js';
-import { asyncHandler } from '../../middleware/asyncHandler.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const prisma = new PrismaClient();
 
