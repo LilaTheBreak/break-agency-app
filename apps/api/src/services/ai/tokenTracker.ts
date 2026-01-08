@@ -3,9 +3,9 @@
 import prisma from "../../lib/prisma.js";
 
 export interface TokenTrackingInput {
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
+  model?: string; // Optional - defaults to gpt-4.1
+  promptTokens?: number;
+  completionTokens?: number;
   org?: string;
   userId?: string; // optional future use for user-level billing
   service?: string; // optional service name for categorization
@@ -43,7 +43,18 @@ function getModelCost(model: string): number {
  */
 export async function trackAITokens(input: TokenTrackingInput) {
   try {
-    const { model, promptTokens, completionTokens, userId } = input;
+    let { model, promptTokens, completionTokens, userId } = input;
+
+    // Support both calling styles - if tokens but no breakdown, split them
+    if (input.tokens && !promptTokens && !completionTokens) {
+      promptTokens = Math.floor(input.tokens * 0.3);
+      completionTokens = Math.floor(input.tokens * 0.7);
+    }
+
+    // Defaults
+    model = model || "gpt-4.1";
+    promptTokens = promptTokens || 0;
+    completionTokens = completionTokens || 0;
 
     const totalTokens = promptTokens + completionTokens;
     const costPerToken = getModelCost(model);

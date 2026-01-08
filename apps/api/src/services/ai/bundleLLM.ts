@@ -23,7 +23,12 @@ export async function runBundleLLM(input: any) {
     tokens = completion.usage?.total_tokens ?? 0;
     const result = JSON.parse(completion.choices[0].message.content || "{}");
     const latency = Date.now() - start;
-    await trackAITokens({ service: "runBundleLLM", tokens });
+    // Track tokens: use estimated split between prompt and completion
+    await trackAITokens({ 
+      model: "gpt-4.1", 
+      promptTokens: Math.floor(tokens * 0.3),
+      completionTokens: Math.floor(tokens * 0.7)
+    });
     return {
       ok: true,
       data: result,
@@ -35,7 +40,11 @@ export async function runBundleLLM(input: any) {
   } catch (error) {
     console.error("Error running Bundle LLM:", error);
     const latency = Date.now() - start;
-    await trackAITokens({ service: "runBundleLLM", tokens });
+    await trackAITokens({ 
+      model: "gpt-4.1",
+      promptTokens: Math.floor(tokens * 0.3),
+      completionTokens: Math.floor(tokens * 0.7)
+    });
     return {
       ok: false,
       data: null,
