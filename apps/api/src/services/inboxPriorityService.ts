@@ -48,7 +48,7 @@ async function processEmails(userId: string): Promise<PriorityItem[]> {
 
     const aiScore = await scoreEmail(parsed);
     const reason: PriorityReason = {
-      isHighScore: aiScore >= 60,
+      isHighScore: aiScore.score >= 60,
       hasDeadline: !!(email.metadata as any)?.deadline,
       dealCategory: email.categories.some(cat => PRIORITY_CATEGORIES.includes(cat)),
       unreadReply: !email.isRead, // Simplified: unread is a form of priority
@@ -58,7 +58,7 @@ async function processEmails(userId: string): Promise<PriorityItem[]> {
     const isPriority = Object.values(reason).some(Boolean);
 
     if (isPriority) {
-      let priorityScore = aiScore;
+      let priorityScore = aiScore.score;
       if (reason.hasDeadline) priorityScore += 20;
       if (reason.dealCategory) priorityScore += 15;
       if (reason.unreadReply) priorityScore += 5;

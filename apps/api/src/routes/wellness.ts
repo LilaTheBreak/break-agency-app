@@ -28,11 +28,10 @@ router.post("/api/wellness/check-in", async (req: Request, res: Response) => {
       journal: journal ?? "",
     });
 
-    const check = await prisma.wellnessCheck.create({
+    const check = await prisma.wellnessCheckin.create({
       data: {
-        userId: req.user!.id,
-        mood: parseInt(mood),
-        stress: parseInt(stress),
+        creatorId: req.user!.id,
+        energyLevel: parseInt(energy),
         energy: parseInt(energy),
         workload,
         journal,
@@ -57,8 +56,8 @@ router.get("/api/wellness/history", async (req: Request, res: Response) => {
     const days = parseInt(req.query.days as string) || 30;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const checks = await prisma.wellnessCheck.findMany({
-      where: { userId: req.user!.id, createdAt: { gte: since } },
+    const checks = await prisma.wellnessCheckin.findMany({
+      where: { creatorId: req.user!.id, createdAt: { gte: since } },
       orderBy: { createdAt: "asc" },
     });
 

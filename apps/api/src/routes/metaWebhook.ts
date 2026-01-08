@@ -12,7 +12,7 @@ import type { Request, Response } from "express";
  * @route GET /api/webhooks/meta
  * @public - No authentication required (Meta needs to verify)
  */
-export function metaWebhookVerificationHandler(req: Request, res: Response): void {
+export function metaWebhookVerificationHandler(req: Request, res: Response): Response | void {
   console.log("[META_WEBHOOK] Verification request received");
   console.log("[META_WEBHOOK] Query params:", req.query);
   
