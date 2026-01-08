@@ -11,7 +11,10 @@ export const openai = process.env.OPENAI_API_KEY
 /**
  * Simple helper for chat completions.
  */
-export async function generateChatCompletion(messages: Array<{ role: string; content: string }>) {
+export async function generateChatCompletion(messages: OpenAI.Chat.ChatCompletionMessageParam[]) {
+  if (!openai) {
+    throw new Error("OpenAI API key not configured");
+  }
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages,

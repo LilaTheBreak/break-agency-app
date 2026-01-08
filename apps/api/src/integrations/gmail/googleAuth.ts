@@ -82,10 +82,11 @@ export async function exchangeCodeForTokens(code: string) {
 export async function refreshAccessToken(refreshToken: string) {
   const client = new google.auth.OAuth2(clientId, clientSecret, gmailRedirectUri);
   client.setCredentials({ refresh_token: refreshToken });
-  const { credentials } = await client.getAccessToken();
+  const response = await client.getAccessToken();
+  const credentials = response.credentials;
   return {
-    accessToken: credentials?.token || "",
+    accessToken: (credentials as any)?.token || "",
     refreshToken,
-    expiresAt: credentials?.res?.data?.expiry_date ? new Date(credentials.res.data.expiry_date) : undefined
+    expiresAt: (credentials as any)?.expiry_date ? new Date((credentials as any).expiry_date) : undefined
   };
 }

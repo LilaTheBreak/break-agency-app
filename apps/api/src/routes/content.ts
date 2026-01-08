@@ -197,7 +197,7 @@ function validateBlockContent(blockType: string, content: any): { valid: boolean
     return { valid: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { valid: false, error: error.errors.map(e => `${e.path.join(".")}: ${e.message}`).join(", ") };
+      return { valid: false, error: error.issues.map(e => `${e.path.join(".")}: ${e.message}`).join(", ") };
     }
     return { valid: false, error: "Invalid content format" };
   }

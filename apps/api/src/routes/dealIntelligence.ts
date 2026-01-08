@@ -196,8 +196,8 @@ ${purpose === "follow-up" ? "I wanted to follow up on our previous conversation 
 Deal Details:
 - Deal: ${deal.brandName || 'N/A'}
 - Brand: ${deal.Brand?.name || 'N/A'}
-- Status: ${deal.status || 'N/A'}
-${deal.estimatedValue ? `- Estimated Value: ${deal.estimatedValue}` : ''}
+- Status: ${(deal as any).stage || 'N/A'}
+${(deal as any).value ? `- Estimated Value: ${(deal as any).value}` : ''}
 
 Please let me know if you'd like to discuss further.
 

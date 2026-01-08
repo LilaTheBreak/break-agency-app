@@ -44,12 +44,8 @@ router.get("/api/inbox/categories", requireAuth, async (req: Request, res: Respo
 
     // Process DMs
     for (const dm of dms) {
-      for (const classification of dm.classified) {
-        const categoryKey = classification.type.toLowerCase() + 's'; // e.g., 'deal' -> 'deals'
-        if (categories[categoryKey]) {
-          categories[categoryKey].push(dm);
-        }
-      }
+      // InboxMessage doesn't have classifications, so we skip categorization for now
+      // This could be enhanced by analyzing the subject/snippet
     }
 
     res.json({ success: true, data: categories });

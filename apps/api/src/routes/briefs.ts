@@ -440,7 +440,7 @@ router.post("/restore/:versionId", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND'])
     const restored = await prisma.brandBrief.update({
       where: { id: briefId },
       data: {
-        ...(version.data || {}),
+        ...(typeof (version as any).data === 'object' && (version as any).data !== null ? (version as any).data : {}),
         versionHistory: [
           ...versions,
           {

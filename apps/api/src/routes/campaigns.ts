@@ -226,6 +226,7 @@ async function syncBrandPivots(campaignId: string, brands: any[]) {
   if (!entries.length) return;
   await prisma.campaignBrandPivot.createMany({
     data: entries.map((entry) => ({
+      id: `pivot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       campaignId,
       brandId: entry.brandId,
       metrics: entry.metrics as Prisma.InputJsonValue

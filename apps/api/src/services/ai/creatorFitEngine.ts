@@ -76,18 +76,17 @@ export async function computeCreatorFit(
   // Save the result to the database
   await prisma.creatorFitScore.create({
     data: {
+      id: `score_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       talentId,
       brandId,
       campaignId,
-      audienceAlignment: result.audienceAlignment,
-      contentStyleMatch: result.contentStyleMatch,
-      nicheOverlap: result.nicheOverlap,
-      valuesAlignment: result.valuesAlignment,
-      brandSafetyScore: result.brandSafetyScore,
-      riskScore: result.riskScore,
-      totalScore: result.totalScore,
-      aiSummary: result.aiSummary,
-      aiJson: result,
+      totalScore: result.totalScore || 0,
+      audienceScore: Math.round((result.audienceAlignment || 0) * 100),
+      engagementScore: Math.round((result.contentStyleMatch || 0) * 100),
+      historyScore: Math.round((result.nicheOverlap || 0) * 100),
+      categoryScore: Math.round((result.brandSafetyScore || 0) * 100),
+      explanation: result.aiSummary,
+      calculationDetails: result,
     },
   });
 

@@ -52,7 +52,7 @@ export async function summarizeThread(
   try {
     const completion = await openai.chat.completions.create({
       model: AI_MODEL,
-      messages: [{ role: "user" as const, content: prompt }],
+      messages: [{ role: "user", content: String(prompt) }] as any,
       response_format: { type: "json_object" }
     });
 

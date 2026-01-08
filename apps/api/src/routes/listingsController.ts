@@ -38,8 +38,7 @@ export const getListings = asyncHandler(async (req: Request, res: Response) => {
   const { category, platform, priceMin, priceMax } = req.query;
 
   const where: any = {
-    approved: true,
-    visibility: true,
+    status: "active",
   };
 
   if (category) {
@@ -51,7 +50,6 @@ export const getListings = asyncHandler(async (req: Request, res: Response) => {
   const listings = await prisma.uGCListing.findMany({
     where,
     include: {
-      creator: { select: { id: true, name: true, avatarUrl: true } },
       portfolio: true,
     },
     take: 50,
@@ -68,13 +66,8 @@ export const getListingById = asyncHandler(async (req: Request, res: Response) =
   const creatorId = req.params.id;
 
   const listing = await prisma.uGCListing.findUnique({
-    where: { creatorId },
+    where: { userId: creatorId },
     include: {
-      creator: {
-        include: {
-          socialAccounts: true,
-        },
-      },
       portfolio: true,
     },
   });

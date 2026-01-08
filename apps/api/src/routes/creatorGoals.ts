@@ -92,7 +92,7 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
       },
       include: {
         CreatorGoalVersion: {
-          orderBy: { createdAt: "desc" },
+          orderBy: { changedAt: "desc" },
           take: 10,
         },
       },

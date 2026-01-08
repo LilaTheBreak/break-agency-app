@@ -113,7 +113,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
             Brand: {
               select: {
                 id: true,
-                brandName: true
+                name: true
               }
             }
           },
@@ -147,7 +147,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
             Brand: {
               select: {
                 id: true,
-                brandName: true
+                name: true
               }
             }
           },

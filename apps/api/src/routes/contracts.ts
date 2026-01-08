@@ -129,8 +129,8 @@ router.post("/:id/sign/brand", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Contract PDF missing" });
     }
 
-    // Get brand email and name
-    const brandEmail = contract.Brand?.email || (contract.terms as any)?.brandEmail;
+    // Get brand name and email from terms
+    const brandEmail = (contract.terms as any)?.brandEmail || "";
     const brandName = contract.Brand?.name || (contract.terms as any)?.brandName || "Brand";
 
     if (!brandEmail) {

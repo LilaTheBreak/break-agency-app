@@ -146,16 +146,16 @@ router.post("/signature", async (req, res) => {
               include: {
                 Deal: {
                   include: {
-                    Talent: { select: { email: true } },
-                    Brand: { select: { email: true } }
+                    Talent: { select: { primaryEmail: true } },
+                    Brand: true
                   }
                 }
               }
             });
 
             if (contractFull) {
-              const isTalentSigner = (contractFull as any).Deal?.Talent?.email === record.signerEmail;
-              const isBrandSigner = (contractFull as any).Deal?.Brand?.email === record.signerEmail;
+              const isTalentSigner = (contractFull as any).Deal?.Talent?.primaryEmail === record.signerEmail;
+              const isBrandSigner = false; // Brand doesn't have email in schema
 
               if (isTalentSigner && !contractFull.talentSignedAt) {
                 await prisma.contract.update({

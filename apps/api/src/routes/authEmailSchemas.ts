@@ -9,7 +9,7 @@ export const RESTRICTED_ROLES = ["EXCLUSIVE_TALENT", "ADMIN", "SUPERADMIN"] as c
 export const SignupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(PUBLIC_ROLES, {
+  role: z.enum([...PUBLIC_ROLES] as const, {
     errorMap: () => ({ message: "Please select a valid role" })
   })
 });

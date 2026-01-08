@@ -24,10 +24,7 @@ router.post("/api/inbox/ai-reply", requireAuth, async (req: Request, res: Respon
 
     // Fetch the email the user wants to reply to
     const email = await prisma.inboundEmail.findUnique({
-      where: { id: emailId },
-      include: {
-        trackingEvents: true,
-      }
+      where: { id: emailId }
     });
 
     if (!email) {

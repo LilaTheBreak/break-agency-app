@@ -518,7 +518,7 @@ router.post("/batch-import", async (req: Request, res: Response) => {
             description: event.description || null,
             owner: event.owner || null,
             createdBy: req.user!.id,
-            mentions: eventMetadata,
+            mentions: [eventMetadata],
             updatedAt: new Date(),
           },
         });

@@ -13,8 +13,7 @@ export async function processAIAgentTask(taskId: string) {
 
   try {
     const task = await prisma.aIAgentTask.findUnique({
-      where: { id: taskId },
-      include: { talent: { include: { aiSettings: true } } },
+      where: { id: taskId }
     });
 
     if (!task) {
@@ -23,7 +22,7 @@ export async function processAIAgentTask(taskId: string) {
 
     await prisma.aIAgentTask.update({
       where: { id: taskId },
-      data: { status: AIAgentTaskStatus.RUNNING, executedAt: new Date() },
+      data: { status: AIAgentTaskStatus.RUNNING, startedAt: new Date() },
     });
 
     let aiResponse = null;
@@ -69,7 +68,7 @@ export async function processAIAgentTask(taskId: string) {
     // });
 
     await trackAITokens("aiAgentService", aiResponse.meta.tokens, {
-      userId: task.talent.userId,
+      userId: task.userId,
       model: aiResponse.meta.model,
     });
 

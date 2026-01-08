@@ -11,12 +11,12 @@ interface SignOptions {
 
 export function createAuthToken(payload: { id: string }, options: SignOptions = {}) {
   const secret = getJwtSecret();
-  return jwt.sign(payload, secret, { expiresIn: options.expiresIn || DEFAULT_EXPIRY });
+  return jwt.sign(payload, secret as string, { expiresIn: options.expiresIn || DEFAULT_EXPIRY });
 }
 
 export function verifyAuthToken(token: string): { id: string } {
   const secret = getJwtSecret();
-  return jwt.verify(token, secret) as { id: string };
+  return jwt.verify(token, secret as string) as { id: string };
 }
 
 export function setAuthCookie(res: Response, token: string) {
