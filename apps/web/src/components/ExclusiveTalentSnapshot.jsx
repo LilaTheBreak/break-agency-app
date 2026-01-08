@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { apiFetch } from "../services/apiClient.js";
 
 /**
@@ -95,11 +96,27 @@ export function ExclusiveTalentSnapshot() {
 
   if (!data || data.talents.length === 0) {
     return (
-      <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
-        <p className="text-sm text-brand-black/60">
-          No exclusive talent currently assigned
-        </p>
-      </div>
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">
+              Exclusive Talent
+            </p>
+            <h3 className="font-display text-2xl uppercase text-brand-black">
+              Management
+            </h3>
+            <p className="mt-2 text-sm text-brand-black/60">
+              No exclusive talent currently assigned
+            </p>
+          </div>
+          <Link
+            to="/admin/view/exclusive"
+            className="whitespace-nowrap rounded-full border border-brand-black bg-brand-black px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-black/90 transition-colors"
+          >
+            View Management →
+          </Link>
+        </div>
+      </section>
     );
   }
 
@@ -275,8 +292,16 @@ export function ExclusiveTalentSnapshot() {
       </div>
 
       {/* Footer */}
-      <div className="mt-4 text-right text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/40">
-        <p>Updated {new Date(data.meta.generatedAt).toLocaleTimeString()}</p>
+      <div className="mt-6 flex items-center justify-between gap-4 border-t border-brand-black/10 pt-4">
+        <p className="text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/40">
+          Updated {new Date(data.meta.generatedAt).toLocaleTimeString()}
+        </p>
+        <Link
+          to="/admin/view/exclusive"
+          className="inline-flex items-center gap-2 rounded-full border border-brand-red text-brand-red px-4 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] hover:bg-brand-red/5 transition-colors"
+        >
+          Manage All →
+        </Link>
       </div>
     </section>
   );
