@@ -46,6 +46,7 @@ export async function generateCreatorInsights(userId: string) {
   // Use existing CreatorInsight model (note: singular, not plural)
   return prisma.creatorInsight.create({
     data: {
+      id: `insight_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       creatorId: userId,
       insightType: "performance",
       title: "Performance Analysis",

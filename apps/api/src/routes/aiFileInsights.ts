@@ -48,7 +48,7 @@ router.post("/ai/file-insights", requireAuth, async (req: Request, res: Response
       const aiResult = await generateFileInsights({
         text: chunks.join("\n\n"),
         filename: file.filename,
-        detectedType: file.type || detectedType
+        detectedType: detectedType
       });
 
       // Log AI history

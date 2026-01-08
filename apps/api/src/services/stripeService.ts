@@ -46,12 +46,14 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
       updatedAt: new Date()
     },
     create: {
+      id: `payout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       creatorId: userId || "unknown",
       dealId: "unknown",
       referenceId: payout.id,
       amount,
       currency: payout.currency,
-      status
+      status,
+      updatedAt: new Date()
     }
   });
 
@@ -60,14 +62,17 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
       where: { userId },
       update: {
         ...adjustBalance(amount, status),
-        currency: payout.currency
+        currency: payout.currency,
+        updatedAt: new Date()
       },
       create: {
+        id: `bal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId,
         available: status === "paid" ? 0 : 0,
-        pending: status === "paid" ? 0 : amount,
+        pendingAmount: status === "paid" ? 0 : amount,
         currency: payout.currency,
-        metadata: toJson(payout.metadata || {})
+        metadata: toJson(payout.metadata || {}),
+        updatedAt: new Date()
       }
     });
   }
@@ -77,12 +82,12 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
 
 function adjustBalance(amount: number, status: string) {
   if (status === "paid") {
-    return { available: { decrement: amount }, pending: { decrement: Math.max(amount, 0) } };
+    return { available: { decrement: amount }, pendingAmount: { decrement: Math.max(amount, 0) } };
   }
   if (status === "failed" || status === "canceled") {
-    return { available: { increment: amount }, pending: { decrement: Math.max(amount, 0) } };
+    return { available: { increment: amount }, pendingAmount: { decrement: Math.max(amount, 0) } };
   }
-  return { pending: { increment: amount } };
+  return { pendingAmount: { increment: amount } };
 }
 
 async function handleRefundEvent(charge: Stripe.Charge) {
@@ -92,6 +97,7 @@ async function handleRefundEvent(charge: Stripe.Charge) {
     where: { stripePaymentIntentId: paymentIntentId },
     data: {
       status: "refunded",
+      updatedAt: new Date(),
       metadata: toJson({ ...(charge.metadata || {}), refundId: charge.id })
     }
   });
@@ -101,14 +107,18 @@ async function handlePaymentFailed(payment: Stripe.PaymentIntent) {
   await prisma.payment.upsert({
     where: { stripePaymentIntentId: payment.id },
     create: {
+      id: `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       stripePaymentIntentId: payment.id,
+      dealId: "unknown",
       amount: payment.amount ?? 0,
       currency: payment.currency ?? "usd",
       status: payment.status ?? "payment_failed",
+      updatedAt: new Date(),
       metadata: toJson(payment.metadata || {})
     },
     update: {
       status: payment.status ?? "payment_failed",
+      updatedAt: new Date(),
       metadata: toJson(payment.metadata || {})
     }
   });
@@ -120,13 +130,15 @@ async function handleAccountUpdated(account: Stripe.Account) {
   const metadata = account ? toJson(account) : null;
   await prisma.creatorBalance.upsert({
     where: { userId },
-    update: { metadata },
+    update: { metadata, updatedAt: new Date() },
     create: {
+      id: `bal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
       currency: "usd",
       available: 0,
-      pending: 0,
-      metadata
+      pendingAmount: 0,
+      metadata,
+      updatedAt: new Date()
     }
   }).catch((error) => logError("account update balance failed", error));
 }

@@ -16,7 +16,7 @@ export const requireFeature = (feature: Feature) => {
     }
 
     // CRITICAL: Superadmin bypasses ALL feature permission checks
-    if (isSuperAdmin(req.user)) {
+    if (isSuperAdmin(req.user.role)) {
       return next();
     }
 

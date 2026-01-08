@@ -69,7 +69,12 @@ export async function syncGmailForUser(userId: string): Promise<SyncStats> {
               body: inboundEmailData.body,
               inboxMessageId: thread.id,
             },
-            create: { ...inboundEmailData, inboxMessageId: thread.id },
+            create: { 
+              id: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              ...inboundEmailData, 
+              inboxMessageId: thread.id,
+              userId: userId,
+            },
           });
         });
         stats.imported++;

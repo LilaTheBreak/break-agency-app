@@ -83,12 +83,13 @@ export async function linkDriveFileToRecord(
       data: {
         id: `drive_${fileId}_${Date.now()}`,
         userId,
-        fileName: file.name || "Google Drive File",
-        fileType: file.mimeType || "application/octet-stream",
-        fileSize: file.size ? parseInt(file.size) : null,
-        fileUrl: file.webViewLink || file.webContentLink || `https://drive.google.com/file/d/${fileId}/view`,
+        filename: file.name || "Google Drive File",
+        type: file.mimeType || "application/octet-stream",
+        size: file.size ? parseInt(file.size) : 0,
+        url: file.webViewLink || file.webContentLink || `https://drive.google.com/file/d/${fileId}/view`,
+        key: fileId,
+        folder: recordType,
         storageProvider: "google_drive",
-        storageKey: fileId,
         linkedType: recordType,
         linkedId: recordId,
         metadata: {
@@ -107,7 +108,7 @@ export async function linkDriveFileToRecord(
 
     return {
       success: true,
-      fileUrl: fileRecord.fileUrl
+      fileUrl: fileRecord.url
     };
   } catch (error: any) {
     logError("Google Drive link error", error, { userId, fileId, recordType, recordId });

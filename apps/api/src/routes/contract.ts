@@ -39,8 +39,7 @@ router.post("/submit", requireAuth, async (req, res) => {
 
 router.get("/:id", requireAuth, async (req, res) => {
   const contract = await prisma.contractReview.findUnique({
-    where: { id: req.params.id },
-    include: { terms: true }
+    where: { id: req.params.id }
   });
   if (!contract) return res.status(404).json({ error: "Not found" });
   res.json({ contract });

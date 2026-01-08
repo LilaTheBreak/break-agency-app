@@ -42,6 +42,7 @@ export async function evaluateSuitability(args: EvaluateSuitabilityArgs) {
   // 6. Save Result
   const suitabilityResult = await prisma.suitabilityResult.create({
     data: {
+      id: `suit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       creatorId,
       brandId,
       score: finalScore,

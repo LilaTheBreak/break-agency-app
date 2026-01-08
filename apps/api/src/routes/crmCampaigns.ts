@@ -369,6 +369,7 @@ router.post("/batch-import", async (req, res) => {
             lastActivityAt: campaign.lastActivityAt
               ? new Date(campaign.lastActivityAt)
               : new Date(),
+            updatedAt: new Date(),
           },
         });
         imported.campaigns++;

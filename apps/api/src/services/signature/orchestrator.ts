@@ -27,11 +27,12 @@ export async function initiateSignature(contract: any) {
   const record = await prisma.signatureRequest.create({
     data: {
       id: `sig_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      userId,
+      userId: String(userId || ""),
       contractId: contract.id,
-      documentUrl,
-      signerEmail,
+      documentUrl: String(documentUrl),
+      signerEmail: String(signerEmail),
       status: "pending",
+      updatedAt: new Date(),
       metadata: {
         provider: process.env.SIGN_PROVIDER || "native",
         signerName

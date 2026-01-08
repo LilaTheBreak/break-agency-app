@@ -35,6 +35,7 @@ export async function ingestDM({
   try {
     const record = await prisma.inboundEmail.create({
       data: {
+        id: `inbox_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId,
         platform,
         fromEmail: message.senderHandle || "unknown@unknown.com",

@@ -77,11 +77,11 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
           id: `meta_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           threadId: savedMsg.threadId,
           userId: req.user?.id || "",
-          priority: ((classification as any).type === "deal" || (classification as any).type === "negotiation") ? 2 : 1,
+          priority: ((classification as any).category === "deal" || (classification as any).category === "negotiation") ? 2 : 1,
           unreadCount: 1
         },
         update: {
-          priority: ((classification as any).type === "deal" || (classification as any).type === "negotiation") ? 2 : 1
+          priority: ((classification as any).category === "deal" || (classification as any).category === "negotiation") ? 2 : 1
         }
       });
 

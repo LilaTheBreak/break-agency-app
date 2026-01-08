@@ -59,6 +59,7 @@ function mapEmail(email: any): UnifiedInboxItem {
     scoring: {
       score: prioritySignals.score,
       labels: [],
+      reasons: [],
       isOpportunity: false,
     },
     priority: prioritySignals.priority,
@@ -93,6 +94,7 @@ function mapMessage(msg: any): UnifiedInboxItem {
     scoring: {
       score: prioritySignals.score,
       labels: [],
+      reasons: [],
       isOpportunity: false,
     },
     priority: prioritySignals.priority,

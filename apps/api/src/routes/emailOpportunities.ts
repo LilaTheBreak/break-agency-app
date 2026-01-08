@@ -70,6 +70,7 @@ router.get("/scan", requireAuth, async (req: Request, res: Response) => {
             status: "NEW",
             emailBody: message.body,
             suggestedActions: classification.suggestedActions,
+            updatedAt: new Date(),
           }
         });
         
