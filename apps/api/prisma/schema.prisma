@@ -1526,15 +1526,20 @@ model TalentTask {
 }
 
 model TalentSocial {
-  id        String          @id @default(cuid())
-  talentId  String
-  platform  SocialPlatform
-  handle    String
-  url       String
-  followers Int?
-  verified  Boolean         @default(false)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id               String          @id @default(cuid())
+  talentId         String
+  platform         SocialPlatform
+  handle           String
+  url              String
+  followers        Int?
+  following        Int?
+  postCount        Int?
+  displayName      String?
+  profileImageUrl  String?
+  verified         Boolean         @default(false)
+  lastScrapedAt    DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   talent Talent @relation(fields: [talentId], references: [id], onDelete: Cascade)
 

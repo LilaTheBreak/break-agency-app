@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import { requireRole } from "../../middleware/requireRole.js";
 import prisma from "../../lib/prisma.js";
-import { TaskStatus } from "@prisma/client";
+import { TaskStatus, SocialPlatform } from "@prisma/client";
 import { z } from "zod";
 import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
 import { logAdminActivity } from "../../lib/adminActivityLogger.js";
@@ -11,6 +11,8 @@ import { logError } from "../../lib/logger.js";
 import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from "../../utils/apiResponse.js";
 import { validateRequestSafe, TalentCreateSchema, TalentUpdateSchema, TalentLinkUserSchema } from "../../utils/validationSchemas.js";
 import * as Sentry from "@sentry/node";
+import { scrapeInstagramProfile } from "../../services/socialScrapers/instagram.js";
+import { normalizeInstagramHandle } from "../../services/socialScrapers/instagramUtils.js";
 
 const router = Router();
 
@@ -1598,11 +1600,14 @@ router.delete("/tasks/:taskId", async (req: Request, res: Response) => {
 /**
  * POST /api/admin/talent/:id/socials
  * Add a social profile to a talent
+ * 
+ * For Instagram: Automatically fetches public profile data
+ * Accepts either full URL or username as input
  */
 router.post("/:id/socials", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { platform, handle, url, followers } = req.body;
+    let { platform, handle, url, followers } = req.body;
 
     // Validate talent exists
     const talent = await prisma.talent.findUnique({ where: { id } });
@@ -1611,8 +1616,54 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
     }
 
     // Validate inputs
-    if (!platform || !handle || !url) {
-      return sendError(res, "INVALID_INPUT", "platform, handle, and url are required", 400);
+    if (!platform || !handle) {
+      return sendError(res, "INVALID_INPUT", "platform and handle are required", 400);
+    }
+
+    let profileImageUrl: string | null = null;
+    let displayName: string | null = null;
+    let following: number | null = null;
+    let postCount: number | null = null;
+    let lastScrapedAt: Date | null = null;
+
+    // Special handling for Instagram: normalize input and scrape public data
+    if (platform === SocialPlatform.INSTAGRAM) {
+      const normalized = normalizeInstagramHandle(handle);
+      
+      if (!normalized.isValid) {
+        return sendError(
+          res,
+          "INVALID_INPUT",
+          `Invalid Instagram handle: ${normalized.error}`,
+          400
+        );
+      }
+
+      handle = normalized.username;
+      url = normalized.url;
+
+      // Attempt to scrape public Instagram profile data
+      // This runs asynchronously but doesn't block the request
+      try {
+        const profileData = await scrapeInstagramProfile(normalized.username);
+        
+        if (profileData) {
+          // Only update fields that weren't explicitly provided
+          displayName = profileData.displayName || null;
+          profileImageUrl = profileData.profileImageUrl || null;
+          followers = profileData.followers || followers || null;
+          following = profileData.following || null;
+          postCount = profileData.postCount || null;
+          lastScrapedAt = new Date();
+        }
+      } catch (scrapeError) {
+        // Log scrape error but don't block the request
+        console.warn("[TALENT SOCIAL] Instagram scrape failed:", scrapeError);
+        // Continue - social profile will be created even if scrape fails
+      }
+    } else if (!url) {
+      // Non-Instagram platforms require explicit URL
+      return sendError(res, "INVALID_INPUT", "url is required for non-Instagram platforms", 400);
     }
 
     const social = await prisma.talentSocial.create({
@@ -1622,6 +1673,11 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
         handle,
         url,
         followers: followers || null,
+        displayName,
+        profileImageUrl,
+        following,
+        postCount,
+        lastScrapedAt,
       },
     });
 
@@ -1629,7 +1685,12 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
       action: "TALENT_SOCIAL_ADDED",
       entityType: "TalentSocial",
       entityId: social.id,
-      metadata: { talentId: id, platform, handle },
+      metadata: { 
+        talentId: id, 
+        platform, 
+        handle,
+        scrapedData: lastScrapedAt ? { followers, following, postCount } : null,
+      },
     });
 
     res.status(201).json(social);

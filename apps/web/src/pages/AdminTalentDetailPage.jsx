@@ -767,6 +767,7 @@ function TalentTasksSection({ talentId }) {
 function TalentSocialSection({ talentId }) {
   const [socials, setSocials] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [scrapingHandle, setScrapingHandle] = useState(null);
   const [form, setForm] = useState({
     platform: 'INSTAGRAM',
     handle: '',
@@ -792,7 +793,19 @@ function TalentSocialSection({ talentId }) {
   };
 
   const handleAddSocial = async () => {
-    if (!form.handle || !form.url) return;
+    // For Instagram, only handle is required - URL will be normalized on backend
+    // For other platforms, both handle and URL are required
+    if (!form.handle) {
+      toast.error("Handle is required");
+      return;
+    }
+    
+    if (form.platform !== 'INSTAGRAM' && !form.url) {
+      toast.error("URL is required for non-Instagram platforms");
+      return;
+    }
+
+    setScrapingHandle(form.handle);
     try {
       const response = await apiFetch(`/api/admin/talent/${talentId}/socials`, {
         method: 'POST',
@@ -800,18 +813,24 @@ function TalentSocialSection({ talentId }) {
         body: JSON.stringify({
           platform: form.platform,
           handle: form.handle,
-          url: form.url,
+          url: form.url || undefined, // Let backend normalize Instagram URLs
           followers: form.followers ? parseInt(form.followers) : null
         })
       });
 
-      if (!response.ok) throw new Error("Failed to add social");
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || "Failed to add social");
+      }
+      
       toast.success("Social profile added successfully");
       setForm({ platform: 'INSTAGRAM', handle: '', url: '', followers: '' });
       await loadSocials();
     } catch (err) {
       console.error("[ADD SOCIAL ERROR]", err);
       toast.error(err.message || "Failed to add social");
+    } finally {
+      setScrapingHandle(null);
     }
   };
 
@@ -846,32 +865,54 @@ function TalentSocialSection({ talentId }) {
         >
           {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        <input
-          type="text"
-          placeholder="Handle (e.g., talent_name)"
-          value={form.handle}
-          onChange={(e) => setForm({ ...form, handle: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
-        <input
-          type="url"
-          placeholder="Profile URL"
-          value={form.url}
-          onChange={(e) => setForm({ ...form, url: e.target.value })}
-          className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
-        />
+        
+        {form.platform === 'INSTAGRAM' ? (
+          <>
+            <input
+              type="text"
+              placeholder="Instagram handle or profile URL (e.g., @username or instagram.com/username)"
+              value={form.handle}
+              onChange={(e) => setForm({ ...form, handle: e.target.value })}
+              className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+            />
+            {form.handle && form.platform === 'INSTAGRAM' && (
+              <p className="text-xs text-brand-black/60 italic">
+                ℹ️ Public profile data will auto-populate after adding (followers, posts, profile picture)
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="Handle (e.g., talent_name)"
+              value={form.handle}
+              onChange={(e) => setForm({ ...form, handle: e.target.value })}
+              className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+            />
+            <input
+              type="url"
+              placeholder="Profile URL"
+              value={form.url}
+              onChange={(e) => setForm({ ...form, url: e.target.value })}
+              className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
+            />
+          </>
+        )}
+        
         <input
           type="number"
-          placeholder="Followers (optional)"
+          placeholder="Followers (optional, auto-populated for Instagram)"
           value={form.followers}
           onChange={(e) => setForm({ ...form, followers: e.target.value })}
           className="w-full px-3 py-2 border border-brand-black/10 rounded-lg text-sm"
         />
         <button
           onClick={handleAddSocial}
-          className="w-full px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black"
+          disabled={scrapingHandle === form.handle}
+          className="w-full px-4 py-2 bg-brand-red text-white rounded-lg text-xs font-semibold uppercase tracking-[0.2em] hover:bg-brand-black disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add Social Profile
+          {scrapingHandle === form.handle ? `⏳ Fetching ${form.platform === 'INSTAGRAM' ? 'public profile data' : 'data'}...` : 'Add Social Profile'}
         </button>
       </div>
 
@@ -880,32 +921,70 @@ function TalentSocialSection({ talentId }) {
       ) : socials.length === 0 ? (
         <p className="text-sm text-brand-black/60">No social profiles added yet</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {socials.map(social => (
-            <a
+            <div
               key={social.id}
-              href={social.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-3 bg-brand-black/5 rounded-lg hover:bg-brand-black/10"
+              className="flex items-start gap-3 p-3 bg-brand-black/5 rounded-lg"
             >
-              <div>
-                <p className="font-semibold text-sm text-brand-black">{social.platform}</p>
-                <p className="text-xs text-brand-black/60">@{social.handle}</p>
-                {social.followers && (
-                  <p className="text-xs text-brand-black/60">{social.followers.toLocaleString()} followers</p>
+              {social.profileImageUrl && (
+                <img 
+                  src={social.profileImageUrl} 
+                  alt={social.handle}
+                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                  onError={(e) => e.target.style.display = 'none'}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <a
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block hover:underline"
+                >
+                  <p className="font-semibold text-sm text-brand-black">
+                    {social.displayName || social.platform}
+                  </p>
+                  <p className="text-xs text-brand-black/60">@{social.handle}</p>
+                </a>
+                
+                {/* Show scraped Instagram data */}
+                {social.platform === 'INSTAGRAM' && social.lastScrapedAt && (
+                  <div className="mt-2 text-xs text-brand-black/60 space-y-1">
+                    <p className="font-medium italic text-brand-black/50">Public Instagram data</p>
+                    <div className="flex gap-4 flex-wrap">
+                      {social.followers && (
+                        <span>{social.followers.toLocaleString()} followers</span>
+                      )}
+                      {social.following && (
+                        <span>{social.following.toLocaleString()} following</span>
+                      )}
+                      {social.postCount && (
+                        <span>{social.postCount.toLocaleString()} posts</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-brand-black/40">
+                      Fetched {new Date(social.lastScrapedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Show manually set follower count for non-Instagram */}
+                {social.platform !== 'INSTAGRAM' && social.followers && (
+                  <p className="text-xs text-brand-black/60 mt-1">{social.followers.toLocaleString()} followers</p>
                 )}
               </div>
+
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   handleDelete(social.id);
                 }}
-                className="text-xs text-brand-red hover:underline"
+                className="text-xs text-brand-red hover:underline flex-shrink-0"
               >
                 Delete
               </button>
-            </a>
+            </div>
           ))}
         </div>
       )}
