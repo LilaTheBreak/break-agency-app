@@ -15,8 +15,8 @@ router.get("/api/creator/dashboard", requireAuth, async (req: Request, res: Resp
         where: {
           // This requires a many-to-many relation between BrandCampaign and User/Talent
           // which does not currently exist. Placeholder logic:
-          userId: userId,
-          status: "ACTIVE",
+          ownerId: userId,
+          stage: "PLANNING",
         },
       }),
       prisma.creatorTask.count({

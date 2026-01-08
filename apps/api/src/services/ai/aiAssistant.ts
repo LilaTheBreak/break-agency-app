@@ -108,7 +108,7 @@ async function buildContext(role: string, userId: string, contextId?: string) {
         id: true,
         amount: true,
         status: true,
-        dueDate: true
+        dueAt: true
       }
     })
   ]);

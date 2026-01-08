@@ -22,7 +22,7 @@ export const requireFeature = (feature: Feature) => {
 
     if (!hasPermission(req.user.role, feature)) {
       // Log the failed access attempt
-      logPermissionDenial(req.user, feature, req.originalUrl);
+      logPermissionDenial(req.user.id, feature, req.originalUrl);
       
       return res.status(403).json({ error: `Access denied. Your role does not have permission for the '${feature}' feature.` });
     }

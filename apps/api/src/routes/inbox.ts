@@ -86,7 +86,7 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
       });
 
       // Deal linking engine
-      await autoLinkDeal(savedMsg, classification);
+      await autoLinkDeal(savedMsg, req.user!.id);
 
       saved.push(savedMsg);
     }
