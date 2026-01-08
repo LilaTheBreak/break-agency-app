@@ -8,22 +8,31 @@
  */
 
 import express, { Request, Response } from "express";
-import { isSuperAdmin } from "../middleware/auth.js";
-import { sendSuccess, sendError } from "../utils/response.js";
+import { requireAuth } from "../../middleware/auth.js";
+import { isSuperAdmin } from "../../lib/roleHelpers.js";
+import { sendSuccess, sendError } from "../../utils/response.js";
 import {
   detectTalentDuplicates,
   detectBrandDuplicates,
   detectDealDuplicates,
-} from "../lib/duplicateDetection.js";
-import { performMerge, MergeRequest } from "../lib/mergeService.js";
+} from "../../lib/duplicateDetection.js";
+import { performMerge, MergeRequest } from "../../lib/mergeService.js";
 
 const router = express.Router();
+
+// All routes require authentication
+router.use(requireAuth);
 
 /**
  * GET /api/admin/duplicates/talent
  * Scan for duplicate talent records
  */
-router.get("/talent", isSuperAdmin, async (req: Request, res: Response) => {
+router.get("/talent", async (req: Request, res: Response) => {
+  // Check authorization
+  if (!isSuperAdmin(req.user!)) {
+    return sendError(res, "FORBIDDEN", "Only SUPERADMIN can access duplicate detection", 403);
+  }
+
   try {
     const duplicates = await detectTalentDuplicates();
     return sendSuccess(res, {
@@ -44,7 +53,12 @@ router.get("/talent", isSuperAdmin, async (req: Request, res: Response) => {
  * GET /api/admin/duplicates/brands
  * Scan for duplicate brand records
  */
-router.get("/brands", isSuperAdmin, async (req: Request, res: Response) => {
+router.get("/brands", async (req: Request, res: Response) => {
+  // Check authorization
+  if (!isSuperAdmin(req.user!)) {
+    return sendError(res, "FORBIDDEN", "Only SUPERADMIN can access duplicate detection", 403);
+  }
+
   try {
     const duplicates = await detectBrandDuplicates();
     return sendSuccess(res, {
@@ -65,7 +79,12 @@ router.get("/brands", isSuperAdmin, async (req: Request, res: Response) => {
  * GET /api/admin/duplicates/deals
  * Scan for duplicate deal records
  */
-router.get("/deals", isSuperAdmin, async (req: Request, res: Response) => {
+router.get("/deals", async (req: Request, res: Response) => {
+  // Check authorization
+  if (!isSuperAdmin(req.user!)) {
+    return sendError(res, "FORBIDDEN", "Only SUPERADMIN can access duplicate detection", 403);
+  }
+
   try {
     const duplicates = await detectDealDuplicates();
     return sendSuccess(res, {
@@ -93,7 +112,12 @@ router.get("/deals", isSuperAdmin, async (req: Request, res: Response) => {
  *   "mergeIds": ["merge-this-id", "and-this-id"]
  * }
  */
-router.post("/merge", isSuperAdmin, async (req: Request, res: Response) => {
+router.post("/merge", async (req: Request, res: Response) => {
+  // Check authorization
+  if (!isSuperAdmin(req.user!)) {
+    return sendError(res, "FORBIDDEN", "Only SUPERADMIN can merge records", 403);
+  }
+
   try {
     const { entityType, primaryId, mergeIds } = req.body;
 
