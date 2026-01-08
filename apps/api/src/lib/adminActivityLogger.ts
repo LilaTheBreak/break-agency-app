@@ -4,7 +4,8 @@ import prisma from "./prisma.js";
 import { logError } from "./logger.js";
 
 type AdminActivityPayload = {
-  event: string;
+  event?: string;
+  action?: string; // Alternative name for event
   metadata?: Record<string, unknown> | null;
 };
 
