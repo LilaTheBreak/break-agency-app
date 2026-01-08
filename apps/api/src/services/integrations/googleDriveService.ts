@@ -89,13 +89,12 @@ export async function linkDriveFileToRecord(
         url: file.webViewLink || file.webContentLink || `https://drive.google.com/file/d/${fileId}/view`,
         key: fileId,
         folder: recordType,
-        storageProvider: "google_drive",
-        linkedType: recordType,
-        linkedId: recordId,
         metadata: {
           driveFileId: fileId,
           driveWebViewLink: file.webViewLink,
-          driveWebContentLink: file.webContentLink
+          driveWebContentLink: file.webContentLink,
+          linkedType: recordType,
+          linkedId: recordId
         }
       }
     });

@@ -184,7 +184,7 @@ export async function sendMessage(input: {
           direction: "outbound",
           isRead: true,
           receivedAt: new Date(),
-          inboxMessage: {
+          InboxMessage: {
             connectOrCreate: {
               where: { threadId: finalThreadId },
               create: {
