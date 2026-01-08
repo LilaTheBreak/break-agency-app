@@ -1,4 +1,4 @@
-import prisma from "../../lib/prisma.js";
+import prisma from "../../db/client.js";
 import { Prisma, Deal } from "@prisma/client";
 import { addEvent as addTimelineEntry } from "./dealTimelineService.js";
 

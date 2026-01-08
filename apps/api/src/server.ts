@@ -196,7 +196,7 @@ import { sendAlert, logErrorForSummary } from "./utils/alerting.js";
 
 // Performance monitoring
 import { initializeSlowQueryLogging, requestDurationMiddleware, startMemoryTracking } from "./utils/slowQueryDetection.js";
-import { prisma } from "./utils/prismaClient.js";
+import prisma from "./db/client.js";
 
 // Performance dashboard
 import performanceRouter from "./routes/admin/performance.js";

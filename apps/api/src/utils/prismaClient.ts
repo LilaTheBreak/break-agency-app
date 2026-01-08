@@ -1,3 +1,10 @@
-import prismaInstance from "../lib/prisma.js";
+/**
+ * DEPRECATED: Use ../db/client.ts instead
+ * 
+ * This file is maintained for backward compatibility.
+ * Re-exports the Prisma client from the centralized location.
+ */
+
+import prismaInstance from "../db/client.js";
 
 export const prisma = prismaInstance;
