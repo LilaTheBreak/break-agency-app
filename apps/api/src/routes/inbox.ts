@@ -23,7 +23,8 @@ const inboxScanLimiter = createRateLimiter({
  */
 router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) => {
   try {
-    const gmailMessages = await scanGmail(req.user!);
+    const gmailResult = await scanGmail(req.user!);
+    const gmailMessages = gmailResult.messages || [];
 
     const saved = [];
 
@@ -72,7 +73,7 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
         where: { threadId: savedMsg.threadId },
         create: {
           threadId: savedMsg.threadId,
-          userId: req.user?.id || userId,
+          userId: req.user?.id || "",
           priority: (classification.type === "deal" || classification.type === "negotiation") ? 2 : 1,
           unreadCount: 1
         },

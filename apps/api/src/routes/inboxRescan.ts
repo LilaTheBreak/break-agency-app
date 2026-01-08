@@ -1,6 +1,7 @@
-import { Router, type Request } from "express";
+import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { createRateLimiter } from "../middleware/rateLimit.js";
+import { logError } from "../lib/logger.js";
 
 const router = Router();
 
@@ -16,7 +17,7 @@ const inboxRescanLimiter = createRateLimiter({
  * Inbox Re-scan Endpoint
  * Supports manual re-trigger of inbox AI classification.
  */
-router.post("/api/inbox/rescan", requireAuth, inboxRescanLimiter, async (_req: Request, res) => {
+router.post("/api/inbox/rescan", requireAuth, inboxRescanLimiter, async (req: Request, res: Response) => {
           try {
             res.json({
               ok: true,
