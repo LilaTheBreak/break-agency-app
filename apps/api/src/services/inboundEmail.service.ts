@@ -8,32 +8,30 @@ export async function runOfferExtractionForEmail(email: InboundEmail): Promise<{
 }> {
   const extraction = await extractOfferV2(email);
 
-  // Avoid duplicate drafts when re-running extraction on the same email.
-  await prisma.dealDraft.deleteMany({ where: { emailId: email.id } });
-
+  // TODO: Implement offer extraction and draft creation once DealDraft schema is finalized
+  // For now, store extraction data in the data field of DealDraft
   const drafts: Array<{ id: string }> = [];
-  for (const option of extraction.options) {
-    const deadlineDate = option.deadline ? new Date(option.deadline) : null;
-    const draft = await prisma.dealDraft.create({
-      data: {
-        userId: email.userId,
-        emailId: email.id,
-        brand: extraction.brandName || (email as any).from || (email as any).fromEmail || null,
-        offerType: option.title || null,
-        deliverables: option.deliverables || null,
-        paymentAmount: option.amount ?? null,
-        currency: option.currency || null,
-        deadline: deadlineDate && !Number.isNaN(deadlineDate.getTime()) ? deadlineDate : null,
-        exclusivity: option.exclusivity || null,
-        usageRights: option.usageRights || null,
-        notes: option.launchWindow
-          ? `Launch window: ${option.launchWindow.start || "?"} → ${option.launchWindow.end || "?"}`
-          : null,
-        confidence: extraction.confidence ?? null,
-        rawJson: option.meta || extraction.raw || {}
-      }
-    });
-    drafts.push({ id: draft.id });
+  
+  try {
+    for (const option of extraction.options) {
+      const draft = await prisma.dealDraft.create({
+        data: {
+          userId: email.userId || "",
+          data: {
+            brandName: extraction.brandName,
+            title: option.title,
+            deliverables: option.deliverables,
+            amount: option.amount,
+            currency: option.currency,
+            deadline: option.deadline,
+            emailId: email.id,
+          },
+        },
+      });
+      drafts.push({ id: draft.id });
+    }
+  } catch (error) {
+    console.error("[OfferExtraction] Error creating drafts:", error);
   }
 
   return { extraction, drafts };

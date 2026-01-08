@@ -16,12 +16,12 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     const [openEvents, clickEvents] = await Promise.all([
       prisma.trackingPixelEvent.findMany({
         where: {
-          inboundEmail: {
+          InboundEmail: {
             userId,
           },
         },
         include: {
-          inboundEmail: {
+          InboundEmail: {
             select: {
               id: true,
               subject: true,
@@ -39,12 +39,12 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       }),
       prisma.emailClickEvent.findMany({
         where: {
-          inboundEmail: {
+          InboundEmail: {
             userId,
           },
         },
         include: {
-          inboundEmail: {
+          InboundEmail: {
             select: {
               id: true,
               subject: true,
@@ -71,7 +71,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       ip: e.ip,
       userAgent: e.userAgent,
       metadata: e.metadata,
-      email: e.inboundEmail,
+      email: e.InboundEmail,
     }));
 
     const clickData = clickEvents.map((e) => ({
@@ -83,7 +83,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       ip: e.ip,
       userAgent: e.userAgent,
       metadata: e.metadata,
-      email: e.inboundEmail,
+      email: e.InboundEmail,
     }));
 
     // Combine and sort by timestamp

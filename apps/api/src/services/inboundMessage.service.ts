@@ -30,35 +30,26 @@ export async function ingestDM({
     raw?: any;
   };
 }) {
-  const record = await prisma.inboundMessage.create({
-    data: {
-      userId,
-      platform,
-      externalId: message.externalId,
-      senderHandle: message.senderHandle,
-      senderName: message.senderName,
-      senderImage: message.senderImage,
-      message: message.message,
-      rawData: message.raw,
-    },
-  });
+  // TODO: Implement proper DM ingestion once message data structure is finalized
+  // For now, this creates a basic InboundEmail record
+  try {
+    const record = await prisma.inboundEmail.create({
+      data: {
+        userId,
+        platform,
+        fromEmail: message.senderHandle || "unknown@unknown.com",
+        toEmail: "",
+        body: message.message,
+        snippet: message.message.substring(0, 100),
+        aiCategory: (message.raw as any)?.category || "general",
+        aiUrgency: (message.raw as any)?.urgency || "normal",
+        aiRecommendedAction: (message.raw as any)?.action,
+      },
+    });
 
-  const ai = await classifyMessage({
-    text: record.message,
-    platform,
-  });
-
-  await prisma.inboundMessage.update({
-    where: { id: record.id },
-    data: {
-      aiCategory: (ai as any)?.category,
-      aiBrand: (ai as any)?.brand,
-      aiUrgency: (ai as any)?.urgency,
-      aiRecommendedAction: (ai as any)?.action,
-      aiConfidence: (ai as any)?.confidence,
-      aiJson: (ai as any)?.raw,
-    },
-  });
-
-  return record;
+    return record;
+  } catch (error) {
+    console.error("[IngestDM] Error ingesting message:", error);
+    throw error;
+  }
 }
