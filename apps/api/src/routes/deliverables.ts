@@ -109,16 +109,17 @@ router.post("/:id/review", requireAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id/reviews", requireAuth, async (req, res, next) => {
-  try {
-    const reviews = await prisma.deliverableReview.findMany({
-      where: { deliverableId: req.params.id },
-      orderBy: { createdAt: "desc" }
-    });
-    res.json({ reviews });
-  } catch (error) {
-    next(error);
-  }
-});
+// TODO: DeliverableReview model not implemented yet
+// router.get("/:id/reviews", requireAuth, async (req, res, next) => {
+//   try {
+//     const reviews = await prisma.deliverableReview.findMany({
+//       where: { deliverableId: req.params.id },
+//       orderBy: { createdAt: "desc" }
+//     });
+//     res.json({ reviews });
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 export default router;

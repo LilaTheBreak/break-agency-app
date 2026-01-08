@@ -188,11 +188,11 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
       action: "profile.update",
       entityType: "user",
       entityId: user.id,
-      metadata: profile as Prisma.JsonObject,
+      metadata: profile as any,
     });
     await logAdminActivity(req, {
       event: "admin.profile.update",
-      metadata: { userId: user.id, email } as Prisma.JsonObject,
+      metadata: { userId: user.id, email } as any,
     });
 
     res.json({ profile });

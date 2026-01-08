@@ -12,21 +12,35 @@ export const upsertListing = asyncHandler(async (req: Request, res: Response) =>
   const userId = req.user!.id;
   const { title, description, rate } = req.body;
 
-  const listing = await prisma.uGCListing.upsert({
-    where: { userId },
-    create: {
-      userId,
-      title: title || "My UGC Listing",
-      description,
-      rate,
-      status: "active"
-    },
-    update: {
-      title: title || "My UGC Listing",
-      description,
-      rate
-    }
+  // Find existing listing for this user
+  let existing = await prisma.uGCListing.findFirst({
+    where: { userId }
   });
+
+  let listing;
+  if (existing) {
+    // Update existing
+    listing = await prisma.uGCListing.update({
+      where: { id: existing.id },
+      data: {
+        title: title || "My UGC Listing",
+        description,
+        rate
+      }
+    });
+  } else {
+    // Create new
+    listing = await prisma.uGCListing.create({
+      data: {
+        id: `listing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        title: title || "My UGC Listing",
+        description,
+        rate,
+        status: "active"
+      }
+    });
+  }
 
   res.status(201).json(listing);
 });
@@ -49,9 +63,6 @@ export const getListings = asyncHandler(async (req: Request, res: Response) => {
 
   const listings = await prisma.uGCListing.findMany({
     where,
-    include: {
-      portfolio: true,
-    },
     take: 50,
   });
 
@@ -66,10 +77,7 @@ export const getListingById = asyncHandler(async (req: Request, res: Response) =
   const creatorId = req.params.id;
 
   const listing = await prisma.uGCListing.findUnique({
-    where: { userId: creatorId },
-    include: {
-      portfolio: true,
-    },
+    where: { id: creatorId },
   });
 
   if (!listing) {

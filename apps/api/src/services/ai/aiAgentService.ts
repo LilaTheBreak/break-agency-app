@@ -67,7 +67,9 @@ export async function processAIAgentTask(taskId: string) {
     //   },
     // });
 
-    await trackAITokens("aiAgentService", aiResponse.meta.tokens, {
+    await trackAITokens({
+      service: "aiAgentService",
+      tokens: aiResponse.meta.tokens,
       userId: task.userId,
       model: aiResponse.meta.model,
     });

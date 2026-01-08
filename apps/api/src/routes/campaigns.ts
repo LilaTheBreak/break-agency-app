@@ -89,9 +89,9 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: 
  * NOTE: This MUST come BEFORE /campaigns/:id to avoid "user" being treated as an ID
  */
 router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Response) => {
+  let targetId = req.params.userId;
   try {
     const requester = req.user!;
-    let targetId = req.params.userId;
     
     if (targetId === "me") targetId = requester.id;
     

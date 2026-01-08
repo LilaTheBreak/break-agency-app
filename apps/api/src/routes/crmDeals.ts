@@ -747,11 +747,14 @@ router.post("/admin/heal-missing-brands", async (req, res) => {
     const result = await healMissingBrands();
 
     // Log the action
-    await logAdminActivity("BATCH_BRAND_HEALING", req.user!, {
-      healed: result.healed,
-      failed: result.failed,
-      totalChecked: result.totalChecked,
-      hasErrors: result.errors.length > 0,
+    await logAdminActivity(req as any, {
+      event: "BATCH_BRAND_HEALING",
+      metadata: {
+        healed: result.healed,
+        failed: result.failed,
+        totalChecked: result.totalChecked,
+        hasErrors: result.errors.length > 0,
+      }
     });
 
     res.json({

@@ -11,7 +11,7 @@ export const approveListing = asyncHandler(async (req: Request, res: Response) =
   const { id } = req.params;
   const listing = await prisma.uGCListing.update({
     where: { id },
-    data: { approved: true },
+    data: { status: "active" },
   });
   res.status(200).json(listing);
 });

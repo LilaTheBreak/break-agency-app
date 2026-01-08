@@ -185,7 +185,7 @@ router.post("/:talentId/access-set", async (req, res) => {
     await setTalentAccess(talentId, userId, role);
 
     // Audit log
-    if (adminId) {
+    if (req.user) {
       await logAdminActivity(req as any, {
         event: "TALENT_ACCESS_GRANTED",
         metadata: {
