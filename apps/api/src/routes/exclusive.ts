@@ -341,6 +341,7 @@ router.post("/goals", async (req, res) => {
     
     const goal = await prisma.creatorGoal.create({ 
       data: { 
+        id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorId: creator.id, 
         goalCategory: goalCategory || "growth",
         goalType, 
@@ -349,7 +350,8 @@ router.post("/goals", async (req, res) => {
         targetUnit: targetUnit || null,
         timeframe: timeframe || null, 
         active: true, 
-        progress: 0 
+        progress: 0,
+        updatedAt: new Date()
       } 
     });
 
@@ -464,7 +466,16 @@ router.post("/socials/connect", async (req, res) => {
       const updated = await prisma.socialAccountConnection.update({ where: { id: existing.id }, data: { handle, connected: true } });
       return res.json(updated);
     }
-    const social = await prisma.socialAccountConnection.create({ data: { creatorId: creator.id, platform, handle, connected: true } });
+    const social = await prisma.socialAccountConnection.create({ 
+      data: { 
+        id: `social_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        creatorId: creator.id, 
+        platform, 
+        handle, 
+        connected: true,
+        updatedAt: new Date()
+      } 
+    });
     res.json(social);
   } catch (error) {
     res.status(500).json({ error: "Failed to connect social account" });
@@ -491,7 +502,15 @@ router.post("/wellness-checkin", async (req, res) => {
     const creator = (req as any).creator;
     const { energyLevel, workload, notes } = req.body;
     if (!energyLevel || !workload) return res.status(400).json({ error: "Energy level and workload required" });
-    const checkin = await prisma.wellnessCheckin.create({ data: { creatorId: creator.id, energyLevel: parseInt(energyLevel), workload, notes: notes || null } });
+    const checkin = await prisma.wellnessCheckin.create({ 
+      data: { 
+        id: `checkin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        creatorId: creator.id, 
+        energyLevel: parseInt(energyLevel), 
+        workload, 
+        notes: notes || null 
+      } 
+    });
     res.json(checkin);
   } catch (error) {
     res.status(500).json({ error: "Failed to save check-in" });
@@ -521,7 +540,15 @@ router.post("/ai/ask", async (req, res) => {
     const { prompt, category } = req.body;
     if (!prompt) return res.status(400).json({ error: "Prompt required" });
     const response = "I'm your creative assistant. This feature will be available soon!";
-    const history = await prisma.aIPromptHistory.create({ data: { creatorId: creator.id, prompt, response, category: category || "general" } });
+    const history = await prisma.aIPromptHistory.create({ 
+      data: { 
+        id: `prompt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        creatorId: creator.id, 
+        prompt, 
+        response, 
+        category: category || "general" 
+      } 
+    });
     res.json(history);
   } catch (error) {
     res.status(500).json({ error: "Failed to process AI request" });

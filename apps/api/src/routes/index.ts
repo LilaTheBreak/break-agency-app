@@ -174,9 +174,11 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
     const user = await prisma.user.upsert({
       where: { email },
       create: {
+        id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email,
         password: null,
         ...data,
+        updatedAt: new Date(),
       },
       update: data,
     });

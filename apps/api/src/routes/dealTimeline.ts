@@ -27,6 +27,7 @@ router.post("/:dealId/note", requireAuth, async (req, res, next) => {
     }
     const event = await prisma.dealTimeline.create({
       data: {
+        id: `timeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         dealId,
         type: "NOTE",
         createdById: user.id,
