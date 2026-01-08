@@ -134,20 +134,22 @@ export async function uploadContract(
   try {
     const enabled = process.env.CONTRACT_UPLOAD_ENABLED === "true";
     if (!enabled) {
-      return res.status(503).json({
+      res.status(503).json({
         error: "Contract upload feature is disabled",
         message: "This feature is currently disabled. Contact an administrator to enable it.",
         code: "FEATURE_DISABLED"
       });
+      return;
     }
 
     const { id } = req.params;
     const { fileUrl, fileKey } = req.body;
 
     if (!fileUrl && !fileKey) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         error: "fileUrl or fileKey is required" 
       });
+      return;
     }
 
     // Verify contract exists
@@ -156,9 +158,10 @@ export async function uploadContract(
     });
 
     if (!contract) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         error: "Contract not found" 
       });
+      return;
     }
 
     // If fileKey provided, construct URL from S3/R2

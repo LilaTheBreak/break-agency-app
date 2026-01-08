@@ -213,7 +213,7 @@ model ContractReview {
 }
 
 model Contract {
-  id             String    @id
+  id             String    @id @default(cuid())
   dealId         String
   brandId        String?   // Explicit brand linkage for direct queries
   title          String
@@ -230,7 +230,7 @@ model Contract {
   templateId     String?
   metadata       Json?
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime  @updatedAt
   Deal           Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
   Brand          Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
 
@@ -894,7 +894,7 @@ model InboxThreadMeta {
 }
 
 model Invoice {
-  id            String    @id
+  id            String    @id @default(cuid())
   dealId        String
   amount        Float
   status        String    @default("draft")
@@ -902,10 +902,11 @@ model Invoice {
   dueAt         DateTime
   paidAt        DateTime?
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime  @updatedAt
   brandId       String?
   currency      String    @default("USD")
   invoiceNumber String    @unique
+  externalId    String?   @unique // External invoice ID (Xero, etc.)
   xeroId        String?   @unique // Xero invoice ID (external reference)
   xeroSyncError String?   // Last sync error message
   lastSyncedAt  DateTime? // Last successful sync with Xero
@@ -917,6 +918,7 @@ model Invoice {
   @@index([dealId])
   @@index([dueAt])
   @@index([xeroId])
+  @@index([externalId])
   @@index([status])
 }
 
@@ -1693,6 +1695,10 @@ model User {
   TalentAccessGiven                       TalentUserAccess[]        @relation("TalentAccessGiven")
   PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
   PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
+  UGCRequests                             UGCRequest[]             @relation("UGCRequests")
+  DealDrafts                              DealDraft[]              @relation("DealDrafts")
+  OutreachPlans                           OutreachPlan[]           @relation("OutreachPlans")
+  UGCListings                             UGCListing[]             @relation("UGCListings")
   IntegrationConnection                   IntegrationConnection[]
   XeroConnections                         XeroConnection[]
 }
@@ -2012,4 +2018,102 @@ model PageBlockDraft {
 
   @@index([pageId])
   @@index([pageId, order])
+}
+
+// Missing models - added for TypeScript compatibility
+model UGCRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  status    String   @default("pending")
+  brief     String?
+  budget    Float?
+  deadline  DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation("UGCRequests", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model DealDraft {
+  id        String   @id @default(cuid())
+  userId    String
+  dealId    String?
+  data      Json?
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation("DealDrafts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dealId])
+  @@index([status])
+}
+
+model OutreachPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  targets   Json?
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation("OutreachPlans", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model BrandIntelligence {
+  id        String   @id @default(cuid())
+  brandId   String
+  insights  Json?
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+  @@index([category])
+}
+
+model NegotiationInsight {
+  id       String   @id @default(cuid())
+  dealId   String
+  insight  String?
+  metadata Json?
+  createdAt DateTime @default(now())
+
+  @@index([dealId])
+}
+
+model UGCListing {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  rate        Float?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  User        User     @relation("UGCListings", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Reconciliation {
+  id          String   @id @default(cuid())
+  type        String
+  referenceId String
+  amount      Float
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([referenceId])
+  @@index([type])
+}
+
+  @@index([dealId])
 }

@@ -21,7 +21,7 @@ export async function generateBundleForDeal(dealId: string): Promise<BundleResul
   try {
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },
-      include: { talent: true }
+      include: { talent: true, Brand: true }
     });
 
     if (!deal) {
@@ -29,12 +29,13 @@ export async function generateBundleForDeal(dealId: string): Promise<BundleResul
     }
 
     const category = deal.category || "brand";
-    const talentName = deal.talent?.name || "the creator";
+    const talentName = deal.Talent?.name || "the creator";
+    const brandName = deal.Brand?.name || "the brand";
 
     // --- 1. Creative concepts ---
     const creativeConcepts = [
-      `A day-in-the-life featuring ${deal.brand} integrated naturally.`,
-      `A storytelling video explaining why ${talentName} loves ${deal.brand}.`,
+      `A day-in-the-life featuring ${brandName} integrated naturally.`,
+      `A storytelling video explaining why ${talentName} loves ${brandName}.`,
       `A trend-driven Reel/TikTok demonstrating a key product benefit.`,
       `A polished photo carousel highlighting premium features of the ${category} product.`
     ];

@@ -8,6 +8,7 @@ export interface TokenTrackingInput {
   completionTokens: number;
   org?: string;
   userId?: string; // optional future use for user-level billing
+  service?: string; // optional service name for categorization
 }
 
 /**

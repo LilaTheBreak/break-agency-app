@@ -9,6 +9,10 @@ export type SessionUser = {
   onboardingStatus?: string;
   onboardingComplete?: boolean;
   isApproved?: boolean; // Computed from onboarding_status === "approved"
+  brandId?: string; // Brand ID for brand users
+  subscription_status?: string; // Subscription status (free, pro, etc.)
+  onboarding_status?: string; // Original field name from User
+  subscriptionStatus?: string; // Alias for subscription_status
 };
 
 export function buildSessionUser(user: User): SessionUser {

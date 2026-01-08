@@ -2,6 +2,13 @@ import prisma from "../../lib/prisma.js";
 import { logError } from "../../lib/logger.js";
 import { google } from "googleapis";
 
+// Google OAuth2 configuration
+const googleConfig = {
+  clientId: process.env.GOOGLE_CLIENT_ID || "",
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+  redirectUri: process.env.GOOGLE_REDIRECT_URI || ""
+};
+
 /**
  * Link external Google Drive file to CRM record
  */

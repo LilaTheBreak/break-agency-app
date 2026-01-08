@@ -898,7 +898,7 @@ router.post("/invoices/:id/mark-paid", async (req: Request, res: Response) => {
 
     // Auto-create commissions when invoice is marked as paid
     try {
-      const { createCommissionsForPaidInvoice } = await import("../services/commissionService.js");
+      const { createCommissionsForPaidInvoice } = await import("../../services/commissionService.js");
       
       // Check if commissions already exist for this invoice
       const existingCommissions = await prisma.commission.findMany({
@@ -1027,7 +1027,7 @@ router.post("/payouts", async (req: Request, res: Response) => {
 
     // Link commissions to payout if commissionIds provided, or auto-link pending commissions for this deal/talent
     try {
-      const { linkCommissionsToPayout } = await import("../services/commissionService.js");
+      const { linkCommissionsToPayout } = await import("../../services/commissionService.js");
       
       if (parsed.data.commissionIds && parsed.data.commissionIds.length > 0) {
         // Link specific commissions
@@ -1130,7 +1130,7 @@ router.post("/payouts/:id/mark-paid", async (req: Request, res: Response) => {
 
     // Mark linked commissions as paid
     try {
-      const { markCommissionsAsPaid } = await import("../services/commissionService.js");
+      const { markCommissionsAsPaid } = await import("../../services/commissionService.js");
       await markCommissionsAsPaid(payout.id);
       console.log(`[Finance] Marked commissions as paid for payout ${payout.id}`);
     } catch (commissionError) {

@@ -41,11 +41,13 @@ export async function getTimelineForDeal(dealId: string) {
 /**
  * Writes an entry to the deal timeline.
  */
-export async function addTimelineEntry(dealId: string, message: string) {
+export async function addTimelineEntry(dealId: string, type: string, metadata?: any) {
+  const message = typeof type === 'string' ? type : JSON.stringify(type);
   return {
     ok: true,
     dealId,
     message,
+    metadata,
     timestamp: new Date().toISOString(),
   };
 }
