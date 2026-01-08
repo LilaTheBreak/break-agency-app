@@ -3,13 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
-import { fetchTalent, createDeal, fetchBrands } from "../services/crmClient.js";
+import { fetchTalent, createDeal, fetchBrands, updateDeal } from "../services/crmClient.js";
 import { Badge } from "../components/Badge.jsx";
+import { TalentAccessSettings } from "../components/TalentAccessSettings.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { 
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle, Plus
+  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
@@ -36,6 +38,7 @@ const TABS = [
   { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
   { id: "contracts", label: "Contracts", icon: FileText },
   { id: "payments", label: "Payments & Finance", icon: DollarSign },
+  { id: "access", label: "Access Control", icon: User },
   { id: "notes", label: "Notes & History", icon: FileEdit },
   { id: "files", label: "Files & Assets", icon: Archive },
 ];
@@ -1241,6 +1244,9 @@ export function AdminTalentDetailPage() {
         {activeTab === "payments" && (
           <RevenueTab talent={talent} isExclusive={isExclusive} />
         )}
+        {activeTab === "access" && (
+          <AccessControlTab talent={talent} />
+        )}
         {activeTab === "notes" && (
           <NotesTab talentId={talentId} />
         )}
@@ -1361,20 +1367,34 @@ function OpportunitiesTab({ talentId, isExclusive }) {
 }
 
 function DealsTab({ talent, onDealCreated }) {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "SUPERADMIN";
+  
   const deals = talent.deals || [];
+  const [dealView, setDealView] = useState("deals"); // "deals" or "opportunities"
   const [stageFilter, setStageFilter] = useState("ALL");
+  const [paymentFilter, setPaymentFilter] = useState("ALL");
+  const [currencyFilter, setCurrencyFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("dueDate");
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingDealId, setEditingDealId] = useState(null);
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [dealToDelete, setDealToDelete] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [createForm, setCreateForm] = useState({
     dealName: "",
     brandId: "",
     status: "NEW_LEAD",
     estimatedValue: "",
-    currency: "USD",
+    currency: "GBP",
     expectedCloseDate: "",
     notes: ""
   });
   const [createError, setCreateError] = useState("");
+  const [updateError, setUpdateError] = useState("");
   const [brands, setBrands] = useState([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
 
@@ -1397,6 +1417,57 @@ function DealsTab({ talent, onDealCreated }) {
     
     loadBrands();
   }, [createOpen]);
+
+  // Handle inline field edits
+  const handleEditField = async (dealId, field, value) => {
+    setUpdateError("");
+    try {
+      // Map UI field names to API field names
+      const updatePayload = {};
+      if (field === "fee") updatePayload.value = parseFloat(value);
+      if (field === "currency") updatePayload.currency = value;
+      if (field === "stage") updatePayload.stage = value;
+      if (field === "expectedCloseDate") updatePayload.expectedClose = value ? new Date(value).toISOString() : null;
+      if (field === "paymentStatus") {
+        // Handle payment status mapping
+        if (value === "Paid") {
+          updatePayload.stage = "PAYMENT_RECEIVED";
+        } else if (value === "Unpaid") {
+          updatePayload.stage = "PAYMENT_PENDING";
+        }
+      }
+      if (field === "notes") updatePayload.notes = value;
+      if (field === "scope") updatePayload.notes = value;
+
+      await updateDeal(dealId, updatePayload);
+      
+      setEditingDealId(null);
+      setEditingField(null);
+      setEditValue("");
+      toast.success("Deal updated successfully");
+      
+      // Refresh talent data
+      if (onDealCreated) {
+        onDealCreated();
+      }
+    } catch (err) {
+      console.error("[UPDATE DEAL ERROR]", err);
+      setUpdateError("Failed to update: " + (err.message || "Unknown error"));
+      toast.error("Failed to update deal: " + err.message);
+    }
+  };
+
+  // Determine payment status from stage
+  const getPaymentStatus = (stage) => {
+    if (stage === "PAYMENT_RECEIVED" || stage === "COMPLETED") {
+      return "Paid";
+    } else if (stage === "PAYMENT_PENDING") {
+      return "Unpaid";
+    } else if (["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS"].includes(stage)) {
+      return "Awaiting";
+    }
+    return "Pending";
+  };
 
   const handleCreateDeal = async () => {
     setCreateError("");
@@ -1437,7 +1508,7 @@ function DealsTab({ talent, onDealCreated }) {
         brandId: "",
         status: "NEW_LEAD",
         estimatedValue: "",
-        currency: "USD",
+        currency: "GBP",
         expectedCloseDate: "",
         notes: ""
       });
@@ -1450,6 +1521,41 @@ function DealsTab({ talent, onDealCreated }) {
       console.error("[CREATE DEAL ERROR]", err);
       setCreateError("Failed to create deal: " + (err.message || "Unknown error"));
       toast.error("Failed to create deal: " + err.message);
+    }
+  };
+
+  const handleDeleteDeal = async () => {
+    if (!dealToDelete?.id) return;
+
+    setDeleteError("");
+    setDeleteLoading(true);
+
+    try {
+      const response = await apiFetch(`/api/admin/deals/${dealToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData.message || errorData.error || `Error: ${response.status}`;
+        throw new Error(errorMsg);
+      }
+
+      // Success: remove deal from local state
+      if (onDealCreated) {
+        onDealCreated();
+      }
+
+      toast.success("Deal deleted successfully");
+      setDeleteModalOpen(false);
+      setDealToDelete(null);
+    } catch (err) {
+      console.error("[DELETE DEAL ERROR]", err);
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      setDeleteError(errorMsg);
+      toast.error("Failed to delete deal: " + errorMsg);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -1468,11 +1574,29 @@ function DealsTab({ talent, onDealCreated }) {
 
   const filteredDeals = useMemo(() => {
     let filtered = deals;
+    
+    // Split into Opportunities (no stage) vs Deals (has stage)
+    if (dealView === "opportunities") {
+      filtered = filtered.filter(d => !d.stage);
+    } else {
+      filtered = filtered.filter(d => d.stage);
+    }
+    
     if (stageFilter !== "ALL") {
       filtered = filtered.filter(d => d.stage === stageFilter);
     }
+    if (currencyFilter !== "ALL") {
+      filtered = filtered.filter(d => (d.currency || "GBP") === currencyFilter);
+    }
+    if (paymentFilter !== "ALL") {
+      const payStatus = paymentFilter;
+      filtered = filtered.filter(d => {
+        const dPayStatus = getPaymentStatus(d.stage);
+        return dPayStatus === payStatus;
+      });
+    }
     return filtered;
-  }, [deals, stageFilter]);
+  }, [deals, dealView, stageFilter, currencyFilter, paymentFilter]);
 
   const sortedDeals = useMemo(() => {
     const sorted = [...filteredDeals];
@@ -1488,11 +1612,19 @@ function DealsTab({ talent, onDealCreated }) {
         const nameB = (b.brand?.name || b.brandName || "").toLowerCase();
         return nameA.localeCompare(nameB);
       });
+    } else if (sortBy === "stage") {
+      sorted.sort((a, b) => {
+        const stageA = a.stage || "";
+        const stageB = b.stage || "";
+        return stageA.localeCompare(stageB);
+      });
+    } else if (sortBy === "value") {
+      sorted.sort((a, b) => (b.value || 0) - (a.value || 0));
     }
     return sorted;
   }, [filteredDeals, sortBy]);
 
-  // Calculate totals
+  // Calculate totals in GBP
   const totals = useMemo(() => {
     const pipeline = sortedDeals.filter(d => 
       !["COMPLETED", "LOST", "PAYMENT_RECEIVED"].includes(d.stage)
@@ -1500,27 +1632,88 @@ function DealsTab({ talent, onDealCreated }) {
     const confirmed = sortedDeals.filter(d => 
       ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(d.stage)
     );
-    
-    const pipelineValue = pipeline.reduce((sum, d) => sum + (d.value || 0), 0);
-    const confirmedRevenue = confirmed.reduce((sum, d) => sum + (d.value || 0), 0);
-    
-    // Get payment status from Payment relation (if available in API response)
     const paid = sortedDeals.filter(d => d.stage === "PAYMENT_RECEIVED" || d.stage === "COMPLETED");
-    const unpaid = sortedDeals.filter(d => 
-      ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(d.stage)
+    const pending = sortedDeals.filter(d => 
+      ["NEW_LEAD", "NEGOTIATION", "CONTRACT_SENT"].includes(d.stage)
     );
     
+    // Convert all to GBP values (stored at deal level)
+    const pipelineValue = pipeline.reduce((sum, d) => sum + (d.value || 0), 0);
+    const confirmedRevenue = confirmed.reduce((sum, d) => sum + (d.value || 0), 0);
     const paidValue = paid.reduce((sum, d) => sum + (d.value || 0), 0);
-    const unpaidValue = unpaid.reduce((sum, d) => sum + (d.value || 0), 0);
+    const unpaidValue = confirmed.reduce((sum, d) => {
+      if (!["PAYMENT_RECEIVED", "COMPLETED"].includes(d.stage)) {
+        return sum + (d.value || 0);
+      }
+      return sum;
+    }, 0);
+    const pendingValue = pending.reduce((sum, d) => sum + (d.value || 0), 0);
     
-    return { pipelineValue, confirmedRevenue, paidValue, unpaidValue };
+    const avgValue = sortedDeals.length > 0 ? pipelineValue / sortedDeals.length : 0;
+    const largestDeal = sortedDeals.length > 0 
+      ? Math.max(...sortedDeals.map(d => d.value || 0))
+      : 0;
+    
+    // Count deals closing this month
+    const now = new Date();
+    const thisMonth = sortedDeals.filter(d => {
+      if (!d.expectedClose) return false;
+      const closeDate = new Date(d.expectedClose);
+      return closeDate.getMonth() === now.getMonth() && 
+             closeDate.getFullYear() === now.getFullYear();
+    });
+    
+    return { 
+      pipelineValue, 
+      confirmedRevenue, 
+      paidValue, 
+      unpaidValue,
+      pendingValue,
+      avgValue: Math.round(avgValue),
+      largestDeal,
+      closingThisMonth: thisMonth.length
+    };
   }, [sortedDeals]);
 
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Deal Tracker</p>
-        <div className="flex items-center gap-3">
+      {/* Deal/Opportunity Toggle */}
+      <div className="mb-6 flex items-center justify-between border-b border-brand-black/10 pb-4">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setDealView("opportunities")}
+            className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] rounded-lg transition ${
+              dealView === "opportunities"
+                ? "bg-purple-100 text-purple-700 border border-purple-300"
+                : "text-brand-black/60 hover:text-brand-black"
+            }`}
+          >
+            Opportunities ({deals.filter(d => !d.stage).length})
+          </button>
+          <button
+            onClick={() => setDealView("deals")}
+            className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] rounded-lg transition ${
+              dealView === "deals"
+                ? "bg-blue-100 text-blue-700 border border-blue-300"
+                : "text-brand-black/60 hover:text-brand-black"
+            }`}
+          >
+            Deals ({deals.filter(d => d.stage).length})
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="flex items-center gap-2 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black"
+        >
+          <Plus className="h-4 w-4" />
+          Add {dealView === "opportunities" ? "Opportunity" : "Deal"}
+        </button>
+      </div>
+
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        {dealView === "deals" && (
           <select
             value={stageFilter}
             onChange={(e) => setStageFilter(e.target.value)}
@@ -1536,49 +1729,90 @@ function DealsTab({ talent, onDealCreated }) {
             <option value="COMPLETED">Completed</option>
             <option value="LOST">Declined</option>
           </select>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-2xl border border-brand-black/10 bg-brand-white px-3 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
-          >
-            <option value="dueDate">Sort by Due Date</option>
-            <option value="brand">Sort by Brand</option>
-          </select>
-          <button
-            type="button"
-            onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-2 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black"
-          >
-            <Plus className="h-4 w-4" />
-            Add Deal
-          </button>
-        </div>
+        )}
+        <select
+          value={paymentFilter}
+          onChange={(e) => setPaymentFilter(e.target.value)}
+          className="rounded-2xl border border-brand-black/10 bg-brand-white px-3 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
+        >
+          <option value="ALL">All Payment Status</option>
+          <option value="Paid">Paid</option>
+          <option value="Unpaid">Unpaid</option>
+          <option value="Awaiting">Awaiting</option>
+          <option value="Pending">Pending</option>
+        </select>
+        <select
+          value={currencyFilter}
+          onChange={(e) => setCurrencyFilter(e.target.value)}
+          className="rounded-2xl border border-brand-black/10 bg-brand-white px-3 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
+        >
+          <option value="ALL">All Currencies</option>
+          <option value="GBP">GBP</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="AUD">AUD</option>
+          <option value="CAD">CAD</option>
+        </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="rounded-2xl border border-brand-black/10 bg-brand-white px-3 py-2 text-xs uppercase tracking-[0.2em] focus:border-brand-black focus:outline-none"
+        >
+          <option value="dueDate">Sort by Due Date</option>
+          <option value="brand">Sort by Brand</option>
+          <option value="stage">Sort by Stage</option>
+          <option value="value">Sort by Value</option>
+        </select>
       </div>
 
-      {/* Totals Summary */}
+      {/* Overview Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Pipeline Value</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Total Pipeline</p>
           <p className="font-display text-xl uppercase text-brand-black">
-            {talent.revenue?.currency || "USD"} {totals.pipelineValue.toLocaleString()}
+            £{totals.pipelineValue.toLocaleString()}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Pending Deals</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            £{totals.pendingValue.toLocaleString()}
           </p>
         </div>
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Confirmed Revenue</p>
           <p className="font-display text-xl uppercase text-brand-black">
-            {talent.revenue?.currency || "USD"} {totals.confirmedRevenue.toLocaleString()}
+            £{totals.confirmedRevenue.toLocaleString()}
           </p>
         </div>
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Paid</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Paid vs Unpaid</p>
           <p className="font-display text-xl uppercase text-brand-black">
-            {talent.revenue?.currency || "USD"} {totals.paidValue.toLocaleString()}
+            £{totals.paidValue.toLocaleString()} / £{totals.unpaidValue.toLocaleString()}
           </p>
         </div>
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Unpaid</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Avg Deal Value</p>
           <p className="font-display text-xl uppercase text-brand-black">
-            {talent.revenue?.currency || "USD"} {totals.unpaidValue.toLocaleString()}
+            £{totals.avgValue.toLocaleString()}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Largest Deal</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            £{totals.largestDeal.toLocaleString()}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Closing This Month</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            {totals.closingThisMonth}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Total Deals</p>
+          <p className="font-display text-xl uppercase text-brand-black">
+            {sortedDeals.length}
           </p>
         </div>
       </div>
@@ -1603,61 +1837,212 @@ function DealsTab({ talent, onDealCreated }) {
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Fee</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Stage</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Due Date</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Payment Status</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Payment</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Notes</th>
+                {isSuperAdmin && (
+                  <th className="px-4 py-3 text-center text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {sortedDeals.map((deal) => {
-                // Get scope from notes or aiSummary (Deliverable relation not included in API response)
                 const scope = deal.aiSummary || deal.notes || "—";
                 const dueDate = deal.expectedClose 
-                  ? new Date(deal.expectedClose).toLocaleDateString()
-                  : "—";
-                
-                // Determine payment status from Payment relation or stage
-                let paymentStatus = "Pending";
-                if (deal.stage === "PAYMENT_RECEIVED" || deal.stage === "COMPLETED") {
-                  paymentStatus = "Paid";
-                } else if (deal.stage === "PAYMENT_PENDING") {
-                  paymentStatus = "Unpaid";
-                } else if (["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS"].includes(deal.stage)) {
-                  paymentStatus = "Awaiting";
-                }
+                  ? new Date(deal.expectedClose).toISOString().split('T')[0]
+                  : "";
+                const paymentStatus = getPaymentStatus(deal.stage);
 
                 return (
                   <tr key={deal.id} className="border-b border-brand-black/5 hover:bg-brand-black/5 transition-colors">
+                    {/* Brand */}
                     <td className="px-4 py-3">
                       <span className="font-medium text-brand-black">
                         {deal.brand?.name || deal.brandName || "—"}
                       </span>
                     </td>
+
+                    {/* Scope of Work */}
                     <td className="px-4 py-3">
-                      <span className="text-brand-black/80 text-xs max-w-[200px] truncate block" title={scope}>
-                        {scope}
-                      </span>
+                      {editingDealId === deal.id && editingField === "scope" ? (
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => handleEditField(deal.id, "scope", editValue)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleEditField(deal.id, "scope", editValue);
+                            if (e.key === "Escape") {
+                              setEditingDealId(null);
+                              setEditingField(null);
+                              setEditValue("");
+                            }
+                          }}
+                          autoFocus
+                          className="w-full max-w-xs rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
+                        />
+                      ) : (
+                        <span 
+                          onClick={() => {
+                            setEditingDealId(deal.id);
+                            setEditingField("scope");
+                            setEditValue(scope);
+                          }}
+                          className="text-brand-black/80 text-xs max-w-[200px] truncate block cursor-pointer hover:underline" 
+                          title={scope}
+                        >
+                          {scope}
+                        </span>
+                      )}
                     </td>
+
+                    {/* Currency */}
                     <td className="px-4 py-3">
-                      <span className="text-brand-black/60 uppercase text-xs">{deal.currency || "USD"}</span>
+                      {editingDealId === deal.id && editingField === "currency" ? (
+                        <select
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => handleEditField(deal.id, "currency", editValue)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setEditingDealId(null);
+                              setEditingField(null);
+                            }
+                          }}
+                          autoFocus
+                          className="w-24 rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
+                        >
+                          <option value="GBP">GBP</option>
+                          <option value="USD">USD</option>
+                          <option value="EUR">EUR</option>
+                          <option value="AUD">AUD</option>
+                          <option value="CAD">CAD</option>
+                        </select>
+                      ) : (
+                        <span 
+                          onClick={() => {
+                            setEditingDealId(deal.id);
+                            setEditingField("currency");
+                            setEditValue(deal.currency || "GBP");
+                          }}
+                          className="text-brand-black/60 uppercase text-xs cursor-pointer hover:underline"
+                        >
+                          {deal.currency || "GBP"}
+                        </span>
+                      )}
                     </td>
+
+                    {/* Fee */}
                     <td className="px-4 py-3">
-                      <span className="font-medium text-brand-black">
-                        {deal.value ? `${deal.currency || "USD"} ${deal.value.toLocaleString()}` : "—"}
-                      </span>
+                      {editingDealId === deal.id && editingField === "fee" ? (
+                        <input
+                          type="number"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => handleEditField(deal.id, "fee", editValue)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleEditField(deal.id, "fee", editValue);
+                            if (e.key === "Escape") {
+                              setEditingDealId(null);
+                              setEditingField(null);
+                              setEditValue("");
+                            }
+                          }}
+                          autoFocus
+                          className="w-32 rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
+                        />
+                      ) : (
+                        <span 
+                          onClick={() => {
+                            setEditingDealId(deal.id);
+                            setEditingField("fee");
+                            setEditValue(deal.value || "");
+                          }}
+                          className="font-medium text-brand-black cursor-pointer hover:underline"
+                        >
+                          {deal.value ? `${deal.currency || "GBP"} ${deal.value.toLocaleString()}` : "—"}
+                        </span>
+                      )}
                     </td>
+
+                    {/* Stage */}
                     <td className="px-4 py-3">
-                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${
-                        deal.stage === "COMPLETED" ? "bg-green-100 text-green-700" :
-                        deal.stage === "LOST" ? "bg-gray-100 text-gray-700" :
-                        ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(deal.stage) ? "bg-blue-100 text-blue-700" :
-                        "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {stageLabels[deal.stage] || deal.stage}
-                      </span>
+                      {editingDealId === deal.id && editingField === "stage" ? (
+                        <select
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => handleEditField(deal.id, "stage", editValue)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setEditingDealId(null);
+                              setEditingField(null);
+                            }
+                          }}
+                          autoFocus
+                          className="rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
+                        >
+                          <option value="">Clear Stage (Opportunity)</option>
+                          <option value="NEW_LEAD">In discussion</option>
+                          <option value="NEGOTIATION">Negotiation</option>
+                          <option value="CONTRACT_SENT">Contract Sent</option>
+                          <option value="CONTRACT_SIGNED">Contract Signed</option>
+                          <option value="DELIVERABLES_IN_PROGRESS">Deliverables</option>
+                          <option value="PAYMENT_PENDING">Payment Pending</option>
+                          <option value="COMPLETED">Completed</option>
+                          <option value="LOST">Declined</option>
+                        </select>
+                      ) : (
+                        <span 
+                          onClick={() => {
+                            setEditingDealId(deal.id);
+                            setEditingField("stage");
+                            setEditValue(deal.stage || "");
+                          }}
+                          className={`inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] cursor-pointer hover:underline ${
+                            deal.stage === "COMPLETED" ? "bg-green-100 text-green-700" :
+                            deal.stage === "LOST" ? "bg-gray-100 text-gray-700" :
+                            ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(deal.stage) ? "bg-blue-100 text-blue-700" :
+                            deal.stage ? "bg-yellow-100 text-yellow-700" :
+                            "bg-purple-100 text-purple-700"
+                          }`}
+                        >
+                          {deal.stage ? stageLabels[deal.stage] || deal.stage : "Opportunity"}
+                        </span>
+                      )}
                     </td>
+
+                    {/* Due Date */}
                     <td className="px-4 py-3">
-                      <span className="text-brand-black/60 text-xs">{dueDate}</span>
+                      {editingDealId === deal.id && editingField === "expectedCloseDate" ? (
+                        <input
+                          type="date"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => handleEditField(deal.id, "expectedCloseDate", editValue)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setEditingDealId(null);
+                              setEditingField(null);
+                              setEditValue("");
+                            }
+                          }}
+                          autoFocus
+                          className="w-32 rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
+                        />
+                      ) : (
+                        <span 
+                          onClick={() => {
+                            setEditingDealId(deal.id);
+                            setEditingField("expectedCloseDate");
+                            setEditValue(dueDate);
+                          }}
+                          className="text-brand-black/60 text-xs cursor-pointer hover:underline"
+                        >
+                          {dueDate || "—"}
+                        </span>
+                      )}
                     </td>
+
+                    {/* Payment Status */}
                     <td className="px-4 py-3">
                       <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
                         paymentStatus === "Paid" ? "bg-green-100 text-green-700" :
@@ -1667,11 +2052,56 @@ function DealsTab({ talent, onDealCreated }) {
                         {paymentStatus}
                       </span>
                     </td>
+
+                    {/* Notes */}
                     <td className="px-4 py-3">
-                      <span className="text-brand-black/60 text-xs max-w-[200px] truncate block" title={deal.notes || ""}>
-                        {deal.notes || "—"}
-                      </span>
+                      {editingDealId === deal.id && editingField === "notes" ? (
+                        <input
+                          type="text"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => handleEditField(deal.id, "notes", editValue)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleEditField(deal.id, "notes", editValue);
+                            if (e.key === "Escape") {
+                              setEditingDealId(null);
+                              setEditingField(null);
+                              setEditValue("");
+                            }
+                          }}
+                          autoFocus
+                          className="w-full max-w-xs rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
+                        />
+                      ) : (
+                        <span 
+                          onClick={() => {
+                            setEditingDealId(deal.id);
+                            setEditingField("notes");
+                            setEditValue(deal.notes || "");
+                          }}
+                          className="text-brand-black/60 text-xs max-w-[150px] truncate block cursor-pointer hover:underline" 
+                          title={deal.notes || ""}
+                        >
+                          {deal.notes || "—"}
+                        </span>
+                      )}
                     </td>
+
+                    {/* Actions Column */}
+                    {isSuperAdmin && (
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => {
+                            setDealToDelete(deal);
+                            setDeleteModalOpen(true);
+                          }}
+                          className="inline-flex items-center justify-center p-2 text-brand-black/60 hover:text-brand-red hover:bg-brand-red/5 rounded-lg transition"
+                          title="Delete deal"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -1787,9 +2217,9 @@ function DealsTab({ talent, onDealCreated }) {
                     onChange={(e) => setCreateForm({...createForm, currency: e.target.value})}
                     className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
                   >
+                    <option value="GBP">GBP</option>
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
                     <option value="CAD">CAD</option>
                     <option value="AUD">AUD</option>
                   </select>
@@ -1839,6 +2269,83 @@ function DealsTab({ talent, onDealCreated }) {
                 className="flex-1 rounded-lg bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-brand-black transition-colors"
               >
                 Create Deal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Deal Confirmation Modal */}
+      {deleteModalOpen && dealToDelete && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="relative w-full max-w-md mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteModalOpen(false);
+                setDealToDelete(null);
+              }}
+              className="absolute right-4 top-4 text-brand-black/40 hover:text-brand-black"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Warning Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="rounded-full bg-red-100 p-4">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-center font-display text-lg text-brand-black mb-2">Delete deal?</h2>
+
+            {/* Description */}
+            <p className="text-center text-sm text-brand-black/60 mb-6">
+              This will permanently delete the deal <span className="font-semibold text-brand-black">"{dealToDelete.brandName || dealToDelete.brand?.name || "Untitled"}"</span> with {dealToDelete.currency || "GBP"} {dealToDelete.value?.toLocaleString() || "0"}. This action cannot be undone.
+            </p>
+
+            {/* Error Message */}
+            {deleteError && (
+              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3">
+                <p className="text-xs text-red-700">{deleteError}</p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setDealToDelete(null);
+                  setDeleteError("");
+                }}
+                disabled={deleteLoading}
+                className="flex-1 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-black/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteDeal}
+                disabled={deleteLoading}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-red-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleteLoading ? (
+                  <>
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Delete Deal
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -2182,6 +2689,19 @@ function FilesTab({ talentId }) {
         </p>
       </div>
     </section>
+  );
+}
+
+function AccessControlTab({ talent }) {
+  return (
+    <TalentAccessSettings
+      talentId={talent.id}
+      talentName={talent.name}
+      ownerId={talent.userId}
+      managerId={talent.managerId}
+      ownerEmail={talent.user?.email || "Unknown"}
+      managerEmail={talent.Manager?.email || null}
+    />
   );
 }
 

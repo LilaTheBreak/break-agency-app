@@ -9,6 +9,7 @@ import { DealChip } from "../components/DealChip.jsx";
 import { EventChip } from "../components/EventChip.jsx";
 import { ContractChip } from "../components/ContractChip.jsx";
 import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection.jsx";
+import { DealSnapshotSummary } from "../components/DealSnapshotSummary.jsx";
 import {
   DEAL_CONFIDENCE,
   DEAL_STATUSES,
@@ -577,6 +578,11 @@ export function AdminDealsPage({ session }) {
             <TextButton onClick={() => navigate("/admin/brands")}>Open brands</TextButton>
             <PrimaryButton onClick={() => openCreate()}>Create deal</PrimaryButton>
           </div>
+        </div>
+
+        {/* Snapshot summary: Pipeline, revenue, attention metrics */}
+        <div className="mt-6">
+          <DealSnapshotSummary />
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3">

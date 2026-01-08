@@ -19,6 +19,91 @@ router.use((req, res, next) => {
   next();
 });
 
+// GET /api/crm-deals/snapshot - Get aggregate snapshot of all deals
+router.get("/snapshot", async (req, res) => {
+  try {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    // Fetch all deals
+    const allDeals = await prisma.deal.findMany({
+      select: {
+        id: true,
+        stage: true,
+        value: true,
+        currency: true,
+        expectedClose: true,
+        notes: true,
+        brandName: true,
+        brandId: true,
+        userId: true,
+        paymentStatus: true,
+      },
+    });
+
+    // Calculate metrics
+    const openPipeline = allDeals
+      .filter(d => !["COMPLETED", "LOST", "DECLINED"].includes(d.stage || ""))
+      .reduce((sum, d) => sum + (d.value || 0), 0);
+
+    const confirmedRevenue = allDeals
+      .filter(d => ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(d.stage || ""))
+      .reduce((sum, d) => sum + (d.value || 0), 0);
+
+    const paid = allDeals
+      .filter(d => ["PAYMENT_RECEIVED", "COMPLETED"].includes(d.stage || ""))
+      .reduce((sum, d) => sum + (d.value || 0), 0);
+
+    const outstanding = confirmedRevenue - paid;
+
+    // Count deals needing attention
+    const needsAttention = allDeals.filter(d => {
+      if (!d.userId) return true;
+      if (!d.stage) return true;
+      if (!d.value || d.value === 0) return true;
+      if (d.expectedClose && new Date(d.expectedClose) < now) return true;
+      if (!d.brandName || !d.brandId) return true;
+      return false;
+    }).length;
+
+    // Deals closing this month
+    const closingThisMonth = allDeals.filter(d => {
+      if (!d.expectedClose) return false;
+      const closeDate = new Date(d.expectedClose);
+      return closeDate >= monthStart && closeDate <= monthEnd;
+    });
+
+    const closingThisMonthCount = closingThisMonth.length;
+    const closingThisMonthValue = closingThisMonth.reduce((sum, d) => sum + (d.value || 0), 0);
+
+    // Response
+    res.json({
+      snapshot: {
+        openPipeline,
+        confirmedRevenue,
+        paid,
+        outstanding,
+        needsAttentionCount: needsAttention,
+        closingThisMonthCount,
+        closingThisMonthValue,
+      },
+      meta: {
+        totalDeals: allDeals.length,
+        currency: "GBP",
+        generatedAt: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("[crmDeals] Snapshot error:", error);
+    logError("Failed to fetch deals snapshot", error, { userId: req.user?.id });
+    res.status(500).json({ 
+      error: "Failed to fetch snapshot",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 // GET /api/crm-deals - List all deals with optional filters
 router.get("/", async (req, res) => {
   try {
@@ -238,10 +323,10 @@ router.post("/", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { dealName, brandId, status, estimatedValue, expectedCloseDate, notes } = req.body;
+    const { dealName, brandId, status, stage, estimatedValue, value, currency, expectedCloseDate, expectedClose, notes, paymentStatus } = req.body;
 
     // If status is being changed, use workflow service to trigger invoice creation
-    if (status !== undefined) {
+    if (status !== undefined || stage !== undefined) {
       const stageMap: Record<string, DealStage> = {
         "Prospect": DealStage.NEW_LEAD,
         "Negotiation": DealStage.NEGOTIATION,
@@ -253,15 +338,22 @@ router.patch("/:id", async (req, res) => {
         "Completed": DealStage.COMPLETED,
         "Lost": DealStage.LOST,
       };
-      const newStage = stageMap[status] || DealStage.NEW_LEAD;
       
-      // Use workflow service for stage changes to trigger invoice creation
-      const workflowResult = await dealWorkflowService.changeStage(id, newStage, req.user!.id);
+      // Support both 'stage' (DealStage enum) and 'status' (mapped string)
+      let newStage = stage;
+      if (!newStage && status) {
+        newStage = stageMap[status] || DealStage.NEW_LEAD;
+      }
       
-      if (!workflowResult.success) {
-        return res.status(workflowResult.status || 500).json({ 
-          error: workflowResult.error || "Failed to update deal stage"
-        });
+      if (newStage) {
+        // Use workflow service for stage changes to trigger invoice creation
+        const workflowResult = await dealWorkflowService.changeStage(id, newStage, req.user!.id);
+        
+        if (!workflowResult.success) {
+          return res.status(workflowResult.status || 500).json({ 
+            error: workflowResult.error || "Failed to update deal stage"
+          });
+        }
       }
       
       // Continue with other field updates if provided
@@ -269,7 +361,10 @@ router.patch("/:id", async (req, res) => {
       if (dealName !== undefined) updateData.brandName = dealName.trim();
       if (brandId !== undefined) updateData.brandId = brandId;
       if (estimatedValue !== undefined) updateData.value = estimatedValue;
+      if (value !== undefined) updateData.value = value;
+      if (currency !== undefined) updateData.currency = currency;
       if (expectedCloseDate !== undefined) updateData.expectedClose = expectedCloseDate ? new Date(expectedCloseDate) : null;
+      if (expectedClose !== undefined) updateData.expectedClose = expectedClose ? new Date(expectedClose) : null;
       if (notes !== undefined) updateData.notes = notes;
       
       // If other fields need updating, update them
@@ -339,7 +434,10 @@ router.patch("/:id", async (req, res) => {
     if (dealName !== undefined) updateData.brandName = dealName.trim();
     if (brandId !== undefined) updateData.brandId = brandId;
     if (estimatedValue !== undefined) updateData.value = estimatedValue;
+    if (value !== undefined) updateData.value = value;
+    if (currency !== undefined) updateData.currency = currency;
     if (expectedCloseDate !== undefined) updateData.expectedClose = expectedCloseDate ? new Date(expectedCloseDate) : null;
+    if (expectedClose !== undefined) updateData.expectedClose = expectedClose ? new Date(expectedClose) : null;
     if (notes !== undefined) updateData.notes = notes;
     updateData.updatedAt = new Date();
 

@@ -16,7 +16,10 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate --schema=./prisma/schema.prisma",
     "seed:auth": "tsx prisma/seeds/seedRoles.ts",
-    "migrate": "dotenv -e .env -- prisma migrate dev"
+    "migrate": "dotenv -e .env -- prisma migrate dev",
+    "seed:patricia-deals": "dotenv -e .env -- tsx scripts/seedPatriciaDeals.ts",
+    "test:patricia-deals": "dotenv -e .env -- tsx scripts/addPatriciaTestDeals.ts",
+    "ingest:patricia": "dotenv -e .env -- tsx scripts/ingestPatriciaDeals.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.940.0",
@@ -81,7 +84,8 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "xlsx": "^0.18.5"
   },
   "prisma": {
     "schema": "./prisma/schema.prisma",

@@ -103,6 +103,9 @@ import adminFinanceRouter from "./routes/admin/finance.js";
 // Admin Talent
 import adminTalentRouter from "./routes/admin/talent.js";
 
+// Admin Deals
+import adminDealsRouter from "./routes/admin/deals.js";
+
 // Admin Diagnostics
 import adminDiagnosticsRouter from "./routes/admin/diagnostics.js";
 
@@ -542,6 +545,7 @@ app.use("/api/admin", adminUsersRouter);
 // ADMIN TALENT MANAGEMENT
 // ------------------------------------------------------
 app.use("/api/admin/talent", adminTalentRouter);
+app.use("/api/admin/deals", adminDealsRouter);
 app.use("/api/admin/diagnostics", adminDiagnosticsRouter);
 
 // ------------------------------------------------------

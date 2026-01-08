@@ -275,7 +275,7 @@ export function DashboardShell({
                   aria-pressed={navCollapsed}
                 >
                   <img
-                    src="/B Logo Mark.png"
+                    src="/B-Logo-Mark.png"
                     alt="Break logo"
                     className="h-8 w-8 object-contain"
                   />

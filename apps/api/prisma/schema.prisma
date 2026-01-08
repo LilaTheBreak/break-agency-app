@@ -542,9 +542,17 @@ model Deal {
   value                   Float?
   currency                String            @default("USD")
   brandName               String?
+  campaignName            String?           // Campaign or project name
   aiSummary               String?
   notes                   String?
+  internalNotes           String?           // Internal team notes
   expectedClose           DateTime?
+  startDate               DateTime?         // Deal/project start date
+  endDate                 DateTime?         // Deal/project end date
+  platforms               String[]          @default([]) // TikTok, Instagram, YouTube, etc
+  deliverables            String?           // JSON or text description of deliverables
+  invoiceStatus           String?           // NOT_INVOICED, INVOICED, PAID
+  paymentStatus           String?           // UNPAID, PAID, PARTIAL
   createdAt               DateTime          @default(now())
   updatedAt               DateTime
   campaignLiveAt          DateTime?
@@ -1472,6 +1480,7 @@ model Talent {
   TalentEmail             TalentEmail[]
   TalentTask              TalentTask[]
   TalentSocial            TalentSocial[]
+  UserAccess              TalentUserAccess[]        @relation("TalentAccess")
 }
 
 model TalentEmail {
@@ -1543,6 +1552,22 @@ model TalentAssignment {
   Talent    Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
 
   @@unique([agentId, talentId])
+}
+
+model TalentUserAccess {
+  id        String   @id @default(cuid())
+  talentId  String
+  userId    String
+  role      String   @default("VIEW")  // VIEW | MANAGE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  Talent    Talent   @relation("TalentAccess", fields: [talentId], references: [id], onDelete: Cascade)
+  User      User     @relation("TalentAccessGiven", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([talentId, userId])
+  @@index([talentId])
+  @@index([userId])
 }
 
 model TrackingPixelEvent {
@@ -1644,6 +1669,7 @@ model User {
   Submission                              Submission[]
   Talent                                  Talent?
   TalentAssignment                        TalentAssignment[]
+  TalentAccessGiven                       TalentUserAccess[]        @relation("TalentAccessGiven")
   PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
   PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
   IntegrationConnection                   IntegrationConnection[]

@@ -14,22 +14,40 @@ export async function getDashboardStats() {
  * @param {number} limit - The number of items to fetch.
  */
 export async function getRecentActivity(limit = 5) {
-  const response = await apiFetch(`/api/activity?limit=${limit}`);
-  // Handle permission errors gracefully - return empty array
-  if (response.status === 403) {
+  try {
+    const response = await apiFetch(`/api/activity?limit=${limit}`);
+    
+    // Handle permission errors gracefully - return empty array
+    if (response.status === 403) {
+      console.warn("[Activity] Permission denied (403)");
+      return [];
+    }
+    
+    // Handle not found - return empty array
+    if (response.status === 404) {
+      console.warn("[Activity] Endpoint not found (404)");
+      return [];
+    }
+    
+    // Handle server errors gracefully - return empty array instead of crashing
+    if (response.status >= 500) {
+      console.error("[Activity] Server error (" + response.status + ")");
+      return [];
+    }
+    
+    // If response is ok, return data (even if empty array)
+    if (response.ok) {
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    }
+    
+    // For any other error, return empty array (graceful degradation)
+    console.warn("[Activity] Failed to fetch (status " + response.status + ")");
+    return [];
+  } catch (error) {
+    console.error("[Activity] Fetch error:", error);
     return [];
   }
-  // Handle not found - return empty array
-  if (response.status === 404) {
-    return [];
-  }
-  // If response is ok, return data (even if empty array)
-  if (response.ok) {
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
-  }
-  // For any other error, return empty array (graceful degradation)
-  return [];
 }
 
 /**
@@ -37,19 +55,40 @@ export async function getRecentActivity(limit = 5) {
  * @param {number} limit - The number of items to fetch.
  */
 export async function getPendingApprovals(limit = 4) {
-  const response = await apiFetch(`/api/approvals?status=pending&limit=${limit}`);
-  if (response.status === 403) {
+  try {
+    const response = await apiFetch(`/api/approvals?status=pending&limit=${limit}`);
+    
+    // Handle permission errors gracefully
+    if (response.status === 403) {
+      console.warn("[Approvals] Permission denied (403)");
+      return [];
+    }
+    
+    // Handle not found
+    if (response.status === 404) {
+      console.warn("[Approvals] Endpoint not found (404)");
+      return [];
+    }
+    
+    // Handle server errors gracefully
+    if (response.status >= 500) {
+      console.error("[Approvals] Server error (" + response.status + ")");
+      return [];
+    }
+    
+    // If response is ok, return data
+    if (response.ok) {
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    }
+    
+    // For any other error
+    console.warn("[Approvals] Failed to fetch (status " + response.status + ")");
+    return [];
+  } catch (error) {
+    console.error("[Approvals] Fetch error:", error);
     return [];
   }
-  if (response.status === 404) {
-    return [];
-  }
-  if (!response.ok) {
-    const error = new Error("Failed to fetch pending approvals");
-    error.status = response.status;
-    throw error;
-  }
-  return response.json();
 }
 
 /**

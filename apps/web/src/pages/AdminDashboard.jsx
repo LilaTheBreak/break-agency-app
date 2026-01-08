@@ -5,6 +5,7 @@ import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 import { AdminAuditTable } from "../components/AdminAuditTable.jsx";
 import { AdminActivityFeed } from "../components/AdminActivityFeed.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
+import { ExclusiveTalentSnapshot } from "../components/ExclusiveTalentSnapshot.jsx";
 import PendingUsersApproval from "../components/admin/PendingUsersApproval.jsx";
 import { ResourceManager } from "../components/admin/ResourceManager.jsx";
 import { OpportunitiesCard } from "../components/OpportunitiesCard.jsx";
@@ -28,6 +29,7 @@ export function AdminDashboard({ session }) {
     >
       <PendingUsersApproval />
       <ResourceManager />
+      <ExclusiveTalentSnapshot />
       <AdminActivityFeed />
       <OpportunitiesCard session={activeSession} role={activeSession?.role} />
       <AdminCampaignsPanel session={activeSession} />

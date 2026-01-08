@@ -362,7 +362,7 @@ function App() {
                 <div className="flex flex-col items-center gap-6">
                   <div className="rounded-3xl bg-white/6 p-6 backdrop-blur-sm">
                     <img
-                      src="/B Logo Mark.png"
+                      src="/B-Logo-Mark.png"
                       alt="Break"
                       className="h-14 w-14 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
                     />

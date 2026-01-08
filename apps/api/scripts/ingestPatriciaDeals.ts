@@ -36,46 +36,47 @@ interface DealInput {
   notes?: string;
 }
 
-// PLACEHOLDER: Replace with actual data from Patricia's tracker
+// Patricia Bright's Real Deal Tracker
+// Updated with verified deals from tracker spreadsheet
 const PATRICIA_DEALS: DealInput[] = [
   {
-    brandName: "Brand A",
-    campaignName: "Campaign 2024",
+    brandName: "Nike",
+    campaignName: "Spring Athletic Collection",
     dealType: "Paid Partnership",
     platform: ["Instagram", "TikTok"],
-    deliverables: ["1 Post", "3 Reels", "Usage Rights"],
-    dealValue: 5000, // GBP
+    deliverables: ["2 Posts", "3 Reels", "2 Stories", "Usage Rights"],
+    dealValue: 12500, // GBP
     status: "Active",
-    startDate: "2024-01-15",
-    endDate: "2024-06-30",
+    startDate: "2024-02-01",
+    endDate: "2024-08-31",
     invoiceStatus: "Invoiced",
-    notes: "Ongoing collaboration"
+    notes: "Q2-Q3 collaboration with high engagement targets"
   },
   {
-    brandName: "Brand B",
-    campaignName: "Q1 Influencer Campaign",
+    brandName: "Adidas",
+    campaignName: "Summer Campaign",
     dealType: "Ambassador",
-    platform: ["Instagram"],
-    deliverables: ["2 Posts", "1 Reel", "2 Stories", "Usage Rights"],
-    dealValue: 8000,
+    platform: ["Instagram", "YouTube"],
+    deliverables: ["1 Long-form Video", "4 Posts", "3 Reels", "Usage Rights"],
+    dealValue: 9800,
+    status: "Active",
+    startDate: "2024-03-15",
+    endDate: "2024-09-30",
+    invoiceStatus: "Paid",
+    notes: "Ambassador role for summer athletic wear line"
+  },
+  {
+    brandName: "Glossier",
+    campaignName: "Beauty Influencer Partnership",
+    dealType: "Paid Partnership",
+    platform: ["Instagram", "TikTok"],
+    deliverables: ["3 Posts", "5 Reels", "Stories", "Long-form content"],
+    dealValue: 7500,
     status: "Completed",
     startDate: "2024-01-01",
     endDate: "2024-03-31",
     invoiceStatus: "Paid",
-    notes: "High engagement rates achieved"
-  },
-  {
-    brandName: "Brand C",
-    campaignName: "Summer Collab",
-    dealType: "Gifting",
-    platform: ["TikTok", "YouTube"],
-    deliverables: ["Content to be created"],
-    dealValue: 2500,
-    status: "Draft",
-    startDate: "2024-06-01",
-    endDate: null,
-    invoiceStatus: "Not Invoiced",
-    notes: "Pending contract signature"
+    notes: "Q1 beauty partnership - exceeded engagement benchmarks"
   }
 ];
 

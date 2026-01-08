@@ -12,6 +12,7 @@ import payoutsRouter from "./payouts.js";
 import dashboardRouter from "./dashboard.js";
 import dashboardRevenueRouter from "./dashboardRevenue.js";
 import dashboardCampaignPacingRouter from "./dashboardCampaignPacing.js";
+import dashboardExclusiveTalentRouter from "./dashboardExclusiveTalent.js";
 import messagesRouter from "./messages.js";
 import filesRouter from "./files.js";
 import contractsRouter from "./contracts.js";
@@ -23,6 +24,8 @@ import aiDealExtractorRouter from "./aiDealExtractor.js";
 import documentExtractionRouter from "./documentExtraction.js";
 import campaignsRouter from "./campaigns.js";
 import deckRouter from "./deck.js";
+import queuesRouter from "./queues.js";
+import talentAccessRouter from "./talentAccess.js";
 
 // User management & onboarding
 // NOTE: authRouter is mounted in server.ts at /api/auth, not here
@@ -104,6 +107,9 @@ router.use(payoutsRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/dashboard", dashboardRevenueRouter);
 router.use("/dashboard", dashboardCampaignPacingRouter);
+router.use("/dashboard", dashboardExclusiveTalentRouter);
+router.use("/queues", queuesRouter);
+router.use("/talent", talentAccessRouter);
 router.use(messagesRouter);
 router.use(filesRouter);
 router.use(contractsRouter);
