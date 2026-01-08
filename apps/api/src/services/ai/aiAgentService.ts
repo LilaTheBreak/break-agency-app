@@ -55,17 +55,18 @@ export async function processAIAgentTask(taskId: string) {
       data: { status: AIAgentTaskStatus.COMPLETED, result },
     });
 
-    await prisma.aIAgentExecutionLog.create({
-      data: {
-        taskId: task.id,
-        talentId: task.talentId,
-        action: task.type,
-        input: task.payload,
-        output: aiResponse.data,
-        tokens: aiResponse.meta.tokens,
-        latency: aiResponse.meta.latency,
-      },
-    });
+    // aIAgentExecutionLog model doesn't exist - skipping detailed logging
+    // await prisma.aIAgentExecutionLog.create({
+    //   data: {
+    //     taskId: task.id,
+    //     talentId: task.talentId,
+    //     action: task.type,
+    //     input: task.payload,
+    //     output: aiResponse.data,
+    //     tokens: aiResponse.meta.tokens,
+    //     latency: aiResponse.meta.latency,
+    //   },
+    // });
 
     await trackAITokens("aiAgentService", aiResponse.meta.tokens, {
       userId: task.talent.userId,

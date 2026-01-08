@@ -1,26 +1,9 @@
 import prisma from "./lib/prisma.js";
 
 async function main() {
-  const roles = [
-    "UGC",
-    "CREATOR",
-    "EXCLUSIVE_TALENT",
-    "ADMIN",
-    "FOUNDER",
-    "BRAND",
-    "SUPERADMIN",
-    "TALENT_MANAGER"
-  ];
-
-  for (const name of roles) {
-    await prisma.role.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-  }
-
-  console.log("Roles seeded successfully.");
+  // Roles are stored as string values on User.role, not as a separate table
+  // No seed data needed
+  console.log("Roles configuration: String enum on User model");
 }
 
 main()

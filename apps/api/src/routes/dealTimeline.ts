@@ -7,7 +7,7 @@ const router = Router();
 router.get("/:dealId", requireAuth, async (req, res, next) => {
   try {
     const { dealId } = req.params;
-    const events = await prisma.dealEvent.findMany({
+    const events = await prisma.dealTimeline.findMany({
       where: { dealId },
       orderBy: { createdAt: "desc" }
     });
@@ -25,11 +25,11 @@ router.post("/:dealId/note", requireAuth, async (req, res, next) => {
     if (!message || !String(message).trim()) {
       return res.status(400).json({ error: "Message is required" });
     }
-    const event = await prisma.dealEvent.create({
+    const event = await prisma.dealTimeline.create({
       data: {
         dealId,
         type: "NOTE",
-        actorId: user.id,
+        createdById: user.id,
         message: String(message).trim()
       }
     });

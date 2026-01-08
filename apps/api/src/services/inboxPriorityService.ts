@@ -80,7 +80,7 @@ async function processEmails(userId: string): Promise<PriorityItem[]> {
 async function processDMs(userId: string): Promise<PriorityItem[]> {
   const dms = await prisma.inboxMessage.findMany({
     where: { userId },
-    include: { classified: true, linkedDeals: true },
+    include: { InboxThreadMeta: true },
     orderBy: { receivedAt: "desc" },
     take: 200,
   });
@@ -88,19 +88,19 @@ async function processDMs(userId: string): Promise<PriorityItem[]> {
   const priorityItems: PriorityItem[] = [];
 
   for (const dm of dms) {
-    const classification = dm.classified[0]; // Assuming one classification per message
+    const threadMeta = dm.InboxThreadMeta;
     const reason: PriorityReason = {
-      isHighScore: dm.priority === 2, // High priority from initial classification
-      hasDeadline: !!classification?.deadline,
-      dealCategory: !!classification && PRIORITY_CATEGORIES.includes(classification.type),
-      unreadReply: dm.openedAt === null,
-      linkedDeal: dm.linkedDeals.length > 0,
+      isHighScore: threadMeta?.priority === 2, // High priority from initial classification
+      hasDeadline: false, // Would require classification table
+      dealCategory: false, // Would require classification table
+      unreadReply: !dm.isRead,
+      linkedDeal: !!threadMeta?.linkedDealId,
     };
 
     const isPriority = Object.values(reason).some(Boolean);
 
     if (isPriority) {
-      let priorityScore = dm.priority * 40; // Scale 0-2 to 0-80
+      let priorityScore = (threadMeta?.priority || 0) * 40; // Scale 0-2 to 0-80
       if (reason.hasDeadline) priorityScore += 20;
       if (reason.dealCategory) priorityScore += 15;
       if (reason.unreadReply) priorityScore += 5;

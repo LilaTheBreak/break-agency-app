@@ -200,7 +200,7 @@ router.post("/", async (req: Request, res: Response) => {
           },
         },
       },
-    });
+    } as any);
 
     // Log activity
     try {
@@ -225,9 +225,9 @@ router.post("/", async (req: Request, res: Response) => {
       linkedDealIds: eventMetadata.linkedDealIds,
       linkedTalentIds: eventMetadata.linkedTalentIds,
       notes: eventMetadata.notes,
-      Brand: event.CrmBrand ? {
-        id: event.CrmBrand.id,
-        name: event.CrmBrand.brandName,
+      Brand: (event as any).CrmBrand ? {
+        id: (event as any).CrmBrand.id,
+        name: (event as any).CrmBrand.brandName,
       } : null,
     };
 

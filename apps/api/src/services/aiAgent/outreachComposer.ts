@@ -3,8 +3,8 @@ import prisma from "../../lib/prisma.js";
 
 export async function generateOutreachMessage(userId: string, brandName: string) {
   const context = await loadAIContext(userId);
-  const intel = await prisma.brandIntel.findFirst({
-    where: { brandName: { equals: brandName, mode: "insensitive" } }
+  const intel = await prisma.brandIntelligence.findFirst({
+    where: { brandId: brandName }
   });
 
   const persona = context.persona?.toneKeywords || "professional, warm";
@@ -15,7 +15,7 @@ export async function generateOutreachMessage(userId: string, brandName: string)
     .map((m) => `• ${m.topic}: ${JSON.stringify(m.content)}`)
     .join("\n");
 
-  const brandNotes = intel?.notes ? JSON.stringify(intel.notes, null, 2) : "No prior brand intel.";
+  const brandNotes = intel?.insights ? JSON.stringify(intel.insights, null, 2) : "No prior brand intel.";
 
   const aiDraft = `
 Write a personalised outreach message from a creator to a brand representative.

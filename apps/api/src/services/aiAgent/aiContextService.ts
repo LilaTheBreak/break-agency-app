@@ -1,26 +1,26 @@
 import prisma from "../../lib/prisma.js";
 
 export async function loadAIContext(userId: string) {
-  const persona = await prisma.creatorPersonaProfile.findUnique({
-    where: { userId }
-  });
-
-  const memories = await prisma.aIAgentMemory.findMany({
-    where: { userId },
-    orderBy: [{ importance: "desc" }, { updatedAt: "desc" }],
+  // creatorPersonaProfile, aIAgentMemory, interactionHistory models don't exist
+  // Using AIPromptHistory as context source instead
+  const promptHistory = await prisma.aIPromptHistory.findMany({
+    where: { creatorId: userId },
+    orderBy: { createdAt: "desc" },
     take: 50
   });
 
-  const interactions = await prisma.interactionHistory.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: 25
-  });
-
   return {
-    persona,
-    memories,
-    interactions
+    persona: null,
+    memories: promptHistory.map(p => ({
+      id: p.id,
+      userId,
+      type: "prompt_history",
+      topic: p.category,
+      content: p.response,
+      importance: p.helpful ? 2 : 1,
+      updatedAt: p.createdAt
+    })),
+    interactions: []
   };
 }
 
@@ -31,13 +31,14 @@ export async function storeAIMemory(params: {
   content: any;
   importance?: number;
 }) {
-  return prisma.aIAgentMemory.create({
+  // aIAgentMemory model doesn't exist - storing in AIPromptHistory instead
+  return prisma.aIPromptHistory.create({
     data: {
-      userId: params.userId,
-      type: params.type,
-      topic: params.topic,
-      content: params.content,
-      importance: params.importance ?? 1
+      creatorId: params.userId,
+      prompt: params.topic || "memory",
+      response: JSON.stringify(params.content),
+      category: params.type,
+      helpful: params.importance !== undefined ? params.importance > 1 : undefined
     }
   });
 }
@@ -49,13 +50,14 @@ export async function logInteraction(params: {
   summary?: string;
   metadata?: any;
 }) {
-  return prisma.interactionHistory.create({
+  // interactionHistory model doesn't exist - logging to AIPromptHistory instead
+  return prisma.aIPromptHistory.create({
     data: {
-      userId: params.userId,
-      entity: params.entity,
-      entityId: params.entityId,
-      summary: params.summary,
-      metadata: params.metadata
+      creatorId: params.userId,
+      prompt: `${params.entity}:${params.entityId || 'unknown'}`,
+      response: params.summary || "",
+      category: params.entity,
+      helpful: null
     }
   });
 }

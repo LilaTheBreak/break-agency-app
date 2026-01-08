@@ -41,7 +41,7 @@ export async function generateNegotiationInsights(dealDraftId: string) {
     where: { id: dealDraft.userId },
     include: {
       talents: { include: { aiSettings: true, pricingModels: true } },
-      brandRelationships: { where: { brandName: dealDraft.brand || '' } },
+      brandRelationships: { where: { brandName: (dealDraft.data as any)?.brand || '' } },
     },
   });
 

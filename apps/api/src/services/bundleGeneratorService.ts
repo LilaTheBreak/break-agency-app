@@ -62,7 +62,7 @@ export async function generateBundleForDeal(dealId: string): Promise<BundleResul
 
     // --- 4. Talking points ---
     const talkingPoints = [
-      `Why ${talentName} genuinely uses ${deal.brand}.`,
+      `Why ${talentName} genuinely uses ${deal.brandName || 'the product'}.`,
       `Highlight a favourite feature of the product.`,
       `Emphasise authenticity and personal experience.`,
       `Add a CTA encouraging followers to try or learn more.`

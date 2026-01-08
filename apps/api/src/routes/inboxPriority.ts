@@ -22,18 +22,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
         userId, // Filter by user
       },
       include: {
-        classified: true,
-        linkedDeals: {
-          include: {
-            deal: {
-              select: {
-                id: true,
-                brandName: true,
-                stage: true,
-              },
-            },
-          },
-        },
+        InboxThreadMeta: true,
       },
       orderBy: {
         receivedAt: "desc",
@@ -44,10 +33,10 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     const scored = messages
       .map((m) => {
         let score = 0;
-        if (!m.openedAt) score += 30;
-        score += (m.priority || 0) * 10;
-        if ((m.linkedDeals?.length || 0) > 0) score += 20;
-        if (m.classified.some((c) => c.type === "urgent")) score += 15;
+        const threadMeta = m.InboxThreadMeta;
+        if (!m.isRead) score += 30;
+        score += (threadMeta?.priority || 0) * 10;
+        if (threadMeta?.linkedDealId) score += 20;
         return { ...m, score };
       })
       .sort((a, b) => b.score - a.score);

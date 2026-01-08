@@ -1,6 +1,12 @@
 import prisma from "../../lib/prisma.js";
 
+// Note: brandCampaignPrediction and opportunityCluster models don't exist in schema
 export async function buildOpportunityClusters(userId: string) {
+  console.warn("Opportunity clustering not yet implemented - models do not exist");
+  return [];
+  
+  // Original implementation (commented out - models don't exist):
+  /*
   const preds = await prisma.brandCampaignPrediction.findMany({
     where: { userId, likelihood: { gt: 40 } }
   });
@@ -34,4 +40,5 @@ export async function buildOpportunityClusters(userId: string) {
   }
 
   return result;
+  */
 }

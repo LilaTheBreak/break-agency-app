@@ -40,12 +40,15 @@ router.post("/:sessionId/step", requireAuth, async (req, res) => {
 });
 
 router.get("/thread/:id", requireAuth, async (req, res) => {
-  const thread = await prisma.negotiationThread.findUnique({
-    where: { id: req.params.id },
-    include: { messages: true }
-  });
-  if (!thread) return res.status(404).json({ error: true });
-  res.json({ thread });
+  // negotiationThread model not implemented yet
+  // Use DealNegotiation instead for tracking negotiation state
+  res.status(501).json({ error: "Feature not yet implemented" });
+  // const thread = await prisma.negotiationThread.findUnique({
+  //   where: { id: req.params.id },
+  //   include: { messages: true }
+  // });
+  // if (!thread) return res.status(404).json({ error: true });
+  // res.json({ thread });
 });
 
 export default router;

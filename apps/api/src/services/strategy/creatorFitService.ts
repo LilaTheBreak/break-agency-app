@@ -1,7 +1,13 @@
 import prisma from "../../lib/prisma.js";
 import { predictCreatorBrandFit } from "../ai/creatorFitEngine.js";
 
+// Note: creatorBrandFit model doesn't exist in schema
 export async function runCreatorFit(userId: string, brandPrediction: any) {
+  console.warn("Creator brand fit analysis not yet implemented - model does not exist");
+  return [];
+  
+  // Original implementation (commented out - model doesn't exist):
+  /*
   const creators = await prisma.user.findMany({
     where: {
       accountType: "creator"
@@ -49,4 +55,5 @@ export async function runCreatorFit(userId: string, brandPrediction: any) {
   }
 
   return results;
+  */
 }

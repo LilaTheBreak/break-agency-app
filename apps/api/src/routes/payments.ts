@@ -20,7 +20,7 @@ const paypalWebhookId = process.env.PAYPAL_WEBHOOK_ID || "";
 const intentSchema = z.object({
   amount: z.number().int().positive(),
   currency: z.string().min(1),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
 });
 
 const invoiceSchema = z.object({
@@ -77,7 +77,7 @@ const payoutSchema = z.object({
   amount: z.number().int().positive(),
   currency: z.string().default("usd"),
   destination: z.string().min(1), // Stripe account ID or bank account ID
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   description: z.string().optional()
 });
 

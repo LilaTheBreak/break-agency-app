@@ -20,7 +20,7 @@ router.post("/campaigns", ensureManager, async (req: Request, res: Response) => 
     // Validate request body
     const validation = validateRequestSafe(CampaignCreateSchema, req.body);
     if (!validation.success) {
-      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, (validation as any).error.format());
     }
 
     const { title, ownerId, stage = "PLANNING", brands = [], creatorTeams = [], metadata = {} } = validation.data;
@@ -156,9 +156,9 @@ router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => 
 const CampaignUpdateSchema = z.object({
   title: z.string().min(1).optional(),
   stage: z.enum(["PLANNING", "ACTIVE", "REVIEW", "COMPLETE"]).optional(),
-  brands: z.array(z.any()).optional(), // Loosely typed for now, can be refined
-  creatorTeams: z.array(z.any()).optional(), // Loosely typed for now, can be refined
-  metadata: z.record(z.any()).optional(), // Loosely typed for now
+  brands: z.array(z.string()).optional(),
+  creatorTeams: z.array(z.string()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

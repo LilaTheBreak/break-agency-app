@@ -31,7 +31,7 @@ export async function summarizeThread(
   const threadContent = messages
     .map((msg) => {
       const body = "bodyHtml" in msg ? msg.bodyHtml : "body" in msg ? msg.body : "";
-      return `From: ${msg.from}\nSubject: ${msg.subject}\n\n${cleanEmailBody(body || "")}`;
+      return `From: ${(msg as any).from || (msg as any).fromEmail}\nSubject: ${msg.subject}\n\n${cleanEmailBody(body || "")}`;
     })
     .join("\n\n--- Next Message ---\n\n");
 

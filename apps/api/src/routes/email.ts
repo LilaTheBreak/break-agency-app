@@ -27,7 +27,7 @@ const sendSchema = z.object({
   to: z.string().email(),
   template: templateEnum,
   subject: z.string().optional(),
-  data: z.record(z.any()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
   userId: z.string().optional()
 });
 

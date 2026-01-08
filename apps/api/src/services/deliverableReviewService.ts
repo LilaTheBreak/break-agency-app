@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { reviewDeliverable } from "./ai/deliverableReview.js";
 
+// Note: campaignDeliverableAuto model doesn't exist in schema
 export async function runDeliverableReview({
   deliverableId,
   content,
@@ -10,6 +11,11 @@ export async function runDeliverableReview({
   content: string;
   userId?: string;
 }) {
+  console.warn("Deliverable review not yet implemented - model does not exist");
+  throw new Error("Deliverable review feature not yet implemented");
+  
+  // Original implementation (commented out - model doesn't exist):
+  /*
   const deliverable = await prisma.campaignDeliverableAuto.findUnique({
     where: { id: deliverableId },
     include: {
@@ -23,7 +29,7 @@ export async function runDeliverableReview({
     throw new Error("Deliverable not found");
   }
 
-  const result = await reviewDeliverable({
+  */  const result = await reviewDeliverable({
     deliverable,
     content,
     brief: deliverable.plan?.brief

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 const AgentTaskSchema = z.object({
   taskName: z.string(),
-  context: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

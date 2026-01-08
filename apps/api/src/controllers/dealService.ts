@@ -52,9 +52,9 @@ export async function getDealById(dealId: string, userId: string): Promise<any |
   return prisma.deal.findFirst({
     where: { id: dealId, userId }, // Basic ownership check
     include: {
-      timeline: { orderBy: { createdAt: "desc" } },
-      deliverables: true,
-      payments: true
+      DealTimeline: { orderBy: { createdAt: "desc" } },
+      Deliverable: true,
+      Payment: true
       // In a real app, you'd also include:
       // contract: true,
       // talent: { include: { user: true } },
@@ -87,9 +87,6 @@ export async function updateDeal(
       metadata: { oldValue: existingDeal.value, newValue: data.value },
       createdById: userId,
     });
-  }
-  if (data.contractId && data.contractId !== existingDeal.contractId) {
-    await addTimelineEntry(dealId, { type: "contract_linked", message: "Contract linked to deal.", metadata: { contractId: data.contractId }, createdById: userId });
   }
 
   return updatedDeal;

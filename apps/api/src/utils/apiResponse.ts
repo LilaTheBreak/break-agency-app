@@ -29,10 +29,16 @@ export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 /**
  * Send a successful API response
  */
-export function sendSuccess<T>(res: Response, data: T, status: number = 200): void {
+export function sendSuccess<T>(
+  res: Response,
+  data: T,
+  status: number = 200,
+  message?: string
+): void {
   res.status(status).json({
     success: true,
     data,
+    ...(message && { message }),
   });
 }
 

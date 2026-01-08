@@ -232,15 +232,15 @@ router.get("/payouts", async (req: Request, res: Response) => {
           },
         },
       }
-    });
+    } as Prisma.PayoutFindManyArgs);
 
     // Transform to match frontend format
-    const transformed = payouts.map(p => ({
+    const transformed = (payouts as any).map((p: any) => ({
       id: p.id,
       creator: p.Talent?.name || `Creator ${p.creatorId.slice(0, 8)}`,
       creatorId: p.creatorId,
       dealId: p.dealId,
-      dealName: p.Deal?.brandName || "Unknown Deal", // Deal model uses brandName
+      dealName: p.Deal?.brandName || "Unknown Deal",
       amount: `${p.currency || "USD"}${p.amount.toFixed(2)}`,
       status: p.status === "paid" ? "Paid" : p.status === "pending" ? "Scheduled" : "Awaiting approval",
       expectedDate: p.expectedPayoutAt ? p.expectedPayoutAt.toISOString().split("T")[0] : null,
@@ -393,7 +393,7 @@ router.get("/attention", async (req: Request, res: Response) => {
       prisma.invoice.findMany({
         where: { status: "overdue" },
         include: {
-          Deal: { select: { dealName: true } },
+          Deal: { select: { id: true, brandName: true } },
           Brand: { select: { name: true } }
         }
       }),
@@ -404,7 +404,7 @@ router.get("/attention", async (req: Request, res: Response) => {
         },
         include: {
           Talent: { select: { name: true } },
-          Deal: { select: { dealName: true } }
+          Deal: { select: { id: true, brandName: true } }
         }
       })
     ]);

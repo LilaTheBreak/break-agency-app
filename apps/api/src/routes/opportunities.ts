@@ -80,7 +80,7 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN'
     // Validate request body
     const validation = validateRequestSafe(OpportunityCreateSchema, req.body);
     if (!validation.success) {
-      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, (validation as any).error.format());
     }
 
     const { title, description, brandId, isActive, deadline, payment } = validation.data;
@@ -130,7 +130,7 @@ router.put('/:id', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMI
     // Validate request body
     const validation = validateRequestSafe(OpportunityUpdateSchema, req.body);
     if (!validation.success) {
-      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, (validation as any).error.format());
     }
 
     const { title, description, isActive, deadline, payment } = validation.data;
@@ -279,7 +279,7 @@ router.post('/:id/apply', requireAuth, async (req, res) => {
         proposedRate: proposedRate || null,
       },
       include: {
-        opportunity: true,
+        Opportunity: true,
       },
     });
 
@@ -311,7 +311,7 @@ router.get('/:id/application', requireAuth, async (req, res) => {
         },
       },
       include: {
-        opportunity: true,
+        Opportunity: true,
       },
     });
 
@@ -402,7 +402,7 @@ router.patch('/admin/applications/:id', requireAuth, requireRole(['ADMIN', 'SUPE
         reviewedAt: new Date(),
       },
       include: {
-        opportunity: true,
+        Opportunity: true,
         User: {
           include: {
             Talent: true,

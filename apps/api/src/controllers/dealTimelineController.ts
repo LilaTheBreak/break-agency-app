@@ -5,7 +5,7 @@ import * as dealTimelineService from "../services/dealTimelineService.js";
 const AddEventSchema = z.object({
   type: z.string(),
   message: z.string(),
-  metadata: z.any().optional(),
+  metadata: z.unknown().optional(),
 });
 
 export async function createTimelineEvent(

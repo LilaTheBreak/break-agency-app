@@ -154,8 +154,8 @@ router.post("/signature", async (req, res) => {
             });
 
             if (contractFull) {
-              const isTalentSigner = contractFull.Deal?.Talent?.email === record.signerEmail;
-              const isBrandSigner = contractFull.Deal?.Brand?.email === record.signerEmail;
+              const isTalentSigner = (contractFull as any).Deal?.Talent?.email === record.signerEmail;
+              const isBrandSigner = (contractFull as any).Deal?.Brand?.email === record.signerEmail;
 
               if (isTalentSigner && !contractFull.talentSignedAt) {
                 await prisma.contract.update({

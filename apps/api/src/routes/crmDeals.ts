@@ -355,9 +355,10 @@ router.patch("/:id", async (req, res) => {
         newStage = stageMap[status] || DealStage.NEW_LEAD;
       }
       
+      let workflowResult: any = null;
       if (newStage) {
         // Use workflow service for stage changes to trigger invoice creation
-        const workflowResult = await dealWorkflowService.changeStage(id, newStage, req.user!.id);
+        workflowResult = await dealWorkflowService.changeStage(id, newStage, req.user!.id);
         
         if (!workflowResult.success) {
           return res.status(workflowResult.status || 500).json({ 
@@ -427,15 +428,39 @@ router.patch("/:id", async (req, res) => {
         
         return res.json(transformedDeal);
       } else {
-        // Only stage was changed, return workflow result
-        const transformedDeal = {
-          ...workflowResult.deal,
-          dealName: workflowResult.deal.brandName,
-          status: workflowResult.deal.stage,
-          estimatedValue: workflowResult.deal.value,
-          expectedCloseDate: workflowResult.deal.expectedClose,
-        };
-        return res.json(transformedDeal);
+        // Only stage was changed, return workflow result if it exists
+        if (workflowResult) {
+          const transformedDeal = {
+            ...workflowResult.deal,
+            dealName: workflowResult.deal.brandName,
+            status: workflowResult.deal.stage,
+            estimatedValue: workflowResult.deal.value,
+            expectedCloseDate: workflowResult.deal.expectedClose,
+          };
+          return res.json(transformedDeal);
+        } else {
+          // Fetch the deal if no other updates
+          const deal = await prisma.deal.findUnique({
+            where: { id },
+            include: {
+              Brand: { select: { id: true, name: true } },
+              Talent: { select: { id: true, name: true } },
+            },
+          });
+          
+          if (!deal) {
+            return res.status(404).json({ error: "Deal not found" });
+          }
+          
+          const transformedDeal = {
+            ...deal,
+            dealName: deal.brandName,
+            status: deal.stage,
+            estimatedValue: deal.value,
+            expectedCloseDate: deal.expectedClose,
+          };
+          return res.json(transformedDeal);
+        }
       }
     }
     

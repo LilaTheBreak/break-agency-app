@@ -1,33 +1,31 @@
 import prisma from "../../lib/prisma.js";
 
-export async function getBrandIntel(brandName: string) {
-  return prisma.brandIntel.findFirst({
+export async function getBrandIntel(brandId: string) {
+  return prisma.brandIntelligence.findFirst({
     where: {
-      brandName: { equals: brandName, mode: "insensitive" }
+      brandId
     }
   });
 }
 
-export async function updateBrandIntel(brandName: string, data: any) {
-  const existing = await getBrandIntel(brandName);
+export async function updateBrandIntel(brandId: string, data: any) {
+  const existing = await getBrandIntel(brandId);
 
   if (existing) {
-    return prisma.brandIntel.update({
+    return prisma.brandIntelligence.update({
       where: { id: existing.id },
       data: {
-        notes: data.notes ?? existing.notes,
-        metadata: data.metadata ?? existing.metadata,
-        history: data.history ?? existing.history
+        insights: data.insights ?? existing.insights,
+        category: data.category ?? existing.category,
       }
     });
   }
 
-  return prisma.brandIntel.create({
+  return prisma.brandIntelligence.create({
     data: {
-      brandName,
-      notes: data.notes ?? {},
-      metadata: data.metadata ?? {},
-      history: data.history ?? {}
+      brandId,
+      insights: data.insights ?? {},
+      category: data.category ?? ""
     }
   });
 }

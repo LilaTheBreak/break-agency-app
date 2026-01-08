@@ -75,8 +75,9 @@ router.get("/api/wellness/history", async (req: Request, res: Response) => {
  */
 router.get("/api/wellness/insights", async (req: Request, res: Response) => {
   try {
-    const insight = await prisma.wellnessInsights.findFirst({
+    const insight = await prisma.wellnessCheckin.findFirst({
       where: { userId: req.user!.id },
+      orderBy: { createdAt: "desc" }
     });
 
     res.json({ success: true, data: { insight } });

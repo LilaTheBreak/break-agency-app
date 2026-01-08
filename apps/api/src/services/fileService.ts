@@ -51,7 +51,7 @@ export async function getDownloadUrl(fileId: string, requesterId: string, isAdmi
   }
   // Generate fresh signed URL (existing URL may have expired)
   const url = await getGCSignedUrl(file.key, 3600); // 1 hour expiry
-  return { url };
+  return { url, filename: file.key.split('/').pop() || 'unknown' };
 }
 
 export async function getPresignedUrl(key: string) {

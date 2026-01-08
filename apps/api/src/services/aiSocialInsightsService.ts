@@ -9,7 +9,7 @@ const breakdownSchema = z.object({
   growthSummary: z.string().optional().default(""),
   contentThemes: z.array(z.string()).optional().default([]),
   bestTimes: z.array(z.string()).optional().default([]),
-  platformSpecific: z.record(z.any()).optional().default({}),
+  platformSpecific: z.record(z.string(), z.unknown()).optional().default({}),
   benchmarkNotes: z.array(z.string()).optional().default([]),
   confidence: z.number().min(0).max(1).optional().default(0.3)
 });

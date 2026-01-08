@@ -76,7 +76,7 @@ const EventCreateSchema = z.object({
   location: z.string().optional(),
   category: z.string().optional(),
   description: z.string().optional(),
-  metadata: z.record(z.string(), z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   relatedBrandIds: z.array(z.string()).optional().default([]),
   relatedCreatorIds: z.array(z.string()).optional().default([]),
   relatedDealIds: z.array(z.string()).optional().default([]),

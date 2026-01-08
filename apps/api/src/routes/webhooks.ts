@@ -21,29 +21,29 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
     return res.status(400).send(`Webhook Error: ${(err as Error).message}`);
   }
 
-  const log = await prisma.webhookLog.create({
-    data: {
-      provider: "stripe",
-      eventId: event.id,
-      eventType: event.type,
-      status: "received",
-      payload: toJson(event)
-    }
-  });
+  // const log = await prisma.webhookLog.create({
+  //   data: {
+  //     provider: "stripe",
+  //     eventId: event.id,
+  //     eventType: event.type,
+  //     status: "received",
+  //     payload: toJson(event)
+  //   }
+  // });
 
   try {
     await handleStripeEvent(event);
-    await prisma.webhookLog.update({
-      where: { id: log.id },
-      data: { status: "processed" }
-    });
+    // await prisma.webhookLog.update({
+    //   where: { id: log.id },
+    //   data: { status: "processed" }
+    // });
     res.json({ received: true });
   } catch (error) {
     logError("Failed to process stripe event", error, { eventId: event.id });
-    await prisma.webhookLog.update({
-      where: { id: log.id },
-      data: { status: "failed", error: error instanceof Error ? error.message : "Unknown" }
-    });
+    // await prisma.webhookLog.update({
+    //   where: { id: log.id },
+    //   data: { status: "failed", error: error instanceof Error ? error.message : "Unknown" }
+    // });
     res.status(500).json({ error: "Failed to process event" });
   }
 }

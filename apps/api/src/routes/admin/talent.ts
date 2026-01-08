@@ -840,7 +840,7 @@ router.put("/:id", async (req: Request, res: Response) => {
     // Validate request body
     const validation = validateRequestSafe(TalentUpdateSchema, req.body);
     if (!validation.success) {
-      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, validation.error.format());
+      return sendError(res, "VALIDATION_ERROR", "Invalid request data", 400, (validation as any).error.format());
     }
 
     const { displayName, legalName, primaryEmail, representationType, status, managerId, notes } = validation.data;

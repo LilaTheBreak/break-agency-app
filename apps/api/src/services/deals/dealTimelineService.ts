@@ -35,7 +35,7 @@ export async function generateDealTimeline(dealId: string): Promise<DealTimeline
     {
       label: "Inbound Lead Received",
       date: deal.createdAt?.toISOString() ?? null,
-      description: `Brand ${deal.brandName || deal.brand?.name || ""} first contacted the agency.`,
+      description: `Brand ${deal.brandName || (deal as any).Brand?.name || ""} first contacted the agency.`,
       status: "completed",
     },
     {

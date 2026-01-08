@@ -55,7 +55,7 @@ router.post("/:id/sign/talent", requireAuth, async (req, res) => {
           }
         }
       }
-    });
+    } as any);
     
     if (!contract) {
       return res.status(404).json({ error: "Contract not found" });
@@ -66,8 +66,8 @@ router.post("/:id/sign/talent", requireAuth, async (req, res) => {
     }
 
     // Get talent email and name
-    const talentEmail = contract.Deal?.Talent?.email || (contract.terms as any)?.talentEmail;
-    const talentName = contract.Deal?.Talent?.name || (contract.terms as any)?.talentName || "Talent";
+    const talentEmail = (contract as any).Deal?.Talent?.email || (contract.terms as any)?.talentEmail;
+    const talentName = (contract as any).Deal?.Talent?.name || (contract.terms as any)?.talentName || "Talent";
 
     if (!talentEmail) {
       return res.status(400).json({ error: "Talent email not found" });
@@ -82,7 +82,7 @@ router.post("/:id/sign/talent", requireAuth, async (req, res) => {
         talentEmail,
         talentName
       },
-      userId: contract.Deal?.talentId || req.user?.id || ""
+      userId: (contract as any).Deal?.talentId || req.user?.id || ""
     });
 
     res.json({ 
@@ -146,7 +146,7 @@ router.post("/:id/sign/brand", requireAuth, async (req, res) => {
         brandEmail,
         brandName
       },
-      userId: contract.brandId || contract.Deal?.brandId || req.user?.id || ""
+      userId: contract.brandId || (contract as any).Deal?.brandId || req.user?.id || ""
     });
 
     res.json({ 

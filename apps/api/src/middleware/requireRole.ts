@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { UserRoleType } from "@prisma/client";
+import { UserRoleType } from "../types/custom.js";
 import { isSuperAdmin, hasRole } from "../lib/roleHelpers.js";
 
 export function requireRole(roles: UserRoleType[]) {

@@ -19,9 +19,9 @@ router.get("/api/creator/dashboard", requireAuth, async (req: Request, res: Resp
           status: "ACTIVE",
         },
       }),
-      prisma.task.count({
+      prisma.creatorTask.count({
         where: {
-          // Assuming Task model is linked to User, which it is not currently.
+          // Assuming CreatorTask model is linked to User
           // userId: userId,
           status: { not: "COMPLETED" },
         },

@@ -51,17 +51,20 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
       // Classify each message using AI
       const classification = await classifyMessage(savedMsg);
 
-      await prisma.inboxClassification.create({
-        data: {
-          messageId: savedMsg.id,
-          type: classification.type,
-          confidence: classification.confidence,
-          brandName: classification.brandName,
-          dealValue: classification.dealValue,
-          deadline: classification.deadline,
-          autoLinked: false, // Default to false, updated by dealLinker
-        },
-      });
+      // NOTE: inboxClassification model does not exist in schema
+      // Classification data can be stored in InboxThreadMeta or message metadata
+      // For now, we just use it for routing logic below
+      // await prisma.inboxClassification.create({
+      //   data: {
+      //     messageId: savedMsg.id,
+      //     type: classification.type,
+      //     confidence: classification.confidence,
+      //     brandName: classification.brandName,
+      //     dealValue: classification.dealValue,
+      //     deadline: classification.deadline,
+      //     autoLinked: false,
+      //   },
+      // });
 
       // Auto-routing logic for priority
       if (classification.type === "deal" || classification.type === "negotiation") {
@@ -95,10 +98,6 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
 router.get("/api/inbox/priority", requireAuth, async (req, res) => {
   const messages = await prisma.inboxMessage.findMany({
     where: { priority: { gte: 1 } },
-    include: {
-      classified: true,
-      linkedDeals: true,
-    },
     orderBy: { receivedAt: "desc" },
     take: 50,
   });
@@ -111,7 +110,7 @@ router.get("/api/inbox/priority", requireAuth, async (req, res) => {
  */
 router.get("/api/inbox/awaiting-reply", requireAuth, async (req, res) => {
   const messages = await prisma.inboxMessage.findMany({
-    where: { openedAt: null }, // Assuming 'openedAt' is set when the user views it
+    where: { isRead: false }, // Get unread messages
     orderBy: { receivedAt: "desc" },
     take: 50,
   });
@@ -127,7 +126,7 @@ router.get("/api/inbox/open/:id", async (req, res) => {
   try {
     await prisma.inboxMessage.update({
       where: { id: req.params.id },
-      data: { openedAt: new Date() },
+      data: { isRead: true },
     });
     const gif = Buffer.from("R0lGODlhAQABAAAAACH5BAEKAAEA", "base64");
     res.setHeader("Content-Type", "image/gif");

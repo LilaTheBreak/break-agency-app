@@ -191,7 +191,7 @@ If multiple options are present (tiers, bundles, rate-card), split them into sep
 
   const ai = await aiClient.json(prompt);
   const options = Array.isArray((ai as any)?.options) ? (ai as any).options : [];
-  const brandName = (ai as any)?.brandName || email.from || null;
+  const brandName = (ai as any)?.brandName || (email as any).from || (email as any).fromEmail || null;
   const confidence = typeof (ai as any)?.confidence === "number" ? (ai as any).confidence : null;
 
   const sanitized = options.map((option: any) => {

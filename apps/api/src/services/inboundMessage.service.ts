@@ -51,12 +51,12 @@ export async function ingestDM({
   await prisma.inboundMessage.update({
     where: { id: record.id },
     data: {
-      aiCategory: ai?.category,
-      aiBrand: ai?.brand,
-      aiUrgency: ai?.urgency,
-      aiRecommendedAction: ai?.action,
-      aiConfidence: ai?.confidence,
-      aiJson: ai?.raw,
+      aiCategory: (ai as any)?.category,
+      aiBrand: (ai as any)?.brand,
+      aiUrgency: (ai as any)?.urgency,
+      aiRecommendedAction: (ai as any)?.action,
+      aiConfidence: (ai as any)?.confidence,
+      aiJson: (ai as any)?.raw,
     },
   });
 

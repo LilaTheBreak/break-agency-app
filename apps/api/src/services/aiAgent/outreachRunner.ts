@@ -12,34 +12,39 @@ export async function performOutreachTask(task: { userId: string; outreachPlanId
   });
   if (!plan) throw new Error("Outreach plan not found");
 
-  const draft = await generateOutreachMessage(userId, plan.brandName);
+  // Extract brandName and brandEmail from targets JSON
+  const targets = (plan.targets as any) || {};
+  const brandName = targets.brandName || plan.name;
+  const brandEmail = targets.brandEmail;
+
+  const draft = await generateOutreachMessage(userId, brandName);
 
   const mockContent = {
-    subject: `Collaboration opportunity with ${plan.brandName}?`,
+    subject: `Collaboration opportunity with ${brandName}?`,
     message: `Hi! We'd love to explore a collab. (AI mock draft)`
   };
 
   await prisma.outreachLog.create({
     data: {
       userId,
-      brandName: plan.brandName,
-      brandEmail: plan.brandEmail,
+      brandName: brandName,
+      brandEmail: brandEmail,
       subject: mockContent.subject,
       message: mockContent.message,
       status: dryRun ? "draft" : "sent"
     }
   });
 
-  if (!dryRun && plan.brandEmail) {
+  if (!dryRun && brandEmail) {
     await sendTemplatedEmail({
-      to: plan.brandEmail,
+      to: brandEmail,
       subject: mockContent.subject,
       template: "plain",
       variables: { text: mockContent.message }
     });
   }
 
-  await updateBrandIntel(plan.brandName, {
+  await updateBrandIntel(brandName, {
     history: {
       lastOutreach: new Date().toISOString()
     }
@@ -49,7 +54,7 @@ export async function performOutreachTask(task: { userId: string; outreachPlanId
     userId,
     entity: "outreach",
     entityId: plan.id,
-    summary: `Outreach to ${plan.brandName}`,
+    summary: `Outreach to ${brandName}`,
     metadata: mockContent
   });
 

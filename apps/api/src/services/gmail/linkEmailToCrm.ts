@@ -353,9 +353,9 @@ export async function linkEmailToCrm(inboundEmail: {
           },
         });
 
-        if (contact?.CrmBrand?.Deal?.[0]?.talentId) {
-          updateData.talentId = contact.CrmBrand.Deal[0].talentId;
-          updateData.metadata.linkedTalentId = contact.CrmBrand.Deal[0].talentId;
+        if ((contact as any)?.CrmBrand?.Deal?.[0]?.talentId) {
+          updateData.talentId = (contact as any).CrmBrand.Deal[0].talentId;
+          updateData.metadata.linkedTalentId = (contact as any).CrmBrand.Deal[0].talentId;
           updateData.metadata.linkedTalentAt = new Date().toISOString();
         }
       } catch (talentError) {

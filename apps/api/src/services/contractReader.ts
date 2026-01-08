@@ -41,10 +41,10 @@ export async function processContract(fileUrl: string, dealId: string, userId: s
       })
       .catch(() => null);
 
-    await prisma.dealEvent.create({
+    await prisma.dealTimeline.create({
       data: {
         dealId,
-        actorId: userId,
+        createdById: userId,
         type: "CONTRACT_ANALYZED",
         message: "AUTO: Contract processed and legal summary generated",
         metadata: payload as any

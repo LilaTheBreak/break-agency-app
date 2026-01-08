@@ -910,6 +910,12 @@ model Invoice {
   xeroId        String?   @unique // Xero invoice ID (external reference)
   xeroSyncError String?   // Last sync error message
   lastSyncedAt  DateTime? // Last successful sync with Xero
+  provider      String?   // Payment provider (stripe, paypal, etc.)
+  userId        String?   // User ID for the invoice creator
+  brandEmail    String?   // Brand email address
+  brandName     String?   // Brand name
+  processedAt   DateTime? // When payment was processed
+  metadata      Json?     // Additional metadata
   Brand         Brand?    @relation(fields: [brandId], references: [id])
   Deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
   Commission    Commission[]
@@ -2103,13 +2109,14 @@ model UGCListing {
 }
 
 model Reconciliation {
-  id          String   @id @default(cuid())
-  type        String
+  id        String   @id @default(cuid())
+  type      String
   referenceId String
-  amount      Float
-  status      String   @default("pending")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  invoiceId String?  @unique
+  amount    Float
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([referenceId])
   @@index([type])

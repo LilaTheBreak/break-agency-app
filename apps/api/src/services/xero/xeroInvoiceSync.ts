@@ -53,7 +53,7 @@ export async function pushInvoiceToXero(invoiceId: string): Promise<{
       currency: invoice.currency,
       issuedAt: invoice.issuedAt,
       dueAt: invoice.dueAt,
-      description: `Invoice for deal: ${invoice.Deal?.dealName || invoice.invoiceNumber}`
+      description: `Invoice for deal: ${invoice.Deal?.brandName || invoice.invoiceNumber}`
     });
 
     // Update invoice with Xero ID

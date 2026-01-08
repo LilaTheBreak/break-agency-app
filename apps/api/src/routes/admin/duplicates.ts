@@ -45,7 +45,7 @@ router.get("/talent", async (req: Request, res: Response) => {
       ),
     });
   } catch (error) {
-    return sendError(res, 500, "Failed to scan for talent duplicates", error);
+    return sendError(res, "SCAN_ERROR", "Failed to scan for talent duplicates", 500, error);
   }
 });
 
@@ -71,7 +71,7 @@ router.get("/brands", async (req: Request, res: Response) => {
       ),
     });
   } catch (error) {
-    return sendError(res, 500, "Failed to scan for brand duplicates", error);
+    return sendError(res, "SCAN_ERROR", "Failed to scan for brand duplicates", 500, error);
   }
 });
 
@@ -97,7 +97,7 @@ router.get("/deals", async (req: Request, res: Response) => {
       ),
     });
   } catch (error) {
-    return sendError(res, 500, "Failed to scan for deal duplicates", error);
+    return sendError(res, "SCAN_ERROR", "Failed to scan for deal duplicates", 500, error);
   }
 });
 
@@ -151,10 +151,10 @@ router.post("/merge", async (req: Request, res: Response) => {
       message.includes("Cannot merge") ||
       message.includes("No records")
     ) {
-      return sendError(res, 400, message);
+      return sendError(res, "VALIDATION_ERROR", message, 400);
     }
 
-    return sendError(res, 500, message, error);
+    return sendError(res, "MERGE_ERROR", message, 500, error);
   }
 });
 

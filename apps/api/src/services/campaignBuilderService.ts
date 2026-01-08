@@ -27,23 +27,26 @@ export async function buildCampaignFromDeal(dealId: string): Promise<CampaignPla
   try {
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },
-      include: { talent: true },
-    });
+      include: { 
+        Talent: true,
+        Brand: true,
+      },
+    }) as any;
 
     if (!deal) {
       return fallbackCampaign(dealId);
     }
 
-    const talentName = deal.talent?.name ?? "Unknown Talent";
+    const talentName = deal.Talent?.name ?? "Unknown Talent";
     const category = deal.category ?? null;
 
     const bundle = await generateBundleForDeal(dealId);
 
     const audienceOverlap = computeOverlap(
-      deal.talent?.profile?.audience as any,
-      deal.brand ? { [deal.brand]: 1 } : {}
+      deal.Talent?.profile?.audience as any,
+      deal.Brand ? { [deal.Brand]: 1 } : {}
     );
-    const complianceResult = checkCompliance(category || "", deal.talent?.categories ?? []);
+    const complianceResult = checkCompliance(category || "", deal.Talent?.categories ?? []);
     const suitabilityScore = calculateFinalScore(
       audienceOverlap.score / 100,
       complianceResult,

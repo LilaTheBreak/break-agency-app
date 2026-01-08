@@ -184,17 +184,17 @@ router.post("/:dealId/draft-email", requireRole(['ADMIN', 'SUPERADMIN']), async 
 
     // Generate draft email content
     const subject = purpose === "follow-up" 
-      ? `Following up on ${deal.dealName || 'our conversation'}`
-      : `Regarding ${deal.dealName || 'your inquiry'}`;
+      ? `Following up on ${deal.brandName || 'our conversation'}`
+      : `Regarding ${deal.brandName || 'your inquiry'}`;
 
     const body = `Dear ${recipient || 'Valued Partner'},
 
-I wanted to reach out regarding ${deal.dealName || 'our opportunity'}.
+I wanted to reach out regarding ${deal.brandName || 'our opportunity'}.
 
 ${purpose === "follow-up" ? "I wanted to follow up on our previous conversation and see if you have any questions." : "I believe this could be a great fit for your needs."}
 
 Deal Details:
-- Deal: ${deal.dealName || 'N/A'}
+- Deal: ${deal.brandName || 'N/A'}
 - Brand: ${deal.Brand?.name || 'N/A'}
 - Status: ${deal.status || 'N/A'}
 ${deal.estimatedValue ? `- Estimated Value: ${deal.estimatedValue}` : ''}

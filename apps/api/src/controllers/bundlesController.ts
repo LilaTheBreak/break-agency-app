@@ -29,7 +29,7 @@ const BundleCreateSchema = z.object({
   description: z.string().optional(),
   priceMin: z.number().optional(),
   priceMax: z.number().optional(),
-  deliverables: z.any().optional(),
+  deliverables: z.unknown().optional(),
 });
 
 export async function createBundle(req: Request, res: Response, next: NextFunction) {
@@ -63,7 +63,7 @@ export async function updateBundle(req: Request, res: Response, next: NextFuncti
       description: z.string().optional(),
       priceMin: z.number().optional(),
       priceMax: z.number().optional(),
-      deliverables: z.any().optional(),
+      deliverables: z.unknown().optional(),
       status: z.string().optional()
     });
 

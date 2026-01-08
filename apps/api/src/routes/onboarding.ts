@@ -14,11 +14,18 @@ router.use(requireAuth);
  */
 router.get("/onboarding/me", async (req, res) => {
   try {
-    const onboarding = await prisma.userOnboarding.findUnique({
-      where: { userId: req.user!.id },
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        onboardingComplete: true,
+        onboardingStatus: true,
+        onboarding_responses: true,
+        onboardingSkippedAt: true
+      }
     });
 
-    res.json({ onboarding });
+    res.json({ onboarding: user });
   } catch (err) {
     console.error("Error fetching onboarding", err);
     res.status(500).json({ error: "Failed to load onboarding state" });
@@ -34,35 +41,17 @@ router.post("/onboarding/submit", async (req, res) => {
     const payload = req.body ?? {};
     const userId = req.user!.id;
 
-    const [onboarding] = await prisma.$transaction([
-      // 1. Create or update the detailed onboarding record
-      prisma.userOnboarding.upsert({
-        where: { userId },
-        update: {
-          status: "REVIEW",
-          questionnaire: payload,
-          completedSteps: payload.completedSteps ?? [],
-          submittedAt: new Date(),
-        },
-        create: {
-          userId,
-          status: "REVIEW",
-          questionnaire: payload,
-          completedSteps: payload.completedSteps ?? [],
-          submittedAt: new Date(),
-        },
-      }),
-      // 2. Mark the user as having completed onboarding
-      prisma.user.update({
-        where: { id: userId },
-        data: { 
-          onboardingComplete: true,
-          onboardingSkippedAt: null, // Clear skip timestamp if completing
-        },
-      }),
-    ]);
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        onboardingComplete: true,
+        onboarding_responses: payload,
+        onboarding_status: "review",
+        onboardingSkippedAt: null, // Clear skip timestamp if completing
+      },
+    });
 
-    res.status(201).json({ onboarding });
+    res.status(201).json({ onboarding: user });
   } catch (err) {
     console.error("Error submitting onboarding", err);
     res.status(500).json({ error: "Failed to submit onboarding" });
@@ -130,17 +119,15 @@ router.patch(
         return res.status(400).json({ error: "Missing status field" });
       }
 
-      const onboarding = await prisma.userOnboarding.update({
-        where: { userId: req.params.userId },
+      const user = await prisma.user.update({
+        where: { id: req.params.userId },
         data: {
-          status,
-          notes,
-          approvedAt: status === "APPROVED" ? new Date() : null,
-          reviewerId: req.user!.id,
+          onboardingStatus: status,
+          admin_notes: notes,
         },
       });
 
-      res.json({ onboarding });
+      res.json({ onboarding: user });
     } catch (err) {
       console.error("Error updating onboarding status", err);
       res.status(500).json({ error: "Failed to update onboarding" });

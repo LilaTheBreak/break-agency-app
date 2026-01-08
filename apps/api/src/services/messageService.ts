@@ -87,8 +87,8 @@ export async function sendMessage(input: {
   const dayBoundary = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   const [minuteCount, dayCount] = await Promise.all([
-    prisma.emailOutbox.count({ where: { userId, createdAt: { gte: minuteBoundary } } }),
-    prisma.emailOutbox.count({ where: { userId, createdAt: { gte: dayBoundary } } })
+    prisma.inboundEmail.count({ where: { userId, direction: "outbound", receivedAt: { gte: minuteBoundary } } }),
+    prisma.inboundEmail.count({ where: { userId, direction: "outbound", receivedAt: { gte: dayBoundary } } })
   ]);
 
   if (minuteCount >= MAX_EMAILS_PER_MINUTE) {
@@ -200,17 +200,7 @@ export async function sendMessage(input: {
         }
       });
 
-      await tx.emailOutbox.create({
-        data: {
-          userId,
-          toEmail: to,
-          subject: subject ?? "",
-          body,
-          status: "sent",
-          sentAt: new Date(),
-          context: { threadId: finalThreadId }
-        }
-      });
+      // emailOutbox model doesn't exist - outbound emails tracked via InboundEmail with direction="outbound"
 
       return inbound;
     });
@@ -221,15 +211,17 @@ export async function sendMessage(input: {
     console.error("DB WRITE FAILED AFTER EMAIL SEND:", err);
     const message = err instanceof Error ? err.message : String(err);
     try {
-      await prisma.systemEvent.create({
+      // systemEvent model doesn't exist - logging to AuditLog instead
+      await prisma.auditLog.create({
         data: {
-          type: "email_send_failure",
-          status: "partial",
-          detail: { error: message }
+          userId,
+          action: "email_send_failure",
+          entityType: "email",
+          metadata: { error: message }
         }
       });
     } catch (loggingError) {
-      console.error("Failed to record system event:", loggingError);
+      console.error("Failed to record audit log:", loggingError);
     }
     throw new Error("Email was sent but failed to store in database.");
   }

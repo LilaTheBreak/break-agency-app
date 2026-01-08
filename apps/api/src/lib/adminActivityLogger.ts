@@ -6,6 +6,8 @@ import { logError } from "./logger.js";
 type AdminActivityPayload = {
   event?: string;
   action?: string; // Alternative name for event
+  entityType?: string; // Type of entity being modified
+  entityId?: string; // ID of the entity being modified
   metadata?: Record<string, unknown> | null;
 };
 
@@ -17,8 +19,9 @@ export async function logAdminActivity(req: Request, payload: AdminActivityPaylo
         userId: req.user?.id ?? null,
         userEmail: req.user?.email ?? null,
         userRole: req.user?.role ?? null,
-        action: payload.event, // Map event to action
-        entityType: "AdminActivity",
+        action: payload.action || payload.event,
+        entityType: payload.entityType || "AdminActivity",
+        entityId: payload.entityId,
         metadata: (payload.metadata ?? undefined) as Prisma.InputJsonValue,
         ipAddress: req.ipAddress ?? req.ip ?? null
       }

@@ -17,7 +17,7 @@ export const CampaignCreateSchema = z.object({
   stage: z.enum(["PLANNING", "ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   brands: z.array(z.string()).optional(),
   creatorTeams: z.array(z.string()).optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const CampaignUpdateSchema = z.object({
@@ -25,7 +25,7 @@ export const CampaignUpdateSchema = z.object({
   stage: z.enum(["PLANNING", "ACTIVE", "COMPLETED", "CANCELLED"]).optional(),
   brands: z.array(z.string()).optional(),
   creatorTeams: z.array(z.string()).optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const CampaignResponseSchema = z.object({

@@ -4,53 +4,47 @@ import prisma from "../../lib/prisma.js";
 type VersionPayload = Record<string, unknown>;
 
 export async function createVersion(briefId: string, userId: string | null, data: VersionPayload) {
-  const brief = await prisma.brief.findUnique({ where: { id: briefId } });
+  const brief = await prisma.brandBrief.findUnique({ where: { id: briefId } });
   if (!brief) throw new Error("Brief not found");
-  const versionNumber = (brief.currentVersionNumber ?? 0) + 1;
+  
   const sanitizedData = sanitizePayload(data);
-  const version = await prisma.briefVersion.create({
-    data: {
-      briefId,
-      versionNumber,
-      data: sanitizedData as Prisma.JsonObject,
-      createdBy: userId
-    }
-  });
-  await prisma.brief.update({
+  const versionEntry = {
+    versionNumber: (brief.versionHistory?.length ?? 0) + 1,
+    data: sanitizedData,
+    createdBy: userId,
+    createdAt: new Date().toISOString()
+  };
+  
+  const updated = await prisma.brandBrief.update({
     where: { id: briefId },
     data: {
-      currentVersionNumber: versionNumber,
-      metadata: sanitizedData as Prisma.JsonObject
+      versionHistory: [...(brief.versionHistory || []), versionEntry]
     }
   });
-  return version;
+  
+  return versionEntry;
 }
 
 export async function getVersions(briefId: string) {
-  await ensureBriefExists(briefId);
-  return prisma.briefVersion.findMany({
-    where: { briefId },
-    orderBy: { versionNumber: "desc" },
-    take: 50
-  });
+  const brief = await prisma.brandBrief.findUnique({ where: { id: briefId } });
+  return brief?.versionHistory || [];
 }
 
-export async function restoreVersion(versionId: string, userId: string | null) {
-  const version = await prisma.briefVersion.findUnique({ where: { id: versionId } });
-  if (!version) throw new Error("Version not found");
-  const brief = await prisma.brief.findUnique({ where: { id: version.briefId } });
+export async function restoreVersion(briefId: string, versionNumber: number, userId: string | null) {
+  const brief = await prisma.brandBrief.findUnique({ where: { id: briefId } });
   if (!brief) throw new Error("Brief not found");
-  const newVersion = await createVersion(
-    version.briefId,
-    userId,
-    (version.data ?? {}) as VersionPayload
-  );
-  return { restored: version, newVersion };
-}
-
-async function ensureBriefExists(briefId: string) {
-  const exists = await prisma.brief.findUnique({ where: { id: briefId }, select: { id: true } });
-  if (!exists) throw new Error("Brief not found");
+  
+  const version = (brief.versionHistory || []).find((v: any) => v.versionNumber === versionNumber);
+  if (!version) throw new Error("Version not found");
+  
+  const restored = await prisma.brandBrief.update({
+    where: { id: briefId },
+    data: {
+      versionHistory: [...(brief.versionHistory || []), version]
+    }
+  });
+  
+  return restored;
 }
 
 function sanitizePayload(data: VersionPayload): Prisma.JsonObject {

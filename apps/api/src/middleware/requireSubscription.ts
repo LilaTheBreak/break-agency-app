@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { SubscriptionStatus } from '@prisma/client';
+import { SubscriptionStatus } from '../types/custom.js';
 import { isSuperAdmin } from '../lib/roleHelpers.js';
 
 /**

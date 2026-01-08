@@ -20,7 +20,7 @@ export async function runEmailTriage(emailId: string) {
       category: "other",
       urgency: "medium",
       deadline: null,
-      brand: email.from || null,
+      brand: (email as any).from || (email as any).fromEmail || null,
       action: "Review manually.",
       confidence: 0.1
     };

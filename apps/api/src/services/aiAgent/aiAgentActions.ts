@@ -12,7 +12,7 @@ const DRY_RUN = process.env.AI_AGENT_DRY_RUN !== "false";
 export async function performInboxReply(params: { userId: string; emailId: string; context?: any }) {
   const { userId, emailId, context } = params;
 
-  const email = await prisma.ingestedEmail.findUnique({
+  const email = await prisma.inboundEmail.findUnique({
     where: { id: emailId }
   });
 
@@ -152,15 +152,22 @@ async function generateOutreach(user: any, targets: string[]) {
 }
 
 async function logAIAgent(type: string, userId: string, metadata: Record<string, any>) {
-  await prisma.aiHistory.create({
-    data: {
-      userId,
-      role: type,
-      prompt: type,
-      response: metadata,
-      context: metadata
-    }
+  // aiHistory model doesn't exist - logging to AIPromptHistory instead
+  const userRecord = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { talentId: true }
   });
+
+  if (userRecord?.talentId) {
+    await prisma.aIPromptHistory.create({
+      data: {
+        creatorId: userRecord.talentId,
+        prompt: type,
+        response: JSON.stringify(metadata),
+        category: type
+      }
+    });
+  }
 
   await sendSlackAlert(`AI Agent ran: ${type}`, metadata);
 }

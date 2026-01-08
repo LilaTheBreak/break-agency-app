@@ -18,7 +18,7 @@ export async function runOfferExtractionForEmail(email: InboundEmail): Promise<{
       data: {
         userId: email.userId,
         emailId: email.id,
-        brand: extraction.brandName || email.from || null,
+        brand: extraction.brandName || (email as any).from || (email as any).fromEmail || null,
         offerType: option.title || null,
         deliverables: option.deliverables || null,
         paymentAmount: option.amount ?? null,

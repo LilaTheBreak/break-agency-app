@@ -30,22 +30,16 @@ router.post("/users", async (req, res) => {
   }
   const normalizedRole = String(roleNameRaw).toUpperCase();
   try {
-    const role = await prisma.role.upsert({
-      where: { name: normalizedRole },
-      update: {},
-      create: { name: normalizedRole }
-    });
+    // User model has a direct role field, no separate role table
     const user = await prisma.user.upsert({
       where: { email },
-      update: {},
-      create: { email }
+      update: { role: normalizedRole },
+      create: { 
+        email,
+        role: normalizedRole
+      }
     });
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: user.id, roleId: role.id } },
-      update: {},
-      create: { userId: user.id, roleId: role.id }
-    });
-    res.status(201).json({ user: { email: user.email, role: role.name } });
+    res.status(201).json({ user: { email: user.email, role: user.role } });
   } catch (error) {
     console.error("Create user failed", error);
     res.status(500).json({ error: "Unable to create user" });

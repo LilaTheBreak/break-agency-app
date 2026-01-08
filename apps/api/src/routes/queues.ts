@@ -427,7 +427,7 @@ const InternalTaskCreateSchema = z.object({
   priority: z.enum(["High", "Medium", "Low"]).default("Medium"),
   dueDate: z.string().optional(),
   assignedToUserId: z.string().optional(),
-  metadata: z.record(z.string(), z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 const InternalTaskUpdateSchema = z.object({
@@ -437,7 +437,7 @@ const InternalTaskUpdateSchema = z.object({
   dueDate: z.string().optional(),
   assignedToUserId: z.string().nullable().optional(),
   status: z.enum(["pending", "completed"]).optional(),
-  metadata: z.record(z.string(), z.any()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // GET /api/queues/internal-tasks - Get all internal tasks
