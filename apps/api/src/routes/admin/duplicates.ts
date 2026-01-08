@@ -10,7 +10,7 @@
 import express, { Request, Response } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import { isSuperAdmin } from "../../lib/roleHelpers.js";
-import { sendSuccess, sendError } from "../../utils/response.js";
+import { sendSuccess, sendError } from "../../utils/apiResponse.js";
 import {
   detectTalentDuplicates,
   detectBrandDuplicates,
