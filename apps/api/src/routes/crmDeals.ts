@@ -7,6 +7,7 @@ import { logError } from "../lib/logger.js";
 import { DealStage } from "@prisma/client";
 import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 import * as dealWorkflowService from "../services/deals/dealWorkflowService.js";
+import { enrichDealBrand } from "../lib/brandAutoCreation.js";
 
 const router = express.Router();
 
@@ -128,7 +129,7 @@ router.get("/", async (req, res) => {
     }
     if (owner) where.userId = owner;
 
-    const deals = await prisma.deal.findMany({
+    let deals = await prisma.deal.findMany({
       where,
       include: {
         Brand: {
@@ -146,6 +147,12 @@ router.get("/", async (req, res) => {
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // Auto-heal deals with missing brands
+    // If a deal has brandName but no Brand object, attempt to find/create brand
+    deals = await Promise.all(
+      deals.map(deal => enrichDealBrand(deal))
+    );
 
     // Transform deals to include dealName (from brandName) for backward compatibility
     const transformedDeals = deals.map(deal => ({
@@ -176,7 +183,7 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deal = await prisma.deal.findUnique({
+    let deal = await prisma.deal.findUnique({
       where: { id },
       include: {
         Brand: {
@@ -198,6 +205,9 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Deal not found" });
     }
 
+    // Auto-heal deal with missing brand
+    deal = await enrichDealBrand(deal);
+
     // Transform deal to include dealName for backward compatibility
     const transformedDeal = {
       ...deal,
@@ -209,7 +219,7 @@ router.get("/:id", async (req, res) => {
 
     res.json(transformedDeal);
   } catch (error) {
-    logError("Failed to fetch deal", error, { dealId: id, userId: req.user?.id });
+    logError("Failed to fetch deal", error, { dealId: req.params.id, userId: req.user?.id });
     if (error instanceof Error && error.message.includes("not found")) {
       return res.status(404).json({ error: "Deal not found" });
     }
@@ -694,5 +704,45 @@ router.post("/batch-import", async (req, res) => {
     });
   }
 });
+
+// POST /api/crm-deals/admin/heal-missing-brands - Heal all deals with missing brands
+// SUPERADMIN ONLY: Scans all deals and auto-creates brands where needed
+router.post("/admin/heal-missing-brands", async (req, res) => {
+  try {
+    // Check SUPERADMIN authorization
+    if (!isSuperAdmin(req.user!)) {
+      return res.status(403).json({ error: "FORBIDDEN: Only SUPERADMIN can trigger batch healing" });
+    }
+
+    console.log(`[crmDeals] SUPERADMIN ${req.user?.email} triggered brand healing operation`);
+
+    // Import here to avoid circular dependency
+    const { healMissingBrands } = await import("../lib/brandAutoCreation.js");
+
+    const result = await healMissingBrands();
+
+    // Log the action
+    await logAdminActivity("BATCH_BRAND_HEALING", req.user!, {
+      healed: result.healed,
+      failed: result.failed,
+      totalChecked: result.totalChecked,
+      hasErrors: result.errors.length > 0,
+    });
+
+    res.json({
+      success: true,
+      message: `Healed ${result.healed} deals with missing brands`,
+      details: result,
+    });
+  } catch (error) {
+    console.error("[crmDeals] Error in heal-missing-brands:", error);
+    logError("Failed to heal missing brands", error, { userId: req.user?.id });
+    res.status(500).json({
+      error: "Failed to heal missing brands",
+      message: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
 
 export default router;
