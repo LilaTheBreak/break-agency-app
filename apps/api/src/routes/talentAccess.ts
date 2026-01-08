@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { prisma } from "../db.js";
-import { auditLog } from "../lib/auditLog.js";
-import { logger } from "../utils/logger.js";
-import { isSuperAdmin } from "../lib/roleHelpers.js";
+import prisma from "../../lib/prisma.js";
+import { logAdminActivity } from "../../lib/adminActivityLogger.js";
+import { logError } from "../../lib/logger.js";
+import { isSuperAdmin } from "../../lib/roleHelpers.js";
 import {
   ensureTalentAccess,
   setTalentAccess,
@@ -115,7 +115,7 @@ router.get("/:talentId/access-list", async (req, res) => {
       available,
     });
   } catch (err) {
-    logger.error("[talent-access] GET access-list:", err);
+    logError("[talent-access] GET access-list", err);
     return res.status(500).json({
       error: "Internal Server Error",
       message: "Failed to fetch access list",
@@ -185,23 +185,25 @@ router.post("/:talentId/access-set", async (req, res) => {
     await setTalentAccess(talentId, userId, role);
 
     // Audit log
-    await auditLog(
-      adminId,
-      "TALENT_ACCESS_GRANTED",
-      `Granted ${role} access to talent "${talent.name}" for user ${user.email}`,
-      {
-        talentId,
-        userId,
-        role,
-      }
-    );
+    if (adminId) {
+      await logAdminActivity(req as any, {
+        event: "TALENT_ACCESS_GRANTED",
+        metadata: {
+          talentId,
+          userId,
+          role,
+          talentName: talent.name,
+          userEmail: user.email,
+        },
+      });
+    }
 
     return res.json({
       success: true,
       message: `${role} access granted to ${user.email}`,
     });
   } catch (err) {
-    logger.error("[talent-access] POST access-set:", err);
+    logError("[talent-access] POST access-set", err);
     return res.status(500).json({
       error: "Internal Server Error",
       message: "Failed to grant access",
@@ -279,15 +281,15 @@ router.post("/:talentId/access-revoke", async (req, res) => {
 
     // Audit log
     if (adminId) {
-      await auditLog(
-        adminId,
-        "TALENT_ACCESS_REVOKED",
-        `Revoked access to talent "${talent.name}" for user ${user?.email}`,
-        {
+      await logAdminActivity(req as any, {
+        event: "TALENT_ACCESS_REVOKED",
+        metadata: {
           talentId,
           userId,
-        }
-      );
+          talentName: talent.name,
+          userEmail: user?.email,
+        },
+      });
     }
 
     return res.json({
@@ -295,7 +297,7 @@ router.post("/:talentId/access-revoke", async (req, res) => {
       message: `Access revoked from ${user?.email}`,
     });
   } catch (err) {
-    logger.error("[talent-access] POST access-revoke:", err);
+    logError("[talent-access] POST access-revoke", err);
     return res.status(500).json({
       error: "Internal Server Error",
       message: "Failed to revoke access",
