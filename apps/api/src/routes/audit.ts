@@ -48,17 +48,18 @@ router.get("/audit", async (req, res) => {
   
   // Add date range filtering
   if (startDate || endDate) {
-    where.createdAt = {};
+    const createdAtFilter: any = {};
     if (startDate) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
-      where.createdAt.gte = start;
+      createdAtFilter.gte = start;
     }
     if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      where.createdAt.lte = end;
+      createdAtFilter.lte = end;
     }
+    (where as any).createdAt = createdAtFilter;
   }
 
   try {
@@ -147,17 +148,18 @@ router.get("/audit/export", async (req, res) => {
   if (userRole) where.userRole = userRole;
   
   if (startDate || endDate) {
-    where.createdAt = {};
+    const createdAtFilter: any = {};
     if (startDate) {
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
-      where.createdAt.gte = start;
+      createdAtFilter.gte = start;
     }
     if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      where.createdAt.lte = end;
+      createdAtFilter.lte = end;
     }
+    (where as any).createdAt = createdAtFilter;
   }
 
   try {
