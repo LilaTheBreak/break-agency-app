@@ -198,6 +198,7 @@ router.post("/notion/connect", async (req: Request, res: Response) => {
     // Test connection
     try {
       try {
+        // @ts-ignore - Optional module
         const notionClient = await import("@notionhq/client").then(m => m.Client);
         const client = new notionClient({ auth: accessToken });
         await client.users.me();

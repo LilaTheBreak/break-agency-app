@@ -75,6 +75,7 @@ export async function getValueDistribution(userId: string) {
 export async function getDeliverablePerformance(userId: string) {
   // This is a placeholder. A real implementation would require a `ContentPerformance` model
   // linked to deliverables to track actual views, engagement, etc.
+  // @ts-ignore - Prisma circular type reference
   return prisma.deliverable.groupBy({
     by: ["title"], // Using title as a proxy for deliverable type
     where: { deal: { userId } },

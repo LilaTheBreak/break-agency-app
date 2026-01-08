@@ -1,5 +1,5 @@
 import prisma from "../../lib/prisma.js";
-import { predictCreatorBrandFit } from "../ai/creatorFitEngine.js";
+import { computeCreatorFit } from "../ai/creatorFitEngine.js";
 
 // Note: creatorBrandFit model doesn't exist in schema
 export async function runCreatorFit(userId: string, brandPrediction: any) {

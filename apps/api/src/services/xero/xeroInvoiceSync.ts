@@ -42,7 +42,7 @@ export async function pushInvoiceToXero(invoiceId: string): Promise<{
 
     // Get contact information
     const contactName = invoice.Deal?.Brand?.name || "Unknown Brand";
-    const contactEmail = invoice.Deal?.Brand?.email || null;
+    const contactEmail = (invoice.Deal?.Brand as any)?.email || null;
 
     // Create invoice in Xero
     const xeroResult = await createXeroInvoice({

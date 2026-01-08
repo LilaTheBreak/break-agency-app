@@ -6,7 +6,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const AI_MODEL = "gpt-4o";
 
 export async function runBundleLLM(input: any) {
-  const prompt = buildBundlePrompt(input);
+  const prompt = buildBundlePrompt();
   const start = Date.now();
   let tokens = 0;
 

@@ -31,7 +31,7 @@ router.get('/:draftId', async (req, res, next) => {
   const { draftId } = req.params;
   try {
     const insight = await prisma.negotiationInsight.findFirst({
-      where: { dealDraftId: draftId },
+      where: { dealId: draftId },
       orderBy: { createdAt: 'desc' },
     });
     res.json(insight);

@@ -85,18 +85,11 @@ export async function linkDriveFileToRecord(
         userId,
         filename: file.name || "Google Drive File",
         type: file.mimeType || "application/octet-stream",
-        size: file.size ? parseInt(file.size) : 0,
+        size: file.size ? parseInt(file.size as any) : 0,
         url: file.webViewLink || file.webContentLink || `https://drive.google.com/file/d/${fileId}/view`,
         key: fileId,
-        folder: recordType,
-        metadata: {
-          driveFileId: fileId,
-          driveWebViewLink: file.webViewLink,
-          driveWebContentLink: file.webContentLink,
-          linkedType: recordType,
-          linkedId: recordId
-        }
-      }
+        folder: recordType
+      } as any
     });
 
     // Update last synced

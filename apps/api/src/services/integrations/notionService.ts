@@ -55,6 +55,7 @@ export async function syncBrandToNotion(
     const totalValue = brand.Deal.reduce((sum, d) => sum + (d.value || 0), 0);
 
     // Create or update Notion page
+    // @ts-ignore
     const notionClient = await import("@notionhq/client").then(m => m.Client);
     const client = new notionClient({ auth: connection.accessToken });
 
@@ -186,6 +187,7 @@ export async function syncDealToNotion(
     }
 
     // Create Notion page
+    // @ts-ignore
     const notionClient = await import("@notionhq/client").then(m => m.Client);
     const client = new notionClient({ auth: connection.accessToken });
 

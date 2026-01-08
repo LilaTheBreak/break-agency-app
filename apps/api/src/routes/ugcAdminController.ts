@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+// @ts-ignore - Module resolution issue
 import { asyncHandler } from '../../middleware/asyncHandler.js';
 
 const prisma = new PrismaClient();

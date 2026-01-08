@@ -150,7 +150,7 @@ export async function sendEmailWithGmail({
       })
     );
 
-    const messageId = response.data?.id ?? response.data?.message?.id;
+    const messageId = response.data?.id ?? (response.data as any)?.message?.id;
     const finalThreadId = threadId ?? response.data?.threadId;
 
     if (!messageId) {

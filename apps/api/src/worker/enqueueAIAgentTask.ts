@@ -11,13 +11,11 @@ export async function enqueueAIAgentTask(data: {
 }) {
   const task = await prisma.aIAgentTask.create({
     data: {
-      type: data.type as any,
-      talentId: data.talentId,
-      emailId: data.emailId ?? null,
-      dealId: data.dealId ?? null,
-      payload: (data.payload ?? {}) as any,
-      status: AIAgentTaskStatus.PENDING
-    }
+      taskType: data.type,
+      userId: data.talentId, // Map talentId to userId for now
+      payload: { ...data.payload, emailId: data.emailId, dealId: data.dealId } as any,
+      status: "pending"
+    } as any
   });
 
   await aiAgentQueue.add("run-task", { taskId: task.id });

@@ -1,4 +1,5 @@
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
+import type { AxiosInstance } from "axios";
 import { SignatureProvider } from "../signatureProvider.js";
 import { getDocuSignToken } from "../docusignAuth.js";
 
@@ -37,7 +38,7 @@ interface DocuSignEnvelope {
 /**
  * Gets authenticated DocuSign API client
  */
-async function getDocuSignClient(): Promise<{ client: AxiosInstance; accountId: string } | null> {
+async function getDocuSignClient(): Promise<{ client: any; accountId: string } | null> {
   const tokenData = await getDocuSignToken();
   if (!tokenData) {
     return null;

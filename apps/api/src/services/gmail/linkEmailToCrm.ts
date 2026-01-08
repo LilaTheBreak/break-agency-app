@@ -338,24 +338,13 @@ export async function linkEmailToCrm(inboundEmail: {
         const contact = await prisma.crmBrandContact.findUnique({
           where: { id: result.contactId! },
           include: {
-            CrmBrand: {
-              include: {
-                Deal: {
-                  where: {
-                    stage: { notIn: ["CLOSED_LOST", "CANCELLED"] },
-                  },
-                  take: 1,
-                  orderBy: { updatedAt: "desc" },
-                  select: { talentId: true },
-                },
-              },
-            },
+            CrmBrand: true,
           },
         });
 
-        if ((contact as any)?.CrmBrand?.Deal?.[0]?.talentId) {
-          updateData.talentId = (contact as any).CrmBrand.Deal[0].talentId;
-          updateData.metadata.linkedTalentId = (contact as any).CrmBrand.Deal[0].talentId;
+        if ((contact as any)?.CrmBrand?.talentId) {
+          updateData.talentId = (contact as any).CrmBrand.talentId;
+          updateData.metadata.linkedTalentId = (contact as any).CrmBrand.talentId;
           updateData.metadata.linkedTalentAt = new Date().toISOString();
         }
       } catch (talentError) {

@@ -127,7 +127,7 @@ export function sanitizeErrorForLogging(error) {
 
   if ((error as any).stack) {
     // Include stack but sanitize any URLs with tokens
-    sanitized.stack = (error as any).stack.replace(/[?&](token|key|secret|password)=[^&\s]*/gi, "$1=***");
+    (sanitized as any).stack = (error as any).stack.replace(/[?&](token|key|secret|password)=[^&\s]*/gi, "$1=***");
   }
 
   // Sanitize any object properties

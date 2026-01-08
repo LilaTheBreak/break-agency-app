@@ -36,11 +36,12 @@ export async function refreshAccessToken(refreshToken: string) {
   try {
     const client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
     client.setCredentials({ refresh_token: refreshToken });
-    const { credentials } = await client.getAccessToken();
+    const response = await client.getAccessToken();
+    const credentials = (response as any).credentials || response;
     return {
-      accessToken: credentials?.token || "",
-      expiresAt: credentials?.res?.data?.expiry_date
-        ? new Date(credentials.res.data.expiry_date)
+      accessToken: (credentials as any)?.token || "",
+      expiresAt: (credentials as any)?.expiry_date
+        ? new Date((credentials as any).expiry_date)
         : null
     };
   } catch (error) {

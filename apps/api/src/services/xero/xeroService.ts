@@ -1,4 +1,5 @@
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
+import type { AxiosInstance } from "axios";
 import prisma from "../../lib/prisma.js";
 import { getXeroToken } from "./xeroAuth.js";
 
@@ -46,7 +47,7 @@ interface XeroPayment {
 /**
  * Gets authenticated Xero API client
  */
-async function getXeroClient(): Promise<{ client: AxiosInstance; tenantId: string } | null> {
+async function getXeroClient(): Promise<{ client: any; tenantId: string } | null> {
   const tokenData = await getXeroToken();
   if (!tokenData) {
     return null;

@@ -30,8 +30,6 @@ export function buildEmailFixture(overrides: Partial<InboundEmail> = {}): Inboun
     dealId: null,
     talentId: null,
     brandId: null,
-    createdAt: new Date(),
-    updatedAt: new Date()
   };
   return { ...base, ...overrides };
 }

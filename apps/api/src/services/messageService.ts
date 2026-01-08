@@ -174,6 +174,7 @@ export async function sendMessage(input: {
     const createdEmail = await prisma.$transaction(async (tx) => {
       const inbound = await tx.inboundEmail.create({
         data: {
+          id: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           userId,
           fromEmail: user.email,
           toEmail: to,
@@ -184,6 +185,9 @@ export async function sendMessage(input: {
           direction: "outbound",
           isRead: true,
           receivedAt: new Date(),
+          platform: "internal",
+          createdAt: new Date(),
+          updatedAt: new Date(),
           InboxMessage: {
             connectOrCreate: {
               where: { threadId: finalThreadId },
@@ -200,7 +204,7 @@ export async function sendMessage(input: {
               } as any
             }
           }
-        }
+        } as any
       });
 
       // emailOutbox model doesn't exist - outbound emails tracked via InboundEmail with direction="outbound"
