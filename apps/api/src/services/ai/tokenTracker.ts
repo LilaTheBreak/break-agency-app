@@ -62,6 +62,8 @@ export async function trackAITokens(input: TokenTrackingInput) {
 
     await prisma.aiTokenLog.create({
       data: {
+        id: `tokenlog_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        action: service || "unknown",
         model,
         promptTokens,
         completionTokens,

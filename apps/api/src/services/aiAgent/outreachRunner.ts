@@ -24,13 +24,14 @@ export async function performOutreachTask(task: { userId: string; outreachPlanId
     message: `Hi! We'd love to explore a collab. (AI mock draft)`
   };
 
-  await prisma.outreachLog.create({
+  // Create outreach record
+  await prisma.outreach.create({
     data: {
+      id: `outreach_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
-      brandName: brandName,
-      brandEmail: brandEmail,
+      brandId: "", // Brand ID not available in this context
       subject: mockContent.subject,
-      message: mockContent.message,
+      body: mockContent.message,
       status: dryRun ? "draft" : "sent"
     }
   });
@@ -39,7 +40,7 @@ export async function performOutreachTask(task: { userId: string; outreachPlanId
     await sendTemplatedEmail({
       to: brandEmail,
       subject: mockContent.subject,
-      template: "plain",
+      template: "contact",
       variables: { text: mockContent.message }
     });
   }

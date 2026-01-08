@@ -35,15 +35,20 @@ export async function buildOutreachPlan(userId: string) {
 
   for (const b of top) {
     const exists = await prisma.outreachPlan.findFirst({
-      where: { userId, brandName: b.brandName, status: "pending" }
+      where: { userId, name: b.brandName || "Outreach", status: "pending" }
     });
     if (!exists) {
       const row = await prisma.outreachPlan.create({
         data: {
+          id: `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           userId,
-          brandName: b.brandName,
-          brandEmail: b.brandEmail,
-          score: Math.round(b.score)
+          name: b.brandName || "Outreach",
+          targets: {
+            brandId: (b as any).brandId,
+            email: b.brandEmail,
+            score: Math.round(b.score)
+          },
+          status: "pending"
         }
       });
       created.push(row);

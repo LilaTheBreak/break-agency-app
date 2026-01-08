@@ -80,7 +80,7 @@ Reply tone:
 
     if (autoSend) {
       try {
-        sendResult = await sendOutboundEmail({
+        sendResult = await sendEmailWithGmail({
           userId,
           to: email.fromEmail,
           subject: `Re: ${email.subject ?? ""}`,

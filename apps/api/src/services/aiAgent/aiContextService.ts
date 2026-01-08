@@ -54,11 +54,12 @@ export async function logInteraction(params: {
   // interactionHistory model doesn't exist - logging to AIPromptHistory instead
   return prisma.aIPromptHistory.create({
     data: {
+      id: `history_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       creatorId: params.userId,
       prompt: `${params.entity}:${params.entityId || 'unknown'}`,
       response: params.summary || "",
       category: params.entity,
-      helpful: null
+      helpful: false
     }
   });
 }

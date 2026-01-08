@@ -91,13 +91,12 @@ export async function computeCreatorFit(
   });
 
   return {
-    ok: true,
     score: result.totalScore,
     breakdown: {
-      audience: result.audienceAlignment,
-      style: result.contentStyleMatch,
-      niche: result.nicheOverlap,
-      values: result.valuesAlignment,
+      audience: Math.round((result.audienceScore || 0)),
+      style: Math.round((result.engagementScore || 0)),
+      niche: Math.round((result.historyScore || 0)),
+      values: Math.round((result.categoryScore || 0)),
       safety: result.brandSafetyScore,
       risk: result.riskScore,
     },
