@@ -50,8 +50,8 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
         creatorId: userId,
       },
       include: {
-        opportunity: true,
-        creator: {
+        Opportunity: true,
+        User: {
           select: {
             id: true,
             name: true,
@@ -113,7 +113,7 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
         contentUrl: contentUrl || null,
       },
       include: {
-        opportunity: true,
+        Opportunity: true,
       },
     });
 
@@ -157,7 +157,7 @@ router.patch("/:id", requireAuth, async (req: Request, res: Response) => {
         ...(feedback !== undefined && { feedback }),
       },
       include: {
-        opportunity: true,
+        Opportunity: true,
       },
     });
 

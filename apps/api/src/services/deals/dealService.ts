@@ -4,8 +4,8 @@ export async function getAllDeals(userId: string) {
   return prisma.deal.findMany({
     where: { userId },
     include: {
-      talent: true,
-      brand: true,
+      Talent: true,
+      Brand: true,
       deliverables: true,
       payments: true,
     },
@@ -17,8 +17,8 @@ export async function getDealById(id: string, userId: string) {
   return prisma.deal.findFirst({
     where: { id, userId },
     include: {
-      talent: true,
-      brand: true,
+      Talent: true,
+      Brand: true,
       deliverables: true,
       payments: true,
       timeline: true,

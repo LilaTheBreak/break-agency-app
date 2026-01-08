@@ -135,11 +135,11 @@ export async function suggestReply(dealId: string, userId: string) {
  * Sends an AI-generated reply.
  */
 export async function sendSuggestedReply(dealId: string, userId: string, message: string) {
-    const deal = await prisma.deal.findFirst({ where: { id: dealId, userId }, include: { talent: true } });
+    const deal = await prisma.deal.findFirst({ where: { id: dealId, userId }, include: { Talent: true } });
     if (!deal) throw new Error("Deal not found");
 
     const toEmail = deal.brandEmail; // Assuming brandEmail is on the Deal model
-    const fromEmail = deal.talent?.user?.email; // Assuming relation exists
+    const fromEmail = deal.Talent?.user?.email; // Assuming relation exists
 
     if (!toEmail || !fromEmail) throw new Error("Sender or recipient email is missing.");
 

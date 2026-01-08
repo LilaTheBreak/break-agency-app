@@ -21,7 +21,7 @@ export async function generateBundleForDeal(dealId: string): Promise<BundleResul
   try {
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },
-      include: { talent: true, Brand: true }
+      include: { Talent: true, Brand: true }
     });
 
     if (!deal) {

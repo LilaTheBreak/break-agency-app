@@ -22,8 +22,8 @@ export async function generateDealTimeline(dealId: string): Promise<DealTimeline
   const deal = await prisma.deal.findUnique({
     where: { id: dealId },
     include: {
-      brand: true,
-      talent: true,
+      Brand: true,
+      Talent: true,
     },
   });
 
