@@ -91,8 +91,8 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
         creatorId: talent.id,
       },
       include: {
-        GoalVersions: {
-          orderBy: { changedAt: "desc" },
+        CreatorGoalVersion: {
+          orderBy: { createdAt: "desc" },
           take: 10,
         },
       },

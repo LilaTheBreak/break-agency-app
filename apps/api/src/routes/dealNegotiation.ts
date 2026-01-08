@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
-import { generateNegotiationAdvice } from "../services/dealNegotiationService.js";
+import { suggestReply } from "../services/dealNegotiationService.js";
 
 const router = Router();
 
@@ -10,7 +10,7 @@ router.post("/suggest", requireAuth, async (req, res, next) => {
     if (!dealId) {
       return res.status(400).json({ error: true, message: "dealId required" });
     }
-    const result = await generateNegotiationAdvice(dealId, req.user!.id);
+    const result = await suggestReply(dealId, req.user!.id);
     res.json({ ok: true, data: result });
   } catch (error) {
     next(error);

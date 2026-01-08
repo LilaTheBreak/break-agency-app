@@ -27,21 +27,20 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
 
     for (const msg of gmailMessages) {
       const savedMsg = await prisma.inboxMessage.upsert({
-        where: { externalId: msg.id },
+        where: { threadId: msg.threadId },
         update: {
           // Update fields if message already exists
           sender: msg.from,
-          senderEmail: msg.fromEmail,
           subject: msg.subject,
           body: msg.body,
           receivedAt: msg.receivedAt,
         },
         create: {
-          source: "gmail",
-          externalId: msg.id,
+          id: `msg-${Date.now()}`,
+          platform: "gmail",
           threadId: msg.threadId,
+          userId: req.user!.id,
           sender: msg.from,
-          senderEmail: msg.fromEmail,
           subject: msg.subject,
           body: msg.body,
           receivedAt: msg.receivedAt,

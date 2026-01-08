@@ -23,13 +23,13 @@ router.post("/process", requireAuth, async (req, res, next) => {
 });
 
 router.post("/submit", requireAuth, async (req, res) => {
-  const { fileId, brandName } = req.body ?? {};
-  if (!fileId) return res.status(400).json({ error: "fileId required" });
+  const { fileId, contractText } = req.body ?? {};
+  if (!fileId || !contractText) return res.status(400).json({ error: "fileId and contractText required" });
   const contract = await prisma.contractReview.create({
     data: {
       userId: req.user!.id,
       fileId,
-      brandName
+      contractText
     }
   });
   await enqueueContractProcessing(req.user!.id, contract.id);

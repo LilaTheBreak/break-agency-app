@@ -116,7 +116,7 @@ router.post("/:id/sign/brand", requireAuth, async (req, res) => {
     const contract = await prisma.contract.findUnique({ 
       where: { id },
       include: { 
-        Brand: { select: { id: true, name: true, email: true } },
+        Brand: { select: { id: true, name: true } },
         Deal: { select: { brandId: true } }
       }
     });

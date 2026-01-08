@@ -34,7 +34,7 @@ router.get('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN',
     const opportunities = await prisma.opportunity.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        Applications: {
+        OpportunityApplication: {
           select: {
             id: true,
             creatorId: true,
@@ -95,8 +95,6 @@ router.post('/', requireAuth, requireRole(['ADMIN', 'SUPERADMIN', 'AGENCY_ADMIN'
       data: {
         id: opportunityId,
         title,
-        description: description || null,
-        brandId: brandId || null,
         brand: req.body.brand || '', // Required field - use empty string if not provided
         location: req.body.location || '', // Required field - use empty string if not provided
         deliverables: req.body.deliverables || '', // Required field - use empty string if not provided
@@ -195,7 +193,7 @@ router.get('/creator/all', requireAuth, async (req, res) => {
     const opportunities = await prisma.opportunity.findMany({
       where: { isActive: true },
       include: {
-        Applications: {
+        OpportunityApplication: {
           where: { creatorId: userId },
           select: {
             id: true,
@@ -203,7 +201,7 @@ router.get('/creator/all', requireAuth, async (req, res) => {
             appliedAt: true,
           },
         },
-        Submissions: {
+        Submission: {
           where: { creatorId: userId },
           select: {
             id: true,
@@ -218,8 +216,8 @@ router.get('/creator/all', requireAuth, async (req, res) => {
     // Transform to include application status
     const opportunitiesWithStatus = opportunities.map((opp) => ({
       ...opp,
-      applicationStatus: opp.Applications[0]?.status || null,
-      hasSubmission: opp.Submissions.length > 0,
+      applicationStatus: opp.OpportunityApplication[0]?.status || null,
+      hasSubmission: opp.Submission.length > 0,
     }));
 
     sendSuccess(res, { opportunities: opportunitiesWithStatus });

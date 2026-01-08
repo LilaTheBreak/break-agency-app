@@ -30,7 +30,6 @@ router.get("/activity", async (req, res) => {
         action: true,
         entityType: true,
         entityId: true,
-        timestamp: true,
         createdAt: true
       }
     });

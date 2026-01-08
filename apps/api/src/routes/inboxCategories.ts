@@ -18,8 +18,7 @@ router.get("/api/inbox/categories", requireAuth, async (req: Request, res: Respo
         take: 100,
       }),
       prisma.inboxMessage.findMany({
-        where: { userId, classified: { some: {} } },
-        include: { classified: true },
+        where: { userId },
         take: 100,
       }),
     ]);

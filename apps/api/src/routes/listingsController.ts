@@ -9,32 +9,23 @@ const prisma = new PrismaClient();
 // @route   POST /api/ugc/listings
 // @access  Private (UGC_CREATOR)
 export const upsertListing = asyncHandler(async (req: Request, res: Response) => {
-  const creatorId = req.user!.id;
-  const { portfolio, categories, deliverables, priceRange, turnaround } = req.body;
+  const userId = req.user!.id;
+  const { title, description, rate } = req.body;
 
   const listing = await prisma.uGCListing.upsert({
-    where: { creatorId },
+    where: { userId },
     create: {
-      creatorId,
-      // These fields would be on the UGCListing model
-      // For now, storing in the portfolio which is more flexible
-      portfolio: {
-        upsert: {
-          where: { userId: creatorId },
-          create: { userId: creatorId, bio: req.body.bio, sampleLinks: portfolio, categories },
-          update: { bio: req.body.bio, sampleLinks: portfolio, categories },
-        },
-      },
+      userId,
+      title: title || "My UGC Listing",
+      description,
+      rate,
+      status: "active"
     },
     update: {
-      portfolio: {
-        update: {
-          where: { userId: creatorId },
-          data: { bio: req.body.bio, sampleLinks: portfolio, categories },
-        },
-      },
-    },
-    include: { portfolio: true },
+      title: title || "My UGC Listing",
+      description,
+      rate
+    }
   });
 
   res.status(201).json(listing);

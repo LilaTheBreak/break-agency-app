@@ -420,7 +420,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       tasks = await prisma.creatorTask.findMany({
         where: { creatorId: id },
         orderBy: {
-          dueDate: "desc",
+          dueAt: "desc",
         },
         take: 20,
       });
@@ -1161,7 +1161,7 @@ router.get("/:id/inbox", async (req: Request, res: Response) => {
         userId: talent.userId,
       },
       orderBy: {
-        createdAt: "desc",
+        receivedAt: "desc",
       },
       take: 50,
     });

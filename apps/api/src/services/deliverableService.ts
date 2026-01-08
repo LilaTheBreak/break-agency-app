@@ -23,8 +23,7 @@ export async function updateDeliverable(id: string, payload: any) {
 
 export async function runDeliverableQA(deliverableId: string) {
   const d = await prisma.deliverableItem.findUnique({
-    where: { id: deliverableId },
-    include: { deal: true }
+    where: { id: deliverableId }
   });
   if (!d) throw new Error("Deliverable not found");
 
@@ -50,7 +49,7 @@ Review this content and return JSON only:
       final_recommendation: "Manual review required.",
       summary: "AI disabled."
     };
-    await prisma.deliverableItem.update({ where: { id: deliverableId }, data: { aiQA: fallback as any } });
+    await prisma.deliverableItem.update({ where: { id: deliverableId }, data: { metadata: fallback as any } });
     return fallback;
   }
 
@@ -67,7 +66,7 @@ Review this content and return JSON only:
 
   await prisma.deliverableItem.update({
     where: { id: deliverableId },
-    data: { aiQA: result as any }
+    data: { metadata: result as any }
   });
 
   return result;
@@ -75,8 +74,7 @@ Review this content and return JSON only:
 
 export async function predictDeliverablePerformance(deliverableId: string) {
   const d = await prisma.deliverableItem.findUnique({
-    where: { id: deliverableId },
-    include: { deal: true }
+    where: { id: deliverableId }
   });
   if (!d) throw new Error("Deliverable not found");
 
@@ -101,7 +99,7 @@ Predict influencer content performance. Return JSON only.
       factors: ["AI disabled; manual estimation required."],
       summary: "AI disabled."
     };
-    await prisma.deliverableItem.update({ where: { id: deliverableId }, data: { aiPrediction: fallback as any } });
+    await prisma.deliverableItem.update({ where: { id: deliverableId }, data: { metadata: fallback as any } });
     return fallback;
   }
 
@@ -118,7 +116,7 @@ Predict influencer content performance. Return JSON only.
 
   await prisma.deliverableItem.update({
     where: { id: deliverableId },
-    data: { aiPrediction: data as any }
+    data: { metadata: data as any }
   });
 
   if ((data.confidence ?? 1) < 0.2) {
@@ -133,24 +131,22 @@ export async function createDeliverablesFromContract(contractId: string) {
     where: { id: contractId }
   });
 
-  if (!contract || !contract.aiDealMapping) return { count: 0 };
+  if (!contract) return { count: 0 };
 
-  const mapping = contract.aiDealMapping as any;
-  const deliverables =
-    mapping?.deliverables?.map((d: string) => ({
-      title: d,
+  const deliverables = [
+    {
+      title: "Review Contract",
       description: null,
       dealId: null,
-      campaignId: null,
       contractId,
       userId: contract.userId,
-      dueDate: null,
-      status: "scheduled"
-    })) || [];
+      dueAt: null,
+    }
+  ];
 
   if (!deliverables.length) return { count: 0 };
 
-  const created = await prisma.deliverable.createMany({ data: deliverables });
+  const created = await prisma.deliverableItem.createMany({ data: deliverables });
 
   await sendSlackAlert("Deliverables auto-created from contract", {
     contractId,
@@ -161,7 +157,7 @@ export async function createDeliverablesFromContract(contractId: string) {
 }
 
 export async function updateDeliverableStatus(id: string, status: string) {
-  const updated = await prisma.deliverable.update({
+  const updated = await prisma.deliverableItem.update({
     where: { id },
     data: { status }
   });
@@ -171,28 +167,18 @@ export async function updateDeliverableStatus(id: string, status: string) {
 }
 
 export async function listDeliverablesForUser(userId: string) {
-  return prisma.deliverable.findMany({
+  return prisma.deliverableItem.findMany({
     where: { userId },
-    orderBy: { dueDate: "asc" }
+    orderBy: { dueAt: "asc" }
   });
 }
 
 export async function syncDeliverableToCalendar(deliverableId: string) {
-  const deliverable = await prisma.deliverable.findUnique({ where: { id: deliverableId } });
-  // Note: Deliverable model doesn't have userId field - it's linked via dealId
-  // This function may need to be refactored to get userId from the Deal relation
-  if (!deliverable || !deliverable.dueAt) return;
-
-  // Get userId from Deal relation if needed
-  const deal = await prisma.deal.findUnique({
-    where: { id: deliverable.dealId },
-    select: { userId: true }
-  });
-
-  if (!deal?.userId) return;
+  const deliverable = await prisma.deliverableItem.findUnique({ where: { id: deliverableId } });
+  if (!deliverable || !deliverable.dueAt || !deliverable.userId) return;
 
   await syncCalendarEvent({
-    userId: deal.userId,
+    userId: deliverable.userId,
     type: "DELIVERABLE_DUE",
     title: deliverable.title,
     date: deliverable.dueAt,
