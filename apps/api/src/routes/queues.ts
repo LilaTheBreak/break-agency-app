@@ -20,7 +20,6 @@ async function logQueueAudit(
         entityType: "QUEUE",
         entityId: entityId || "system",
         metadata: metadata || {},
-        timestamp: new Date(),
       },
     });
   } catch (err) {

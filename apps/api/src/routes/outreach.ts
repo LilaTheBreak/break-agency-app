@@ -112,6 +112,7 @@ router.post("/records", requireAuth, requireAdmin, async (req, res) => {
 
     const record = await prisma.outreach.create({
       data: {
+        id: `outreach_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         target,
         type: type || "Brand",
         contact,
@@ -127,7 +128,8 @@ router.post("/records", requireAuth, requireAdmin, async (req, res) => {
         nextFollowUp: nextFollowUp ? new Date(nextFollowUp) : null,
         reminder,
         createdBy: userId,
-        archived: false
+        archived: false,
+        updatedAt: new Date()
       }
     });
 
@@ -288,11 +290,13 @@ router.post("/records/:id/link-gmail-thread", requireAuth, async (req, res) => {
 
     // Create or update OutreachEmailThread
     const threadData = {
+      id: `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       outreachId: id,
       gmailThreadId,
       lastMessageAt: lastMessage?.receivedAt || new Date(),
       status: "awaiting_reply",
-      lastSyncedAt: new Date()
+      lastSyncedAt: new Date(),
+      updatedAt: new Date()
     };
 
     const thread = await prisma.outreachEmailThread.upsert({
@@ -300,7 +304,8 @@ router.post("/records/:id/link-gmail-thread", requireAuth, async (req, res) => {
       create: threadData,
       update: {
         lastMessageAt: threadData.lastMessageAt,
-        lastSyncedAt: threadData.lastSyncedAt
+        lastSyncedAt: threadData.lastSyncedAt,
+        updatedAt: new Date()
       }
     });
 
@@ -328,6 +333,7 @@ router.post("/records/:id/notes", requireAuth, async (req, res) => {
 
     const note = await prisma.outreachNote.create({
       data: {
+        id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         outreachId: id,
         author: req.user?.email || "Admin",
         body: body.trim()
@@ -368,12 +374,14 @@ router.post("/records/:id/tasks", requireAuth, async (req, res) => {
 
     const task = await prisma.outreachTask.create({
       data: {
+        id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         outreachId: id,
         title: title.trim(),
         dueDate: dueDate ? new Date(dueDate) : null,
         owner: owner || req.user?.email,
         priority: priority || "Medium",
-        status: "Open"
+        status: "Open",
+        updatedAt: new Date()
       }
     });
 

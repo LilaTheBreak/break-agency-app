@@ -19,7 +19,7 @@ router.get("/onboarding/me", async (req, res) => {
       select: {
         id: true,
         onboardingComplete: true,
-        onboardingStatus: true,
+        onboarding_status: true,
         onboarding_responses: true,
         onboardingSkippedAt: true
       }
@@ -122,8 +122,9 @@ router.patch(
       const user = await prisma.user.update({
         where: { id: req.params.userId },
         data: {
-          onboardingStatus: status,
+          onboarding_status: status,
           admin_notes: notes,
+          updatedAt: new Date()
         },
       });
 

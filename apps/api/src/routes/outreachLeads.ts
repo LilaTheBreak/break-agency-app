@@ -203,7 +203,8 @@ router.post("/:id/convert", async (req: Request, res: Response) => {
         stage: "not-started",
         status: "Not started",
         summary: lead.notes || null,
-        createdBy: req.user!.id
+        createdBy: req.user!.id,
+        updatedAt: new Date()
       }
     });
 

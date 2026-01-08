@@ -504,12 +504,14 @@ async function handlePayPalPayoutEvent(event: PayPalWebhookEvent) {
       updatedAt: new Date()
     },
     create: {
+      id: `payout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       referenceId,
       creatorId: userId || "unknown",
       dealId: "unknown",
       amount,
       currency,
-      status
+      status,
+      updatedAt: new Date()
     }
   });
 

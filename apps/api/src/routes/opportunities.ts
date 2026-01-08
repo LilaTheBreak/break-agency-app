@@ -342,7 +342,7 @@ router.get('/admin/applications', requireAuth, requireRole(['ADMIN', 'SUPERADMIN
     const applications = await prisma.opportunityApplication.findMany({
       where,
       include: {
-        opportunity: {
+        Opportunity: {
           select: {
             id: true,
             title: true,
