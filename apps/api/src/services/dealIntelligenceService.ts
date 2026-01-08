@@ -234,26 +234,8 @@ Return ONLY valid JSON, no markdown or code blocks.`;
     
     if (aiClient) {
       try {
-        const completion = await aiClient.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are an expert talent agent AI assistant. Analyze deals and provide negotiation intelligence. Always return valid JSON only, no markdown or code blocks."
-            },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.2,
-          response_format: { type: "json_object" }
-        });
-        
-        const content = completion.choices[0]?.message?.content;
-        if (content) {
-          const normalized = content.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
-          aiResponse = JSON.parse(normalized);
-        } else {
-          throw new Error("Empty AI response");
-        }
+        const jsonResult = await aiClient.json(prompt);
+        aiResponse = jsonResult;
       } catch (error) {
         logError("OpenAI API call failed, using fallback", error);
         aiResponse = null;

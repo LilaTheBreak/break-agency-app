@@ -72,7 +72,7 @@ export async function calculateFitScore(
           value: true,
           stage: true,
           createdAt: true,
-          completedAt: true
+          closedAt: true
         }
       }
     }

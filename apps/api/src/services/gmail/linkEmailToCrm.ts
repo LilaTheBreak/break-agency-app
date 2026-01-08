@@ -320,7 +320,7 @@ export async function linkEmailToCrm(inboundEmail: {
         const activeDeal = await prisma.deal.findFirst({
           where: {
             brandId: result.brandId,
-            stage: { notIn: ["CLOSED_LOST", "CANCELLED"] },
+            stage: { notIn: ["LOST", "COMPLETED"] },
           },
           orderBy: { updatedAt: "desc" },
         });

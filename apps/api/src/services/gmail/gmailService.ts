@@ -175,7 +175,6 @@ export async function ingestGmailForUser(userId: string) {
           where: { threadId: parsed.threadId },
           update: {
             lastMessageAt: parsed.receivedAt,
-            lastMessageSnippet: parsed.snippet,
             subject: parsed.subject,
           },
           create: {
@@ -185,7 +184,6 @@ export async function ingestGmailForUser(userId: string) {
             unreadCount: 0,
             priority: 0,
             lastMessageAt: parsed.receivedAt,
-            lastMessageSnippet: parsed.snippet,
             subject: parsed.subject,
           },
         });

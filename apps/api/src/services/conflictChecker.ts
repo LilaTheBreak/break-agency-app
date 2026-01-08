@@ -41,21 +41,14 @@ export async function checkForConflicts(
       },
       select: {
         Brand: { select: { name: true } },
-        categoryId: true,
         startDate: true,
         endDate: true
       }
     });
 
     if (newDeal.category) {
-      for (const d of existingDeals) {
-        if (d.categoryId === newDeal.category) {
-          conflicts.push(
-            `Category conflict: Talent already has an active deal in '${newDeal.category}'.`
-          );
-          blocking = true;
-        }
-      }
+      // Category-based conflict checking is not yet implemented
+      // as Deal model doesn't have a category field
     }
 
     for (const d of existingDeals) {

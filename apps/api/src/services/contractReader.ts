@@ -35,8 +35,8 @@ export async function processContract(fileUrl: string, dealId: string, userId: s
       .update({
         where: { id: dealId },
         data: {
-          internalNotes: payload.summary || null,
-          aiSummary: payload.summary || null
+          status: "review",
+          metadata: payload as any
         }
       })
       .catch(() => null);

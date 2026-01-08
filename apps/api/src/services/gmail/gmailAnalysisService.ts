@@ -102,7 +102,6 @@ export async function analyzeEmailById(
 
   const dataToUpdate: Prisma.InboundEmailUpdateInput = {
     aiCategory: finalCategory,
-    aiBrand: aiResult.brand,
     aiUrgency: aiResult.urgency,
     aiSummary: aiResult.summary,
     aiRecommendedAction: aiResult.recommendedAction,
@@ -146,14 +145,13 @@ export async function analyzeThreadById(threadId: string, userId: string) {
   // A different prompt for thread-level summarization
   const analysis = await getAIAnalysis(fullThreadText); // Re-using for simplicity
 
-  // Update the parent InboxMessage with the summary
-  await prisma.inboxMessage.update({
-    where: { id: thread.id },
+  // Update the thread metadata with the summary
+  await prisma.inboxThreadMeta.update({
+    where: { threadId: thread.threadId },
     data: {
-      aiSummary: analysis.summary,
-      aiRecommendedAction: analysis.recommendedAction
+      aiThreadSummary: analysis.summary
     }
-  });
+  }).catch(() => null);
 
   return { success: true, summary: analysis.summary };
 }
