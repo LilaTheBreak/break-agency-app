@@ -40,23 +40,18 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
   const record = await prisma.payout.upsert({
     where: { referenceId: payout.id },
     update: {
-      userId,
       amount,
       currency: payout.currency,
       status,
-      destination: typeof payout.destination === "string" ? payout.destination : payout.destination?.id,
-      provider: "stripe",
-      metadata: toJson(payout.metadata || {})
+      updatedAt: new Date()
     },
     create: {
-      userId,
+      creatorId: userId || "unknown",
+      dealId: "unknown",
       referenceId: payout.id,
-      provider: "stripe",
       amount,
       currency: payout.currency,
-      status,
-      destination: typeof payout.destination === "string" ? payout.destination : payout.destination?.id,
-      metadata: toJson(payout.metadata || {})
+      status
     }
   });
 

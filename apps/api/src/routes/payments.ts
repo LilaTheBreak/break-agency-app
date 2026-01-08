@@ -506,23 +506,18 @@ async function handlePayPalPayoutEvent(event: PayPalWebhookEvent) {
   const payoutRecord = await prisma.payout.upsert({
     where: { referenceId },
     update: {
-      provider: "paypal",
-      userId,
       amount,
       currency,
       status,
-      destination: payoutItem.receiver || payoutItem.receiver_email || null,
-      metadata: serializeJson(metadata)
+      updatedAt: new Date()
     },
     create: {
       referenceId,
-      provider: "paypal",
-      userId,
+      creatorId: userId || "unknown",
+      dealId: "unknown",
       amount,
       currency,
-      status,
-      destination: payoutItem.receiver || payoutItem.receiver_email || null,
-      metadata: serializeJson(metadata)
+      status
     }
   });
 
