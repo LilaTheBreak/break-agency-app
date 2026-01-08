@@ -34,6 +34,7 @@ export async function storeAIMemory(params: {
   // aIAgentMemory model doesn't exist - storing in AIPromptHistory instead
   return prisma.aIPromptHistory.create({
     data: {
+      id: `prompthistory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       creatorId: params.userId,
       prompt: params.topic || "memory",
       response: JSON.stringify(params.content),

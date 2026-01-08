@@ -30,13 +30,11 @@ router.post("/api/wellness/check-in", async (req: Request, res: Response) => {
 
     const check = await prisma.wellnessCheckin.create({
       data: {
+        id: `wellness_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorId: req.user!.id,
         energyLevel: parseInt(energy),
-        energy: parseInt(energy),
         workload,
-        journal,
-        aiSummary: ai.summary,
-        burnoutRisk: ai.burnoutRisk,
+        notes: journal || null,
       },
     });
 

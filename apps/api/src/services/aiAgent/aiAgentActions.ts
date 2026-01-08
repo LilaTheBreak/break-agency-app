@@ -161,6 +161,7 @@ async function logAIAgent(type: string, userId: string, metadata: Record<string,
   if (talentRecord?.id) {
     await prisma.aIPromptHistory.create({
       data: {
+        id: `prompthistory_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorId: talentRecord.id,
         prompt: type,
         response: JSON.stringify(metadata),

@@ -180,8 +180,11 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
 
     const checkin = await prisma.wellnessCheckin.create({
       data: {
-        ...parsed.data,
+        id: `wellness_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         creatorId: talent.id,
+        energyLevel: parsed.data.energyLevel,
+        workload: parsed.data.workload,
+        notes: parsed.data.notes || null,
       },
     });
 
