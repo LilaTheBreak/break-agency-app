@@ -125,17 +125,17 @@ export function sanitizeErrorForLogging(error) {
     "session_id",
   ];
 
-  if (error.stack) {
+  if ((error as any).stack) {
     // Include stack but sanitize any URLs with tokens
-    sanitized.stack = error.stack.replace(/[?&](token|key|secret|password)=[^&\s]*/gi, "$1=***");
+    sanitized.stack = (error as any).stack.replace(/[?&](token|key|secret|password)=[^&\s]*/gi, "$1=***");
   }
 
   // Sanitize any object properties
   if (typeof error === "object") {
-    Object.keys(error).forEach((key) => {
+    Object.keys(error as any).forEach((key) => {
       if (!sensitiveKeys.some((sensitive) => key.toLowerCase().includes(sensitive))) {
-        if (typeof error[key] === "string" || typeof error[key] === "number") {
-          sanitized[key] = error[key];
+        if (typeof (error as any)[key] === "string" || typeof (error as any)[key] === "number") {
+          sanitized[key] = (error as any)[key];
         }
       }
     });
@@ -149,7 +149,7 @@ export function sanitizeErrorForLogging(error) {
  * @param {Error|Object} error - The error to check
  * @returns {boolean} Whether to send alert
  */
-export function shouldAlert(error) {
+export function shouldAlert(error: any) {
   if (!error) return false;
 
   const errorMessage = String(error.message || error.error || error).toLowerCase();
@@ -180,7 +180,7 @@ export function shouldAlert(error) {
  * @param {Object} context - Additional context (user, endpoint, etc.)
  * @returns {string} Formatted alert message
  */
-export function formatAlertMessage(error, context = {}) {
+export function formatAlertMessage(error: any, context: any = {}) {
   const { message, userMessage } = normalizeError(error);
   const timestamp = new Date().toISOString();
 
@@ -188,22 +188,22 @@ export function formatAlertMessage(error, context = {}) {
   alert += `**Time:** ${timestamp}\n`;
   alert += `**Error:** ${message}\n`;
 
-  if (context.endpoint) {
+  if (context?.endpoint) {
     alert += `**Endpoint:** ${context.endpoint}\n`;
   }
 
-  if (context.userId) {
+  if (context?.userId) {
     alert += `**User ID:** ${context.userId}\n`;
   }
 
-  if (context.environment) {
+  if (context?.environment) {
     alert += `**Environment:** ${context.environment}\n`;
   }
 
   alert += `\n**User-Facing Message:** ${userMessage}\n`;
 
-  if (error.stack) {
-    alert += `\n**Stack Trace (first 500 chars):**\n\`\`\`\n${error.stack.substring(0, 500)}...\n\`\`\`\n`;
+  if ((error as any)?.stack) {
+    alert += `\n**Stack Trace (first 500 chars):**\n\`\`\`\n${(error as any).stack.substring(0, 500)}...\n\`\`\`\n`;
   }
 
   return alert;
