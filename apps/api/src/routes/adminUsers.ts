@@ -38,7 +38,9 @@ router.post("/users", async (req, res) => {
         id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email: String(email),
         name: String(email).split("@")[0], // Use email prefix as default name
-        role: String(normalizedRole)
+        password: null,
+        role: String(normalizedRole),
+        updatedAt: new Date()
       }
     });
     res.status(201).json({ user: { email: user.email, role: user.role } });

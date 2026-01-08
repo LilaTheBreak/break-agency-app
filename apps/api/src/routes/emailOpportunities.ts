@@ -50,6 +50,7 @@ router.get("/scan", requireAuth, async (req: Request, res: Response) => {
         // Save to database
         const opportunity = await prisma.emailOpportunity.create({
           data: {
+            id: `opp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             userId,
             gmailMessageId: message.id,
             threadId: message.threadId,
@@ -174,6 +175,7 @@ router.put("/:id", requireAuth, async (req: Request, res: Response) => {
     if (typeof isRelevant === "boolean") {
       await prisma.emailFeedback.create({
         data: {
+          id: `feedback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           userId,
           emailOpportunityId: id,
           isRelevant,

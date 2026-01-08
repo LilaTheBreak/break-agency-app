@@ -23,7 +23,7 @@ const inboxScanLimiter = createRateLimiter({
  */
 router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) => {
   try {
-    const gmailResult = await scanGmail(req.user!);
+    const gmailResult = await scanGmail(String(req.user?.id || ''));
     const gmailMessages = gmailResult.messages || [];
 
     const saved = [];
@@ -47,6 +47,8 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
           subject: msg.subject,
           body: msg.body,
           receivedAt: msg.receivedAt,
+          lastMessageAt: msg.receivedAt,
+          participants: [msg.from],
         },
       });
 
@@ -72,13 +74,14 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
       const threadMeta = await prisma.inboxThreadMeta.upsert({
         where: { threadId: savedMsg.threadId },
         create: {
+          id: `meta_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           threadId: savedMsg.threadId,
           userId: req.user?.id || "",
-          priority: (classification.type === "deal" || classification.type === "negotiation") ? 2 : 1,
+          priority: ((classification as any).type === "deal" || (classification as any).type === "negotiation") ? 2 : 1,
           unreadCount: 1
         },
         update: {
-          priority: (classification.type === "deal" || classification.type === "negotiation") ? 2 : 1
+          priority: ((classification as any).type === "deal" || (classification as any).type === "negotiation") ? 2 : 1
         }
       });
 

@@ -347,6 +347,7 @@ router.post("/batch-import", async (req, res) => {
       try {
         await prisma.crmCampaign.create({
           data: {
+            id: `camp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             campaignName: campaign.campaignName,
             brandId: campaign.brandId,
             campaignType: campaign.campaignType || "Other",
@@ -365,8 +366,6 @@ router.post("/batch-import", async (req, res) => {
             activity: campaign.activity || [
               { at: new Date().toISOString(), label: "Campaign imported" },
             ],
-            createdAt: campaign.createdAt ? new Date(campaign.createdAt) : new Date(),
-            updatedAt: campaign.updatedAt ? new Date(campaign.updatedAt) : new Date(),
             lastActivityAt: campaign.lastActivityAt
               ? new Date(campaign.lastActivityAt)
               : new Date(),

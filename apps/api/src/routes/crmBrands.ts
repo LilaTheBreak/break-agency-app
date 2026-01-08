@@ -391,7 +391,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       entityType: "CrmBrand",
       entityId: id,
       metadata: {
-        brandName: brand.name,
+        brandName: brand.brandName || "Unknown",
         deletedBy: user.email,
         deletedAt: new Date().toISOString()
       }
