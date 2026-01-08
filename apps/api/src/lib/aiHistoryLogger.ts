@@ -36,12 +36,11 @@ export async function logAIHistory(log: AIHistoryLog): Promise<void> {
     if (talent) {
       await prisma.aIPromptHistory.create({
         data: {
+          id: `history-${Date.now()}`,
           creatorId: talent.id,
           prompt: log.prompt,
           response: log.response,
-          category: log.category,
-          // Store metadata as JSON string if provided
-          // Note: AIPromptHistory doesn't have metadata field, so we'll store in response if needed
+          category: log.category
         }
       });
     } else {

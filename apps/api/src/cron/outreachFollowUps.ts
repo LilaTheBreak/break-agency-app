@@ -22,6 +22,7 @@ export async function generateFollowUps() {
     if (Date.now() - last.createdAt.getTime() > 72 * 3600_000) {
       const action = await prisma.outreachAction.create({
         data: {
+          id: `action-${Date.now()}`,
           sequenceId: seq.id,
           actionType: "follow_up",
           runAt: new Date()

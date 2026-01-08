@@ -62,14 +62,13 @@ export async function summarizeThread(
     await prisma.inboxThreadMeta.upsert({
       where: { threadId },
       update: {
-        aiThreadSummary: result.summary,
-        // You could also store the other fields here
+        aiThreadSummary: result.summary
       },
       create: {
+        id: threadId,
         threadId,
         userId,
-        aiThreadSummary: result.summary,
-        lastMessageAt: new Date() // Or get from last message
+        aiThreadSummary: result.summary
       }
     });
 
