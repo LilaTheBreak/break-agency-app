@@ -76,6 +76,18 @@ model AgentProfile {
   User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Agent policy configuration
+model AgentPolicy {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  config    Json?    // Agent policy configuration
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model Approval {
   id          String   @id @default(cuid())
   type        String
@@ -1034,6 +1046,7 @@ model OutreachAction {
   errorMessage String?
   scheduledAt  DateTime?
   executedAt   DateTime?
+  runAt        DateTime?
   metadata     Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime
@@ -1460,6 +1473,8 @@ model Talent {
   notes                   String?                   // Internal notes
   categories              String[]
   stage                   String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
   AIPromptHistory         AIPromptHistory[]
   BrandSavedTalent        BrandSavedTalent[]
   CreatorEvent            CreatorEvent[]
@@ -1639,6 +1654,7 @@ model User {
   resetToken                              String?
   resetTokenExpiry                        DateTime?
   AgentProfile                            AgentProfile?
+  AgentPolicy                             AgentPolicy?
   AiTokenLog                              AiTokenLog[]
   ApprovalsCreated                        Approval[]               @relation("ApprovalRequestor")
   ApprovalsHandled                        Approval[]               @relation("ApprovalApprover")
@@ -1678,6 +1694,7 @@ model User {
   PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
   PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
   IntegrationConnection                   IntegrationConnection[]
+  XeroConnections                         XeroConnection[]
 }
 
 model WellnessCheckin {
@@ -1694,6 +1711,7 @@ model WellnessCheckin {
 
 model XeroConnection {
   id           String    @id
+  userId       String?   // Link to user if applicable
   connected    Boolean   @default(false)
   tenantId     String?
   accessToken  String?
@@ -1702,6 +1720,9 @@ model XeroConnection {
   lastSyncedAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime
+  User         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
 }
 
 // V1.1: Integration Connection Model for Slack, Notion, Google Drive

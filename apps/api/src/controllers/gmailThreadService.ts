@@ -1,4 +1,4 @@
-import prisma from "../../db/client.js";
+import prisma from "../db/client.js";
 
 /**
  * Fetches a Gmail thread (InboxMessage) and its associated metadata.

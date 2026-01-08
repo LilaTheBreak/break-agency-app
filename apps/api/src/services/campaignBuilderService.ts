@@ -125,4 +125,16 @@ function fallbackCampaign(dealId: string): CampaignPlan {
   };
 }
 
+/**
+ * Generates a campaign plan based on deal and brief
+ */
+export async function generateCampaign(data: { dealId: string; briefId: string }): Promise<CampaignPlan> {
+  try {
+    return await buildCampaignFromDeal(data.dealId);
+  } catch (error) {
+    console.error("Campaign generation failed:", error);
+    return fallbackCampaign(data.dealId);
+  }
+}
+
 export default buildCampaignFromDeal;

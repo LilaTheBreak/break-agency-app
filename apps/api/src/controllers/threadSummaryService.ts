@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import prisma from "../../db/client.js";
+import prisma from "../db/client.js";
 import { getMessagesForThread } from "./threadService.js";
 import { cleanEmailBody } from "../gmail/gmailParser.js";
 

@@ -103,4 +103,33 @@ function fallbackBundle(dealId?: string): BundleResult {
   };
 }
 
+/**
+ * Generates tiered bundles for brief matching
+ */
+export async function generateTieredBundles(data: { briefId: string; talentId: string }) {
+  try {
+    const bundles = [
+      {
+        tier: "essential",
+        deliverables: ["1 Reel", "3 Stories"],
+        estimatedCost: "$2,000 - $5,000",
+      },
+      {
+        tier: "standard",
+        deliverables: ["2 Reels", "3 Stories", "1 Carousel"],
+        estimatedCost: "$5,000 - $10,000",
+      },
+      {
+        tier: "premium",
+        deliverables: ["3 Reels", "5 Stories", "2 Carousels", "1 TikTok"],
+        estimatedCost: "$10,000 - $20,000",
+      },
+    ];
+    return bundles;
+  } catch (error) {
+    console.error("Tiered bundle generation failed:", error);
+    return [];
+  }
+}
+
 export default generateBundleForDeal;

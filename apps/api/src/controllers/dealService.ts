@@ -1,6 +1,6 @@
-import prisma from "../../db/client.js";
+import prisma from "../db/client.js";
 import { Prisma, Deal } from "@prisma/client";
-import { addEvent as addTimelineEntry } from "./dealTimelineService.js";
+import { addEvent as addTimelineEntry } from "../services/dealTimelineService.js";
 
 type DealCreateData = {
   talentId: string;

@@ -1,4 +1,4 @@
-import prisma from "../../db/client.js";
+import prisma from "../db/client.js";
 import { getGmailThread, getGmailMessagesForThread } from "./gmailThreadService.js";
 
 interface ListThreadsOptions {
