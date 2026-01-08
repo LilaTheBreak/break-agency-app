@@ -9,6 +9,7 @@ export interface TokenTrackingInput {
   org?: string;
   userId?: string; // optional future use for user-level billing
   service?: string; // optional service name for categorization
+  tokens?: number; // optional total tokens for convenience
 }
 
 /**

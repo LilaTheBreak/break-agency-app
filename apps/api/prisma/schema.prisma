@@ -2114,6 +2114,3 @@ model Reconciliation {
   @@index([referenceId])
   @@index([type])
 }
-
-  @@index([dealId])
-}
