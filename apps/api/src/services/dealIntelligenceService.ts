@@ -232,10 +232,10 @@ Return ONLY valid JSON, no markdown or code blocks.`;
     // Call AI
     let aiResponse: any;
     
-    if (openaiClient) {
+    if (aiClient) {
       try {
-        const completion = await openaiClient.chat.completions.create({
-          model: OPENAI_MODEL,
+        const completion = await aiClient.chat.completions.create({
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",

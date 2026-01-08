@@ -106,17 +106,17 @@ async function buildDataset(userId: string) {
 
   const normalizedPosts = posts.map((post) => ({
     caption: (post.caption || "").slice(0, 300),
-    likes: post.likes ?? 0,
-    comments: post.comments ?? 0,
-    views: post.views ?? 0,
-    engagementRate: post.engagementRate ?? null,
+    likes: (post as any).likes ?? 0,
+    comments: (post as any).comments ?? 0,
+    views: (post as any).views ?? 0,
+    engagementRate: (post as any).engagementRate ?? null,
     postedAt: post.postedAt,
     platform: post.platform
   }));
 
   const platforms = Array.from(
     new Set([
-      ...analytics.map((item) => item.account?.platform).filter(Boolean),
+      // analyticsHistory is not available - comment out
       ...posts.map((post) => post.platform).filter(Boolean)
     ])
   );

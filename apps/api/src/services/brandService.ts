@@ -8,15 +8,17 @@ export async function detectBrand(email: any) {
   if (!domain) return null;
 
   let brand = await prisma.brand.findFirst({
-    where: { domains: { has: domain } }
+    where: { name: domain.split(".")[0] }
   });
 
   if (!brand) {
     brand = await prisma.brand.create({
       data: {
+        id: `brand_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: domain.split(".")[0],
-        domains: [domain],
-        emails: [from]
+        values: [],
+        restrictedCategories: [],
+        preferredCreatorTypes: []
       }
     });
   }

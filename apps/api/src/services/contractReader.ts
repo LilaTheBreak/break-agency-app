@@ -35,14 +35,15 @@ export async function processContract(fileUrl: string, dealId: string, userId: s
       .update({
         where: { id: dealId },
         data: {
-          metadata: payload as any,
-          summary: payload.summary || null
+          internalNotes: payload.summary || null,
+          aiSummary: payload.summary || null
         }
       })
       .catch(() => null);
 
     await prisma.dealTimeline.create({
       data: {
+        id: `timeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         dealId,
         createdById: userId,
         type: "CONTRACT_ANALYZED",

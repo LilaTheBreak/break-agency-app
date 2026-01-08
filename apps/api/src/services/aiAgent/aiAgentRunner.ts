@@ -9,19 +9,23 @@ export async function runAIAgentTask(task: {
   dealId?: string;
   targetBrand?: string;
 }) {
-  const { type } = task;
-  const context = await loadAIContext(task.userId);
+  const { type, userId } = task;
+  const context = await loadAIContext(userId);
 
   try {
     switch (type) {
       case "INBOX_REPLY":
-        await performInboxReply({ ...task, context });
+        if (task.emailId) {
+          await performInboxReply({ userId, emailId: task.emailId, context });
+        }
         break;
       case "NEGOTIATE_DEAL":
-        await performDealNegotiation({ ...task, context });
+        if (task.dealId) {
+          await performDealNegotiation({ userId, dealId: task.dealId, context });
+        }
         break;
       case "OUTREACH":
-        await performOutreach({ ...task, context });
+        await performOutreach({ userId, targetBrand: task.targetBrand, context });
         break;
       default:
         console.warn("Unknown AI Agent task:", task);

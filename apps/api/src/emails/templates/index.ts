@@ -14,6 +14,15 @@ import { invoiceOverdueTemplate } from "./invoiceOverdue.js";
 import { systemAlertTemplate } from "./systemAlert.js";
 import { accountSetupTemplate } from "./accountSetup.js";
 
+// Default template for new AI-generated templates
+const defaultTemplate: EmailTemplate = {
+  subject: (data?: any) => "Email from The Break Agency",
+  render: (data?: any) => ({
+    subject: "Email from The Break Agency",
+    html: "<p>This is a default email template.</p>"
+  })
+};
+
 const templateMap: Record<EmailTemplateName, EmailTemplate> = {
   welcome: welcomeTemplate,
   "password-reset": passwordResetTemplate,
@@ -28,7 +37,10 @@ const templateMap: Record<EmailTemplateName, EmailTemplate> = {
   payoutReminder: payoutReminderTemplate,
   invoiceOverdue: invoiceOverdueTemplate,
   systemAlert: systemAlertTemplate,
-  "account-setup": accountSetupTemplate
+  "account-setup": accountSetupTemplate,
+  "ai-auto-reply": defaultTemplate,
+  "ai-outreach": defaultTemplate,
+  "contact": defaultTemplate
 };
 
 export const templates = templateMap;

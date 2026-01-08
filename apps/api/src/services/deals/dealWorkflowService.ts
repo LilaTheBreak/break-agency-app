@@ -50,6 +50,7 @@ export async function logWorkflowEvent(dealId: string, message: string, userId?:
   try {
     const event = await prisma.dealTimeline.create({
       data: {
+        id: `timeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         dealId,
         type: "workflow",
         message,

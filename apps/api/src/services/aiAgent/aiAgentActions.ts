@@ -36,7 +36,7 @@ export async function performInboxReply(params: { userId: string; emailId: strin
     to: email.userId,
     template: "ai-auto-reply",
     subject: `Re: ${email.subject}`,
-    variables: { replyText }
+    data: { replyText }
   });
 
   await logAIAgent("INBOX_REPLY", userId, {
@@ -98,7 +98,7 @@ export async function performOutreach(params: { userId: string; targetBrand?: st
         to: draft.to,
         template: "ai-outreach",
         subject: draft.subject,
-        variables: draft
+        data: draft
       });
     }
   }

@@ -7,6 +7,7 @@ export async function addEvent(dealId: string, data: { type: string; message: st
   try {
     const event = await prisma.dealTimeline.create({
       data: {
+        id: `timeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         dealId,
         type: data.type,
         message: data.message,

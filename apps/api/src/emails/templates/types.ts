@@ -12,7 +12,10 @@ export type EmailTemplateName =
   | "payoutReminder"
   | "invoiceOverdue"
   | "systemAlert"
-  | "account-setup";
+  | "account-setup"
+  | "ai-auto-reply"
+  | "ai-outreach"
+  | "contact";
 
 export type EmailTemplateContext = Record<string, string | number | boolean | null | undefined>;
 

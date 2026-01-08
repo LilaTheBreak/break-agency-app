@@ -31,7 +31,7 @@ export async function getDealPace(userId: string) {
   const closedDeals = await prisma.deal.findMany({
     where: {
       userId,
-      stage: { in: ["COMPLETED", "CLOSED_WON"] },
+      stage: { in: ["COMPLETED", "PAYMENT_RECEIVED"] },
       createdAt: { not: null },
       updatedAt: { not: null },
     },

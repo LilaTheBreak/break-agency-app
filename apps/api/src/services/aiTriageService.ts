@@ -31,9 +31,6 @@ export async function runEmailTriage(emailId: string) {
         aiCategory: fallback.category,
         aiUrgency: fallback.urgency,
         aiRecommendedAction: fallback.action,
-        aiDeadline: fallback.deadline,
-        aiBrand: fallback.brand,
-        aiConfidence: fallback.confidence,
         aiJson: fallback as any
       }
     });
@@ -54,9 +51,6 @@ export async function runEmailTriage(emailId: string) {
       aiCategory: parsed.category,
       aiUrgency: parsed.urgency,
       aiRecommendedAction: parsed.action,
-      aiDeadline: parsed.deadline,
-      aiBrand: parsed.brand,
-      aiConfidence: parsed.confidence,
       aiJson: parsed as any
     }
   });

@@ -82,10 +82,11 @@ Reply tone:
       try {
         sendResult = await sendEmailWithGmail({
           userId,
+          from: email.toEmail || "",
           to: email.fromEmail,
           subject: `Re: ${email.subject ?? ""}`,
-          html: `<p>${aiReply.replace(/\n/g, "<br>")}</p>`,
-          threadId: email.threadId ?? undefined,
+          htmlBody: aiReply || "",
+          threadId: email.threadId || undefined
         });
       } catch (err) {
         console.error("AI REPLY SEND ERROR:", err);

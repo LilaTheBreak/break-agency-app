@@ -28,11 +28,14 @@ export async function performOutreachTask(task: { userId: string; outreachPlanId
   await prisma.outreach.create({
     data: {
       id: `outreach_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      userId,
-      brandId: "", // Brand ID not available in this context
-      subject: mockContent.subject,
-      body: mockContent.message,
-      status: dryRun ? "draft" : "sent"
+      target: brandName,
+      type: "Brand",
+      contact: "Brand Representative",
+      contactEmail: brandEmail || undefined,
+      status: dryRun ? "draft" : "sent",
+      summary: mockContent.message,
+      createdBy: userId,
+      updatedAt: new Date()
     }
   });
 
@@ -41,7 +44,7 @@ export async function performOutreachTask(task: { userId: string; outreachPlanId
       to: brandEmail,
       subject: mockContent.subject,
       template: "contact",
-      variables: { text: mockContent.message }
+      data: { text: mockContent.message }
     });
   }
 

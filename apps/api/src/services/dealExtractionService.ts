@@ -5,7 +5,7 @@ import { runOfferExtractionForEmail } from "./inboundEmail.service.js";
 export async function extractDealFromEmail(emailId: string) {
   const email = await prisma.inboundEmail.findUnique({
     where: { id: emailId },
-    include: { user: true }
+    include: { User: true }
   });
   if (!email) throw new Error("Email not found");
 
