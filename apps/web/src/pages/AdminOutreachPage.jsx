@@ -813,7 +813,7 @@ export function AdminOutreachPage({ session }) {
       outreachId: opportunityForm.outreachId,
       name: opportunityForm.name.trim() || "Untitled opportunity",
       value: opportunityForm.value ? parseFloat(opportunityForm.value) : 0,
-      currency: "USD",
+      currency: "GBP",
       expectedCloseAt: opportunityForm.expectedClose || null,
       notes: opportunityForm.notes || null
     };
@@ -914,7 +914,7 @@ export function AdminOutreachPage({ session }) {
       dealName: dealForm.name.trim() || "Untitled deal",
       brandId: null, // Will need to be set from outreach record
       value: dealForm.value ? parseFloat(dealForm.value) : 0,
-      currency: "USD",
+      currency: "GBP",
       status: dealForm.status || "Prospect"
     };
 

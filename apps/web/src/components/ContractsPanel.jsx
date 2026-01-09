@@ -56,7 +56,7 @@ export function ContractsPanel({ session, title = "Contracts", description }) {
     founder: "",
     owner: session?.name || "Admin",
     value: "",
-    currency: "USD",
+    currency: "GBP",
     startDate: "",
     endDate: "",
     commission: "",

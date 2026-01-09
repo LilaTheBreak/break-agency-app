@@ -75,10 +75,10 @@ export function AdminRevenueDashboard() {
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return "$0";
-    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
-    return `$${amount.toFixed(0)}`;
+    if (!amount) return "£0";
+    if (amount >= 1000000) return `£${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `£${(amount / 1000).toFixed(0)}K`;
+    return `£${amount.toFixed(0).toLocaleString("en-GB")}`;
   };
 
   if (loading) {

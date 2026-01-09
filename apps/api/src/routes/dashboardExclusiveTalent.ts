@@ -63,27 +63,44 @@ router.get(
 
       console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Admin verified, fetching talents...");
       
-      // Start with empty response to verify endpoint works
       const snapshots: any[] = [];
+      let totalHighRisk = 0;
+      let totalMediumRisk = 0;
       
       try {
-        // Fetch all exclusive talents - simple query first
+        // Fetch all exclusive talents with related data
         const exclusiveTalents = await prisma.talent.findMany({
           where: {
             representationType: "EXCLUSIVE",
           },
-          select: {
-            id: true,
-            name: true,
-            displayName: true,
-            status: true,
-            representationType: true,
-            managerId: true,
-            userId: true,
+          include: {
             User: {
               select: {
                 email: true,
                 name: true,
+              },
+            },
+            Deal: {
+              select: {
+                id: true,
+                stage: true,
+                value: true,
+                endDate: true,
+                createdAt: true,
+              },
+            },
+            Payment: {
+              select: {
+                id: true,
+                amount: true,
+                status: true,
+              },
+            },
+            Payout: {
+              select: {
+                id: true,
+                amount: true,
+                status: true,
               },
             },
           },
@@ -92,7 +109,7 @@ router.get(
         
         console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Found", exclusiveTalents.length, "exclusive talents");
         
-        // Build snapshots with safe defaults
+        // Build snapshots with complete financial data
         for (const talent of exclusiveTalents) {
           try {
             if (!talent?.id) {
@@ -100,15 +117,48 @@ router.get(
               continue;
             }
             
-            // Get deals for this talent
-            const deals = await prisma.deal.findMany({
-              where: { talentId: talent.id },
-              select: {
-                id: true,
-                stage: true,
-                value: true,
-              },
-            });
+            // Calculate deal metrics
+            const deals = talent.Deal || [];
+            const activeDealStages = ["PITCH", "NEGOTIATION", "AWAITING_SIGNATURE", "ACTIVE"];
+            const activeDealStagesWithValue = ["PITCH", "NEGOTIATION"];
+            
+            const openPipelineDeals = deals.filter(d => activeDealStagesWithValue.includes(d.stage || ""));
+            const confirmedDeals = deals.filter(d => ["AWAITING_SIGNATURE", "ACTIVE"].includes(d.stage || ""));
+            const completedDeals = deals.filter(d => d.stage === "COMPLETED");
+            
+            const openPipeline = openPipelineDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+            const confirmedRevenue = confirmedDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+            
+            // Calculate payment metrics
+            const paidAmount = (talent.Payout || [])
+              .filter(p => p.status === "PAID")
+              .reduce((sum, p) => sum + (p.amount || 0), 0);
+            
+            const unpaidAmount = (talent.Payout || [])
+              .filter(p => ["PENDING", "PROCESSING"].includes(p.status || "PENDING"))
+              .reduce((sum, p) => sum + (p.amount || 0), 0);
+            
+            // Calculate flags
+            const dealsWithoutStage = deals.filter(d => !d.stage).length;
+            const overdueDeals = deals.filter(d => {
+              if (!d.endDate) return false;
+              return new Date(d.endDate) < new Date() && !["COMPLETED", "LOST"].includes(d.stage || "");
+            }).length;
+            const unpaidDeals = deals.filter(d => d.stage === "COMPLETED" && unpaidAmount > 0).length;
+            const noManagerAssigned = !talent.managerId;
+            
+            // Calculate risk level
+            const flagCount = (dealsWithoutStage > 0 ? 1 : 0) + 
+                            (overdueDeals > 0 ? 1 : 0) + 
+                            (unpaidDeals > 0 ? 1 : 0) + 
+                            (noManagerAssigned ? 1 : 0);
+            
+            let riskLevel = "LOW";
+            if (flagCount >= 3) riskLevel = "HIGH";
+            else if (flagCount >= 1) riskLevel = "MEDIUM";
+            
+            if (riskLevel === "HIGH") totalHighRisk++;
+            if (riskLevel === "MEDIUM") totalMediumRisk++;
             
             snapshots.push({
               id: talent.id,
@@ -120,19 +170,19 @@ router.get(
               managerName: talent.managerId ? "TBD" : null,
               creatorEmail: talent.User?.email || null,
               deals: {
-                openPipeline: deals.reduce((sum, d) => sum + (d.value || 0), 0),
-                confirmedRevenue: 0,
-                paid: 0,
-                unpaid: 0,
-                activeCount: deals.filter(d => d.stage && !["COMPLETED", "LOST"].includes(d.stage)).length,
+                openPipeline,
+                confirmedRevenue,
+                paid: paidAmount,
+                unpaid: unpaidAmount,
+                activeCount: deals.filter(d => activeDealStages.includes(d.stage || "")).length,
               },
               flags: {
-                dealsWithoutStage: 0,
-                overdueDeals: 0,
-                unpaidDeals: 0,
-                noManagerAssigned: !talent.managerId,
+                dealsWithoutStage,
+                overdueDeals,
+                unpaidDeals,
+                noManagerAssigned,
               },
-              riskLevel: talent.managerId ? "LOW" : "MEDIUM",
+              riskLevel,
             });
           } catch (talentError) {
             console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Error processing talent:", talentError);
@@ -153,8 +203,8 @@ router.get(
         talents: snapshots,
         meta: {
           totalExclusiveTalents: snapshots.length,
-          highRisk: 0,
-          mediumRisk: snapshots.length,
+          highRisk: totalHighRisk,
+          mediumRisk: totalMediumRisk,
           generatedAt: new Date().toISOString(),
         },
       };

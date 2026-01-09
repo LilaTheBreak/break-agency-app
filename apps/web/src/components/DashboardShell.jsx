@@ -13,7 +13,7 @@ const DEFAULT_STATUS_SUMMARY = {
   briefsReview: 0,
   nextSteps: [],
   payoutTotals: {
-    pending: { amount: 0, count: 0, currency: "usd", mixedCurrencies: false }
+    pending: { amount: 0, count: 0, currency: "gbp", mixedCurrencies: false }
   },
   invoiceTotals: {},
   reconciledThisWeek: 0

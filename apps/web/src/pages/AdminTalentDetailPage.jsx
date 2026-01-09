@@ -1567,7 +1567,7 @@ function DealsTab({ talent, onDealCreated }) {
       talentId: talent.id,
       status: createForm.status,
       estimatedValue: createForm.estimatedValue ? parseFloat(createForm.estimatedValue) : null,
-      currency: createForm.currency || "USD",
+      currency: createForm.currency || "GBP",
       expectedCloseDate: createForm.expectedCloseDate || null,
       notes: createForm.notes || null,
     };
