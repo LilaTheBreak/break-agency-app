@@ -4,7 +4,7 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
 import { toast } from "react-hot-toast";
-import { Plus, Edit2, Eye, EyeOff, Copy, Trash2, GripVertical, Save, X } from "lucide-react";
+import { Plus, Edit2, Eye, EyeOff, Copy, Trash2, GripVertical, Save, X, Upload } from "lucide-react";
 
 const BLOCK_TYPES = [
   { value: "HERO", label: "Hero Block", description: "Image, headline, subheadline, CTA" },
@@ -43,6 +43,103 @@ function Modal({ open, title, onClose, children }) {
   );
 }
 
+/**
+ * ImageUploadField - handles uploading images to cloud storage and pasting the URL
+ */
+function ImageUploadField({ value, onChange, label = "Image URL", required = false }) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef(null);
+
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      // Step 1: Get signed URL from backend
+      const uploadRes = await apiFetch("/api/content/upload-image", {
+        method: "POST",
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+        }),
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Failed to create upload URL");
+      }
+
+      const { uploadUrl, fileKey } = await uploadRes.json();
+
+      // Step 2: Upload file directly to cloud storage
+      const uploadResult = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      // Step 3: Use the fileKey to get public URL
+      const publicUrl = `/api/content/image-url/${fileKey}`;
+      onChange(publicUrl);
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  return (
+    <label className="block">
+      <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">
+        {label} {required && "*"}
+      </span>
+      <div className="mt-2 flex gap-2">
+        <input
+          type="url"
+          value={value || ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
+          placeholder="https://... or upload below"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="rounded-2xl border border-brand-black/20 bg-brand-linen/40 px-4 py-3 hover:bg-brand-linen/60 disabled:opacity-50 flex items-center gap-2 text-sm"
+        >
+          <Upload className="h-4 w-4" />
+          {uploading ? "Uploading..." : "Upload"}
+        </button>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        style={{ display: "none" }}
+      />
+    </label>
+  );
+}
+
+
 function BlockEditor({ block, blockType, onSave, onCancel }) {
   const [content, setContent] = useState(block?.contentJson || {});
 
@@ -55,16 +152,11 @@ function BlockEditor({ block, blockType, onSave, onCancel }) {
       case "HERO":
         return (
           <div className="space-y-4">
-            <label className="block">
-              <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Image URL</span>
-              <input
-                type="url"
-                value={content.image || ""}
-                onChange={(e) => setContent({ ...content, image: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
-                placeholder="https://..."
-              />
-            </label>
+            <ImageUploadField
+              value={content.image || ""}
+              onChange={(image) => setContent({ ...content, image })}
+              label="Image URL"
+            />
             <label className="block">
               <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Headline *</span>
               <input
@@ -163,16 +255,12 @@ function BlockEditor({ block, blockType, onSave, onCancel }) {
       case "IMAGE":
         return (
           <div className="space-y-4">
-            <label className="block">
-              <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Image URL *</span>
-              <input
-                type="url"
-                value={content.image || ""}
-                onChange={(e) => setContent({ ...content, image: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
-                placeholder="https://..."
-              />
-            </label>
+            <ImageUploadField
+              value={content.image || ""}
+              onChange={(image) => setContent({ ...content, image })}
+              label="Image URL"
+              required={true}
+            />
             <label className="block">
               <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Caption</span>
               <input
@@ -203,16 +291,12 @@ function BlockEditor({ block, blockType, onSave, onCancel }) {
       case "SPLIT":
         return (
           <div className="space-y-4">
-            <label className="block">
-              <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Image URL *</span>
-              <input
-                type="url"
-                value={content.image || ""}
-                onChange={(e) => setContent({ ...content, image: e.target.value })}
-                className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
-                placeholder="https://..."
-              />
-            </label>
+            <ImageUploadField
+              value={content.image || ""}
+              onChange={(image) => setContent({ ...content, image })}
+              label="Image URL"
+              required={true}
+            />
             <label className="block">
               <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Image Position</span>
               <select

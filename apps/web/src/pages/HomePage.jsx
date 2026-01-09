@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { questionnaires } from "../data/platform.js";
+import { usePublicCmsPage } from "../hooks/usePublicCmsPage.js";
+import { BlockRenderer } from "../components/BlockRenderer.jsx";
 
 const highlightCards = [
   {
@@ -20,6 +22,9 @@ const highlightCards = [
 export function HomePage({ onRequestSignIn }) {
   const [creatorCount, setCreatorCount] = React.useState(450);
 
+  // Fetch CMS content for landing page (public, no auth required)
+  const cms = usePublicCmsPage("welcome");
+
   React.useEffect(() => {
     fetch("/api/dashboard/creators/active")
       .then((res) => res.json())
@@ -32,6 +37,17 @@ export function HomePage({ onRequestSignIn }) {
         console.error("Failed to fetch creator count:", err);
       });
   }, []);
+
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+    return (
+      <div className="bg-slate-950 text-white">
+        <BlockRenderer blocks={cms.blocks} />
+      </div>
+    );
+  }
+
+  // Fallback to hardcoded content if CMS is empty or loading
   return (
     <div className="bg-slate-950 text-white">
       <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">

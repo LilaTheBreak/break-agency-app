@@ -880,5 +880,98 @@ router.post("/pages/:slug/publish", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/content/upload-image
+ * Generate a presigned URL for uploading a CMS image to cloud storage
+ * 
+ * Superadmin only. Returns a URL where the client can upload the image directly.
+ */
+router.post("/upload-image", async (req: Request, res: Response) => {
+  try {
+    const { filename, contentType } = req.body;
+
+    if (!filename || !contentType) {
+      return res.status(400).json({ error: "filename and contentType are required" });
+    }
+
+    // Validate content type is an image
+    if (!contentType.startsWith("image/")) {
+      return res.status(400).json({ error: "Only image files are allowed" });
+    }
+
+    // Validate filename doesn't have suspicious patterns
+    if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+      return res.status(400).json({ error: "Invalid filename" });
+    }
+
+    // Import the file service
+    const { requestUploadUrl } = await import("../services/fileService.js");
+
+    // Request upload URL for CMS image (use special cms/ prefix)
+    const cmsFilename = `cms/${Date.now()}_${filename}`;
+    const result = await requestUploadUrl(req.user!.id, cmsFilename, contentType);
+
+    if (!result.uploadUrl) {
+      console.error("[CMS] Failed to get upload URL for image");
+      return res.status(500).json({ error: "Failed to generate upload URL" });
+    }
+
+    // Log activity
+    try {
+      await logAdminActivity(req as any, {
+        event: "CMS_IMAGE_UPLOAD_REQUESTED",
+        metadata: {
+          filename: cmsFilename,
+          contentType,
+        },
+      });
+    } catch (logError) {
+      console.error("Failed to log admin activity:", logError);
+    }
+
+    return res.json({
+      uploadUrl: result.uploadUrl,
+      fileKey: result.fileKey,
+      filename: cmsFilename,
+      contentType,
+    });
+  } catch (error) {
+    console.error("[CMS] Failed to create upload URL for image:", error);
+    return res.status(500).json({ error: "Failed to create upload URL" });
+  }
+});
+
+/**
+ * GET /api/content/image-url/:key
+ * Get a public URL for a CMS image from cloud storage
+ * 
+ * Public endpoint - returns signed URL if image exists and is public
+ */
+router.get("/image-url/:key", async (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+
+    // Validate key is a CMS image (must start with cms/)
+    if (!key.startsWith("cms/")) {
+      return res.status(403).json({ error: "Forbidden: Not a CMS image" });
+    }
+
+    // Prevent directory traversal
+    if (key.includes("..")) {
+      return res.status(403).json({ error: "Invalid key" });
+    }
+
+    const { getSignedUrl } = await import("../services/storage/googleCloudStorage.js");
+
+    // Get signed URL (valid for 1 week for CMS images)
+    const url = await getSignedUrl(key, 7 * 24 * 60 * 60);
+
+    return res.json({ url });
+  } catch (error) {
+    console.error("[CMS] Failed to get image URL:", error);
+    return res.status(500).json({ error: "Failed to get image URL" });
+  }
+});
+
 export default router;
 
