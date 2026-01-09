@@ -66,6 +66,7 @@ router.get(
       // Fetch all exclusive talents with their creator info
       let exclusiveTalents;
       try {
+        // Try with name ordering first
         exclusiveTalents = await prisma.talent.findMany({
           where: {
             representationType: "EXCLUSIVE",
@@ -82,8 +83,28 @@ router.get(
         });
         console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Found", exclusiveTalents?.length || 0, "exclusive talents");
       } catch (queryError) {
-        console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Talent query failed:", queryError);
-        throw new Error(`Failed to fetch talents: ${queryError instanceof Error ? queryError.message : String(queryError)}`);
+        console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Initial query failed:", queryError);
+        // If query fails (e.g., due to orderBy issues), try without ordering
+        try {
+          console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Retrying without orderBy...");
+          exclusiveTalents = await prisma.talent.findMany({
+            where: {
+              representationType: "EXCLUSIVE",
+            },
+            include: {
+              User: {
+                select: {
+                  email: true,
+                  name: true,
+                },
+              },
+            },
+          });
+          console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Found", exclusiveTalents?.length || 0, "exclusive talents (no order)");
+        } catch (retryError) {
+          console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Retry query failed:", retryError);
+          throw new Error(`Failed to fetch talents: ${retryError instanceof Error ? retryError.message : String(retryError)}`);
+        }
       }
 
       // For each talent, aggregate deal data
