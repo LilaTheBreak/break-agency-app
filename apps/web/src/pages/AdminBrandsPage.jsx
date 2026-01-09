@@ -698,6 +698,64 @@ export function AdminBrandsPage({ session }) {
     loadData();
   }, []);
 
+  // Load related data (campaigns, events, deals, contracts) when a brand drawer is opened
+  useEffect(() => {
+    if (!drawerBrandId) {
+      // Clear related data when drawer closes
+      safeSetCampaigns([]);
+      safeSetEvents([]);
+      safeSetDeals([]);
+      safeSetContracts([]);
+      return;
+    }
+
+    const loadRelatedData = async () => {
+      try {
+        // Load all related data in parallel
+        const [campaignsResult, eventsResult, dealsResult, contractsResult] = await Promise.all([
+          fetchCampaigns().catch(err => {
+            console.warn('[BRANDS] Failed to load campaigns:', err.message);
+            return [];
+          }),
+          fetchEvents().catch(err => {
+            console.warn('[BRANDS] Failed to load events:', err.message);
+            return [];
+          }),
+          fetchDeals().catch(err => {
+            console.warn('[BRANDS] Failed to load deals:', err.message);
+            return [];
+          }),
+          fetchContracts().catch(err => {
+            console.warn('[BRANDS] Failed to load contracts:', err.message);
+            return [];
+          })
+        ]);
+
+        // Normalize all responses
+        const safeCampaigns = normalizeApiArray(campaignsResult, 'campaigns');
+        const safeEvents = normalizeApiArray(eventsResult, 'events');
+        const safeDeals = normalizeApiArray(dealsResult, 'deals');
+        const safeContracts = normalizeApiArray(contractsResult, 'contracts');
+
+        safeSetCampaigns(safeCampaigns);
+        safeSetEvents(safeEvents);
+        safeSetDeals(safeDeals);
+        safeSetContracts(safeContracts);
+        
+        console.log('[BRANDS] Loaded related data:', {
+          campaigns: safeCampaigns.length,
+          events: safeEvents.length,
+          deals: safeDeals.length,
+          contracts: safeContracts.length
+        });
+      } catch (error) {
+        console.error('[BRANDS] Error loading related data:', error);
+      }
+    };
+
+    loadRelatedData();
+  }, [drawerBrandId]);
+
   const handleMigration = async () => {
     try {
       setLoading(true);
