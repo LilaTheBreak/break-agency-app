@@ -46,7 +46,7 @@ router.post("/campaigns", ensureManager, async (req: Request, res: Response) => 
     });
     await syncBrandPivots(campaign.id, Array.isArray(brands) ? brands : []);
     const payload = await fetchCampaign(campaign.id, userId);
-    sendSuccess(res, { campaign: payload }, 201);
+    return sendSuccess(res, { campaign: payload }, 201);
   } catch (error) {
     logError("Failed to create campaign", error, { userId: req.user?.id });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
@@ -92,11 +92,13 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
   let targetId = req.params.userId;
   try {
     const requester = req.user!;
+    console.log("[CAMPAIGNS] GET /campaigns/user/", targetId, "by user", requester.id);
     
     if (targetId === "me") targetId = requester.id;
     
     // Non-admin users requesting 'all' get empty array (graceful degradation)
     if (targetId === "all" && !isAdmin(requester)) {
+      console.log("[CAMPAIGNS] Non-admin requesting 'all', returning empty list");
       return sendEmptyList(res);
     }
     
@@ -108,18 +110,28 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
             OR: [{ ownerId: targetId }, { CampaignBrandPivot: { some: { brandId: targetId } } }]
           };
     
+    console.log("[CAMPAIGNS] Querying with whereClause:", JSON.stringify(whereClause));
+    
     // Fetch campaigns
-    const campaigns = await prisma.brandCampaign.findMany({
-      where: whereClause,
-      include: { 
-        CampaignBrandPivot: true 
-      },
-      orderBy: { createdAt: "desc" },
-      take: 25
-    });
+    let campaigns;
+    try {
+      campaigns = await prisma.brandCampaign.findMany({
+        where: whereClause,
+        include: { 
+          CampaignBrandPivot: true 
+        },
+        orderBy: { createdAt: "desc" },
+        take: 25
+      });
+      console.log("[CAMPAIGNS] Query succeeded, found", campaigns?.length || 0, "campaigns");
+    } catch (queryError) {
+      console.error("[CAMPAIGNS] Prisma query failed:", queryError);
+      throw queryError;
+    }
     
     // Ensure campaigns is always an array (safe against null/undefined)
     const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+    console.log("[CAMPAIGNS] Safe campaigns array has", safeCampaigns.length, "items");
     
     // Format and return
     const formatted = safeCampaigns.map((campaign) => {
@@ -142,7 +154,8 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
         };
       }
     });
-    sendList(res, formatted);
+    console.log("[CAMPAIGNS] Returning", formatted.length, "formatted campaigns");
+    return sendList(res, formatted);
   } catch (error) {
     // Log with explicit error code
     logError("Failed to fetch campaigns", error, { userId: req.user?.id, targetId });
@@ -209,7 +222,7 @@ router.put("/campaigns/:id", ensureManager, async (req: Request, res: Response) 
     });
     // Re-sync brand pivots if brands were updated
     if (parsed.data.brands) await syncBrandPivots(campaignId, parsed.data.brands);
-    sendSuccess(res, { campaign: formatCampaign(updatedCampaign) });
+    return sendSuccess(res, { campaign: formatCampaign(updatedCampaign) });
   } catch (error) {
     logError("Failed to update campaign", error, { userId: req.user?.id, campaignId: req.params.id });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {

@@ -53,26 +53,38 @@ router.get(
   requireAuth,
   async (req: Request, res: Response) => {
     try {
+      console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Starting snapshot fetch");
+      
       // Verify admin access
       if (!isAdminRequest(req)) {
+        console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Non-admin user, rejecting");
         return res.status(403).json({ error: "Admin access required" });
       }
 
+      console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Fetching exclusive talents...");
+      
       // Fetch all exclusive talents with their creator info
-      const exclusiveTalents = await prisma.talent.findMany({
-        where: {
-          representationType: "EXCLUSIVE",
-        },
-        include: {
-          User: {
-            select: {
-              email: true,
-              name: true,
+      let exclusiveTalents;
+      try {
+        exclusiveTalents = await prisma.talent.findMany({
+          where: {
+            representationType: "EXCLUSIVE",
+          },
+          include: {
+            User: {
+              select: {
+                email: true,
+                name: true,
+              },
             },
           },
-        },
-        orderBy: { name: "asc" },
-      });
+          orderBy: { name: "asc" },
+        });
+        console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Found", exclusiveTalents?.length || 0, "exclusive talents");
+      } catch (queryError) {
+        console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Talent query failed:", queryError);
+        throw new Error(`Failed to fetch talents: ${queryError instanceof Error ? queryError.message : String(queryError)}`);
+      }
 
       // For each talent, aggregate deal data
       const snapshots: TalentSnapshot[] = [];
@@ -208,6 +220,8 @@ router.get(
         (a, b) => riskOrder[a.riskLevel] - riskOrder[b.riskLevel]
       );
 
+      console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Returning", snapshots.length, "snapshots");
+      
       return res.json({
         talents: snapshots,
         meta: {
