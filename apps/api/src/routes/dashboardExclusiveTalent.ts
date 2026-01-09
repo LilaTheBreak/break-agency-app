@@ -78,110 +78,127 @@ router.get(
       const snapshots: TalentSnapshot[] = [];
 
       for (const talent of exclusiveTalents) {
-        // Fetch all deals for this talent
-        const deals = await prisma.deal.findMany({
-          where: { talentId: talent.id },
-          select: {
-            id: true,
-            stage: true,
-            value: true,
-            expectedClose: true,
-            paymentStatus: true,
-          },
-        });
+        // Guard against null talent
+        if (!talent || !talent.id) {
+          console.warn("[EXCLUSIVE-TALENT-SNAPSHOT] Skipping invalid talent:", talent);
+          continue;
+        }
 
-        // Calculate aggregates
-        const now = new Date();
-        const openPipeline = deals
-          .filter(
+        try {
+          // Fetch all deals for this talent
+          const deals = await prisma.deal.findMany({
+            where: { talentId: talent.id },
+            select: {
+              id: true,
+              stage: true,
+              value: true,
+              expectedClose: true,
+              paymentStatus: true,
+            },
+          });
+
+          // Calculate aggregates
+          const now = new Date();
+          const openPipeline = deals
+            .filter(
+              (d) =>
+                d.stage && !["COMPLETED", "LOST", "DECLINED"].includes(d.stage)
+            )
+            .reduce((sum, d) => sum + (d.value || 0), 0);
+
+          const confirmedRevenue = deals
+            .filter(
+              (d) =>
+                d.stage &&
+                [
+                  "CONTRACT_SIGNED",
+                  "DELIVERABLES_IN_PROGRESS",
+                  "PAYMENT_PENDING",
+                ].includes(d.stage)
+            )
+            .reduce((sum, d) => sum + (d.value || 0), 0);
+
+          const paid = deals
+            .filter(
+              (d) =>
+                d.stage && ["PAYMENT_RECEIVED", "COMPLETED"].includes(d.stage)
+            )
+            .reduce((sum, d) => sum + (d.value || 0), 0);
+
+          const unpaid = confirmedRevenue - paid;
+
+          // Count risk flags
+          const dealsWithoutStage = deals.filter((d) => !d.stage).length;
+          const overdueDeals = deals.filter(
             (d) =>
-              d.stage && !["COMPLETED", "LOST", "DECLINED"].includes(d.stage)
-          )
-          .reduce((sum, d) => sum + (d.value || 0), 0);
-
-        const confirmedRevenue = deals
-          .filter(
+              d.expectedClose && new Date(d.expectedClose) < now && d.stage
+          ).length;
+          const unpaidDeals = deals.filter(
             (d) =>
               d.stage &&
-              [
-                "CONTRACT_SIGNED",
-                "DELIVERABLES_IN_PROGRESS",
-                "PAYMENT_PENDING",
-              ].includes(d.stage)
-          )
-          .reduce((sum, d) => sum + (d.value || 0), 0);
+              ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"]
+                .includes(d.stage) &&
+              (!d.paymentStatus || d.paymentStatus !== "PAID")
+          ).length;
 
-        const paid = deals
-          .filter(
-            (d) =>
-              d.stage && ["PAYMENT_RECEIVED", "COMPLETED"].includes(d.stage)
-          )
-          .reduce((sum, d) => sum + (d.value || 0), 0);
+          const noManagerAssigned = !talent.managerId;
 
-        const unpaid = confirmedRevenue - paid;
+          // Determine risk level
+          const flagCount = (dealsWithoutStage > 0 ? 1 : 0) +
+            (overdueDeals > 0 ? 1 : 0) +
+            (unpaidDeals > 0 ? 1 : 0) +
+            (noManagerAssigned ? 1 : 0);
 
-        // Count risk flags
-        const dealsWithoutStage = deals.filter((d) => !d.stage).length;
-        const overdueDeals = deals.filter(
-          (d) =>
-            d.expectedClose && new Date(d.expectedClose) < now && d.stage
-        ).length;
-        const unpaidDeals = deals.filter(
-          (d) =>
-            d.stage &&
-            ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"]
-              .includes(d.stage) &&
-            (!d.paymentStatus || d.paymentStatus !== "PAID")
-        ).length;
+          let riskLevel: "HIGH" | "MEDIUM" | "LOW" = "LOW";
+          if (flagCount >= 3) riskLevel = "HIGH";
+          else if (flagCount >= 1) riskLevel = "MEDIUM";
 
-        const noManagerAssigned = !talent.managerId;
-
-        // Determine risk level
-        const flagCount = (dealsWithoutStage > 0 ? 1 : 0) +
-          (overdueDeals > 0 ? 1 : 0) +
-          (unpaidDeals > 0 ? 1 : 0) +
-          (noManagerAssigned ? 1 : 0);
-
-        let riskLevel: "HIGH" | "MEDIUM" | "LOW" = "LOW";
-        if (flagCount >= 3) riskLevel = "HIGH";
-        else if (flagCount >= 1) riskLevel = "MEDIUM";
-
-        snapshots.push({
-          id: talent.id,
-          name: talent.name,
-          displayName: talent.displayName,
-          status: talent.status,
-          representationType: talent.representationType,
-          managerId: talent.managerId,
-          managerName: talent.managerId ? "(to be loaded)" : null, // Will add manager lookup
-          creatorEmail: talent.User?.email || null,
-          deals: {
-            openPipeline,
-            confirmedRevenue,
-            paid,
-            unpaid,
-            activeCount: deals.filter(
-              (d) => d.stage && !["COMPLETED", "LOST", "DECLINED"].includes(d.stage)
-            ).length,
-          },
-          flags: {
-            dealsWithoutStage,
-            overdueDeals,
-            unpaidDeals,
-            noManagerAssigned,
-          },
-          riskLevel,
-        });
+          snapshots.push({
+            id: talent.id,
+            name: talent.name || "Unknown",
+            displayName: talent.displayName || null,
+            status: talent.status || null,
+            representationType: talent.representationType || null,
+            managerId: talent.managerId || null,
+            managerName: talent.managerId ? "(to be loaded)" : null, // Will add manager lookup
+            creatorEmail: talent.User?.email || null,
+            deals: {
+              openPipeline,
+              confirmedRevenue,
+              paid,
+              unpaid,
+              activeCount: deals.filter(
+                (d) => d.stage && !["COMPLETED", "LOST", "DECLINED"].includes(d.stage)
+              ).length,
+            },
+            flags: {
+              dealsWithoutStage,
+              overdueDeals,
+              unpaidDeals,
+              noManagerAssigned,
+            },
+            riskLevel,
+          });
+        } catch (talentError) {
+          console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Error processing talent:", talent.id, talentError);
+          logError("Failed to process talent for snapshot", talentError, { talentId: talent.id });
+          // Skip this talent and continue with next
+        }
       }
 
       // Load manager names for talents that have managers
       for (const snapshot of snapshots) {
         if (snapshot.managerId) {
-          const manager = await prisma.user.findUnique({
-            where: { id: snapshot.managerId },
-            select: { name: true },
-          });
-          snapshot.managerName = manager?.name || "Unknown";
+          try {
+            const manager = await prisma.user.findUnique({
+              where: { id: snapshot.managerId },
+              select: { name: true },
+            });
+            snapshot.managerName = manager?.name || "Unknown";
+          } catch (managerError) {
+            console.warn("[EXCLUSIVE-TALENT-SNAPSHOT] Failed to load manager for talent:", snapshot.id, managerError);
+            snapshot.managerName = "Unknown";
+          }
         }
       }
 

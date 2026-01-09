@@ -122,7 +122,26 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
     
     // Format and return
-    const formatted = safeCampaigns.map((campaign) => formatCampaign(campaign));
+    const formatted = safeCampaigns.map((campaign) => {
+      try {
+        return formatCampaign(campaign);
+      } catch (formatError) {
+        console.error("[CAMPAIGNS] Error formatting campaign:", campaign?.id, formatError);
+        logError("Failed to format campaign", formatError, { campaignId: campaign?.id });
+        // Return minimal safe response for failed format
+        return {
+          id: campaign?.id || "unknown",
+          title: campaign?.title || "Unknown Campaign",
+          stage: campaign?.stage || "UNKNOWN",
+          brandSummaries: [],
+          aggregated: {
+            totalReach: 0,
+            revenuePerBrand: {},
+            pacingPerBrand: {}
+          }
+        };
+      }
+    });
     sendList(res, formatted);
   } catch (error) {
     // Log with explicit error code
