@@ -59,7 +59,9 @@ router.get("/", async (req: Request, res: Response) => {
       activity: Array.isArray(brand.activity) ? brand.activity : [],
     }));
 
-    res.json({ brands: safeBrands });
+    // CRITICAL: Return direct array for consistency with campaigns/events/deals endpoints
+    // Frontend expects: direct array, not wrapped object
+    res.json(safeBrands);
   } catch (error) {
     console.error("[CRM BRANDS] Error fetching brands:", error);
     res.status(500).json({ error: "Failed to fetch brands" });

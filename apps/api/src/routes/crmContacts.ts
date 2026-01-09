@@ -39,7 +39,9 @@ router.get("/", async (req: Request, res: Response) => {
       ],
     });
 
-    res.json({ contacts: contacts || [] });
+    // CRITICAL: Return direct array for consistency with campaigns/events/deals endpoints
+    // Frontend expects: direct array, not wrapped object
+    res.json(contacts || []);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch contacts";
     logError("Failed to fetch contacts", error, { userId: req.user?.id, route: req.path });

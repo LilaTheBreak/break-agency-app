@@ -675,15 +675,16 @@ export function AdminBrandsPage({ session }) {
         
         const contactsResult = await fetchContacts().catch(err => {
           console.warn('[CRM] Failed to load contacts (non-blocking):', err.message);
-          return { contacts: [] }; // Contacts are optional - continue with empty array
+          return []; // Contacts are optional - return empty array
         });
 
         // CRITICAL: Normalize API response to array format using shared helper
-        const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM');
-        const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM');
+        // API now returns direct arrays for consistency, but helper handles both patterns
+        const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM (initial load)');
+        const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM (initial load)');
         
-        console.log('[CRM] Initial brands loaded:', safeBrands.length);
-        console.log('[CRM] Initial contacts loaded:', safeContacts.length);
+        console.log('[CRM] Initial brands loaded:', safeBrands.length, 'brands');
+        console.log('[CRM] Initial contacts loaded:', safeContacts.length, 'contacts');
         
         safeSetBrands(safeBrands);
         safeSetContacts(safeContacts);
@@ -706,28 +707,17 @@ export function AdminBrandsPage({ session }) {
       // Reload data independently
       const brandsResult = await fetchBrands().catch(err => {
         console.error('[CRM] Failed to reload brands after migration:', err.message);
-        return { brands: [] };
+        return []; // Return empty array, not wrapped object
       });
       
       const contactsResult = await fetchContacts().catch(err => {
         console.warn('[CRM] Failed to reload contacts after migration (non-blocking):', err.message);
-        return { contacts: [] };
+        return []; // Return empty array, not wrapped object
       });
       
-      // Defensive: handle any unexpected API response shape
-      const brandsData = brandsResult && typeof brandsResult === 'object' ? brandsResult.brands : null;
-      const contactsData = contactsResult && typeof contactsResult === 'object' ? contactsResult.contacts : null;
-      
-      // Defensive: ensure arrays are always arrays
-      const safeBrands = Array.isArray(brandsData) ? brandsData : [];
-      const safeContacts = Array.isArray(contactsData) ? contactsData : [];
-      
-      if (!Array.isArray(brandsData) && brandsData !== null && brandsData !== undefined) {
-        console.warn('[CRM] Unexpected brands response shape after migration:', { brandsResult, brandsData });
-      }
-      if (!Array.isArray(contactsData) && contactsData !== null && contactsData !== undefined) {
-        console.warn('[CRM] Unexpected contacts response shape after migration:', { contactsResult, contactsData });
-      }
+      // Defensive: normalize API responses (handles both direct arrays and wrapped objects)
+      const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM (after migration)');
+      const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM (after migration)');
       
       safeSetBrands(safeBrands);
       safeSetContacts(safeContacts);
@@ -745,21 +735,21 @@ export function AdminBrandsPage({ session }) {
       console.log('[CRM] Refreshing brands and contacts...');
       // Fetch brands and contacts independently - don't let contacts failure block brands
       const brandsResult = await fetchBrands().catch(err => {
-        console.error('[CRM] Failed to fetch brands:', err.message);
-        return { brands: brands || [] }; // Keep existing brands on failure
+        console.error('[CRM] Failed to fetch brands during refresh:', err.message);
+        return brands || []; // Keep existing brands on failure
       });
       
       const contactsResult = await fetchContacts().catch(err => {
-        console.warn('[CRM] Failed to fetch contacts (non-blocking):', err.message);
-        return { contacts: contacts || [] }; // Keep existing contacts on failure
+        console.warn('[CRM] Failed to fetch contacts during refresh (non-blocking):', err.message);
+        return contacts || []; // Keep existing contacts on failure
       });
       
-      // CRITICAL: Normalize API response to array format using shared helper
-      const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM');
-      const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM');
+      // CRITICAL: Normalize API responses (handles both direct arrays and wrapped objects)
+      const safeBrands = normalizeApiArrayWithGuard(brandsResult, 'brands', 'BRANDS CRM (refresh)');
+      const safeContacts = normalizeApiArrayWithGuard(contactsResult, 'contacts', 'BRANDS CRM (refresh)');
       
-      console.log('[CRM] Fetched brands:', safeBrands.length);
-      console.log('[CRM] Fetched contacts:', safeContacts.length);
+      console.log('[CRM] Refreshed brands:', safeBrands.length, 'brands');
+      console.log('[CRM] Refreshed contacts:', safeContacts.length, 'contacts');
       
       safeSetBrands(safeBrands);
       safeSetContacts(safeContacts);
@@ -960,27 +950,28 @@ export function AdminBrandsPage({ session }) {
         const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
           fetchCampaigns({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch campaigns:', err);
-            return "";
+            return []; // Return empty array on error
           }),
           fetchEvents({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch events:', err);
-            return "";
+            return []; // Return empty array on error
           }),
           fetchDeals({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch deals:', err);
-            return "";
+            return []; // Return empty array on error
           }),
           fetchContracts({ brandId: drawerBrandId }).catch(err => {
             console.warn('[BRANDS PAGE] Failed to fetch contracts:', err);
-            return "";
+            return []; // Return empty array on error
           }),
         ]);
         
         // Use shared helper to normalize API responses
-        const campaignsArray = normalizeApiArrayWithGuard(campaignsData, 'campaigns', 'BRANDS CRM');
-        const eventsArray = normalizeApiArrayWithGuard(eventsData, 'events', 'BRANDS CRM');
-        const dealsArray = normalizeApiArrayWithGuard(dealsData, 'deals', 'BRANDS CRM');
-        const contractsArray = normalizeApiArrayWithGuard(contractsData, 'contracts', 'BRANDS CRM');
+        // Handles both direct arrays and wrapped objects (for backward compatibility)
+        const campaignsArray = normalizeApiArrayWithGuard(campaignsData, 'campaigns', 'BRANDS CRM (campaigns)');
+        const eventsArray = normalizeApiArrayWithGuard(eventsData, 'events', 'BRANDS CRM (events)');
+        const dealsArray = normalizeApiArrayWithGuard(dealsData, 'deals', 'BRANDS CRM (deals)');
+        const contractsArray = normalizeApiArrayWithGuard(contractsData, 'contracts', 'BRANDS CRM (contracts)');
         
         safeSetCampaigns(campaignsArray);
         safeSetEvents(eventsArray);
