@@ -60,6 +60,9 @@ import whatsappInboxRouter from "./routes/whatsappInbox.js";
 // AI
 import aiRouter from "./routes/ai.js";
 
+// Brand Campaigns
+import campaignsRouter from "./routes/campaigns.js";
+
 // Authenticity / Risk / Suitability
 import authenticityRouter from "./routes/authenticity.js";
 import opportunitiesRouter from "./routes/opportunities.js";
@@ -617,6 +620,7 @@ app.use("/api/search", searchRouter);
 // ------------------------------------------------------
 // CAMPAIGNS
 // ------------------------------------------------------
+app.use("/api/campaigns", campaignsRouter);
 app.use("/api/campaign/builder", campaignBuilderRouter);
 app.use("/api/campaign/auto-plan", campaignAutoRouter);
 app.use("/api/campaign/auto-plan/debug", campaignAutoDebugRouter);
