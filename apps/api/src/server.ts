@@ -18,6 +18,7 @@ import auditRouter from "./routes/audit.js";
 import { requestContextMiddleware } from "./middleware/requestContext.js";
 import { auditMiddleware } from "./middleware/audit.js";
 import { attachUserFromSession } from "./middleware/auth.js";
+import { impersonationMiddleware } from "./middleware/impersonationMiddleware.js";
 
 // Jobs / Cron
 import { registerEmailQueueJob } from "./jobs/emailQueue.js";
@@ -405,6 +406,10 @@ app.use(cookieParser());
 app.use(requestDurationMiddleware);
 
 app.use(attachUserFromSession);
+
+// PHASE 2: Impersonation middleware (must come after attachUserFromSession)
+// Detects and validates impersonation claims in JWT
+app.use(impersonationMiddleware);
 
 // Stripe webhook MUST run BEFORE body parsers
 app.post("/webhooks/stripe", express.raw({ type: "application/json" }), stripeWebhookHandler);

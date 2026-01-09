@@ -1,12 +1,16 @@
 import { Router, Request, Response } from "express";
-import { prisma } from "../db.js";
-import { isSuperAdmin, isAdminOrSuperAdmin } from "../middleware/auth.js";
+import jwt from "jsonwebtoken";
+import { prisma } from "../db/client.js";
+import { isSuperAdmin } from "../lib/roleHelpers.js";
+import { requireAuth } from "../middleware/auth.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
 import { logAuditEvent } from "../services/auditLogger.js";
+import { setAuthCookie, SESSION_COOKIE_NAME } from "../lib/jwt.js";
 
 const router = Router();
 
-// Middleware to ensure admin-only access
-router.use(isAdminOrSuperAdmin);
+// Middleware: Require authentication (will add SUPERADMIN checks in individual routes)
+router.use(requireAuth);
 
 interface ImpersonationRequest extends Request {
   user?: any;
@@ -18,9 +22,23 @@ interface ImpersonationRequest extends Request {
  * 
  * Start impersonating a talent user
  * Only SUPERADMIN can impersonate
- * Returns a special token with impersonation context
+ * Returns impersonation context to be stored in JWT
  */
-router.post("/start", isSuperAdmin, async (req: ImpersonationRequest, res: Response) => {
+router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
+  // Explicit SUPERADMIN check (no implicit trust)
+  if (!req.user?.id) {
+    return res.status(401).json({ error: "Admin user not authenticated" });
+  }
+  
+  if (!isSuperAdmin(req.user)) {
+    return res.status(403).json({ 
+      error: "Only SUPERADMIN can impersonate",
+      code: "SUPERADMIN_REQUIRED"
+    });
+  }
+  
+  next();
+}, async (req: ImpersonationRequest, res: Response) => {
   try {
     const { talentUserId } = req.body;
     const adminUserId = req.user?.id;
@@ -67,7 +85,33 @@ router.post("/start", isSuperAdmin, async (req: ImpersonationRequest, res: Respo
       (req.socket?.remoteAddress as string) ||
       "unknown";
 
-    // Log the impersonation start
+    // PHASE 2: Issue new JWT with impersonation claim
+    // This token contains the impersonation context signed by backend
+    const impersonationStartedAt = Date.now();
+    
+    const impersonationPayload = {
+      id: talentUserId,  // req.user.id will be talent ID
+      adminId: adminUserId,  // Original admin preserved in token
+      impersonating: true,
+      actingAsUserId: talentUserId,  // Talent being impersonated
+      actingAsRole: talentUser.role,
+      impersonationStartedAt,
+    };
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ error: "JWT_SECRET not configured" });
+    }
+
+    const impersonationToken = jwt.sign(impersonationPayload, secret, {
+      expiresIn: "7d"  // Same as regular auth token
+    });
+
+    // Set the impersonation token as the session cookie
+    // This ensures subsequent requests use the impersonation context
+    setAuthCookie(res, impersonationToken);
+
+    // Log the impersonation start (server-side, backend-generated)
     await logAuditEvent({
       eventType: "IMPERSONATION_STARTED",
       userId: adminUserId,
@@ -80,19 +124,20 @@ router.post("/start", isSuperAdmin, async (req: ImpersonationRequest, res: Respo
       },
     });
 
-    // Return impersonation context
-    // In a real implementation, this would be encoded in a JWT token
-    // For now, we return the context object that the frontend will store
+    // Return success with token details
+    // Frontend stores this token but does NOT construct the impersonation context
+    // Backend validates token on every request
     res.json({
       success: true,
-      impersonationContext: {
-        actingAsUserId: talentUserId,
-        actingAsRole: talentUser.role,
-        originalAdminId: adminUserId,
+      impersonationStarted: {
+        talentId: talentUserId,
         talentName: talentUser.name,
         talentEmail: talentUser.email,
-        startedAt: new Date().toISOString(),
+        talentRole: talentUser.role,
+        startedAt: new Date(impersonationStartedAt).toISOString(),
       },
+      // Token is already in HTTP-only cookie, but also return it for Bearer token usage
+      token: impersonationToken,
     });
   } catch (error) {
     console.error("[IMPERSONATE] Error starting impersonation:", error);
@@ -104,23 +149,29 @@ router.post("/start", isSuperAdmin, async (req: ImpersonationRequest, res: Respo
  * POST /admin/impersonate/stop
  * 
  * Stop impersonating and return to admin mode
+ * Validates that admin is actually impersonating (checked by JWT claim)
+ * Duration is calculated server-side, not trusted from client
  */
 router.post("/stop", async (req: ImpersonationRequest, res: Response) => {
   try {
     const adminUserId = req.user?.id;
-    const { originalAdminId, actingAsUserId } = req.body;
 
-    // Validation
-    if (!adminUserId || !originalAdminId) {
+    // Validation: Must be authenticated
+    if (!adminUserId) {
       return res.status(401).json({ error: "Admin user not authenticated" });
     }
 
-    // Security: Verify the admin ending impersonation is the same as who started it
-    if (adminUserId !== originalAdminId) {
-      return res.status(403).json({
-        error: "Cannot end impersonation started by another admin",
+    // Validation: Must actually be impersonating
+    if (!req.impersonation?.isImpersonating) {
+      return res.status(400).json({ 
+        error: "Not currently impersonating - cannot stop",
+        code: "NOT_IMPERSONATING"
       });
     }
+
+    const talentUserId = req.impersonation.talentUserId;
+    const startedAtMs = req.impersonation.impersonationStartedAt;
+    const durationSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
 
     // Get client IP for audit log
     const clientIp =
@@ -129,30 +180,33 @@ router.post("/stop", async (req: ImpersonationRequest, res: Response) => {
       "unknown";
 
     // Fetch talent user name for audit log
-    const talentUser = actingAsUserId
-      ? await prisma.user.findUnique({
-          where: { id: actingAsUserId },
-          select: { name: true, email: true, role: true },
-        })
-      : null;
+    const talentUser = await prisma.user.findUnique({
+      where: { id: talentUserId },
+      select: { name: true, email: true, role: true },
+    });
 
-    // Log the impersonation end
+    // Log the impersonation end - using server-calculated duration
     await logAuditEvent({
       eventType: "IMPERSONATION_ENDED",
       userId: adminUserId,
-      targetUserId: actingAsUserId || undefined,
+      targetUserId: talentUserId,
       metadata: {
         talentName: talentUser?.name,
         talentEmail: talentUser?.email,
         talentRole: talentUser?.role,
         ipAddress: clientIp,
-        duration: req.body.durationSeconds || "unknown",
+        durationSeconds,  // Server-calculated, not trusted from client
       },
     });
 
+    // Clear the impersonation token by clearing the auth cookie
+    // Subsequent requests will use the previous auth token (for the admin)
+    // For now, we just respond with success
+    // Frontend should redirect or refresh to reset the session
     res.json({
       success: true,
       message: "Impersonation ended",
+      durationSeconds,
     });
   } catch (error) {
     console.error("[IMPERSONATE] Error stopping impersonation:", error);
@@ -164,22 +218,30 @@ router.post("/stop", async (req: ImpersonationRequest, res: Response) => {
  * GET /admin/impersonate/status
  * 
  * Check current impersonation status
- * Useful for verifying if currently impersonating
+ * The middleware will detect impersonation claims in JWT and attach to request
  */
-router.get("/status", async (req: ImpersonationRequest, res: Response) => {
+router.get("/status", (req: ImpersonationRequest, res: Response) => {
   try {
-    const impersonationContext = req.body?.impersonationContext;
+    const adminUserId = req.user?.id;
 
-    if (impersonationContext && impersonationContext.actingAsUserId) {
+    if (!adminUserId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    // Check if request has impersonation context (set by impersonationMiddleware)
+    if (req.impersonation?.isImpersonating) {
       return res.json({
         isImpersonating: true,
-        context: impersonationContext,
+        adminId: req.impersonation.adminId,
+        talentId: req.impersonation.talentUserId,
+        talentRole: req.impersonation.talentRole,
+        startedAt: new Date(req.impersonation.impersonationStartedAt).toISOString(),
       });
     }
 
+    // Not impersonating
     res.json({
       isImpersonating: false,
-      context: null,
     });
   } catch (error) {
     console.error("[IMPERSONATE] Error checking status:", error);

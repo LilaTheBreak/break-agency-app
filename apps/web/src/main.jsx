@@ -5,6 +5,7 @@ import "./index.css";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { ImpersonationProvider } from "./context/ImpersonationContext.jsx";
 import { MEETING_SUMMARIES } from "./constants/meetingSummaries.js";
 
 // Initialize Sentry early (before React renders)
@@ -90,7 +91,9 @@ const appTree = (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <App />
+        <ImpersonationProvider>
+          <App />
+        </ImpersonationProvider>
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>
