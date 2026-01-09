@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useDashboardSummary } from "../hooks/useDashboardSummary.js";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -327,13 +327,89 @@ export function DashboardShell({
 }
 
 function DashboardStatusGrid({ tiles, nextSteps, loading, error, selectedCurrency, onCurrencyChange }) {
+  const [visibleTiles, setVisibleTiles] = useState(tiles.map((_, i) => i));
+  const [openMenu, setOpenMenu] = useState(null);
+  const menuRefs = useRef({});
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRefs.current[openMenu] && !menuRefs.current[openMenu].contains(e.target)) {
+        setOpenMenu(null);
+      }
+    };
+    if (openMenu !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [openMenu]);
+
+  const toggleTileVisibility = (index) => {
+    setVisibleTiles((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    );
+  };
+
+  const TileMenu = ({ tileIndex }) => {
+    const isOpen = openMenu === tileIndex;
+    return (
+      <div
+        ref={(el) => {
+          menuRefs.current[tileIndex] = el;
+        }}
+        className="relative"
+      >
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpenMenu(isOpen ? null : tileIndex);
+          }}
+          className="rounded-lg border border-brand-black/10 bg-brand-white/60 p-1.5 text-brand-black/60 transition hover:bg-brand-white hover:text-brand-black focus:outline-none"
+          aria-label="Customize view"
+        >
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+          </svg>
+        </button>
+        {isOpen && (
+          <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-brand-black/10 bg-brand-white shadow-lg">
+            <div className="p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
+                Dashboard View
+              </p>
+              <div className="mt-3 space-y-2">
+                {tiles.map((tile, idx) => (
+                  <label
+                    key={idx}
+                    className="flex items-center gap-2 rounded-lg p-2 hover:bg-brand-linen/50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleTiles.includes(idx)}
+                      onChange={() => toggleTileVisibility(idx)}
+                      className="h-4 w-4 rounded border-brand-black/20 accent-brand-red"
+                    />
+                    <span className="text-xs text-brand-black">{tile.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
       
-      {/* Currency Selector */}
+      {/* Currency Selector + Grid Settings */}
       <div className="flex items-center justify-between">
-        <div></div>
+        <div>
+          <TileMenu tileIndex="grid" />
+        </div>
         <div className="flex items-center gap-2">
           <label className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Currency:</label>
           <select
@@ -349,7 +425,11 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error, selectedCurrenc
       </div>
       
       <div className="grid gap-4 md:grid-cols-3">
-        {tiles.map((tile) => {
+        {tiles.map((tile, tileIndex) => {
+          if (!visibleTiles.includes(tileIndex)) {
+            return null;
+          }
+
           const content = (
             <>
               <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{tile.label}</p>
@@ -362,22 +442,31 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error, selectedCurrenc
               )}
             </>
           );
-          return tile.to ? (
+
+          const tileElement = tile.to ? (
             <Link
               key={tile.label}
               to={tile.to}
-              className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 transition hover:-translate-y-0.5 hover:bg-brand-white"
+              className="relative rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 transition hover:-translate-y-0.5 hover:bg-brand-white group"
             >
+              <div className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
+                <TileMenu tileIndex={tileIndex} />
+              </div>
               {content}
             </Link>
           ) : (
             <div
               key={tile.label}
-              className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4"
+              className="relative rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 group"
             >
+              <div className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
+                <TileMenu tileIndex={tileIndex} />
+              </div>
               {content}
             </div>
           );
+
+          return tileElement;
         })}
       </div>
       <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
