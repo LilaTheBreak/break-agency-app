@@ -25,7 +25,6 @@ export function useExclusiveTalentData(session) {
     events: [],
     calendar: [],
     insights: [],
-    revenue: null,
     goals: null,
   });
   const [loading, setLoading] = useState(true);
@@ -63,7 +62,6 @@ export function useExclusiveTalentData(session) {
           eventsRes,
           calendarRes,
           insightsRes,
-          revenueRes,
           goalsRes,
         ] = await Promise.allSettled([
           apiFetch("/exclusive/projects", { signal: controller.signal }),
@@ -72,7 +70,6 @@ export function useExclusiveTalentData(session) {
           apiFetch("/exclusive/events", { signal: controller.signal }),
           apiFetch("/exclusive/calendar/preview", { signal: controller.signal }),
           apiFetch("/exclusive/insights", { signal: controller.signal }),
-          apiFetch("/exclusive/revenue/summary", { signal: controller.signal }),
           apiFetch("/exclusive/goals", { signal: controller.signal }),
         ]);
 
@@ -99,9 +96,6 @@ export function useExclusiveTalentData(session) {
           insights: insightsRes.status === "fulfilled" && insightsRes.value.ok 
             ? await insightsRes.value.json() 
             : [],
-          revenue: revenueRes.status === "fulfilled" && revenueRes.value.ok 
-            ? await revenueRes.value.json() 
-            : null,
           goals: goalsRes.status === "fulfilled" && goalsRes.value.ok 
             ? await goalsRes.value.json() 
             : localGoals,

@@ -176,6 +176,14 @@ router.post("/stop", async (req: ImpersonationRequest, res: Response) => {
       return res.status(401).json({ error: "Admin user not authenticated" });
     }
 
+    // Validation: Only SUPERADMIN can stop impersonation
+    if (!isSuperAdmin(req.user)) {
+      return res.status(403).json({ 
+        error: "Only SUPERADMIN can stop impersonation",
+        code: "SUPERADMIN_REQUIRED"
+      });
+    }
+
     // Validation: Must actually be impersonating
     if (!req.impersonation?.isImpersonating) {
       return res.status(400).json({ 
@@ -241,6 +249,14 @@ router.get("/status", (req: ImpersonationRequest, res: Response) => {
 
     if (!adminUserId) {
       return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    // Validation: Only SUPERADMIN can check impersonation status
+    if (!isSuperAdmin(req.user)) {
+      return res.status(403).json({ 
+        error: "Only SUPERADMIN can check impersonation status",
+        code: "SUPERADMIN_REQUIRED"
+      });
     }
 
     // Check if request has impersonation context (set by impersonationMiddleware)

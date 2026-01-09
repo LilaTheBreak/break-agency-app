@@ -10,12 +10,9 @@
  */
 
 import prisma from "../../lib/prisma.js";
+import type { RevenueEvent } from "@prisma/client";
 
-// Type alias for revenue event (generated from Prisma after migration)
-type RevenueEvent = any;
-
-// Cast prisma to any to suppress type errors before migration
-const prismaClient = prisma as any;
+const prismaClient = prisma;
 
 export interface TikTokShopConfig {
   shopId: string;

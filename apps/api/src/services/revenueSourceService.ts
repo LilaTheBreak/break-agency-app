@@ -1,12 +1,8 @@
 import prisma from "../lib/prisma.js";
 import { logError } from "../lib/logger.js";
+import type { RevenueSource, RevenueEvent } from "@prisma/client";
 
-// Type aliases for revenue objects (generated from Prisma after migration)
-type RevenueSource = any;
-type RevenueEvent = any;
-
-// Cast prisma to any to suppress type errors before migration
-const prismaClient = prisma as any;
+const prismaClient = prisma;
 
 /**
  * RevenueSourceService

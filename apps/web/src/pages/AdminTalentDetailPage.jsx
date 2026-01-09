@@ -8,6 +8,7 @@ import { Badge } from "../components/Badge.jsx";
 import { TalentAccessSettings } from "../components/TalentAccessSettings.jsx";
 import { ViewAsTalentButton } from "../components/ViewAsTalentButton.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import AdminRevenueManagement from "../components/AdminRevenueManagement.jsx";
 import { 
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
@@ -2598,8 +2599,6 @@ function TasksTab({ talent }) {
 }
 
 function RevenueTab({ talent, isExclusive }) {
-  const revenue = talent.revenue || { total: 0, payouts: 0, net: 0 };
-
   if (!isExclusive) {
     return (
       <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
@@ -2611,49 +2610,7 @@ function RevenueTab({ talent, isExclusive }) {
     );
   }
 
-  return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Revenue & Payouts</p>
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Total Revenue</p>
-          <p className="font-display text-2xl uppercase text-brand-black mt-2">
-            £{((revenue.total || 0) / 1000).toFixed(1)}k
-          </p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Payouts</p>
-          <p className="font-display text-2xl uppercase text-brand-black mt-2">
-            £{((revenue.payouts || 0) / 1000).toFixed(1)}k
-          </p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Net Revenue</p>
-          <p className="font-display text-2xl uppercase text-brand-black mt-2">
-            £{((revenue.net || 0) / 1000).toFixed(1)}k
-          </p>
-        </div>
-      </div>
-
-      {revenue.payments && revenue.payments.length > 0 && (
-        <div className="mb-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">Recent Payments</p>
-          <div className="space-y-2">
-            {revenue.payments.slice(0, 10).map((payment) => (
-              <div key={payment.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-brand-black">£{((payment.amount || 0) / 1000).toFixed(1)}k</p>
-                  <p className="text-xs text-brand-black/60">
-                    {new Date(payment.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </section>
-  );
+  return <AdminRevenueManagement talentId={talent.id} />;
 }
 
 function DeliverablesTab({ talent }) {

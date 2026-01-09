@@ -13,7 +13,7 @@ import prisma from "../lib/prisma.js";
 import { SnapshotDefinition } from "./snapshotRegistry.js";
 import { logError } from "../lib/logger.js";
 
-const prismaClient = prisma as any;
+const prismaClient = prisma;
 
 export interface SnapshotData {
   snapshotId: string;

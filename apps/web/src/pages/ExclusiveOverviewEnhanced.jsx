@@ -10,6 +10,7 @@ import {
   EventCard,
   RevenueCard,
   WellnessCheckin,
+  SnapshotCard,
 } from "../components/ExclusiveOverviewComponents.jsx";
 import {
   useExclusiveTalentData,
@@ -17,6 +18,7 @@ import {
   useWellnessCheckin,
   useAIAssistant,
 } from "../hooks/useExclusiveTalentData.js";
+import { useSnapshots } from "../hooks/useSnapshots.js";
 import {
   calculateSectionPriority,
   getTodaysFocus,
@@ -51,6 +53,12 @@ export function ExclusiveOverviewEnhanced({ session, basePath: basePathProp }) {
   // Data fetching (non-blocking, independent sections)
   const { data, loading, error, isFirstTime, refresh } = useExclusiveTalentData(session);
   const { acceptEvent, declineEvent, processing } = useEventActions();
+  
+  // Fetch snapshot data for revenue/commerce/goals
+  const { snapshots, loading: snapshotsLoading, error: snapshotsError } = useSnapshots({
+    dashboardType: "EXCLUSIVE_TALENT_OVERVIEW",
+    talentId: session?.id,
+  });
   const wellness = useWellnessCheckin();
   const aiAssistant = useAIAssistant();
 
@@ -304,9 +312,13 @@ export function ExclusiveOverviewEnhanced({ session, basePath: basePathProp }) {
 
               case "revenue":
                 return (
-                  <RevenueCard
+                  <RevenueSnapshotsSection
                     key={section.id}
-                    revenue={data.revenue}
+                    snapshots={snapshots}
+                    loading={snapshotsLoading}
+                    error={snapshotsError}
+                    navigate={navigate}
+                    basePath={basePath}
                   />
                 );
 
@@ -865,6 +877,49 @@ function GoalsSection({ goals, navigate, basePath }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+/**
+ * Revenue Snapshots Section
+ * Dynamically renders revenue, commerce, and goal snapshots from unified API
+ */
+function RevenueSnapshotsSection({ snapshots, loading, error, navigate, basePath }) {
+  if (loading) {
+    return <SectionSkeleton rows={2} />;
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        title="Revenue Overview"
+        message="Unable to load revenue data"
+      />
+    );
+  }
+
+  if (!snapshots || snapshots.length === 0) {
+    return (
+      <EmptyState
+        title="Revenue Overview"
+        message="No revenue data available yet"
+      />
+    );
+  }
+
+  return (
+    <section className="space-y-4">
+      {snapshots.map((snapshot) => (
+        <SnapshotCard
+          key={snapshot.snapshotId || snapshot.id}
+          snapshot={snapshot}
+          onAction={(action) => {
+            if (action === "commerce-setup") {
+              navigate(`${basePath}/commerce`);
+            }
+          }}
+        />
+      ))}
     </section>
   );
 }

@@ -429,3 +429,119 @@ export function WellnessCheckin({ onSubmit, onSnooze }) {
     </div>
   );
 }
+
+/**
+ * Dynamic Snapshot Card
+ * Renders based on snapshot metadata (metricType, icon, color)
+ */
+export function SnapshotCard({ snapshot, onAction }) {
+  if (!snapshot) return null;
+
+  // Support both snapshotId and id properties
+  const snapshotId = snapshot.snapshotId || snapshot.id;
+  const { title, description, value, metricType, icon, color, error } = snapshot;
+
+  // Handle errors gracefully
+  if (error) {
+    return (
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+          {title}
+        </p>
+        <p className="mt-2 text-sm text-brand-black/60">{error}</p>
+      </section>
+    );
+  }
+
+  // Format value based on metricType
+  const formatValue = () => {
+    if (value === null || value === undefined) return "—";
+
+    switch (metricType) {
+      case "currency":
+        // Format as GBP currency
+        if (value === 0) return "£0.00";
+        if (value >= 1000000) return `£${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `£${(value / 1000).toFixed(1)}k`;
+        return `£${Math.round(value)}`;
+
+      case "percentage":
+        // Format as percentage (0-100)
+        return `${Math.round(value)}%`;
+
+      case "count":
+        return String(value);
+
+      case "status":
+      case "list":
+      case "custom":
+      default:
+        return String(value);
+    }
+  };
+
+  // Color mapping for badges
+  const colorClasses = {
+    blue: "bg-blue-100 text-blue-900",
+    green: "bg-green-100 text-green-900",
+    purple: "bg-purple-100 text-purple-900",
+    amber: "bg-amber-100 text-amber-900",
+    red: "bg-red-100 text-red-900",
+    pink: "bg-pink-100 text-pink-900",
+  };
+
+  const bgColor = colorClasses[color] || "bg-brand-linen/60";
+
+  return (
+    <section className={`rounded-3xl border border-brand-black/10 ${bgColor.split(" ")[0]} bg-opacity-30 p-6`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+            {title}
+          </p>
+          <p className="mt-3 font-display text-3xl uppercase text-brand-black">
+            {formatValue()}
+          </p>
+          {description && (
+            <p className="mt-2 text-xs text-brand-black/60">{description}</p>
+          )}
+        </div>
+
+        {icon && (
+          <div className="text-3xl opacity-20">{icon}</div>
+        )}
+      </div>
+
+      {/* Commerce-specific CTA */}
+      {snapshotId === "COMMERCE_REVENUE" && value === 0 && (
+        <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-white/50 p-3">
+          <p className="text-xs text-brand-black/70">
+            Connect a store to start tracking e-commerce revenue.
+          </p>
+          <button
+            onClick={() => onAction?.("commerce-setup")}
+            className="mt-2 rounded-full border border-brand-black px-3 py-1 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
+          >
+            Add Store
+          </button>
+        </div>
+      )}
+
+      {/* Revenue goal-specific display */}
+      {snapshotId === "REVENUE_GOAL_PROGRESS" && (
+        <div className="mt-4">
+          <div className="w-full h-2 rounded-full bg-brand-black/10 overflow-hidden">
+            <div
+              className="h-full bg-brand-red transition-all"
+              style={{ width: `${Math.min(value, 100)}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-brand-black/60">
+            {Math.round(value)}% of goal
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+

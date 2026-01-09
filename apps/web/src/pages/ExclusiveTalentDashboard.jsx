@@ -14,6 +14,7 @@ import { useRevenue, useMetrics, useSocials, useInsights, useGrowth, usePerforma
 import { CrmContactPanel } from "../components/CrmContactPanel.jsx";
 import { getContact } from "../lib/crmContacts.js";
 import { LineChart as RechartsLineChart, BarChart as RechartsBarChart, PieChart as RechartsPieChart } from "../components/charts/index.js";
+import TalentRevenueDashboard from "../components/TalentRevenueDashboard.jsx";
 
 const NAV_LINKS = (basePath) => [
   { label: "Overview", to: `${basePath}`, end: true },
@@ -26,6 +27,7 @@ const NAV_LINKS = (basePath) => [
   { label: "Opportunities", to: `${basePath}/opportunities` },
   { label: "Tasks", to: `${basePath}/tasks` },
   { label: "Messages", to: `${basePath}/messages` },
+  { label: "Commerce", to: `${basePath}/commerce` },
   { label: "Email Opportunities", to: `/creator/opportunities` },
   { label: "Settings", to: `${basePath}/settings` }
 ];
@@ -368,6 +370,11 @@ export function ExclusiveCalendarPage() {
       headingSubtitle="Track shoots, events, and creative deadlines — your business ops are handled for you."
     />
   );
+}
+
+export function ExclusiveCommercePage() {
+  const { session } = useOutletContext() || {};
+  return <TalentRevenueDashboard talentId={session?.talentId} />;
 }
 
 export function ExclusiveProjectsPage() {
