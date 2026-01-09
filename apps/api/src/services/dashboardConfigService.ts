@@ -231,7 +231,7 @@ export function getEnabledSnapshots(
     .filter((s) => s.enabled)
     .sort((a, b) => a.order - b.order);
 
-  const result = [];
+  const result: Array<{ snapshot: SnapshotDefinition; order: number }> = [];
   for (const snapshotConfig of enabled) {
     const snapshot = getSnapshot(snapshotConfig.snapshotId);
     if (snapshot) {

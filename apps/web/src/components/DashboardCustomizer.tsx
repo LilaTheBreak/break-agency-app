@@ -1,23 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Grip, RotateCcw } from "lucide-react";
-import { DndContext, DragEndEvent, closestCenter } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { Grip, RotateCcw, X, ChevronDown } from "lucide-react";
 
 interface SnapshotItem {
   snapshotId: string;
@@ -42,9 +24,9 @@ interface DashboardCustomizerProps {
 }
 
 /**
- * Draggable snapshot item
+ * Snapshot item with toggle
  */
-function DraggableSnapshotItem({
+function SnapshotItemCard({
   snapshot,
   enabled,
   onToggle,
@@ -53,34 +35,20 @@ function DraggableSnapshotItem({
   enabled: boolean;
   onToggle: (snapshotId: string) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: snapshot.snapshotId,
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
-    >
-      <button
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600"
-      >
+    <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+      <button className="cursor-grab active:cursor-grabbing p-1 text-gray-400 hover:text-gray-600">
         <Grip size={16} />
       </button>
 
-      <Switch
-        checked={enabled}
-        onCheckedChange={() => onToggle(snapshot.snapshotId)}
-        className="ml-auto"
-      />
+      <label className="flex items-center gap-2 cursor-pointer ml-auto">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={() => onToggle(snapshot.snapshotId)}
+          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      </label>
 
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm text-gray-900">{snapshot.title}</p>
@@ -90,9 +58,9 @@ function DraggableSnapshotItem({
       </div>
 
       {snapshot.category && (
-        <Badge variant="outline" className="text-xs capitalize">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
           {snapshot.category}
-        </Badge>
+        </span>
       )}
     </div>
   );
@@ -103,7 +71,7 @@ function DraggableSnapshotItem({
  *
  * Allows users to:
  * - Toggle snapshots on/off
- * - Reorder snapshots via drag-and-drop
+ * - Reorder snapshots
  * - Reset to defaults
  */
 export function DashboardCustomizer({
@@ -118,7 +86,7 @@ export function DashboardCustomizer({
   const [localSnapshots, setLocalSnapshots] = useState<SnapshotItem[]>(snapshots);
   const [isSaving, setIsSaving] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [activeTab, setActiveTab] = useState("enabled");
+  const [activeTab, setActiveTab] = useState<"enabled" | "disabled">("enabled");
 
   useEffect(() => {
     setLocalSnapshots(snapshots);
@@ -132,26 +100,35 @@ export function DashboardCustomizer({
     );
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleMoveUp = (snapshotId: string) => {
+    const index = localSnapshots.findIndex((s) => s.snapshotId === snapshotId);
+    if (index > 0) {
+      const newSnapshots = [...localSnapshots];
+      [newSnapshots[index - 1], newSnapshots[index]] = [
+        newSnapshots[index],
+        newSnapshots[index - 1],
+      ];
+      const reordered = newSnapshots.map((s, i) => ({
+        ...s,
+        order: i,
+      }));
+      setLocalSnapshots(reordered);
+    }
+  };
 
-    if (over && active.id !== over.id) {
-      const oldIndex = localSnapshots.findIndex((s) => s.snapshotId === active.id);
-      const newIndex = localSnapshots.findIndex((s) => s.snapshotId === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newSnapshots = [...localSnapshots];
-        [newSnapshots[oldIndex], newSnapshots[newIndex]] = [
-          newSnapshots[newIndex],
-          newSnapshots[oldIndex],
-        ];
-        // Recalculate orders
-        const reordered = newSnapshots.map((s, i) => ({
-          ...s,
-          order: i,
-        }));
-        setLocalSnapshots(reordered);
-      }
+  const handleMoveDown = (snapshotId: string) => {
+    const index = localSnapshots.findIndex((s) => s.snapshotId === snapshotId);
+    if (index < localSnapshots.length - 1) {
+      const newSnapshots = [...localSnapshots];
+      [newSnapshots[index], newSnapshots[index + 1]] = [
+        newSnapshots[index + 1],
+        newSnapshots[index],
+      ];
+      const reordered = newSnapshots.map((s, i) => ({
+        ...s,
+        order: i,
+      }));
+      setLocalSnapshots(reordered);
     }
   };
 
@@ -182,120 +159,158 @@ export function DashboardCustomizer({
   const enabledSnapshots = localSnapshots.filter((s) => s.enabled);
   const disabledSnapshots = localSnapshots.filter((s) => !s.enabled);
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Customise Dashboard</DialogTitle>
-          <DialogDescription>
-            Control which cards appear, their order, and visibility
-          </DialogDescription>
-        </DialogHeader>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="enabled">
-              Visible ({enabledSnapshots.length})
-            </TabsTrigger>
-            <TabsTrigger value="disabled">
-              Hidden ({disabledSnapshots.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent
-            value="enabled"
-            className="flex-1 overflow-y-auto p-4 space-y-3"
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Customise Dashboard</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Control which cards appear, their order, and visibility
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
           >
-            <div className="text-xs text-gray-600 mb-4">
-              Drag to reorder. Cards appear in this order on your dashboard.
-            </div>
+            <X size={20} />
+          </button>
+        </div>
 
-            {enabledSnapshots.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">
-                No visible cards. Enable some below to get started.
-              </p>
-            ) : (
-              <DndContext
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={enabledSnapshots.map((s) => s.snapshotId)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-2">
-                    {enabledSnapshots.map((snapshot) => (
-                      <DraggableSnapshotItem
-                        key={snapshot.snapshotId}
-                        snapshot={snapshot}
-                        enabled={true}
-                        onToggle={handleToggle}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-          </TabsContent>
-
-          <TabsContent
-            value="disabled"
-            className="flex-1 overflow-y-auto p-4 space-y-3"
+        {/* Tabs */}
+        <div className="flex gap-0 border-b">
+          <button
+            onClick={() => setActiveTab("enabled")}
+            className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "enabled"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
           >
-            <div className="text-xs text-gray-600 mb-4">
-              Toggle cards on to show them on your dashboard.
-            </div>
+            Visible ({enabledSnapshots.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("disabled")}
+            className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "disabled"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Hidden ({disabledSnapshots.length})
+          </button>
+        </div>
 
-            {disabledSnapshots.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">
-                All available cards are visible!
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {disabledSnapshots.map((snapshot) => (
-                  <DraggableSnapshotItem
-                    key={snapshot.snapshotId}
-                    snapshot={snapshot}
-                    enabled={false}
-                    onToggle={handleToggle}
-                  />
-                ))}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {activeTab === "enabled" && (
+            <div className="space-y-3">
+              <div className="text-xs text-gray-600 mb-4">
+                Reorder using the buttons. Cards appear in this order on your dashboard.
               </div>
-            )}
-          </TabsContent>
-        </Tabs>
 
-        <div className="flex items-center justify-between gap-3 p-4 border-t">
-          <Button
-            variant="outline"
-            size="sm"
+              {enabledSnapshots.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">
+                  No visible cards. Enable some from the Hidden tab to get started.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {enabledSnapshots.map((snapshot, index) => (
+                    <div
+                      key={snapshot.snapshotId}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => handleMoveUp(snapshot.snapshotId)}
+                          disabled={index === 0}
+                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 rounded"
+                          title="Move up"
+                        >
+                          <ChevronDown size={14} className="rotate-180" />
+                        </button>
+                        <button
+                          onClick={() => handleMoveDown(snapshot.snapshotId)}
+                          disabled={index === enabledSnapshots.length - 1}
+                          className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-100 rounded"
+                          title="Move down"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+                      <div className="flex-1">
+                        <SnapshotItemCard
+                          snapshot={snapshot}
+                          enabled={true}
+                          onToggle={handleToggle}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "disabled" && (
+            <div className="space-y-3">
+              <div className="text-xs text-gray-600 mb-4">
+                Check the box to show cards on your dashboard.
+              </div>
+
+              {disabledSnapshots.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">
+                  All available cards are visible!
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {disabledSnapshots.map((snapshot) => (
+                    <SnapshotItemCard
+                      key={snapshot.snapshotId}
+                      snapshot={snapshot}
+                      enabled={false}
+                      onToggle={handleToggle}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between gap-3 p-4 border-t bg-gray-50">
+          <button
             onClick={handleReset}
             disabled={isResetting}
-            className="gap-2"
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <RotateCcw size={14} />
             Reset to Default
-          </Button>
+          </button>
 
           <div className="flex gap-2">
-            <Button
-              variant="outline"
+            <button
               onClick={onClose}
               disabled={isSaving}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleSave}
               disabled={isSaving}
-              className="gap-2"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
+            </button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 
