@@ -35,12 +35,22 @@ export function DashboardShell({
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [userToggledNav, setUserToggledNav] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState("gbp");
   const { summary, loading: summaryLoading, error: summaryError } = useDashboardSummary(role);
   const mergedSummary = useMemo(
     () => ({ ...DEFAULT_STATUS_SUMMARY, ...statusSummary, ...(summary || {}) }),
     [statusSummary, summary]
   );
   const payoutPending = mergedSummary.payoutTotals?.pending;
+  
+  // Format payout with selected currency
+  const payoutPendingFormatted = useMemo(() => {
+    if (!payoutPending) return "—";
+    if (payoutPending.mixedCurrencies) {
+      return `${payoutPending.count ?? 0} payouts`;
+    }
+    return formatCurrency(payoutPending.amount ?? 0, selectedCurrency);
+  }, [payoutPending, selectedCurrency]);
   const statusTiles = [
     {
       label: "Tasks due",
@@ -57,7 +67,7 @@ export function DashboardShell({
     },
     {
       label: "Payouts pending",
-      value: formatMoneyMetric(payoutPending),
+      value: payoutPendingFormatted,
       detail: payoutPending?.count ? `${payoutPending.count} payouts` : "Awaiting release",
       helper: (!payoutPending?.count || payoutPending.count === 0) ? "Finance workflows in progress" : "Pending finance review"
     },
@@ -308,6 +318,8 @@ export function DashboardShell({
                     nextSteps={mergedSummary.nextSteps}
                     loading={summaryLoading}
                     error={summaryError}
+                    selectedCurrency={selectedCurrency}
+                    onCurrencyChange={setSelectedCurrency}
                   />
                 ) : null}
                 {children}
@@ -320,10 +332,28 @@ export function DashboardShell({
   );
 }
 
-function DashboardStatusGrid({ tiles, nextSteps, loading, error }) {
+function DashboardStatusGrid({ tiles, nextSteps, loading, error, selectedCurrency, onCurrencyChange }) {
   return (
     <div className="space-y-6">
       {error ? <p className="text-sm text-brand-red">{error}</p> : null}
+      
+      {/* Currency Selector */}
+      <div className="flex items-center justify-between">
+        <div></div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Currency:</label>
+          <select
+            value={selectedCurrency}
+            onChange={(e) => onCurrencyChange(e.target.value)}
+            className="rounded-lg border border-brand-black/20 bg-brand-white px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-linen/50 focus:outline-none focus:ring-2 focus:ring-brand-red"
+          >
+            <option value="gbp">£ GBP</option>
+            <option value="usd">$ USD</option>
+            <option value="eur">€ EUR</option>
+          </select>
+        </div>
+      </div>
+      
       <div className="grid gap-4 md:grid-cols-3">
         {tiles.map((tile) => {
           const content = (
@@ -393,11 +423,14 @@ function formatMoneyMetric(entry) {
   return formatCurrency(entry.amount ?? 0, entry.currency);
 }
 
-function formatCurrency(amount = 0, currency = "usd") {
+function formatCurrency(amount = 0, currency = "gbp") {
   try {
-    return new Intl.NumberFormat("en", { style: "currency", currency: currency.toUpperCase() }).format(amount / 100);
+    const currencyCode = (currency || "gbp").toUpperCase();
+    // Use en-GB locale for proper GBP formatting with £ symbol
+    const locale = currencyCode === "GBP" ? "en-GB" : "en";
+    return new Intl.NumberFormat(locale, { style: "currency", currency: currencyCode }).format(amount / 100);
   } catch {
-    return `${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`;
+    return `${(amount / 100).toFixed(2)} ${(currency || "gbp").toUpperCase()}`;
   }
 }
 
