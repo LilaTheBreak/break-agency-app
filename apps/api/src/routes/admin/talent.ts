@@ -38,57 +38,46 @@ router.get("/", async (req: Request, res: Response) => {
     const totalCount = await prisma.talent.count();
     console.log("[TALENT] Total talent count in database:", totalCount);
     
-    // Try fetching without User relation first to see if that's the issue
+    // Fetch talents with User relation included - critical for rendering
     // Note: Talent model doesn't have createdAt/updatedAt fields, so we order by id instead
     const talentsWithoutUser = await prisma.talent.findMany({
-      select: {
-        id: true,
-        name: true,
-        displayName: true,
-        userId: true,
-        categories: true,
-        stage: true,
-        representationType: true, // CRITICAL FIX: Include actual representationType instead of hardcoding
-        status: true, // CRITICAL FIX: Include actual status instead of hardcoding
+      include: {
+        User: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
       },
       orderBy: {
         id: "desc", // Order by id since createdAt doesn't exist on Talent model
       },
     });
-    console.log("[TALENT] Found", talentsWithoutUser.length, "talents without User relation");
+    console.log("[TALENT] Found", talentsWithoutUser.length, "talents with User relation");
     
-    // CRITICAL FIX: Always use the fallback query first to ensure we get all talents
-    // The include query might fail if User relation has issues, so we'll fetch User separately
-    // Use talentsWithoutUser as the base, then enrich with User data
+    // Use talentsWithoutUser as the base, then enrich with Deal data
     let talents = talentsWithoutUser;
     
     console.log("[TALENT] Found", talents.length, "talents (base query)");
     
-    // If we have talents, enrich them with User and Deal data
+    // If we have talents, enrich them with Deal data
     if (talents.length > 0) {
-      // Enrich with User data separately to avoid relation failures
+      // Enrich with User and Deal data
       // CRITICAL: Wrap in try-catch to prevent Promise.all from failing entirely
       let enrichedTalents: any[] = [];
       try {
         enrichedTalents = await Promise.all(
         talents.map(async (talent) => {
           try {
-            // Fetch User separately (may fail for placeholder users, that's OK)
-            let userData = null;
-            try {
-              const user = await prisma.user.findUnique({
-                where: { id: talent.userId },
-                select: {
-                  id: true,
-                  email: true,
-                  name: true,
-                  avatarUrl: true,
-                },
-              });
-              userData = user;
-            } catch (userError) {
-              console.warn("[TALENT] Failed to fetch User for talent", talent.id, "- continuing without User data");
-            }
+            // User already included in base query, use it directly
+            const userData = talent.User ? {
+              id: talent.User.id,
+              email: talent.User.email,
+              name: talent.User.name,
+              avatarUrl: talent.User.avatarUrl,
+            } : null;
             
             // Fetch Deal count separately
             let dealCount = 0;
@@ -330,16 +319,17 @@ router.get("/", async (req: Request, res: Response) => {
     }
 
     console.log("[TALENT] Returning", talentsWithMetrics?.length || 0, "talents with metrics");
-    sendList(res, talentsWithMetrics || []);
+    return sendList(res, talentsWithMetrics || []);
   } catch (error) {
     console.error("[TALENT] Error fetching talent list:", error);
+    console.error("[TALENT] Error stack:", error instanceof Error ? error.stack : "No stack available");
     logError("Failed to fetch talent list", error, { userId: req.user?.id, route: req.path });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/admin/talent', method: 'GET' },
     });
     
-    // CRITICAL FIX: Never return empty list on error - return proper error response
-    // Silent failures mask real issues and break read-after-write consistency
+    // CRITICAL FIX: Always return proper error response with 500 status
+    // Never return silent failure or 503
     return res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Failed to fetch talent list",

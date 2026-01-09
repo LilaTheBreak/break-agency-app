@@ -63,14 +63,7 @@ router.get(
         where: {
           representationType: "EXCLUSIVE",
         },
-        select: {
-          id: true,
-          name: true,
-          displayName: true,
-          status: true,
-          representationType: true,
-          managerId: true,
-          userId: true,
+        include: {
           User: {
             select: {
               email: true,
@@ -208,6 +201,8 @@ router.get(
         },
       });
     } catch (error) {
+      console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Error:", error);
+      console.error("[EXCLUSIVE-TALENT-SNAPSHOT] Stack:", error instanceof Error ? error.stack : "No stack available");
       logError(
         "[/api/admin/dashboard/exclusive-talent-snapshot] Failed",
         error,
@@ -216,6 +211,7 @@ router.get(
       return res.status(500).json({
         error: "Failed to fetch exclusive talent snapshot",
         errorCode: "SNAPSHOT_FETCH_FAILED",
+        message: error instanceof Error ? error.message : "Unknown error occurred",
       });
     }
   }

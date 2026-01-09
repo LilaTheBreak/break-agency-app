@@ -87,6 +87,7 @@ import setupRouter from "./routes/setup.js";
 
 // Exclusive Talent
 import exclusiveRouter from "./routes/exclusive.js";
+import dashboardExclusiveTalentRouter from "./routes/dashboardExclusiveTalent.js";
 
 // Creator Onboarding
 import creatorRouter from "./routes/creator.js";
@@ -548,6 +549,7 @@ app.use("/api/admin", adminUsersRouter);
 // ADMIN TALENT MANAGEMENT
 // ------------------------------------------------------
 app.use("/api/admin/talent", adminTalentRouter);
+app.use("/api/admin/dashboard", dashboardExclusiveTalentRouter);
 app.use("/api/admin/deals", adminDealsRouter);
 app.use("/api/admin/duplicates", adminDuplicatesRouter);
 app.use("/api/admin/diagnostics", adminDiagnosticsRouter);
