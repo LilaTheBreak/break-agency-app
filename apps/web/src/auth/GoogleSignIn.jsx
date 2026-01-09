@@ -53,7 +53,7 @@ export default function GoogleSignIn({ open, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] grid place-items-center bg-brand-black/70 px-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid place-items-center bg-brand-black/70 px-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="sign-in-heading"

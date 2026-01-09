@@ -125,7 +125,7 @@ export function HelpPopover({ title, content, trigger = 'What is this?' }) {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 bg-black/0"
             onClick={() => setIsOpen(false)}
           />
 

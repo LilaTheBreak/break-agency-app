@@ -355,7 +355,7 @@ function App() {
           <MessagingContext.Provider value={messagingValue}>
             {splashVisible && (
               <div
-                className={`fixed inset-0 z-[9999] flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
+                className={`fixed inset-0 z-50 flex items-center justify-center bg-[#0f0d0b] transition-opacity duration-700 ${
                   splashFade ? "opacity-0" : "opacity-100"
                 }`}
               >
@@ -445,7 +445,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
   return (
     <>
       {showGateScreen && (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-white px-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white px-6">
           <div className="flex flex-col items-center gap-5 text-center">
             <LogoWordmark variant="mark" className="h-10 w-auto" />
             <div className="flex flex-col items-center gap-3">

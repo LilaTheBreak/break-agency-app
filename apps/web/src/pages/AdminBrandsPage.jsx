@@ -177,7 +177,7 @@ function DeleteConfirmationModal({ open, onClose, onConfirm, brandName, hasLinke
   const canDelete = confirmText === brandName && !hasLinkedObjects;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[10000]" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
@@ -384,7 +384,7 @@ function Drawer({ open, title, onClose, children, actions }) {
 
   const drawerContent = (
     <div
-      className="fixed inset-0 z-[9999]"
+      className="fixed inset-0 z-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"

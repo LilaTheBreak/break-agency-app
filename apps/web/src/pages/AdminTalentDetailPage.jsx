@@ -292,7 +292,7 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -2191,7 +2191,7 @@ function DealsTab({ talent, onDealCreated }) {
 
       {/* Add Deal Modal */}
       {createOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="relative w-full max-w-md mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <button
@@ -2356,7 +2356,7 @@ function DealsTab({ talent, onDealCreated }) {
 
       {/* Delete Deal Confirmation Modal */}
       {deleteModalOpen && dealToDelete && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="relative w-full max-w-md mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl">
             {/* Close Button */}
             <button
