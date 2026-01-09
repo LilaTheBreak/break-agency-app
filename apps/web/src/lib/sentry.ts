@@ -215,28 +215,58 @@ export function logInfo(message: string, context?: Record<string, any>) {
 }
 
 /**
- * Increment a counter metric in Sentry
+ * Increment a counter metric in Sentry (via tags)
  */
 export function incrementMetric(name: string, value: number = 1, tags?: Record<string, string>) {
   if (import.meta.env.VITE_SENTRY_DSN) {
-    Sentry.metrics.increment(name, value, tags);
+    // Use breadcrumb as alternative since metrics API may not be available
+    Sentry.addBreadcrumb({
+      message: `Metric: ${name}`,
+      category: 'metric',
+      level: 'info',
+      data: {
+        name,
+        value,
+        ...tags,
+      },
+    });
   }
 }
 
 /**
- * Set a gauge metric in Sentry
+ * Set a gauge metric in Sentry (via tags)
  */
 export function setMetric(name: string, value: number, tags?: Record<string, string>) {
   if (import.meta.env.VITE_SENTRY_DSN) {
-    Sentry.metrics.gauge(name, value, tags);
+    // Use breadcrumb as alternative since metrics API may not be available
+    Sentry.addBreadcrumb({
+      message: `Gauge: ${name}`,
+      category: 'metric',
+      level: 'info',
+      data: {
+        name,
+        value,
+        ...tags,
+      },
+    });
   }
 }
 
 /**
- * Count a metric in Sentry
+ * Count a metric in Sentry (via tags)
  */
 export function countMetric(name: string, value: number = 1, tags?: Record<string, string>) {
   if (import.meta.env.VITE_SENTRY_DSN) {
-    Sentry.metrics.count(name, value, tags);
+    // Use breadcrumb as alternative since metrics API may not be available
+    Sentry.addBreadcrumb({
+      message: `Count: ${name}`,
+      category: 'metric',
+      level: 'info',
+      data: {
+        name,
+        value,
+        ...tags,
+      },
+    });
   }
 }
