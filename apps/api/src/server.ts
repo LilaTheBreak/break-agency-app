@@ -101,6 +101,11 @@ import revenueRouter from "./routes/revenue.js";
 // Dashboard Customization
 import dashboardCustomizationRouter from "./routes/dashboardCustomization.js";
 
+// Brands (V1.0 - First-class user type)
+import brandsRouter from "./routes/brands.js";
+import brandTeamRouter from "./routes/brandTeam.js";
+import brandAuditRouter from "./routes/brandAudit.js";
+
 // Admin Finance
 import adminFinanceRouter from "./routes/admin/finance.js";
 
@@ -523,7 +528,12 @@ app.use("/api/revenue", revenueRouter);
 // ------------------------------------------------------
 app.use("/api/dashboard", dashboardCustomizationRouter);
 
+// BRANDS (V1.0 - First-class user type)
 // ------------------------------------------------------
+app.use("/api/brands", brandsRouter);
+app.use("/api/brand-team", brandTeamRouter);
+app.use("/api/brand-audit", brandAuditRouter);
+
 // CREATOR ONBOARDING
 // ------------------------------------------------------
 app.use(creatorRouter); // Routes already prefixed with /api/creator

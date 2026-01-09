@@ -146,21 +146,33 @@ model AssetGeneration {
 }
 
 model Brand {
-  id                    String              @id
-  name                  String              @unique
+  id                    String   @id @default(cuid())
+  name                  String
+  domain                String?  @unique
+  websiteUrl            String?
+  industry              String?
   values                String[]
   restrictedCategories  String[]
   preferredCreatorTypes String[]
   targetAudience        Json?
-  BrandSavedTalent      BrandSavedTalent[]
-  CreatorFitScore       CreatorFitScore[]
-  CrmCampaign           CrmCampaign[]
-  Deal                  Deal[]
-  Invoice               Invoice[]
-  Outreach              Outreach[]
-  Payout                Payout[]
-  SuitabilityResult     SuitabilityResult[]
-  Contract              Contract[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  BrandUsers        BrandUser[]
+  BrandSavedTalent  BrandSavedTalent[]
+  CreatorFitScore   CreatorFitScore[]
+  CrmCampaign       CrmCampaign[]
+  Deal              Deal[]
+  Invoice           Invoice[]
+  Outreach          Outreach[]
+  Payout            Payout[]
+  SuitabilityResult SuitabilityResult[]
+  Contract          Contract[]
+  AuditSources      AuditSource[]
+
+  @@index([domain])
+  @@index([createdAt])
 }
 
 model BrandCampaign {
@@ -1710,6 +1722,7 @@ model User {
   IntegrationConnection                   IntegrationConnection[]
   XeroConnections                         XeroConnection[]
   UserDashboardConfigs                    UserDashboardConfig[]
+  BrandUsers                              BrandUser[]
 }
 
 model WellnessCheckin {
@@ -2203,4 +2216,47 @@ model UserDashboardConfig {
   @@unique([userId, dashboardType])
   @@index([userId])
   @@index([dashboardType])
+}
+
+// Brand User Management
+model BrandUser {
+  id          String    @id @default(cuid())
+  brandId     String
+  userId      String
+  role        String    @default("VIEWER") // ADMIN, EDITOR, VIEWER
+  status      String    @default("ACTIVE") // ACTIVE, INVITED, INACTIVE
+  invitedAt   DateTime?
+  acceptedAt  DateTime?
+  permissions Json? // Extensible permissions JSON
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, userId])
+  @@index([brandId])
+  @@index([userId])
+  @@index([status])
+}
+
+// Audit Source Tracking (Foundation for AI insights)
+model AuditSource {
+  id            String    @id @default(cuid())
+  brandId       String
+  type          String // website | social | community | product | campaign
+  source        String // Specific source identifier
+  status        String    @default("pending") // connected | pending | error
+  metadata      Json? // Flexible metadata for different audit types
+  lastCheckedAt DateTime?
+  error         String? // Error message if status is error
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, type, source])
+  @@index([brandId])
+  @@index([type])
+  @@index([status])
 }
