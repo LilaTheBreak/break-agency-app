@@ -49,7 +49,7 @@ router.get('/connections', requireAuth, async (req: Request, res: Response) => {
       }
     });
 
-    res.json({ 
+    return res.json({ 
       success: true,
       connections: connections.map(c => ({
         id: c.id,
@@ -62,7 +62,7 @@ router.get('/connections', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Failed to fetch connections:', error);
-    res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       error: 'Failed to load social connections',
       message: error.message

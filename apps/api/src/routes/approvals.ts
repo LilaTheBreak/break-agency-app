@@ -60,10 +60,10 @@ router.get("/api/approvals", requireAuth, requireAdmin, async (req: Request, res
       },
     });
 
-    res.json(approvals);
+    return res.json(approvals);
   } catch (error) {
     console.error("[Approvals] Error fetching approvals:", error);
-    res.status(500).json({ error: "Failed to fetch approvals" });
+    return res.status(500).json({ error: "Failed to fetch approvals" });
   }
 });
 
@@ -99,10 +99,10 @@ router.post("/api/approvals", requireAdmin, async (req: Request, res: Response) 
       title: approval.title,
     });
 
-    res.status(201).json(approval);
+    return res.status(201).json(approval);
   } catch (error) {
     console.error("[Approvals] Error creating approval:", error);
-    res.status(500).json({ error: "Failed to create approval" });
+    return res.status(500).json({ error: "Failed to create approval" });
   }
 });
 
@@ -142,10 +142,10 @@ router.patch("/api/approvals/:id", requireAdmin, async (req: Request, res: Respo
       changes: updateData,
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error) {
     console.error("[Approvals] Error updating approval:", error);
-    res.status(500).json({ error: "Failed to update approval" });
+    return res.status(500).json({ error: "Failed to update approval" });
   }
 });
 
@@ -166,10 +166,10 @@ router.delete("/api/approvals/:id", requireAdmin, async (req: Request, res: Resp
       title: existing.title,
     });
 
-    res.json({ success: true, message: "Approval deleted" });
+    return res.json({ success: true, message: "Approval deleted" });
   } catch (error) {
     console.error("[Approvals] Error deleting approval:", error);
-    res.status(500).json({ error: "Failed to delete approval" });
+    return res.status(500).json({ error: "Failed to delete approval" });
   }
 });
 
@@ -206,10 +206,10 @@ router.post("/api/approvals/:id/approve", requireAdmin, async (req: Request, res
       newStatus: "APPROVED",
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error) {
     console.error("[Approvals] Error approving:", error);
-    res.status(500).json({ error: "Failed to approve" });
+    return res.status(500).json({ error: "Failed to approve" });
   }
 });
 
@@ -246,10 +246,10 @@ router.post("/api/approvals/:id/reject", requireAdmin, async (req: Request, res:
       newStatus: "REJECTED",
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error) {
     console.error("[Approvals] Error rejecting:", error);
-    res.status(500).json({ error: "Failed to reject" });
+    return res.status(500).json({ error: "Failed to reject" });
   }
 });
 

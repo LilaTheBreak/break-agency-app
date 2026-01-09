@@ -5,15 +5,15 @@ const router = Router();
 
 // Stub implementations for missing controllers
 const getPendingReviews = async (req: Request, res: Response) => {
-  res.json({ reviews: [] });
+  return res.json({ reviews: [] });
 };
 
 const approveCreator = async (req: Request, res: Response) => {
-  res.json({ ok: true });
+  return res.json({ ok: true });
 };
 
 const overrideCreatorRole = async (req: Request, res: Response) => {
-  res.json({ ok: true });
+  return res.json({ ok: true });
 };
 
 // Protect all routes in this file with auth and admin role checks

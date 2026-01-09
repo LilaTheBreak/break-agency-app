@@ -55,7 +55,7 @@ router.get("/", async (req, res) => {
 
     // CRITICAL: Ensure we always return an array, never an empty string
     const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
-    res.json(safeCampaigns);
+    return res.json(safeCampaigns);
   } catch (error) {
     // Phase 4: Fail loudly - no empty arrays on error
     logError("Failed to fetch campaigns", error, { userId: req.user?.id });
@@ -93,10 +93,10 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Campaign not found" });
     }
 
-    res.json(campaign);
+    return res.json(campaign);
   } catch (error) {
     console.error("Error fetching campaign:", error);
-    res.status(500).json({ error: "Failed to fetch campaign" });
+    return res.status(500).json({ error: "Failed to fetch campaign" });
   }
 });
 
@@ -174,10 +174,10 @@ router.post("/", async (req, res) => {
       // Don't fail the request if logging fails
     }
 
-    res.status(201).json(campaign);
+    return res.status(201).json(campaign);
   } catch (error) {
     console.error("Error creating campaign:", error);
-    res.status(500).json({ error: "Failed to create campaign" });
+    return res.status(500).json({ error: "Failed to create campaign" });
   }
 });
 
@@ -271,10 +271,10 @@ router.patch("/:id", async (req, res) => {
       // Don't fail the request if logging fails
     }
 
-    res.json(campaign);
+    return res.json(campaign);
   } catch (error) {
     console.error("Error updating campaign:", error);
-    res.status(500).json({ error: "Failed to update campaign" });
+    return res.status(500).json({ error: "Failed to update campaign" });
   }
 });
 
@@ -316,11 +316,11 @@ router.delete("/:id", async (req, res) => {
       // Don't fail the request if logging fails
     }
 
-    res.json({ success: true, message: "Campaign deleted" });
+    return res.json({ success: true, message: "Campaign deleted" });
   } catch (error) {
     // Phase 4: Fail loudly
     logError("Failed to delete campaign", error, { campaignId: req.params.id, userId: req.user?.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to delete campaign",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -378,10 +378,65 @@ router.post("/batch-import", async (req, res) => {
       }
     }
 
+    return res.json({ success: true, imported });
+  }
+});
+
+/**
+ * POST /api/crm-campaigns/batch-import
+ * Import campaigns from localStorage (migration endpoint)
+ */
+router.post("/batch-import", async (req, res) => {
+  try {
+    const { campaigns } = req.body;
+
+    if (!Array.isArray(campaigns)) {
+      return res.status(400).json({ error: "campaigns must be an array" });
+    }
+
+    const imported = {
+      campaigns: 0,
+    };
+
+    for (const campaign of campaigns) {
+      try {
+        await prisma.crmCampaign.create({
+          data: {
+            id: `camp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            campaignName: campaign.campaignName,
+            brandId: campaign.brandId,
+            campaignType: campaign.campaignType || "Other",
+            status: campaign.status || "Draft",
+            startDate: campaign.startDate || null,
+            endDate: campaign.endDate || null,
+            internalSummary: campaign.internalSummary || null,
+            goals: campaign.goals || null,
+            keyNotes: campaign.keyNotes || null,
+            owner: campaign.owner || null,
+            linkedDealIds: campaign.linkedDealIds || [],
+            linkedTalentIds: campaign.linkedTalentIds || [],
+            linkedTaskIds: campaign.linkedTaskIds || [],
+            linkedOutreachIds: campaign.linkedOutreachIds || [],
+            linkedEventIds: campaign.linkedEventIds || [],
+            activity: campaign.activity || [
+              { at: new Date().toISOString(), label: "Campaign imported" },
+            ],
+            lastActivityAt: campaign.lastActivityAt
+              ? new Date(campaign.lastActivityAt)
+              : new Date(),
+            updatedAt: new Date(),
+          },
+        });
+        imported.campaigns++;
+      } catch (error) {
+        console.error(`Failed to import campaign ${campaign.id}:`, error);
+      }
+    }
+
     res.json({ success: true, imported });
   } catch (error) {
     console.error("Error importing campaigns:", error);
-    res.status(500).json({ error: "Failed to import campaigns" });
+    return res.status(500).json({ error: "Failed to import campaigns" });
   }
 });
 
@@ -437,7 +492,7 @@ router.post("/:id/link-deal", async (req, res) => {
     res.json(updated);
   } catch (error) {
     console.error("Error linking deal:", error);
-    res.status(500).json({ error: "Failed to link deal" });
+    return res.status(500).json({ error: "Failed to link deal" });
   }
 });
 
@@ -474,10 +529,10 @@ router.delete("/:id/unlink-deal/:dealId", async (req, res) => {
       },
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error) {
     console.error("Error unlinking deal:", error);
-    res.status(500).json({ error: "Failed to unlink deal" });
+    return res.status(500).json({ error: "Failed to unlink deal" });
   }
 });
 

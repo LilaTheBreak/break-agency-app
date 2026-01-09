@@ -65,14 +65,14 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       }
     }
 
-    res.json({
+    return res.json({
       ok: true,
       count: awaiting.length,
       data: awaiting,
     });
   } catch (error) {
     console.error("AWAITING REPLY ERROR:", error);
-    res.status(500).json({ ok: false, error: "Failed to load awaiting replies" });
+    return res.status(500).json({ ok: false, error: "Failed to load awaiting replies" });
   }
 });
 
