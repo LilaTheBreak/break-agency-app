@@ -106,6 +106,9 @@ import brandsRouter from "./routes/brands.js";
 import brandTeamRouter from "./routes/brandTeam.js";
 import brandAuditRouter from "./routes/brandAudit.js";
 
+// Community Management (Talent)
+import communityRouter from "./routes/community.js";
+
 // Admin Finance
 import adminFinanceRouter from "./routes/admin/finance.js";
 
@@ -533,6 +536,10 @@ app.use("/api/dashboard", dashboardCustomizationRouter);
 app.use("/api/brands", brandsRouter);
 app.use("/api/brand-team", brandTeamRouter);
 app.use("/api/brand-audit", brandAuditRouter);
+
+// COMMUNITY MANAGEMENT (Talent)
+// ------------------------------------------------------
+app.use("/api/community", communityRouter);
 
 // CREATOR ONBOARDING
 // ------------------------------------------------------

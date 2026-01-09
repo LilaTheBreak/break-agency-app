@@ -1518,6 +1518,7 @@ model Talent {
   UserAccess              TalentUserAccess[]        @relation("TalentAccess")
   RevenueSource           RevenueSource[]
   RevenueGoal             RevenueGoal[]
+  CommunityConnections    CommunityConnection[]
 }
 
 model TalentEmail {
@@ -2259,4 +2260,48 @@ model AuditSource {
   @@index([brandId])
   @@index([type])
   @@index([status])
+}
+
+// Community Management Foundation
+model CommunityConnection {
+  id            String    @id @default(cuid())
+  talentId      String
+  platform      String // instagram | tiktok | twitter | youtube | linkedin | discord | threads
+  status        String    @default("pending") // connected | pending | error | inactive
+  accountHandle String? // username, handle, or ID on platform
+  followers     Int       @default(0)
+  metadata      Json? // platform-specific data (engagement rate, follower growth, etc.)
+  lastSyncedAt  DateTime?
+  error         String? // error message if status is error
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  talent  Talent            @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  metrics CommunityMetric[]
+
+  @@unique([talentId, platform])
+  @@index([talentId])
+  @@index([platform])
+  @@index([status])
+}
+
+// Community Metrics (Engagement Quality)
+model CommunityMetric {
+  id           String   @id @default(cuid())
+  connectionId String
+  talentId     String
+  platform     String
+  metricType   String // engagement_rate | comments_vs_likes | saves_shares | repeat_commenters | response_velocity
+  value        Float
+  data         Json? // Flexible data structure for different metric types
+  period       String   @default("week") // day | week | month | lifetime
+  calculatedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  connection CommunityConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, metricType, period])
+  @@index([talentId])
+  @@index([connectionId])
+  @@index([metricType])
 }
