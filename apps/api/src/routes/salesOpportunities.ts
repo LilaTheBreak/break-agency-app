@@ -64,7 +64,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       metadata: { outreachId, name: opportunity.name }
     });
 
-    res.status(201).json({ opportunity });
+    return res.status(201).json({ opportunity });
   } catch (error) {
     console.error("[OPPORTUNITY_CREATE] Error:", error);
     res.status(500).json({ error: "Failed to create opportunity" });
@@ -106,11 +106,11 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
       orderBy: { updatedAt: "desc" }
     });
 
-    res.json({ opportunities });
+    return res.json({ opportunities });
   } catch (error) {
     console.error("[OPPORTUNITY_LIST] Error:", error);
     // Safe default: return empty array on error
-    res.json({ opportunities: [] });
+    return res.json({ opportunities: [] });
   }
 });
 
@@ -142,7 +142,7 @@ router.get("/:id", requireAuth, requireAdmin, async (req, res) => {
     res.json({ opportunity });
   } catch (error) {
     console.error("[OPPORTUNITY_GET] Error:", error);
-    res.status(500).json({ error: "Failed to fetch opportunity" });
+    return res.status(500).json({ error: "Failed to fetch opportunity" });
   }
 });
 
@@ -165,10 +165,10 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
       }
     });
 
-    res.json({ opportunity });
+    return return res.json({ opportunity });
   } catch (error) {
     console.error("[OPPORTUNITY_UPDATE] Error:", error);
-    res.status(500).json({ error: "Failed to update opportunity" });
+    return res.status(500).json({ error: "Failed to update opportunity" });
   }
 });
 
@@ -244,13 +244,13 @@ router.post("/:id/convert-to-deal", requireAuth, requireAdmin, async (req, res) 
       result.deal.currency
     );
 
-    res.json({ 
+    return res.json({ 
       deal: result.deal,
       message: "Opportunity successfully converted to deal" 
     });
   } catch (error) {
     console.error("[OPPORTUNITY_CONVERT] Error:", error);
-    res.status(500).json({ error: "Failed to convert opportunity to deal" });
+    return res.status(500).json({ error: "Failed to convert opportunity to deal" });
   }
 });
 
@@ -280,10 +280,10 @@ router.post("/:id/close", requireAuth, requireAdmin, async (req, res) => {
       reason
     );
 
-    res.json({ opportunity });
+    return res.json({ opportunity });
   } catch (error) {
     console.error("[OPPORTUNITY_CLOSE] Error:", error);
-    res.status(500).json({ error: "Failed to close opportunity" });
+    return res.status(500).json({ error: "Failed to close opportunity" });
   }
 });
 

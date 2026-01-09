@@ -28,13 +28,12 @@ export const tagSingleAsset = asyncHandler(async (req: Request, res: Response) =
   checkPermissions(req, userId);
 
   if (!assetId || !assetType || !content) {
-    res.status(400);
-    throw new Error('assetId, assetType, and content are required.');
+    return res.status(400).json({ error: 'assetId, assetType, and content are required.' });
   }
 
   const updatedAsset = await tagAsset({ assetId, assetType, content });
 
-  res.status(200).json(updatedAsset);
+  return res.status(200).json(updatedAsset);
 });
 
 // @desc    Re-tag a single creative asset
@@ -48,5 +47,5 @@ export const retagSingleAsset = asyncHandler(async (req: Request, res: Response)
 // @route   POST /api/creative-tagging/batch
 export const tagBatchAssets = asyncHandler(async (req: Request, res: Response) => {
   // In a real implementation, this would find multiple assets and queue a job for each.
-  res.status(202).json({ message: 'Batch tagging job has been queued.' });
+  return res.status(202).json({ message: 'Batch tagging job has been queued.' });
 });

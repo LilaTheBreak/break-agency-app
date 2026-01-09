@@ -21,7 +21,7 @@ router.post("/", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: true, message: "dealId and type are required" });
     }
     const d = await createDeliverable(dealId, { type, caption, notes, scheduledAt });
-    res.json({ deliverable: d });
+    return res.json({ deliverable: d });
   } catch (error) {
     next(error);
   }
@@ -39,7 +39,7 @@ router.get("/", requireAuth, async (req, res, next) => {
     }
 
     const data = await listDeliverablesForUser(req.user!.id);
-    res.json({ deliverables: data });
+    return res.json({ deliverables: data });
   } catch (error) {
     next(error);
   }
@@ -48,7 +48,7 @@ router.get("/", requireAuth, async (req, res, next) => {
 router.post("/from-contract/:contractId", requireAuth, async (req, res, next) => {
   try {
     const result = await createDeliverablesFromContract(req.params.contractId);
-    res.json({ created: result.count });
+    return res.json({ created: result.count });
   } catch (error) {
     next(error);
   }
@@ -61,7 +61,7 @@ router.post("/:id/status", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: true, message: "status is required" });
     }
     const updated = await updateDeliverableStatus(req.params.id, status);
-    res.json({ deliverable: updated });
+    return res.json({ deliverable: updated });
   } catch (error) {
     next(error);
   }
@@ -70,7 +70,7 @@ router.post("/:id/status", requireAuth, async (req, res, next) => {
 router.put("/:id", requireAuth, async (req, res, next) => {
   try {
     const d = await updateDeliverable(req.params.id, req.body);
-    res.json({ deliverable: d });
+    return res.json({ deliverable: d });
   } catch (error) {
     next(error);
   }

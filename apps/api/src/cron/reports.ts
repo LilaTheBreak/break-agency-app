@@ -26,7 +26,7 @@ const checkReportAccess = (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
 
-  res.status(403).json({ error: 'You do not have permission to view these reports.' });
+  return res.status(403).json({ error: 'You do not have permission to view these reports.' });
 };
 
 router.use('/:userId', protect, checkReportAccess);

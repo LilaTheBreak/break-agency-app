@@ -148,14 +148,12 @@ export function createRateLimiter(options: RateLimitOptions) {
     if (entry.count > maxRequests) {
       const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
       
-      res.status(statusCode).json({
+      return res.status(statusCode).json({
         error: message || "You're making requests too quickly. Please slow down and try again.",
         code: "RATE_LIMIT_EXCEEDED",
         retryAfter,
         retryAfterSeconds: retryAfter
       });
-      
-      console.warn(`[RATE LIMIT] Exceeded for key: ${key} (${entry.count}/${maxRequests})`);
       return;
     }
 

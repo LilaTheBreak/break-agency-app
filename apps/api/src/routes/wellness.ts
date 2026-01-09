@@ -39,10 +39,10 @@ router.post("/api/wellness/check-in", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ success: true, data: { check } });
+    return res.json({ success: true, data: { check } });
   } catch (e) {
     console.error("Wellness check-in failed:", e);
-    res.status(500).json({ success: false, error: "Failed to process wellness check-in." });
+    return res.status(500).json({ success: false, error: "Failed to process wellness check-in." });
   }
 });
 
@@ -60,10 +60,10 @@ router.get("/api/wellness/history", async (req: Request, res: Response) => {
       orderBy: { createdAt: "asc" },
     });
 
-    res.json({ success: true, data: { checks } });
+    return res.json({ success: true, data: { checks } });
   } catch (e) {
     console.error("Failed to fetch wellness history:", e);
-    res.status(500).json({ success: false, error: "Failed to fetch wellness history." });
+    return res.status(500).json({ success: false, error: "Failed to fetch wellness history." });
   }
 });
 
@@ -88,10 +88,10 @@ router.get("/api/wellness/insights", async (req: Request, res: Response) => {
       orderBy: { createdAt: "desc" }
     });
 
-    res.json({ success: true, data: { insight } });
+    return res.json({ success: true, data: { insight } });
   } catch (e) {
     console.error("Failed to fetch wellness insights:", e);
-    res.status(500).json({ success: false, error: "Failed to fetch wellness insights." });
+    return res.status(500).json({ success: false, error: "Failed to fetch wellness insights." });
   }
 });
 

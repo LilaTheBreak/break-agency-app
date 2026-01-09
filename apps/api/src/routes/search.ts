@@ -216,7 +216,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     // Calculate totals
     const total = Object.values(results).reduce((sum, arr) => sum + arr.length, 0);
 
-    res.json({
+    return res.json({
       query,
       total,
       results,
@@ -224,7 +224,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error) {
     logError("Global search failed", error, { userId: req.user?.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Search failed",
       message: error instanceof Error ? error.message : "Unknown error"
     });

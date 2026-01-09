@@ -131,22 +131,20 @@ export async function uploadContract(
   try {
     const enabled = process.env.CONTRACT_UPLOAD_ENABLED === "true";
     if (!enabled) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Contract upload feature is disabled",
         message: "This feature is currently disabled. Contact an administrator to enable it.",
         code: "FEATURE_DISABLED"
       });
-      return;
     }
 
     const { id } = req.params;
     const { fileUrl, fileKey } = req.body;
 
     if (!fileUrl && !fileKey) {
-      res.status(400).json({ 
+      return res.status(400).json({ 
         error: "fileUrl or fileKey is required" 
       });
-      return;
     }
 
     // Verify contract exists
@@ -155,10 +153,9 @@ export async function uploadContract(
     });
 
     if (!contract) {
-      res.status(404).json({ 
+      return res.status(404).json({ 
         error: "Contract not found" 
       });
-      return;
     }
 
     // If fileKey provided, construct URL from S3/R2
@@ -184,7 +181,7 @@ export async function uploadContract(
     // Update contract with file URL
     const updated = await contractService.upload(id, finalFileUrl);
 
-    res.json({ contract: updated });
+    return res.json({ contract: updated });
   } catch (error) {
     next(error);
   }
@@ -198,7 +195,7 @@ export async function sendContract(
   try {
     const { id } = req.params;
     await contractService.send(id);
-    res.json({ message: "Contract sent" });
+    return res.json({ message: "Contract sent" });
   } catch (error) {
     next(error);
   }
@@ -213,7 +210,7 @@ export async function signContract(
     const { id } = req.params;
     const { signer } = req.params; // "talent" or "brand"
     await contractService.sign(id, signer);
-    res.json({ message: `${signer} signed contract` });
+    return res.json({ message: `${signer} signed contract` });
   } catch (error) {
     next(error);
   }
@@ -227,7 +224,7 @@ export async function finaliseContract(
   try {
     const { id } = req.params;
     await contractService.finalise(id);
-    res.json({ message: "Contract finalized" });
+    return res.json({ message: "Contract finalized" });
   } catch (error) {
     next(error);
   }
@@ -242,7 +239,7 @@ export async function analyseContract(
     const { id } = req.params;
     const userId = (req as any).user?.id || "system";
     const analysis = await contractService.analyse(id, userId);
-    res.json({ 
+    return res.json({ 
       ok: true,
       message: "Contract analysis complete",
       data: analysis
@@ -260,7 +257,7 @@ export async function listByDeal(
   try {
     const { dealId } = req.params;
     const contracts = await contractService.listForDeal(dealId);
-    res.json(contracts);
+    return res.json(contracts);
   } catch (error) {
     next(error);
   }
@@ -274,7 +271,7 @@ export async function createFromDeal(
   try {
     const { dealId } = req.params;
     const contract = await contractService.createFromDeal(dealId);
-    res.status(201).json(contract);
+    return res.status(201).json(contract);
   } catch (error) {
     next(error);
   }
@@ -288,7 +285,7 @@ export async function generatePDF(
   try {
     const { id } = req.params;
     const contract = await contractService.generatePDF(id);
-    res.json(contract);
+    return res.json(contract);
   } catch (error) {
     next(error);
   }

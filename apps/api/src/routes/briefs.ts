@@ -70,10 +70,10 @@ router.get("/", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), async (req: Reque
       orderBy: { createdAt: "desc" }
     });
 
-    res.json({ briefs });
+    return res.json({ briefs });
   } catch (error) {
     logError("Failed to fetch briefs", error, { userId: req.user?.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch briefs",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -151,10 +151,10 @@ router.post("/", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), async (req: Requ
       console.error("Failed to log audit event:", logError);
     }
 
-    res.status(201).json({ brief });
+    return res.status(201).json({ brief });
   } catch (error) {
     logError("Failed to create brief", error, { userId: req.user?.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to create brief",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -203,10 +203,10 @@ router.post("/ingest", requireRole(['ADMIN', 'SUPERADMIN']), async (req: Request
       }
     });
 
-    res.status(201).json({ brief });
+    return res.status(201).json({ brief });
   } catch (error) {
     logError("Failed to ingest brief", error, { userId: req.user?.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to ingest brief",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -255,10 +255,10 @@ router.get("/:id", async (req: Request, res: Response) => {
       });
     }
 
-    res.json({ brief });
+    return res.json({ brief });
   } catch (error) {
     logError("Failed to fetch brief", error, { briefId: req.params.id, userId: req.user?.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch brief",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -303,10 +303,10 @@ router.get("/:id/matches", async (req: Request, res: Response) => {
       take: 50
     });
 
-    res.json({ matches });
+    return res.json({ matches });
   } catch (error) {
     logError("Failed to fetch brief matches", error, { briefId: req.params.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch matches",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -354,10 +354,10 @@ router.post("/:id/versions", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), asyn
       }
     });
 
-    res.json({ version: newVersion, brief: updated });
+    return res.json({ version: newVersion, brief: updated });
   } catch (error) {
     logError("Failed to create brief version", error, { briefId: req.params.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to create version",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -383,12 +383,12 @@ router.get("/:id/versions", async (req: Request, res: Response) => {
       });
     }
 
-    res.json({ 
+    return res.json({ 
       versions: Array.isArray(brief.versionHistory) ? brief.versionHistory : [] 
     });
   } catch (error) {
     logError("Failed to fetch brief versions", error, { briefId: req.params.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch versions",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -453,10 +453,10 @@ router.post("/restore/:versionId", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND'])
       }
     });
 
-    res.json({ brief: restored });
+    return res.json({ brief: restored });
   } catch (error) {
     logError("Failed to restore brief version", error, { versionId: req.params.versionId });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to restore version",
       message: error instanceof Error ? error.message : "Unknown error"
     });

@@ -27,7 +27,7 @@ export const uploadContractForReview = asyncHandler(async (req: Request, res: Re
     fileKey,
   });
 
-  res.status(202).json(contractReview);
+  return res.status(202).json(contractReview);
 });
 
 // @desc    Get the status and results of a contract review
@@ -40,15 +40,15 @@ export const getContractReview = asyncHandler(async (req: Request, res: Response
 
   if (!review) {
     res.status(404);
-    throw new Error('Contract review not found.');
+    return res.status(404).json({ error: 'Contract review not found.' });
   }
 
-  res.status(200).json(review);
+  return res.status(200).json(review);
 });
 
 // @desc    Regenerate the AI analysis for a contract review
 // @route   POST /api/contracts/review/:id/regenerate
 export const regenerateReview = asyncHandler(async (req: Request, res: Response) => {
   // Logic to re-enqueue the job
-  res.status(202).json({ message: 'Regeneration has been queued.' });
+  return res.status(202).json({ message: 'Regeneration has been queued.' });
 });

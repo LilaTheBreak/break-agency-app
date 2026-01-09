@@ -29,7 +29,7 @@ export async function requireCreator(req: Request, res: Response, next: NextFunc
     next();
   } catch (error) {
     console.error("Creator auth middleware error:", error);
-    res.status(500).json({ error: "Authentication failed" });
+    return res.status(500).json({ error: "Authentication failed" });
   }
 }
 
@@ -68,7 +68,7 @@ export async function attachCreatorProfile(req: Request, res: Response, next: Ne
     next();
   } catch (error) {
     console.error("Attach creator profile error:", error);
-    res.status(500).json({ error: "Failed to load creator profile" });
+    return res.status(500).json({ error: "Failed to load creator profile" });
   }
 }
 
@@ -102,7 +102,7 @@ export async function requireOwnCreatorData(req: Request, res: Response, next: N
     next();
   } catch (error) {
     console.error("Own creator data check error:", error);
-    res.status(500).json({ error: "Authorization failed" });
+    return res.status(500).json({ error: "Authorization failed" });
   }
 }
 

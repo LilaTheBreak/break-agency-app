@@ -83,7 +83,7 @@ router.get("/status", requireAuth, async (req, res) => {
       }
     });
     
-    res.json({
+    return res.json({
       connected: true,
       status,
       message,
@@ -101,7 +101,7 @@ router.get("/status", requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("[GMAIL AUTH STATUS]", error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       connected: false,
       status: "error",
       message: error instanceof Error ? error.message : "Failed to check Gmail status"
@@ -111,7 +111,7 @@ router.get("/status", requireAuth, async (req, res) => {
 
 router.get("/url", requireAuth, (req, res) => {
   const url = getGmailAuthUrl(req.user!.id);
-  res.json({ url });
+  return res.json({ url });
 });
 
 /**
@@ -298,14 +298,14 @@ router.post("/draft-queue", async (req, res) => {
       }
     });
 
-    res.json({ 
+    return res.json({ 
       success: true, 
       draftId: draft.data.id,
       message: "Gmail draft created successfully"
     });
   } catch (error) {
     console.error("[DRAFT_QUEUE] Error:", error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to create Gmail draft",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -322,14 +322,14 @@ router.post("/disconnect", requireAuth, async (req, res) => {
     });
     
     console.log(`[GMAIL AUTH] Successfully disconnected Gmail for user ${userId}`);
-    res.json({ success: true, message: "Gmail disconnected successfully" });
+    return res.json({ success: true, message: "Gmail disconnected successfully" });
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       // Record not found
       return res.json({ success: true, message: "Gmail was not connected" });
     }
     console.error("[GMAIL AUTH DISCONNECT]", error);
-    res.status(500).json({ error: "Failed to disconnect Gmail" });
+    return res.status(500).json({ error: "Failed to disconnect Gmail" });
   }
 });
 

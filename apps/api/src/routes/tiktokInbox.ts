@@ -73,7 +73,7 @@ router.get("/status", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("[TIKTOK INBOX] Status check error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Failed to check TikTok inbox status",
       message: error.message
     });
@@ -88,10 +88,10 @@ router.get("/connect", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const authUrl = getTikTokInboxAuthUrl(userId);
-    res.json({ success: true, url: authUrl });
+    return res.json({ success: true, url: authUrl });
   } catch (error: any) {
     console.error("[TIKTOK INBOX] Connect error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: "Failed to initiate TikTok inbox connection",
       message: error.message
@@ -194,14 +194,14 @@ router.post("/sync", async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const stats = await syncTikTokInboxForUser(userId);
     
-    res.json({
+    return res.json({
       success: true,
       message: "TikTok inbox sync completed",
       stats
     });
   } catch (error: any) {
     console.error("[TIKTOK INBOX] Sync error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: "Failed to sync TikTok inbox",
       message: error.message

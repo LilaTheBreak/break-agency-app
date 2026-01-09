@@ -91,7 +91,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
     ).slice(0, 50);
 
-    res.json({
+    return res.json({
       ok: true,
       count: allEvents.length,
       opens: openEvents.length,
@@ -100,7 +100,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("INBOX TRACKING ERROR:", error);
-    res.status(500).json({ ok: false, error: "Failed to load tracking events" });
+    return res.status(500).json({ ok: false, error: "Failed to load tracking events" });
   }
 });
 

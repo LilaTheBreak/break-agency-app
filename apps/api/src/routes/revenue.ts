@@ -67,7 +67,7 @@ router.get("/metrics", requireAdmin, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching revenue metrics:", error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch revenue metrics",
       success: false
     });
@@ -99,7 +99,7 @@ router.get("/by-brand", requireAdmin, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching revenue by brand:", error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch revenue by brand",
       success: false
     });
@@ -138,7 +138,7 @@ router.get("/creator-earnings", requireAdmin, async (req: Request, res: Response
     });
   } catch (error) {
     console.error("Error fetching creator earnings:", error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch creator earnings",
       success: false
     });
@@ -172,7 +172,7 @@ router.get("/time-series", requireAdmin, async (req: Request, res: Response) => 
     });
   } catch (error) {
     console.error("Error fetching revenue time series:", error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch revenue time series",
       success: false
     });

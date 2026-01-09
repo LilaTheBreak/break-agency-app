@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 // @route   GET /api/reports/:userId/weekly
 export const getLatestWeeklyReport = asyncHandler(async (req: Request, res: Response) => {
   // TODO: CreatorWeeklyReport model not yet implemented in schema
-  res.status(501).json({ 
+  return res.status(501).json({ 
     message: 'Weekly reports feature not yet available',
     error: 'CreatorWeeklyReport model pending implementation'
   });
@@ -19,7 +19,7 @@ export const getLatestWeeklyReport = asyncHandler(async (req: Request, res: Resp
 // @route   GET /api/reports/:userId/history
 export const getReportHistory = asyncHandler(async (req: Request, res: Response) => {
   // TODO: CreatorWeeklyReport model not yet implemented in schema
-  res.status(501).json({ 
+  return res.status(501).json({ 
     message: 'Weekly report history not yet available',
     error: 'CreatorWeeklyReport model pending implementation',
     history: []
@@ -31,5 +31,5 @@ export const getReportHistory = asyncHandler(async (req: Request, res: Response)
 export const runReportGeneration = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
   await aiAgentQueue.add("WEEKLY_REPORT", { userId });
-  res.status(202).json({ message: 'Weekly report generation has been queued.' });
+  return res.status(202).json({ message: 'Weekly report generation has been queued.' });
 });

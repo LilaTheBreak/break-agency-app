@@ -26,7 +26,7 @@ export async function generateBusinessSummary(req: Request, res: Response, next:
       ).catch(err => console.error("[AI History] Failed to log business summary:", err));
     }
 
-    res.json({ ok: true, data, meta: { latency } });
+    return res.json({ ok: true, data, meta: { latency } });
   } catch (error) {
     next(error);
   }
@@ -52,7 +52,7 @@ export async function extractDealData(req: Request, res: Response, next: NextFun
     const data = await dealExtractor.extractDealFromEmail(email.body);
     const latency = Date.now() - startTime;
 
-    res.json({ ok: true, data, meta: { latency } });
+    return res.json({ ok: true, data, meta: { latency } });
   } catch (error) {
     next(error);
   }
@@ -120,7 +120,7 @@ export async function askAssistant(req: Request, res: Response, next: NextFuncti
       { latency, role: role || "admin", contextId: parsed.data.contextId }
     ).catch(err => console.error("[AI History] Failed to log assistant interaction:", err));
 
-    res.json({ ok: true, suggestions: result.text, meta: { latency } });
+    return res.json({ ok: true, suggestions: result.text, meta: { latency } });
   } catch (error) {
     console.error("[AI Assistant Error]", error);
     next(error);

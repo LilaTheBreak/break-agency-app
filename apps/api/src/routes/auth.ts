@@ -62,7 +62,7 @@ router.get("/google/url", (_req, res) => {
   const url = buildGoogleAuthUrl(clientId, redirectUri);
   console.log(">>> FINAL OAUTH URL =", url);
 
-  res.json({ url });
+  return res.json({ url });
 });
 
 /* ---------------------------------------------------------
@@ -249,7 +249,7 @@ router.get("/google/callback", authRateLimiter, async (req: Request, res: Respon
     console.error("Google OAuth callback error", error);
     // Surface the underlying error message for debugging (safe - does not expose secrets)
     const details = error instanceof Error ? error.message : JSON.stringify(error);
-    res.status(500).json({ error: "OAuth failed", details });
+    return res.status(500).json({ error: "OAuth failed", details });
   }
 });
 
@@ -417,10 +417,10 @@ router.get("/me", async (req: Request, res: Response) => {
       where: { id: req.user.id }
     });
 
-    res.json({ user: user ? buildSessionUser(user) : null });
+    return res.json({ user: user ? buildSessionUser(user) : null });
   } catch (error) {
     console.error("/auth/me error", error);
-    res.status(500).json({ error: "Failed to load session" });
+    return res.status(500).json({ error: "Failed to load session" });
   }
 });
 

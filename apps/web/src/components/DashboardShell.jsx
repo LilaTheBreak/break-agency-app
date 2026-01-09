@@ -249,13 +249,7 @@ export function DashboardShell({
               <p className="text-base text-brand-black/70">{subtitle}</p>
             </div>
           </div>
-          {role === "admin" && showStatusSummary && (
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-3">
-              <p className="text-xs text-brand-black/70">
-                <span className="font-semibold uppercase tracking-[0.2em]">Managed Beta</span> — Empty states are expected during launch. Metrics populate as users create campaigns, tasks, and deals.
-              </p>
-            </div>
-          )}
+
         </div>
         <div
           className={[

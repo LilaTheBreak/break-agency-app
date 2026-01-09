@@ -69,6 +69,6 @@ export function metaWebhookVerificationHandler(req: Request, res: Response): Res
   console.log("[META_WEBHOOK] Returning challenge:", challenge);
   
   // Meta expects the challenge string as the response body (plain text, not JSON)
-  res.status(200).send(challenge);
+  return res.status(200).send(challenge);
 }
 

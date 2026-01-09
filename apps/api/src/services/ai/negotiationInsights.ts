@@ -17,7 +17,7 @@ router.post('/generate', async (req, res, next) => {
   try {
     // In a real app, this would likely be enqueued to a worker
     const insight = await generateNegotiationInsights(draftId);
-    res.status(201).json(insight);
+    return res.status(201).json(insight);
   } catch (error) {
     next(error);
   }
@@ -34,7 +34,7 @@ router.get('/:draftId', async (req, res, next) => {
       where: { dealId: draftId },
       orderBy: { createdAt: 'desc' },
     });
-    res.json(insight);
+    return res.json(insight);
   } catch (error) {
     next(error);
   }
