@@ -2,7 +2,11 @@ import OpenAI from "openai";
 import { buildInboxReplyPrompt } from "../../prompts/inboxReplyPrompt.js";
 import { trackAITokens } from "./tokenTracker.js";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error("[CRITICAL] OPENAI_API_KEY is not set in environment variables. AI services will fail.");
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 const AI_MODEL = "gpt-4o";
 
 export interface ReplyGenerationInput {
@@ -23,15 +27,21 @@ export async function generateReplyVariations(input: ReplyGenerationInput) {
   const prompt = buildInboxReplyPrompt(input as any);
   let tokens = 0;
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: AI_MODEL,
-      messages: [
-        { role: "system", content: "You are an expert email assistant for a talent manager." },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" },
-    });
+  if (!openai) {
+    console.error("[AI] OpenAI client not initialized");
+    const latency = Date.now() - start;
+    const fallback: ReplyVariations = {
+      professional: { subject: "Re:", body: "AI service unavailable - provider not configured." },
+      friendly: { subject: "Re:", body: "AI service unavailable - provider not configured." },
+      concise: { subject: "Re:", body: "AI service unavailable - provider not configured." },
+    };
+    return {
+      ok: false,
+      error: "AI_CLIENT_UNAVAILABLE",
+      data: fallback,
+      meta: { tokens: 0, latency },
+    };
+  }
 
     tokens = completion.usage?.total_tokens ?? 0;
     const payload = JSON.parse(completion.choices[0].message.content || "{}") as ReplyVariations;

@@ -1,7 +1,11 @@
 import OpenAI from "openai";
 import prisma from "../../lib/prisma.js";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error("[CRITICAL] OPENAI_API_KEY is not set in environment variables. AI services will fail.");
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 const AI_MODEL = "gpt-4o";
 
 interface CreatorFitResult {
@@ -61,6 +65,22 @@ export async function computeCreatorFit(
       "confidence": "number (0.0-1.0, your confidence in this assessment)"
     }
   `;
+
+  if (!openai) {
+    console.error("[AI] OpenAI client not initialized");
+    return {
+      audienceAlignment: 0,
+      contentStyleMatch: 0,
+      nicheOverlap: 0,
+      valuesAlignment: 0,
+      brandSafetyScore: 0,
+      riskScore: 0,
+      totalScore: 0,
+      aiSummary: "AI client not configured",
+      insights: {},
+      confidence: 0
+    };
+  }
 
   const completion = await openai.chat.completions.create({
     model: AI_MODEL,

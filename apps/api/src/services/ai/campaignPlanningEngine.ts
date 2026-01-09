@@ -1,6 +1,10 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error("[CRITICAL] OPENAI_API_KEY is not set in environment variables. AI services will fail.");
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 const AI_MODEL = "gpt-4o";
 
 interface CampaignBrief {

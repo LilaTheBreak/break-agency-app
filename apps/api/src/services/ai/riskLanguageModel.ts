@@ -1,6 +1,10 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error("[CRITICAL] OPENAI_API_KEY is not set in environment variables. AI services will fail.");
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 const AI_MODEL = "gpt-4o";
 
 interface TextRiskAnalysis {
@@ -16,6 +20,16 @@ interface TextRiskAnalysis {
  * @returns A structured risk analysis object.
  */
 export async function analyzeTextForRisk(text: string): Promise<TextRiskAnalysis> {
+  if (!openai) {
+    console.warn("[AI] OpenAI client not initialized - returning safe default");
+    return {
+      riskScore: 0,
+      flags: [],
+      summary: "AI risk analysis unavailable",
+      confidence: 0
+    };
+  }
+
   const prompt = `
     Analyze the following text for signs of risk, including scams, phishing, impersonation, social engineering, and unusual urgency.
 

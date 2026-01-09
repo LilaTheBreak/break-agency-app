@@ -2,10 +2,24 @@ import OpenAI from "openai";
 import { buildBundlePrompt } from "../../prompts/bundlePromptBuilder.js";
 import { trackAITokens } from "./tokenTracker.js";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error("[CRITICAL] OPENAI_API_KEY is not set in environment variables. AI services will fail.");
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 const AI_MODEL = "gpt-4o";
 
 export async function runBundleLLM(input: any) {
+  if (!openai) {
+    console.error("[AI] OpenAI client not initialized");
+    return {
+      ok: false,
+      error: "AI_CLIENT_UNAVAILABLE",
+      data: null,
+      meta: { tokens: 0, latency: 0 }
+    };
+  }
+
   const prompt = buildBundlePrompt();
   const start = Date.now();
   let tokens = 0;

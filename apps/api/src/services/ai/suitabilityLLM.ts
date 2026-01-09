@@ -1,7 +1,11 @@
 import OpenAI from "openai";
 import { trackAITokens } from "./tokenTracker.js";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error("[CRITICAL] OPENAI_API_KEY is not set in environment variables. AI services will fail.");
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 const AI_MODEL = "gpt-4o";
 
 interface LLMSuitabilityAnalysis {
@@ -42,6 +46,24 @@ export async function analyzeQualitativeSuitability(
 
   const start = Date.now();
   let tokens = 0;
+
+  if (!openai) {
+    console.error("[AI] OpenAI client not initialized");
+    const latency = Date.now() - start;
+    await trackAITokens({ service: "analyzeQualitativeSuitability", tokens: 0 });
+    return {
+      ok: false,
+      data: {
+        contentAlignmentScore: 0,
+        brandToneMatch: 0,
+        conflictSentiment: 0,
+        warningSigns: ["AI_CLIENT_UNAVAILABLE"],
+        aiSummary: "AI client not configured",
+        confidence: 0,
+      },
+      meta: { tokens: 0, latency },
+    };
+  }
 
   try {
     const completion = await openai.chat.completions.create({

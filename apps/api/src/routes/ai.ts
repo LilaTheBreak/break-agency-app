@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimiters } from "../middleware/rateLimit.js";
 import * as aiController from "../controllers/aiController.js";
@@ -9,6 +9,51 @@ const router = Router();
 
 // Apply rate limiting to all AI endpoints
 const aiRateLimiter = rateLimiters.aiRequests;
+
+// GET /api/ai/health - Check if AI provider is configured and accessible
+router.get("/health", async (req: Request, res: Response) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    return res.status(503).json({
+      ok: false,
+      status: "unconfigured",
+      message: "OPENAI_API_KEY is not set in environment variables",
+      error: "AI provider not configured"
+    });
+  }
+
+  try {
+    // Test API key validity with a simple request
+    const response = await fetch("https://api.openai.com/v1/models", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      }
+    });
+
+    if (!response.ok) {
+      return res.status(503).json({
+        ok: false,
+        status: "invalid_key",
+        message: "OpenAI API key is invalid or expired",
+        error: `API returned ${response.status}`
+      });
+    }
+
+    return res.json({
+      ok: true,
+      status: "healthy",
+      message: "AI provider is configured and accessible"
+    });
+  } catch (error) {
+    return res.status(503).json({
+      ok: false,
+      status: "connection_error",
+      message: "Failed to connect to OpenAI API",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
 
 // POST /api/ai/:role - AI assistant chat for different user roles (handles auth in controller)
 router.post("/:role", aiController.askAssistant);

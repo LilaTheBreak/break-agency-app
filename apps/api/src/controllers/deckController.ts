@@ -2,9 +2,11 @@ import type { Request, Response } from "express";
 import PDFDocument from "pdfkit";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error("[CRITICAL] OPENAI_API_KEY is not set in environment variables. AI services will fail.");
+}
+const openai = apiKey ? new OpenAI({ apiKey }) : null;
 
 /**
  * Generate branded PDF deck from CRM data
@@ -12,6 +14,13 @@ const openai = new OpenAI({
  */
 export async function generateDeck(req: Request, res: Response) {
   try {
+    if (!openai) {
+      return res.status(503).json({ 
+        ok: false, 
+        error: "AI service unavailable - provider not configured" 
+      });
+    }
+
     const { context, content, text } = req.body;
 
     // Create PDF document
