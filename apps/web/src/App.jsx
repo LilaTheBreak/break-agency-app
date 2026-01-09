@@ -18,6 +18,7 @@ import { Badge } from "./components/Badge.jsx";
 import { UgcBoard } from "./components/UgcBoard.jsx";
 import { DashboardShell } from "./components/DashboardShell.jsx";
 import { LogoWordmark } from "./components/LogoWordmark.jsx";
+import { ImpersonationBanner } from "./components/ImpersonationBanner.jsx";
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
 import * as Sentry from "@sentry/react";
 import { RouteErrorBoundaryWrapper } from "./components/RouteErrorBoundary.jsx";
@@ -374,6 +375,7 @@ function App() {
               </div>
             )}
             <OnboardingReminderBanner />
+            <ImpersonationBanner />
             <AppRoutes
               session={session}
               authModalOpen={authModalOpen}

@@ -87,6 +87,7 @@ import queuesRouter from "./routes/queues.js";
 // Users Management
 import usersRouter from "./routes/users.js";
 import setupRouter from "./routes/setup.js";
+import impersonateRouter from "./routes/impersonate.js";
 
 // Exclusive Talent
 import exclusiveRouter from "./routes/exclusive.js";
@@ -698,6 +699,10 @@ app.use("/api/insights", insightsRouter);
 // ------------------------------------------------------
 app.use(activityRouter); // Routes already include /api/activity prefix
 app.use(auditRouter); // Routes already include /audit prefix
+
+// IMPERSONATION (View As)
+// ------------------------------------------------------
+app.use("/api/admin/impersonate", impersonateRouter);
 
 // ------------------------------------------------------
 // GLOBAL MIDDLEWARE (AFTER ROUTING)

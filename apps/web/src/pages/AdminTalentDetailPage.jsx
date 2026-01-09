@@ -6,6 +6,7 @@ import { apiFetch } from "../services/apiClient.js";
 import { fetchTalent, createDeal, fetchBrands, updateDeal } from "../services/crmClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { TalentAccessSettings } from "../components/TalentAccessSettings.jsx";
+import { ViewAsTalentButton } from "../components/ViewAsTalentButton.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { 
   User, UserX, Edit2, Link2, Unlink, 
@@ -1135,6 +1136,7 @@ export function AdminTalentDetailPage() {
           Back to Talent List
         </button>
         <div className="flex items-center gap-3">
+          <ViewAsTalentButton talentId={talent.id} talentName={talent.displayName || talent.name} />
           <button
             type="button"
             onClick={() => setEditModalOpen(true)}
