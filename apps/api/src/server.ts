@@ -98,6 +98,9 @@ import analyticsRouter from "./routes/analytics.js";
 // Revenue
 import revenueRouter from "./routes/revenue.js";
 
+// Dashboard Customization
+import dashboardCustomizationRouter from "./routes/dashboardCustomization.js";
+
 // Admin Finance
 import adminFinanceRouter from "./routes/admin/finance.js";
 
@@ -514,6 +517,11 @@ app.use("/api/analytics", analyticsRouter);
 // REVENUE (Deal-Based Financial Metrics)
 // ------------------------------------------------------
 app.use("/api/revenue", revenueRouter);
+
+// ------------------------------------------------------
+// DASHBOARD CUSTOMIZATION
+// ------------------------------------------------------
+app.use("/api/dashboard", dashboardCustomizationRouter);
 
 // ------------------------------------------------------
 // CREATOR ONBOARDING

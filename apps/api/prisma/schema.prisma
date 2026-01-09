@@ -2187,3 +2187,19 @@ model RevenueGoal {
   @@index([goalType])
   @@unique([talentId, goalType, platform])
 }
+
+model UserDashboardConfig {
+  id                String    @id @default(cuid())
+  userId            String
+  dashboardType     String    // ADMIN_OVERVIEW, TALENT_OVERVIEW, EXCLUSIVE_TALENT_OVERVIEW
+  snapshots         Json      // Array of { snapshotId, enabled, order }
+  customizations    Json?     // Additional user preferences per snapshot
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dashboardType])
+  @@unique([userId, dashboardType])
+}
