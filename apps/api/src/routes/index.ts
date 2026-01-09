@@ -177,10 +177,20 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
         id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email,
         password: null,
-        ...data,
+        name: data.name,
+        location: data.location,
+        timezone: data.timezone,
+        pronouns: data.pronouns,
+        accountType: data.accountType,
+        status: data.status,
+        bio: data.bio,
+        socialLinks: data.socialLinks || undefined,
         updatedAt: new Date(),
       },
-      update: data,
+      update: {
+        ...data,
+        socialLinks: data.socialLinks || undefined,
+      },
     });
 
     const profile = formatProfile(user);

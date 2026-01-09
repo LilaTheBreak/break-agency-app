@@ -205,7 +205,7 @@ export async function healMissingBrands(): Promise<{
     const brokenDeals = await prisma.deal.findMany({
       where: {
         OR: [
-          { brandId: { equals: null } },
+          { brandId: undefined },
           { brandId: "" },
         ],
         // But must have a brandName to recover from

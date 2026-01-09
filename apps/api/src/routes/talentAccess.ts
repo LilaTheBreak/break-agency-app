@@ -83,7 +83,7 @@ router.get("/:talentId/access-list", async (req, res) => {
           email: owner.email,
           role: "MANAGE" as const,
           canRemove: false,
-          reason: "Owner",
+          reason: undefined,
         });
         userIds.add(owner.id);
       }
@@ -97,7 +97,7 @@ router.get("/:talentId/access-list", async (req, res) => {
           email: manager.email,
           role: "MANAGE" as const,
           canRemove: false,
-          reason: "Manager",
+          reason: undefined,
         });
         userIds.add(manager.id);
       }

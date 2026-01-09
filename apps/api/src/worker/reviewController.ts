@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler.js';
-import { contractReviewQueue } from '../../worker/queues.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { contractReviewQueue } from './queues.js';
 
 const prisma = new PrismaClient();
 
@@ -15,9 +15,12 @@ export const uploadContractForReview = asyncHandler(async (req: Request, res: Re
 
   const contractReview = await prisma.contractReview.create({
     data: {
+      id: `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
       status: 'queued',
-      fileId: fileKey, // This should link to your File model
+      fileId: fileKey,
+      contractText: '',
+      updatedAt: new Date(),
     },
   });
 
