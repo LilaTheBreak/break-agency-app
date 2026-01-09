@@ -16,6 +16,7 @@ import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
 import { requireAuth } from "../middleware/auth.js";
 import { logAuditEvent, logDestructiveAction } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
+import { getEffectiveUserId, enforceDataScoping } from "../lib/dataScopingHelpers.js";
 // import slackClient from "../integrations/slack/slackClient.js";
 
 const router = Router();
@@ -23,10 +24,13 @@ const router = Router();
 router.get("/", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.user!;
+    // SECURITY FIX: Use effective user ID to prevent accessing other users' files while impersonating
+    const effectiveUserId = getEffectiveUserId(req as any);
     const folder = typeof req.query.folder === "string" ? req.query.folder : undefined;
-    const targetUser = typeof req.query.userId === "string" ? req.query.userId : currentUser.id;
+    const targetUser = typeof req.query.userId === "string" ? req.query.userId : effectiveUserId;
     const userIsAdmin = checkIsAdmin(currentUser);
-    if (targetUser !== currentUser.id && !userIsAdmin) {
+    // SECURITY FIX: Enforce data scoping - cannot access other users' files while impersonating
+    if (targetUser !== effectiveUserId && !userIsAdmin) {
       return res.status(403).json({ error: true, message: "Forbidden" });
     }
     const files = await listUserFiles(targetUser, folder);
@@ -39,11 +43,13 @@ router.get("/", requireAuth, async (req: Request, res: Response, next: NextFunct
 router.post("/upload-url", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.user!;
+    // SECURITY FIX: Use effective user ID for upload authorization
+    const effectiveUserId = getEffectiveUserId(req as any);
     const { filename, contentType } = req.body ?? {};
     if (!filename || !contentType) {
       return res.status(400).json({ error: true, message: "filename and contentType are required" });
     }
-    const result = await requestUploadUrl(currentUser.id, filename, contentType);
+    const result = await requestUploadUrl(effectiveUserId, filename, contentType);
     res.json(result);
   } catch (err) {
     next(err);

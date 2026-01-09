@@ -12,6 +12,7 @@ import {
   setTalentAccess,
   getTalentAccessList,
 } from "../lib/talentAccessControl.js";
+import { blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
 
 const router = Router();
 
@@ -140,6 +141,9 @@ router.get("/:talentId/access-list", async (req, res) => {
  */
 router.post("/:talentId/access-set", async (req, res) => {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
     const { talentId } = req.params;
     const { userId, role } = req.body;
 
@@ -227,6 +231,9 @@ router.post("/:talentId/access-set", async (req, res) => {
  */
 router.post("/:talentId/access-revoke", async (req, res) => {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
     const { talentId } = req.params;
     const { userId } = req.body;
     const adminId = req.user?.id;

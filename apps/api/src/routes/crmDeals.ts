@@ -8,6 +8,7 @@ import { DealStage } from "@prisma/client";
 import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
 import * as dealWorkflowService from "../services/deals/dealWorkflowService.js";
 import { enrichDealBrand } from "../lib/brandAutoCreation.js";
+import { getEffectiveUserId, enforceDataScoping, blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
 
 const router = express.Router();
 
@@ -27,8 +28,14 @@ router.get("/snapshot", async (req, res) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    // Fetch all deals
+    // SECURITY FIX: Scope to effective user to prevent accessing other talents' deals while impersonating
+    const effectiveUserId = getEffectiveUserId(req);
+
+    // Fetch deals for effective user only
     const allDeals = await prisma.deal.findMany({
+      where: {
+        userId: effectiveUserId
+      },
       select: {
         id: true,
         stage: true,
@@ -108,9 +115,13 @@ router.get("/snapshot", async (req, res) => {
 // GET /api/crm-deals - List all deals with optional filters
 router.get("/", async (req, res) => {
   try {
+    const effectiveUserId = getEffectiveUserId(req);
     const { brandId, status, owner } = req.query;
 
     const where: any = {};
+    // SECURITY FIX: Filter by effectiveUserId to prevent accessing other talents' deals while impersonating
+    where.userId = effectiveUserId;
+    
     if (brandId) where.brandId = brandId;
     if (status) {
       // Map status string to DealStage enum if needed
@@ -181,6 +192,7 @@ router.get("/", async (req, res) => {
 // GET /api/crm-deals/:id - Get a single deal by ID
 router.get("/:id", async (req, res) => {
   try {
+    const effectiveUserId = getEffectiveUserId(req);
     const { id } = req.params;
 
     let deal = await prisma.deal.findUnique({
@@ -203,6 +215,11 @@ router.get("/:id", async (req, res) => {
 
     if (!deal) {
       return res.status(404).json({ error: "Deal not found" });
+    }
+    
+    // SECURITY FIX: Enforce data scoping - only return deal if owned by effective user
+    if (deal.userId !== effectiveUserId) {
+      return res.status(403).json({ error: "Cannot access deals for other users while impersonating" });
     }
 
     // Auto-heal deal with missing brand
@@ -233,6 +250,12 @@ router.get("/:id", async (req, res) => {
 // POST /api/crm-deals - Create a new deal
 router.post("/", async (req, res) => {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
+    // Get effective user ID (respects impersonation context)
+    const effectiveUserId = getEffectiveUserId(req);
+    
     const { dealName, brandId, status, estimatedValue, expectedCloseDate, notes, userId, talentId } = req.body;
 
     // Validation
@@ -242,12 +265,17 @@ router.post("/", async (req, res) => {
     if (!brandId) {
       return res.status(400).json({ error: "Brand is required" });
     }
-    if (!userId) {
-      return res.status(400).json({ error: "User ID is required" });
-    }
+    // SECURITY FIX: Use effectiveUserId instead of trusting talentId from body
+    // This prevents admins from creating deals assigned to other talents while impersonating
     if (!talentId) {
       return res.status(400).json({ error: "Talent ID is required" });
     }
+    // Enforce data scoping - if talentId doesn't match effective user, reject
+    if (talentId !== effectiveUserId) {
+      return res.status(403).json({ error: "Cannot create deals for other users while impersonating" });
+    }
+    // Ignore userId from body - always use effectiveUserId
+    const finalUserId = effectiveUserId;
 
     // Map status string to DealStage enum
     const stageMap: Record<string, DealStage> = {
@@ -268,8 +296,8 @@ router.post("/", async (req, res) => {
         id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         brandName: dealName.trim(), // Deal model uses brandName
         brandId,
-        userId,
-        talentId,
+        userId: finalUserId,
+        talentId: effectiveUserId,
         stage,
         value: estimatedValue || null,
         expectedClose: expectedCloseDate ? new Date(expectedCloseDate) : null,
@@ -332,8 +360,21 @@ router.post("/", async (req, res) => {
 // PATCH /api/crm-deals/:id - Update a deal
 router.patch("/:id", async (req, res) => {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
+    const effectiveUserId = getEffectiveUserId(req);
     const { id } = req.params;
     const { dealName, brandId, status, stage, estimatedValue, value, currency, expectedCloseDate, expectedClose, notes, paymentStatus } = req.body;
+    
+    // Verify deal exists and is owned by effective user
+    const existingDeal = await prisma.deal.findUnique({ where: { id } });
+    if (!existingDeal) {
+      return res.status(404).json({ error: "Deal not found" });
+    }
+    if (existingDeal.userId !== effectiveUserId) {
+      return res.status(403).json({ error: "Cannot update deals for other users while impersonating" });
+    }
 
     // If status is being changed, use workflow service to trigger invoice creation
     if (status !== undefined || stage !== undefined) {
@@ -540,14 +581,23 @@ router.patch("/:id", async (req, res) => {
 // DELETE /api/crm-deals/:id - Delete a deal
 router.delete("/:id", async (req, res) => {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
+    const effectiveUserId = getEffectiveUserId(req);
     const { id } = req.params;
 
     const deal = await prisma.deal.findUnique({ 
       where: { id },
-      select: { id: true, brandName: true, brandId: true }
+      select: { id: true, brandName: true, brandId: true, userId: true }
     });
     if (!deal) {
       return res.status(404).json({ error: "Deal not found" });
+    }
+    
+    // SECURITY FIX: Enforce data scoping - verify deal is owned by effective user before deleting
+    if (deal.userId !== effectiveUserId) {
+      return res.status(403).json({ error: "Cannot delete deals for other users while impersonating" });
     }
 
     await prisma.deal.delete({
@@ -585,6 +635,7 @@ router.delete("/:id", async (req, res) => {
 // POST /api/crm-deals/:id/notes - Add a note to a deal
 router.post("/:id/notes", async (req, res) => {
   try {
+    const effectiveUserId = getEffectiveUserId(req);
     const { id } = req.params;
     const { text, author } = req.body;
 
@@ -598,6 +649,11 @@ router.post("/:id/notes", async (req, res) => {
 
     if (!deal) {
       return res.status(404).json({ error: "Deal not found" });
+    }
+
+    // SECURITY FIX: Enforce data scoping - verify deal is owned by effective user
+    if (deal.userId !== effectiveUserId) {
+      return res.status(403).json({ error: "Cannot add notes to deals for other users while impersonating" });
     }
 
     // Deal.notes is a string, not an array - append to it
@@ -647,11 +703,17 @@ router.post("/:id/notes", async (req, res) => {
 // POST /api/crm-deals/batch-import - Import deals from localStorage
 router.post("/batch-import", async (req, res) => {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
     const { deals } = req.body;
 
     if (!Array.isArray(deals) || deals.length === 0) {
       return res.status(400).json({ error: "Deals array is required" });
     }
+
+    // SECURITY FIX: Get effective user and enforce data scoping
+    const effectiveUserId = getEffectiveUserId(req);
 
     const results = {
       imported: 0,
@@ -698,13 +760,20 @@ router.post("/batch-import", async (req, res) => {
           continue;
         }
 
+        // SECURITY FIX: Enforce data scoping - only allow importing deals for effective user
+        if (deal.userId !== effectiveUserId || deal.talentId !== effectiveUserId) {
+          results.skipped++;
+          results.errors.push(`Cannot import deals for other users while impersonating`);
+          continue;
+        }
+
         await prisma.deal.create({
           data: {
             id: `deal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             brandName: deal.dealName,
             brandId: deal.brandId,
-            userId: deal.userId,
-            talentId: deal.talentId,
+            userId: effectiveUserId,
+            talentId: effectiveUserId,
             stage: deal.status ? (stageMap[deal.status] || DealStage.NEW_LEAD) : DealStage.NEW_LEAD,
             value: deal.estimatedValue || null,
             expectedClose: deal.expectedCloseDate ? new Date(deal.expectedCloseDate) : null,
@@ -734,6 +803,9 @@ router.post("/batch-import", async (req, res) => {
 // SUPERADMIN ONLY: Scans all deals and auto-creates brands where needed
 router.post("/admin/heal-missing-brands", async (req, res) => {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
     // Check SUPERADMIN authorization
     if (!isSuperAdmin(req.user!)) {
       return res.status(403).json({ error: "FORBIDDEN: Only SUPERADMIN can trigger batch healing" });

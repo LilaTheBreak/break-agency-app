@@ -411,6 +411,14 @@ app.use(attachUserFromSession);
 // Detects and validates impersonation claims in JWT
 app.use(impersonationMiddleware);
 
+// PRODUCTION SAFETY GUARDS (Phase 2B)
+// These middleware provide production safety for impersonation:
+// 1. Write blocking - only GET/HEAD/OPTIONS allowed while impersonating
+// 2. Audit logging - log all impersonation requests
+import { impersonationWriteBlocker, impersonationAuditLog } from "./middleware/impersonationGuards.js";
+app.use(impersonationWriteBlocker);
+app.use(impersonationAuditLog);
+
 // Stripe webhook MUST run BEFORE body parsers
 app.post("/webhooks/stripe", express.raw({ type: "application/json" }), stripeWebhookHandler);
 

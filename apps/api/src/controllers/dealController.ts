@@ -3,6 +3,7 @@ import { z } from "zod";
 import { DealStage } from "@prisma/client";
 import * as dealService from "../services/deals/dealService.js";
 import * as dealWorkflowService from "../services/deals/dealWorkflowService.js";
+import { getEffectiveUserId, blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
 
 const DealCreateSchema = z.object({
   talentId: z.string().cuid(),
@@ -13,9 +14,19 @@ const DealCreateSchema = z.object({
 
 export async function createDeal(req: Request, res: Response, next: NextFunction) {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
+    // Use effective user ID (respects impersonation context)
+    const effectiveUserId = getEffectiveUserId(req);
+    
     const parsed = DealCreateSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
+    }
+    // SECURITY FIX: Verify talentId matches effective user
+    if (parsed.data.talentId !== effectiveUserId) {
+      return res.status(403).json({ error: "Cannot create deals for other users while impersonating" });
     }
     // TODO: Implement createDeal in dealService - for now just return the input
     return res.status(201).json({ ok: false, error: "Create deal not yet implemented" });
@@ -26,7 +37,9 @@ export async function createDeal(req: Request, res: Response, next: NextFunction
 
 export async function listDeals(req: Request, res: Response, next: NextFunction) {
   try {
-    const deals = await dealService.getAllDeals(req.user!.id);
+    // Use effective user ID (respects impersonation context)
+    const effectiveUserId = getEffectiveUserId(req);
+    const deals = await dealService.getAllDeals(effectiveUserId);
     return res.json(deals);
   } catch (error) {
     next(error);
@@ -35,7 +48,9 @@ export async function listDeals(req: Request, res: Response, next: NextFunction)
 
 export async function getDeal(req: Request, res: Response, next: NextFunction) {
   try {
-    const deal = await dealService.getDealById(req.params.id, req.user!.id);
+    // Use effective user ID (respects impersonation context)
+    const effectiveUserId = getEffectiveUserId(req);
+    const deal = await dealService.getDealById(req.params.id, effectiveUserId);
     if (!deal) {
       return res.status(404).json({ error: "Deal not found" });
     }
@@ -56,6 +71,9 @@ const DealUpdateSchema = z.object({
 
 export async function updateDeal(req: Request, res: Response, next: NextFunction) {
   try {
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
     const parsed = DealUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
@@ -69,7 +87,12 @@ export async function updateDeal(req: Request, res: Response, next: NextFunction
 
 export async function deleteDeal(req: Request, res: Response, next: NextFunction) {
   try {
-    const success = await dealService.deleteDeal(req.params.id, req.user!.id);
+    // Block admin actions while impersonating
+    blockAdminActionsWhileImpersonating(req);
+    
+    // Use effective user ID (respects impersonation context)
+    const effectiveUserId = getEffectiveUserId(req);
+    const success = await dealService.deleteDeal(req.params.id, effectiveUserId);
     if (!success) {
       return res.status(404).json({ error: "Deal not found or insufficient permissions" });
     }

@@ -5,12 +5,20 @@ import { logAdminActivity } from "../lib/adminActivityLogger.js";
 import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
 import { logError } from "../lib/logger.js";
 import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
+import { blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
 
 const router = Router();
 
 // All CRM routes require admin access
 router.use(requireAuth);
 router.use((req, res, next) => {
+  // Block admin actions while impersonating
+  try {
+    blockAdminActionsWhileImpersonating(req);
+  } catch (error) {
+    return res.status(403).json({ error: "Forbidden: Cannot perform admin actions while impersonating" });
+  }
+  
   if (!isAdmin(req.user!) && !isSuperAdmin(req.user!)) {
     return res.status(403).json({ error: "Forbidden: Admin access required" });
   }

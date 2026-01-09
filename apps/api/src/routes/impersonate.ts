@@ -9,8 +9,23 @@ import { setAuthCookie, SESSION_COOKIE_NAME } from "../lib/jwt.js";
 
 const router = Router();
 
+// PRODUCTION SAFETY: Kill switch for impersonation feature
+const IMPERSONATION_ENABLED = process.env.IMPERSONATION_ENABLED === "true";
+
 // Middleware: Require authentication (will add SUPERADMIN checks in individual routes)
 router.use(requireAuth);
+
+// PRODUCTION SAFETY: Check kill switch on all impersonation routes
+router.use((req: Request, res: Response, next) => {
+  if (!IMPERSONATION_ENABLED) {
+    console.warn(`[IMPERSONATION GUARD] Kill switch active - blocking impersonation attempt from ${req.user?.email}`);
+    return res.status(403).json({
+      error: "Impersonation temporarily disabled",
+      message: "The impersonation feature is currently disabled for production safety. Please contact support."
+    });
+  }
+  next();
+});
 
 interface ImpersonationRequest extends Request {
   user?: any;
