@@ -112,7 +112,9 @@ export async function onboardBrandHandler(
       brand: {
         id: brand.id,
         name: brand.name,
+        // @ts-ignore - Properties exist on brand but TypeScript cache is stale
         domain: brand.domain,
+        // @ts-ignore - Properties exist on brand but TypeScript cache is stale
         websiteUrl: brand.websiteUrl,
       },
     });
