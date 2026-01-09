@@ -87,20 +87,14 @@ router.get(
                 value: true,
                 endDate: true,
                 createdAt: true,
-              },
-            },
-            Payment: {
-              select: {
-                id: true,
-                amount: true,
-                status: true,
-              },
-            },
-            Payout: {
-              select: {
-                id: true,
-                amount: true,
-                status: true,
+                Payment: {
+                  select: {
+                    id: true,
+                    amount: true,
+                    status: true,
+                    actualPaymentDate: true,
+                  },
+                },
               },
             },
           },
@@ -108,6 +102,21 @@ router.get(
         });
         
         console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Found", exclusiveTalents.length, "exclusive talents");
+        
+        // Fetch manager info for talents that have managers
+        const managerIds = Array.from(
+          new Set(exclusiveTalents.map(t => t.managerId).filter(Boolean))
+        );
+        const managers = managerIds.length > 0
+          ? await prisma.user.findMany({
+              where: { id: { in: managerIds } },
+              select: { id: true, name: true },
+            })
+          : [];
+        
+        const managerMap = new Map(managers.map(m => [m.id, m.name]));
+        
+        console.log("[EXCLUSIVE-TALENT-SNAPSHOT] Fetched", managers.length, "manager records");
         
         // Build snapshots with complete financial data
         for (const talent of exclusiveTalents) {
@@ -117,45 +126,81 @@ router.get(
               continue;
             }
             
-            // Calculate deal metrics
+            // Calculate deal metrics based on actual DealStage enum values
             const deals = talent.Deal || [];
-            const activeDealStages = ["PITCH", "NEGOTIATION", "AWAITING_SIGNATURE", "ACTIVE"];
-            const activeDealStagesWithValue = ["PITCH", "NEGOTIATION"];
             
-            const openPipelineDeals = deals.filter(d => activeDealStagesWithValue.includes(d.stage || ""));
-            const confirmedDeals = deals.filter(d => ["AWAITING_SIGNATURE", "ACTIVE"].includes(d.stage || ""));
-            const completedDeals = deals.filter(d => d.stage === "COMPLETED");
+            // Active deal stages (deals in active negotiation/execution)
+            const pipelineStages = ["NEW_LEAD", "NEGOTIATION", "CONTRACT_SENT"];
+            const confirmedStages = ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING", "PAYMENT_RECEIVED"];
+            const activeStages = [...pipelineStages, ...confirmedStages];
             
-            const openPipeline = openPipelineDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+            // Calculate pipeline (deals in discussion, not yet signed)
+            const pipelineDeals = deals.filter(d => pipelineStages.includes(d.stage || ""));
+            const openPipeline = pipelineDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+            
+            // Calculate confirmed revenue (deals signed or further along)
+            const confirmedDeals = deals.filter(d => confirmedStages.includes(d.stage || ""));
             const confirmedRevenue = confirmedDeals.reduce((sum, d) => sum + (d.value || 0), 0);
             
-            // Calculate payment metrics
-            const paidAmount = (talent.Payout || [])
-              .filter(p => p.status === "PAID")
-              .reduce((sum, p) => sum + (p.amount || 0), 0);
+            // Calculate paid and unpaid amounts from Payment records on confirmed deals
+            let paidAmount = 0;
+            let unpaidAmount = 0;
             
-            const unpaidAmount = (talent.Payout || [])
-              .filter(p => ["PENDING", "PROCESSING"].includes(p.status || "PENDING"))
-              .reduce((sum, p) => sum + (p.amount || 0), 0);
+            for (const deal of confirmedDeals) {
+              const dealPayments = deal.Payment || [];
+              const dealPaidAmount = dealPayments
+                .filter(p => p.status === "PAID")
+                .reduce((sum, p) => sum + (p.amount || 0), 0);
+              
+              paidAmount += dealPaidAmount;
+              
+              // Unpaid for this deal = deal value - paid amount
+              const dealUnpaidAmount = (deal.value || 0) - dealPaidAmount;
+              if (dealUnpaidAmount > 0) {
+                unpaidAmount += dealUnpaidAmount;
+              }
+            }
             
             // Calculate flags
-            const dealsWithoutStage = deals.filter(d => !d.stage).length;
+            // 1. Deals without stage (NEW_LEAD or null stage - shouldn't happen but check)
+            const dealsWithoutStage = deals.filter(d => !d.stage || d.stage === "NEW_LEAD").length;
+            
+            // 2. Overdue deals (endDate passed and not completed/lost)
             const overdueDeals = deals.filter(d => {
               if (!d.endDate) return false;
-              return new Date(d.endDate) < new Date() && !["COMPLETED", "LOST"].includes(d.stage || "");
+              const isActive = !["COMPLETED", "LOST"].includes(d.stage || "");
+              const isPast = new Date(d.endDate) < new Date();
+              return isActive && isPast;
             }).length;
-            const unpaidDeals = deals.filter(d => d.stage === "COMPLETED" && unpaidAmount > 0).length;
+            
+            // 3. Unpaid deals (confirmed deals with unpaid amount)
+            const unpaidDealsCount = confirmedDeals.filter(d => {
+              const dealPayments = d.Payment || [];
+              const dealPaidAmount = dealPayments
+                .filter(p => p.status === "PAID")
+                .reduce((sum, p) => sum + (p.amount || 0), 0);
+              return (d.value || 0) - dealPaidAmount > 0;
+            }).length;
+            
+            // 4. No manager assigned
             const noManagerAssigned = !talent.managerId;
             
-            // Calculate risk level
-            const flagCount = (dealsWithoutStage > 0 ? 1 : 0) + 
-                            (overdueDeals > 0 ? 1 : 0) + 
-                            (unpaidDeals > 0 ? 1 : 0) + 
-                            (noManagerAssigned ? 1 : 0);
+            // Calculate risk level with weighted severity
+            // HIGH: ≥1 overdue deal OR unpaid amount > £5000 OR no active deals
+            // MEDIUM: pipeline exists but no confirmed deals OR no manager assigned
+            // LOW: confirmed deals paid OR no red flags
             
-            let riskLevel = "LOW";
-            if (flagCount >= 3) riskLevel = "HIGH";
-            else if (flagCount >= 1) riskLevel = "MEDIUM";
+            const hasActiveDealValue = activeStages.some(stage => 
+              deals.filter(d => d.stage === stage).some(d => (d.value || 0) > 0)
+            );
+            
+            let riskLevel: "HIGH" | "MEDIUM" | "LOW" = "LOW";
+            
+            if (overdueDeals > 0 || unpaidAmount > 5000 || (confirmedDeals.length > 0 && !hasActiveDealValue)) {
+              riskLevel = "HIGH";
+            } else if ((openPipeline > 0 && confirmedRevenue === 0) || noManagerAssigned) {
+              riskLevel = "MEDIUM";
+            }
             
             if (riskLevel === "HIGH") totalHighRisk++;
             if (riskLevel === "MEDIUM") totalMediumRisk++;
@@ -167,19 +212,19 @@ router.get(
               status: talent.status || "ACTIVE",
               representationType: talent.representationType || "EXCLUSIVE",
               managerId: talent.managerId || null,
-              managerName: talent.managerId ? "TBD" : null,
+              managerName: talent.managerId ? managerMap.get(talent.managerId) || null : null,
               creatorEmail: talent.User?.email || null,
               deals: {
                 openPipeline,
                 confirmedRevenue,
                 paid: paidAmount,
                 unpaid: unpaidAmount,
-                activeCount: deals.filter(d => activeDealStages.includes(d.stage || "")).length,
+                activeCount: deals.filter(d => activeStages.includes(d.stage || "")).length,
               },
               flags: {
                 dealsWithoutStage,
                 overdueDeals,
-                unpaidDeals,
+                unpaidDeals: unpaidDealsCount,
                 noManagerAssigned,
               },
               riskLevel,
