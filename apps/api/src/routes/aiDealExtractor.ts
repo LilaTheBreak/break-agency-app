@@ -12,7 +12,7 @@ router.post("/deal-extract", requireAuth, async (req, res, next) => {
     }
 
     const data = await extractDealTerms({ text });
-    res.json({ success: true, data });
+    return res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

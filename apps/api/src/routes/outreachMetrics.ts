@@ -17,7 +17,7 @@ router.get("/pipeline", requireAuth, requireAdmin, async (req, res) => {
 
     const pipelineData = await calculatePipelineData(filter);
     
-    res.json(pipelineData);
+    return res.json(pipelineData);
   } catch (error) {
     console.error("[OUTREACH_PIPELINE] Error:", error);
     // Return safe defaults on error
@@ -40,7 +40,7 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
 
     const metrics = await calculateOutreachMetrics(filter);
     
-    res.json(metrics);
+    return res.json(metrics);
   } catch (error) {
     console.error("[OUTREACH_METRICS] Error:", error);
     // Return safe defaults on error

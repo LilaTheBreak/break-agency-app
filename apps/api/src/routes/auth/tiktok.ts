@@ -65,7 +65,7 @@ router.get('/connect', requireAuth, (req: Request, res: Response) => {
     });
 
     const authUrl = `https://www.tiktok.com/v2/auth/authorize?${params.toString()}`;
-    res.json({ success: true, url: authUrl });
+    return res.json({ success: true, url: authUrl });
   } catch (error: any) {
     console.error('TikTok connect error:', error);
     res.status(500).json({ 
@@ -230,7 +230,7 @@ router.delete('/disconnect', requireAuth, async (req: Request, res: Response) =>
       }
     });
 
-    res.json({ success: true, message: 'TikTok disconnected successfully' });
+    return res.json({ success: true, message: 'TikTok disconnected successfully' });
   } catch (error: any) {
     console.error('TikTok disconnect error:', error);
     res.status(500).json({ 

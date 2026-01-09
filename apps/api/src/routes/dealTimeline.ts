@@ -11,7 +11,7 @@ router.get("/:dealId", requireAuth, async (req, res, next) => {
       where: { dealId },
       orderBy: { createdAt: "desc" }
     });
-    res.json({ events });
+    return res.json({ events });
   } catch (error) {
     next(error);
   }
@@ -34,7 +34,7 @@ router.post("/:dealId/note", requireAuth, async (req, res, next) => {
         message: String(message).trim()
       }
     });
-    res.json({ event });
+    return res.json({ event });
   } catch (error) {
     next(error);
   }

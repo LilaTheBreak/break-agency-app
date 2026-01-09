@@ -11,7 +11,7 @@ router.post("/check", requireAuth, async (req, res) => {
   }
 
   const result = detectRisks(text);
-  res.json(result);
+  return res.json(result);
 });
 
 export default router;

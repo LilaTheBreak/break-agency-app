@@ -30,7 +30,7 @@ router.post("/generate", async (req, res) => {
     });
   }
 
-  res.json({ queued: plan.length });
+  return res.json({ queued: plan.length });
 });
 
 router.post("/prospect", requireAuth, async (req, res) => {
@@ -54,14 +54,14 @@ router.post("/prospect", requireAuth, async (req, res) => {
       })
     )
   );
-  res.json({ leads: created });
+  return res.json({ leads: created });
 });
 
 router.post("/start/:leadId", requireAuth, async (req, res) => {
   const lead = await prisma.lead.findUnique({ where: { id: req.params.leadId } });
   if (!lead) return res.status(404).json({ error: true, message: "Lead not found" });
   const seq = await createOutreachForLead(lead, req.user);
-  res.json({ sequence: seq });
+  return res.json({ sequence: seq });
 });
 
 router.patch("/sequence/:seqId/pause", requireAuth, async (req, res) => {
@@ -69,7 +69,7 @@ router.patch("/sequence/:seqId/pause", requireAuth, async (req, res) => {
     where: { id: req.params.seqId },
     data: { status: "paused" }
   });
-  res.json({ ok: true });
+  return res.json({ ok: true });
 });
 
 // GET /api/outreach/records - List all outreach records (Admin only)
@@ -90,7 +90,7 @@ router.get("/records", requireAuth, requireAdmin, async (req, res) => {
     });
     
     // Always return array, never null
-    res.json({ records: records || [] });
+    return res.json({ records: records || [] });
   } catch (error) {
     console.error("[OUTREACH_LIST] Error:", error);
     // Return empty array on error for safe handling

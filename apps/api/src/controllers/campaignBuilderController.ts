@@ -16,7 +16,7 @@ export async function generateCampaign(req: Request, res: Response, next: NextFu
 
     const campaignPlan = await campaignBuilderService.generateCampaign(parsed.data);
 
-    res.json({ ok: true, campaign: campaignPlan });
+    return res.json({ ok: true, campaign: campaignPlan });
   } catch (error) {
     next(error);
   }

@@ -35,7 +35,7 @@ router.post("/run", requireAuth, async (req, res, next) => {
 
     await agentQueue.add("agent-task", { taskId: task.id });
 
-    res.json({ taskId: task.id, plan });
+    return res.json({ taskId: task.id, plan });
   } catch (error) {
     next(error);
   }

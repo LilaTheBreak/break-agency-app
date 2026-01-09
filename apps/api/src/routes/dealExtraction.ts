@@ -8,7 +8,7 @@ const router = Router();
 router.post("/extract/:emailId", async (req, res) => {
   try {
     const drafts = await extractDealFromEmail(req.params.emailId);
-    res.json({ drafts });
+    return res.json({ drafts });
   } catch (e) {
     res.status(500).json({ error: true, message: "Deal extraction failed" });
   }
@@ -16,7 +16,7 @@ router.post("/extract/:emailId", async (req, res) => {
 
 router.post("/extract/:emailId/async", async (req, res) => {
   await dealExtractionQueue.add("extract", { emailId: req.params.emailId });
-  res.json({ queued: true });
+  return res.json({ queued: true });
 });
 
 router.get("/user/:userId", async (req, res) => {
@@ -24,7 +24,7 @@ router.get("/user/:userId", async (req, res) => {
     where: { userId: req.params.userId },
     orderBy: { createdAt: "desc" }
   });
-  res.json({ drafts });
+  return res.json({ drafts });
 });
 
 export default router;

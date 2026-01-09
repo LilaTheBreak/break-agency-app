@@ -21,7 +21,7 @@ export async function autoPlanCampaign(req: Request, res: Response, next: NextFu
       userId: req.user!.id,
     });
 
-    res.json({ ok: true, campaignId: autoPlan.campaignId, autoPlan });
+    return res.json({ ok: true, campaignId: autoPlan.campaignId, autoPlan });
   } catch (error) {
     next(error);
   }
@@ -51,7 +51,7 @@ export async function previewAutoPlan(req: Request, res: Response, next: NextFun
       preview: true // Flag to indicate preview mode
     });
 
-    res.json({ ok: true, preview });
+    return res.json({ ok: true, preview });
   } catch (error) {
     next(error);
   }
@@ -90,7 +90,7 @@ export async function debugAutoPlan(req: Request, res: Response, next: NextFunct
       debug: true // Flag to return raw LLM output
     });
 
-    res.json({ ok: true, debug });
+    return res.json({ ok: true, debug });
   } catch (error) {
     next(error);
   }

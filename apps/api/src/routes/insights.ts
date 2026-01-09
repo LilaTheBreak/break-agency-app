@@ -13,12 +13,12 @@ router.get("/:userId", async (req, res) => {
     orderBy: { createdAt: "desc" },
     take: 20
   });
-  res.json(data);
+  return res.json(data);
 });
 
 router.post("/:userId/generate", async (req, res) => {
   const data = await generateCreatorInsights(req.params.userId);
-  res.json(data);
+  return res.json(data);
 });
 
 /**
@@ -74,7 +74,7 @@ router.get("/:userId/weekly", requireAuth, async (req, res) => {
       });
     }
 
-    res.json({ report });
+    return res.json({ report });
   } catch (error) {
     logError("Failed to fetch weekly report", error, { userId: req.params.userId });
     res.status(500).json({ 

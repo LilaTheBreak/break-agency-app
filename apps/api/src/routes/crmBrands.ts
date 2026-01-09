@@ -61,7 +61,7 @@ router.get("/", async (req: Request, res: Response) => {
 
     // CRITICAL: Return direct array for consistency with campaigns/events/deals endpoints
     // Frontend expects: direct array, not wrapped object
-    res.json(safeBrands);
+    return res.json(safeBrands);
   } catch (error) {
     console.error("[CRM BRANDS] Error fetching brands:", error);
     return res.status(500).json({ error: "Failed to fetch brands" });
@@ -119,7 +119,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       activity: Array.isArray(brand.activity) ? brand.activity : [],
     };
 
-    res.json({ brand: safeBrand });
+    return res.json({ brand: safeBrand });
   } catch (error) {
     console.error("[CRM BRANDS] Error fetching brand:", error);
     res.status(500).json({ error: "Failed to fetch brand" });
@@ -225,7 +225,7 @@ router.post("/", async (req: Request, res: Response) => {
         });
     }
 
-    res.json({ brand });
+    return res.json({ brand });
   } catch (error) {
     console.error("[CRM BRANDS] Error creating brand:", error);
     res.status(500).json({ error: "Failed to create brand" });
@@ -337,7 +337,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
         });
     }
 
-    res.json({ brand });
+    return res.json({ brand });
   } catch (error) {
     console.error("[CRM BRANDS] Error updating brand:", error);
     res.status(500).json({ error: "Failed to update brand" });
@@ -399,7 +399,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       }
     });
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
     // Phase 4: Fail loudly
     logError("Failed to delete brand", error, { brandId: req.params.id, userId: req.user?.id });

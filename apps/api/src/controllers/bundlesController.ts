@@ -6,7 +6,7 @@ import * as bundleService from "../services/bundleService.js"; // For basic CRUD
 export async function listBundles(req: Request, res: Response, next: NextFunction) {
   try {
     const bundles = await bundleService.listAll();
-    res.json({ ok: true, bundles });
+    return res.json({ ok: true, bundles });
   } catch (error) {
     next(error);
   }
@@ -18,7 +18,7 @@ export async function getBundle(req: Request, res: Response, next: NextFunction)
     if (!bundle) {
       return res.status(404).json({ ok: false, error: "Bundle not found" });
     }
-    res.json({ ok: true, bundle });
+    return res.json({ ok: true, bundle });
   } catch (error) {
     next(error);
   }
@@ -80,7 +80,7 @@ export async function updateBundle(req: Request, res: Response, next: NextFuncti
       return res.status(404).json({ ok: false, error: "Bundle not found" });
     }
 
-    res.json({ ok: true, bundle });
+    return res.json({ ok: true, bundle });
   } catch (error) {
     next(error);
   }
@@ -104,7 +104,7 @@ export async function deleteBundle(req: Request, res: Response, next: NextFuncti
       return res.status(404).json({ ok: false, error: "Bundle not found" });
     }
 
-    res.json({ ok: true, message: "Bundle deleted" });
+    return res.json({ ok: true, message: "Bundle deleted" });
   } catch (error) {
     next(error);
   }
@@ -122,7 +122,7 @@ export async function generateAIBundle(req: Request, res: Response, next: NextFu
       return res.status(400).json({ ok: false, error: "Invalid payload", details: parsed.error.flatten() });
     }
     const result = await bundleGenerator.generateTieredBundles(parsed.data);
-    res.json({ ok: true, recommendations: result });
+    return res.json({ ok: true, recommendations: result });
   } catch (error) {
     next(error);
   }

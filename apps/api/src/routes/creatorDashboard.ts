@@ -43,7 +43,7 @@ router.get("/api/creator/dashboard", requireAuth, async (req: Request, res: Resp
       revenueYTD: revenueYTD._sum.amount || 0,
     };
 
-    res.json({ success: true, data: { stats } });
+    return res.json({ success: true, data: { stats } });
   } catch (error) {
     console.error("Failed to load creator dashboard data:", error);
     res.status(500).json({ success: false, error: "Could not load creator dashboard data." });

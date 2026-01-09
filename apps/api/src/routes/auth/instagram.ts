@@ -64,7 +64,7 @@ router.get('/connect', requireAuth, (req: Request, res: Response) => {
     });
 
     const authUrl = `https://api.instagram.com/oauth/authorize?${params.toString()}`;
-    res.json({ success: true, url: authUrl });
+    return res.json({ success: true, url: authUrl });
   } catch (error: any) {
     console.error('Instagram connect error:', error);
     res.status(500).json({ 
@@ -201,7 +201,7 @@ router.delete('/disconnect', requireAuth, async (req: Request, res: Response) =>
       }
     });
 
-    res.json({ success: true, message: 'Instagram disconnected successfully' });
+    return res.json({ success: true, message: 'Instagram disconnected successfully' });
   } catch (error: any) {
     console.error('Instagram disconnect error:', error);
     res.status(500).json({ 

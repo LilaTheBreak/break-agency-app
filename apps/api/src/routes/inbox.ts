@@ -91,7 +91,7 @@ router.post("/api/inbox/scan", requireAuth, inboxScanLimiter, async (req, res) =
       saved.push(savedMsg);
     }
 
-    res.json({ success: true, count: saved.length });
+    return res.json({ success: true, count: saved.length });
   } catch (err) {
     console.error("Inbox Scan Failed", err);
     res.status(500).json({ success: false, error: "Inbox scan failed" });
@@ -144,7 +144,7 @@ router.get("/api/inbox/open/:id", async (req, res) => {
     });
     const gif = Buffer.from("R0lGODlhAQABAAAAACH5BAEKAAEA", "base64");
     res.setHeader("Content-Type", "image/gif");
-    res.send(gif);
+    return res.send(gif);
   } catch (error) {
     console.error("Failed to track email open:", error);
     res.status(500).send("Error tracking open.");
