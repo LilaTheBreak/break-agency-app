@@ -69,16 +69,19 @@ export async function computeCreatorFit(
   if (!openai) {
     console.error("[AI] OpenAI client not initialized");
     return {
-      audienceAlignment: 0,
-      contentStyleMatch: 0,
-      nicheOverlap: 0,
-      valuesAlignment: 0,
-      brandSafetyScore: 0,
-      riskScore: 0,
-      totalScore: 0,
+      score: 0,
+      breakdown: {
+        audience: 0,
+        style: 0,
+        niche: 0,
+        values: 0,
+        safety: 0,
+        risk: 0,
+      },
       aiSummary: "AI client not configured",
       insights: {},
-      confidence: 0
+      aiJson: {},
+      confidence: 0,
     };
   }
 

@@ -379,6 +379,12 @@ router.post("/batch-import", async (req, res) => {
     }
 
     return res.json({ success: true, imported });
+  } catch (error) {
+    logError("Failed to batch import campaigns", error, { userId: req.user?.id });
+    return res.status(500).json({ 
+      error: "Failed to batch import campaigns",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

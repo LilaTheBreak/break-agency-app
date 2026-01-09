@@ -43,6 +43,13 @@ export async function generateReplyVariations(input: ReplyGenerationInput) {
     };
   }
 
+  try {
+    const completion = await openai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+    });
+
     tokens = completion.usage?.total_tokens ?? 0;
     const payload = JSON.parse(completion.choices[0].message.content || "{}") as ReplyVariations;
     const latency = Date.now() - start;

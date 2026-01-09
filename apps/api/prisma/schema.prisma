@@ -1504,6 +1504,8 @@ model Talent {
   TalentTask              TalentTask[]
   TalentSocial            TalentSocial[]
   UserAccess              TalentUserAccess[]        @relation("TalentAccess")
+  RevenueSource           RevenueSource[]
+  RevenueGoal             RevenueGoal[]
 }
 
 model TalentEmail {
@@ -2120,4 +2122,68 @@ model Reconciliation {
 
   @@index([referenceId])
   @@index([type])
+}
+
+model RevenueSource {
+  id                  String                @id @default(cuid())
+  talentId            String
+  platform            String                // SHOPIFY, TIKTOK_SHOP, LTK, AMAZON, CUSTOM
+  displayName         String                // e.g. "The Break Store", "Glow Up Shop"
+  externalAccountId   String?               // Platform-specific account ID (encrypted in future)
+  status              String                @default("CONNECTED") // CONNECTED, DISCONNECTED, ERROR, PAUSED
+  apiKeyHash          String?               // Hashed API key for validation (never store plain)
+  lastSyncedAt        DateTime?             // Last time we pulled revenue data
+  syncError           String?               // Error message from last sync attempt
+  metadata            Json?                 // Platform-specific config (store ID, API endpoint, etc.)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  
+  Talent              Talent                @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  RevenueEvent        RevenueEvent[]
+  
+  @@index([talentId])
+  @@index([platform])
+  @@index([status])
+  @@index([talentId, platform]) // For finding all Shopify stores for a talent
+  @@unique([talentId, platform, externalAccountId])
+}
+
+model RevenueEvent {
+  id                String            @id @default(cuid())
+  revenueSourceId   String
+  date              DateTime          // Date the revenue occurred
+  grossAmount       Float             // Gross/total revenue
+  netAmount         Float             // Net after fees/commissions
+  currency          String            @default("GBP") // Always store with currency
+  type              String            // SALE, COMMISSION, REFUND, PAYOUT, OTHER
+  sourceReference   String?           // Platform transaction ID (for deduplication)
+  metadata          Json?             // Platform-specific data
+  createdAt         DateTime          @default(now())
+  
+  RevenueSource     RevenueSource     @relation(fields: [revenueSourceId], references: [id], onDelete: Cascade)
+  
+  @@index([revenueSourceId])
+  @@index([date])
+  @@index([type])
+  @@index([revenueSourceId, date]) // For aggregation queries
+  @@unique([revenueSourceId, sourceReference]) // Prevent duplicate transactions
+}
+
+model RevenueGoal {
+  id            String    @id @default(cuid())
+  talentId      String
+  goalType      String    // MONTHLY_TOTAL, QUARTERLY_TOTAL, ANNUAL_TOTAL, PLATFORM_SPECIFIC
+  platform      String?   // NULL for total, or SHOPIFY, TIKTOK_SHOP, etc. for platform-specific
+  targetAmount  Float
+  currency      String    @default("GBP")
+  timeframe     Json      // { startDate, endDate } for custom periods
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  Talent        Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([goalType])
+  @@unique([talentId, goalType, platform])
 }

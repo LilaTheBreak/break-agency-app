@@ -165,7 +165,7 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
       }
     });
 
-    return return res.json({ opportunity });
+    return res.json({ opportunity });
   } catch (error) {
     console.error("[OPPORTUNITY_UPDATE] Error:", error);
     return res.status(500).json({ error: "Failed to update opportunity" });

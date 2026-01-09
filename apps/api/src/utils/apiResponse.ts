@@ -35,7 +35,7 @@ export function sendSuccess<T>(
   status: number = 200,
   message?: string
 ): void {
-  return res.status(status).json({
+  res.status(status).json({
     success: true,
     data,
     ...(message && { message }),
@@ -52,7 +52,7 @@ export function sendError(
   status: number = 500,
   details?: any
 ): void {
-  return res.status(status).json({
+  res.status(status).json({
     success: false,
     error: {
       code,
@@ -70,7 +70,7 @@ export function sendError(
 export function sendList<T>(res: Response, items: T[], status: number = 200): void {
   // CRITICAL: Ensure we always return an array, never an empty string or other type
   const safeItems = Array.isArray(items) ? items : [];
-  return res.status(status).json(safeItems);
+  res.status(status).json(safeItems);
 }
 
 /**
@@ -78,7 +78,7 @@ export function sendList<T>(res: Response, items: T[], status: number = 200): vo
  * NOTE: Returns empty array directly for backward compatibility
  */
 export function sendEmptyList(res: Response, status: number = 200): void {
-  return res.status(status).json([]);
+  res.status(status).json([]);
 }
 
 /**

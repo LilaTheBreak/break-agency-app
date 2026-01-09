@@ -41,10 +41,10 @@ export async function listContracts(
       }
     });
     
-    return res.json(contracts || []);
+    res.json(contracts || []);
   } catch (error) {
     console.error("Error fetching contracts:", error);
-    return res.json([]); // Graceful fallback
+    res.json([]); // Graceful fallback
   }
 }
 
@@ -56,11 +56,11 @@ export async function createContract(
   try {
     const parsed = ContractCreateSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+      res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
       return;
     }
     const contract = await contractService.create(parsed.data);
-    return res.status(201).json(contract);
+    res.status(201).json(contract);
   } catch (error) {
     next(error);
   }
@@ -75,9 +75,9 @@ export async function getContract(
     const { id } = req.params;
     const contract = await contractService.get(id);
     if (!contract) {
-      return res.status(404).json({ error: "Contract not found" });
+      res.status(404).json({ error: "Contract not found" });
     }
-    return res.json(contract);
+    res.json(contract);
   } catch (error) {
     next(error);
   }
@@ -96,13 +96,13 @@ export async function updateContract(
     const { id } = req.params;
     const parsed = ContractUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+      res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
     }
     const contract = await contractService.update(id, parsed.data);
     if (!contract) {
-      return res.status(404).json({ error: "Contract not found" });
+      res.status(404).json({ error: "Contract not found" });
     }
-    return res.json(contract);
+    res.json(contract);
   } catch (error) {
     next(error);
   }
@@ -117,7 +117,7 @@ export async function deleteContract(
     const { id } = req.params;
     await contractService.remove(id);
     // Always return 200 with JSON - never 204 No Content
-    return res.status(200).json({ success: true });
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }
@@ -131,7 +131,7 @@ export async function uploadContract(
   try {
     const enabled = process.env.CONTRACT_UPLOAD_ENABLED === "true";
     if (!enabled) {
-      return res.status(503).json({
+      res.status(503).json({
         error: "Contract upload feature is disabled",
         message: "This feature is currently disabled. Contact an administrator to enable it.",
         code: "FEATURE_DISABLED"
@@ -142,7 +142,7 @@ export async function uploadContract(
     const { fileUrl, fileKey } = req.body;
 
     if (!fileUrl && !fileKey) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         error: "fileUrl or fileKey is required" 
       });
     }
@@ -153,7 +153,7 @@ export async function uploadContract(
     });
 
     if (!contract) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         error: "Contract not found" 
       });
     }
@@ -181,7 +181,7 @@ export async function uploadContract(
     // Update contract with file URL
     const updated = await contractService.upload(id, finalFileUrl);
 
-    return res.json({ contract: updated });
+    res.json({ contract: updated });
   } catch (error) {
     next(error);
   }
@@ -195,7 +195,7 @@ export async function sendContract(
   try {
     const { id } = req.params;
     await contractService.send(id);
-    return res.json({ message: "Contract sent" });
+    res.json({ message: "Contract sent" });
   } catch (error) {
     next(error);
   }
@@ -210,7 +210,7 @@ export async function signContract(
     const { id } = req.params;
     const { signer } = req.params; // "talent" or "brand"
     await contractService.sign(id, signer);
-    return res.json({ message: `${signer} signed contract` });
+    res.json({ message: `${signer} signed contract` });
   } catch (error) {
     next(error);
   }
@@ -224,7 +224,7 @@ export async function finaliseContract(
   try {
     const { id } = req.params;
     await contractService.finalise(id);
-    return res.json({ message: "Contract finalized" });
+    res.json({ message: "Contract finalized" });
   } catch (error) {
     next(error);
   }
@@ -239,7 +239,7 @@ export async function analyseContract(
     const { id } = req.params;
     const userId = (req as any).user?.id || "system";
     const analysis = await contractService.analyse(id, userId);
-    return res.json({ 
+    res.json({ 
       ok: true,
       message: "Contract analysis complete",
       data: analysis
@@ -257,7 +257,7 @@ export async function listByDeal(
   try {
     const { dealId } = req.params;
     const contracts = await contractService.listForDeal(dealId);
-    return res.json(contracts);
+    res.json(contracts);
   } catch (error) {
     next(error);
   }
@@ -271,7 +271,7 @@ export async function createFromDeal(
   try {
     const { dealId } = req.params;
     const contract = await contractService.createFromDeal(dealId);
-    return res.status(201).json(contract);
+    res.status(201).json(contract);
   } catch (error) {
     next(error);
   }
@@ -285,7 +285,7 @@ export async function generatePDF(
   try {
     const { id } = req.params;
     const contract = await contractService.generatePDF(id);
-    return res.json(contract);
+    res.json(contract);
   } catch (error) {
     next(error);
   }

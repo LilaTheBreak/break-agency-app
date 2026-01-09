@@ -243,4 +243,70 @@ router.get("/brand/:brandId/deals", requireBrand, async (req: Request, res: Resp
   }
 });
 
+// ============================================================================
+// MULTI-PLATFORM REVENUE SOURCES (for EXCLUSIVE talent)
+// ============================================================================
+
+import * as revenueController from "../controllers/revenueController.js";
+
+/**
+ * POST /api/revenue/sources
+ * Create a new revenue source (admin or self-service for exclusive talent)
+ */
+router.post("/sources", revenueController.createRevenueSource);
+
+/**
+ * GET /api/revenue/sources/:talentId
+ * Get all revenue sources for a talent
+ */
+router.get("/sources/:talentId", revenueController.getRevenueSourcesForTalent);
+
+/**
+ * GET /api/revenue/sources/:sourceId/details
+ * Get details of a specific revenue source
+ */
+router.get("/sources/:sourceId/details", revenueController.getRevenueSourceDetails);
+
+/**
+ * DELETE /api/revenue/sources/:sourceId
+ * Delete a revenue source
+ */
+router.delete("/sources/:sourceId", revenueController.deleteRevenueSource);
+
+/**
+ * GET /api/revenue/summary/:talentId
+ * Get total revenue summary across all sources
+ */
+router.get("/summary/:talentId", revenueController.getRevenueSummary);
+
+/**
+ * GET /api/revenue/by-platform/:talentId
+ * Get revenue breakdown by platform
+ */
+router.get("/by-platform/:talentId", revenueController.getRevenueByPlatform);
+
+/**
+ * GET /api/revenue/by-source/:talentId
+ * Get revenue breakdown by individual source
+ */
+router.get("/by-source/:talentId", revenueController.getRevenueBySource);
+
+/**
+ * POST /api/revenue/goals
+ * Create a revenue goal
+ */
+router.post("/goals", revenueController.createRevenueGoal);
+
+/**
+ * GET /api/revenue/goals/:talentId
+ * Get all goals with progress for a talent
+ */
+router.get("/goals/:talentId", revenueController.getRevenueGoals);
+
+/**
+ * DELETE /api/revenue/goals/:goalId
+ * Delete a goal
+ */
+router.delete("/goals/:goalId", revenueController.deleteRevenueGoal);
+
 export default router;
