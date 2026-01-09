@@ -18,7 +18,7 @@ export async function createDeal(req: Request, res: Response, next: NextFunction
       return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
     }
     // TODO: Implement createDeal in dealService - for now just return the input
-    res.status(201).json({ ok: false, error: "Create deal not yet implemented" });
+    return res.status(201).json({ ok: false, error: "Create deal not yet implemented" });
   } catch (error) {
     next(error);
   }
@@ -27,7 +27,7 @@ export async function createDeal(req: Request, res: Response, next: NextFunction
 export async function listDeals(req: Request, res: Response, next: NextFunction) {
   try {
     const deals = await dealService.getAllDeals(req.user!.id);
-    res.json(deals);
+    return res.json(deals);
   } catch (error) {
     next(error);
   }
@@ -39,7 +39,7 @@ export async function getDeal(req: Request, res: Response, next: NextFunction) {
     if (!deal) {
       return res.status(404).json({ error: "Deal not found" });
     }
-    res.json(deal);
+    return res.json(deal);
   } catch (error) {
     next(error);
   }
@@ -61,7 +61,7 @@ export async function updateDeal(req: Request, res: Response, next: NextFunction
       return res.status(400).json({ error: "Invalid payload", details: parsed.error.flatten() });
     }
     // TODO: Implement updateDeal in dealService
-    res.json({ ok: false, error: "Update deal not yet implemented" });
+    return res.json({ ok: false, error: "Update deal not yet implemented" });
   } catch (error) {
     next(error);
   }
@@ -74,7 +74,7 @@ export async function deleteDeal(req: Request, res: Response, next: NextFunction
       return res.status(404).json({ error: "Deal not found or insufficient permissions" });
     }
     // Always return 200 with JSON - never 204 No Content
-    res.status(200).json({ success: true });
+    return res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }
@@ -101,7 +101,7 @@ export async function changeDealStage(req: Request, res: Response, next: NextFun
       return res.status(result.status).json({ error: result.error });
     }
 
-    res.json(result.deal);
+    return res.json(result.deal);
   } catch (error) {
     next(error);
   }

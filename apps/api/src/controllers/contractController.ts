@@ -41,10 +41,10 @@ export async function listContracts(
       }
     });
     
-    res.json(contracts || []);
+    return res.json(contracts || []);
   } catch (error) {
     console.error("Error fetching contracts:", error);
-    res.json([]); // Graceful fallback
+    return res.json([]); // Graceful fallback
   }
 }
 
@@ -56,11 +56,11 @@ export async function createContract(
   try {
     const parsed = ContractCreateSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+      return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
       return;
     }
     const contract = await contractService.create(parsed.data);
-    res.status(201).json(contract);
+    return res.status(201).json(contract);
   } catch (error) {
     next(error);
   }
@@ -75,10 +75,9 @@ export async function getContract(
     const { id } = req.params;
     const contract = await contractService.get(id);
     if (!contract) {
-      res.status(404).json({ error: "Contract not found" });
-      return;
+      return res.status(404).json({ error: "Contract not found" });
     }
-    res.json(contract);
+    return res.json(contract);
   } catch (error) {
     next(error);
   }
@@ -97,15 +96,13 @@ export async function updateContract(
     const { id } = req.params;
     const parsed = ContractUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
-      return;
+      return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
     }
     const contract = await contractService.update(id, parsed.data);
     if (!contract) {
-      res.status(404).json({ error: "Contract not found" });
-      return;
+      return res.status(404).json({ error: "Contract not found" });
     }
-    res.json(contract);
+    return res.json(contract);
   } catch (error) {
     next(error);
   }
@@ -120,7 +117,7 @@ export async function deleteContract(
     const { id } = req.params;
     await contractService.remove(id);
     // Always return 200 with JSON - never 204 No Content
-    res.status(200).json({ success: true });
+    return res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }

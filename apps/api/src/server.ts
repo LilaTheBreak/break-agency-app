@@ -406,7 +406,7 @@ app.use(express.urlencoded({ extended: true, limit: "350mb" }));
 // PUBLIC DEBUG ENDPOINT (BEFORE AUTH)
 // ------------------------------------------------------
 app.get("/api/cors-debug", (_req, res) => {
-  res.json({
+  return res.json({
     allowedOrigins,
     env: {
       FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || "(not set)",
@@ -685,7 +685,7 @@ app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 // BASE ROUTE
 // ------------------------------------------------------
 app.get("/", (_req, res) => {
-  res.json({ status: "ok", message: "Break Agency API is running" });
+  return res.json({ status: "ok", message: "Break Agency API is running" });
 });
 
 // ------------------------------------------------------
@@ -787,7 +787,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   
   const statusCode = err.statusCode || err.status || 500;
   
-  res.status(statusCode).json({
+  return res.status(statusCode).json({
     error: normalized.userMessage,
     ...(process.env.NODE_ENV === "development" && { 
       technicalError: normalized.message,

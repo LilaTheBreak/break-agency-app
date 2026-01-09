@@ -43,7 +43,7 @@ router.get("/sync", async (req, res, next) => {
       }
     }
 
-    res.json({
+    return res.json({
       message: `Synced ${messages.length} messages, ${newCount} new emails queued for processing.`
     });
   } catch (error) {
@@ -69,7 +69,7 @@ router.post("/test", async (req, res, next) => {
       return res.status(400).json({ error: "Subject and body are required." });
     }
     const classification = await classifyEmail(subject, body);
-    res.json(classification);
+    return res.json(classification);
   } catch (error) {
     next(error);
   }
@@ -97,7 +97,7 @@ router.get("/recent", async (req, res, next) => {
         dealDraftId: true
       }
     });
-    res.json(recentEmails);
+    return res.json(recentEmails);
   } catch (error) {
     next(error);
   }
