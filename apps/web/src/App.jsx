@@ -1147,7 +1147,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                 className="rounded-full border border-brand-white/30 px-3 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-white/90 hover:bg-brand-white/10 transition cursor-pointer"
                 title="Go to dashboard"
               >
-                {session.role || "member"}
+                Dashboard
               </Link>
               <div className="relative">
                 <button
@@ -1163,7 +1163,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                     <path d="M5 16h14l-1.2 2.4a2 2 0 0 1-1.8 1.1H8a2 2 0 0 1-1.8-1.1L5 16Z" />
                   </svg>
                   {unreadCount > 0 ? (
-                    <span className="absolute right-1 top-1 inline-flex h-2.5 w-2.5 rounded-full bg-brand-red" aria-label={`${unreadCount} unread notifications`} />
+                    <span className="absolute right-1 top-1 inline-flex h-2.5 w-2.5 rounded-full bg-brand-black" aria-label={`${unreadCount} unread notifications`} />
                   ) : null}
                 </button>
                 {notificationsOpen ? (
@@ -1172,7 +1172,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                       <p className="text-[0.75rem] font-semibold uppercase tracking-[0.3em] text-brand-black">Notifications</p>
                       <button
                         type="button"
-                        className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-red hover:text-brand-black"
+                        className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black hover:text-brand-black/70"
                         onClick={markAllRead}
                       >
                         Mark all read
@@ -1194,7 +1194,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                               "block rounded-xl border px-3 py-2 transition",
                               note.read
                                 ? "border-brand-black/10 bg-brand-white text-brand-black/70"
-                                : "border-brand-red/40 bg-brand-red/10 text-brand-black"
+                                : "border-brand-black/40 bg-brand-black/10 text-brand-black"
                             ].join(" ")}
                           >
                             <p className="text-sm font-semibold text-brand-black">{note.title}</p>
@@ -1209,14 +1209,14 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
               {isAdmin && (
                 <Link
                   to="/account/profile"
-                  className="rounded-full border border-brand-red px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-red hover:bg-brand-red/10"
+                  className="rounded-full border border-brand-black px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black hover:bg-brand-black/10"
                 >
                   {session.name?.split(" ")[0] || session.email?.split("@")[0]?.split(".")[0] || "Admin"}
                 </Link>
               )}
               <Link
                 to="/support"
-                className="rounded-full border border-brand-red/70 px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-red transition hover:-translate-y-0.5 hover:bg-brand-red/10"
+                className="rounded-full border border-brand-black/70 px-4 py-1 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/10"
               >
                 Support
               </Link>
@@ -1238,7 +1238,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
             <button
               type="button"
               onClick={onRequestSignIn}
-              className="rounded-full bg-brand-red px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-brand-white hover:bg-brand-red/90"
+              className="rounded-full bg-brand-black px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-brand-white hover:bg-brand-black/90"
             >
               Sign in
             </button>
