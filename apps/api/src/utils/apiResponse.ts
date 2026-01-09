@@ -35,7 +35,7 @@ export function sendSuccess<T>(
   status: number = 200,
   message?: string
 ): void {
-  res.status(status).json({
+  return res.status(status).json({
     success: true,
     data,
     ...(message && { message }),
@@ -52,7 +52,7 @@ export function sendError(
   status: number = 500,
   details?: any
 ): void {
-  res.status(status).json({
+  return res.status(status).json({
     success: false,
     error: {
       code,
@@ -70,7 +70,7 @@ export function sendError(
 export function sendList<T>(res: Response, items: T[], status: number = 200): void {
   // CRITICAL: Ensure we always return an array, never an empty string or other type
   const safeItems = Array.isArray(items) ? items : [];
-  res.status(status).json(safeItems);
+  return res.status(status).json(safeItems);
 }
 
 /**
@@ -78,7 +78,7 @@ export function sendList<T>(res: Response, items: T[], status: number = 200): vo
  * NOTE: Returns empty array directly for backward compatibility
  */
 export function sendEmptyList(res: Response, status: number = 200): void {
-  res.status(status).json([]);
+  return res.status(status).json([]);
 }
 
 /**
@@ -122,7 +122,7 @@ export function handleApiError(
  * Feature disabled response
  */
 export function sendFeatureDisabled(res: Response, featureName: string): void {
-  sendError(
+  return sendError(
     res,
     "FEATURE_DISABLED",
     `This feature (${featureName}) is currently disabled. Contact an administrator to enable it.`,
