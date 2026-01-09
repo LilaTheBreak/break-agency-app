@@ -80,7 +80,7 @@ model AgentProfile {
 model AgentPolicy {
   id        String   @id @default(cuid())
   userId    String   @unique
-  config    Json?    // Agent policy configuration
+  config    Json? // Agent policy configuration
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -215,12 +215,12 @@ model ContractReview {
 model Contract {
   id             String    @id @default(cuid())
   dealId         String
-  brandId        String?   // Explicit brand linkage for direct queries
+  brandId        String? // Explicit brand linkage for direct queries
   title          String
   fileUrl        String?
   pdfUrl         String?
-  signedPdfUrl   String?   // Signed PDF from e-signature provider
-  envelopeId     String?   // DocuSign envelope ID (or other provider ID)
+  signedPdfUrl   String? // Signed PDF from e-signature provider
+  envelopeId     String? // DocuSign envelope ID (or other provider ID)
   status         String    @default("draft")
   sentAt         DateTime?
   talentSignedAt DateTime?
@@ -554,17 +554,17 @@ model Deal {
   value                   Float?
   currency                String            @default("USD")
   brandName               String?
-  campaignName            String?           // Campaign or project name
+  campaignName            String? // Campaign or project name
   aiSummary               String?
   notes                   String?
-  internalNotes           String?           // Internal team notes
+  internalNotes           String? // Internal team notes
   expectedClose           DateTime?
-  startDate               DateTime?         // Deal/project start date
-  endDate                 DateTime?         // Deal/project end date
+  startDate               DateTime? // Deal/project start date
+  endDate                 DateTime? // Deal/project end date
   platforms               String[]          @default([]) // TikTok, Instagram, YouTube, etc
-  deliverables            String?           // JSON or text description of deliverables
-  invoiceStatus           String?           // NOT_INVOICED, INVOICED, PAID
-  paymentStatus           String?           // UNPAID, PAID, PARTIAL
+  deliverables            String? // JSON or text description of deliverables
+  invoiceStatus           String? // NOT_INVOICED, INVOICED, PAID
+  paymentStatus           String? // UNPAID, PAID, PARTIAL
   createdAt               DateTime          @default(now())
   updatedAt               DateTime
   campaignLiveAt          DateTime?
@@ -839,13 +839,13 @@ model InboundEmail {
   aiConfidence        Float?
   aiJson              Json?
   snippet             String?
-  dealId              String?              // Explicit deal linkage
-  talentId            String?              // Explicit talent linkage
-  brandId             String?              // Explicit brand linkage (from metadata.crmBrandId)
+  dealId              String? // Explicit deal linkage
+  talentId            String? // Explicit talent linkage
+  brandId             String? // Explicit brand linkage (from metadata.crmBrandId)
   InboxMessage        InboxMessage?        @relation(fields: [inboxMessageId], references: [id], onDelete: Cascade)
   User                User?                @relation(fields: [userId], references: [id])
-  Deal                Deal?                 @relation(fields: [dealId], references: [id], onDelete: SetNull)
-  Talent              Talent?               @relation(fields: [talentId], references: [id], onDelete: SetNull)
+  Deal                Deal?                @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  Talent              Talent?              @relation(fields: [talentId], references: [id], onDelete: SetNull)
   TrackingPixelEvent  TrackingPixelEvent[]
   EmailClickEvent     EmailClickEvent[]
 
@@ -894,30 +894,30 @@ model InboxThreadMeta {
 }
 
 model Invoice {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   dealId        String
   amount        Float
-  status        String    @default("draft")
+  status        String       @default("draft")
   issuedAt      DateTime
   dueAt         DateTime
   paidAt        DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   brandId       String?
-  currency      String    @default("USD")
-  invoiceNumber String    @unique
-  externalId    String?   @unique // External invoice ID (Xero, etc.)
-  xeroId        String?   @unique // Xero invoice ID (external reference)
-  xeroSyncError String?   // Last sync error message
+  currency      String       @default("USD")
+  invoiceNumber String       @unique
+  externalId    String?      @unique // External invoice ID (Xero, etc.)
+  xeroId        String?      @unique // Xero invoice ID (external reference)
+  xeroSyncError String? // Last sync error message
   lastSyncedAt  DateTime? // Last successful sync with Xero
-  provider      String?   // Payment provider (stripe, paypal, etc.)
-  userId        String?   // User ID for the invoice creator
-  brandEmail    String?   // Brand email address
-  brandName     String?   // Brand name
+  provider      String? // Payment provider (stripe, paypal, etc.)
+  userId        String? // User ID for the invoice creator
+  brandEmail    String? // Brand email address
+  brandName     String? // Brand name
   processedAt   DateTime? // When payment was processed
-  metadata      Json?     // Additional metadata
-  Brand         Brand?    @relation(fields: [brandId], references: [id])
-  Deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  metadata      Json? // Additional metadata
+  Brand         Brand?       @relation(fields: [brandId], references: [id])
+  Deal          Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
   Commission    Commission[]
 
   @@index([brandId])
@@ -1157,26 +1157,26 @@ model Payment {
 }
 
 model Commission {
-  id            String    @id
-  dealId        String
-  invoiceId     String?
-  talentId      String
-  agentId       String?   // Agent who managed the deal
-  amount        Float     // Commission amount
-  percentage    Float     // Commission percentage (e.g., 15.0 for 15%)
-  currency      String    @default("USD")
-  status        String    @default("pending") // pending, approved, paid
-  payoutId      String?   // Linked payout when commission is paid
-  calculatedAt  DateTime  @default(now())
-  approvedAt    DateTime?
-  paidAt        DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime
-  Deal          Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  Invoice       Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  Talent        Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
-  Payout        Payout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
-  User          User?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  id           String    @id
+  dealId       String
+  invoiceId    String?
+  talentId     String
+  agentId      String? // Agent who managed the deal
+  amount       Float // Commission amount
+  percentage   Float // Commission percentage (e.g., 15.0 for 15%)
+  currency     String    @default("USD")
+  status       String    @default("pending") // pending, approved, paid
+  payoutId     String? // Linked payout when commission is paid
+  calculatedAt DateTime  @default(now())
+  approvedAt   DateTime?
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
+  Deal         Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Invoice      Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  Talent       Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  Payout       Payout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  User         User?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
 
   @@index([dealId])
   @@index([invoiceId])
@@ -1188,24 +1188,24 @@ model Commission {
 }
 
 model Payout {
-  id               String    @id
+  id               String       @id
   userId           String?
-  referenceId      String?   @unique
+  referenceId      String?      @unique
   creatorId        String
   dealId           String
   brandId          String?
   amount           Float
-  currency         String    @default("USD")
-  status           String    @default("pending")
+  currency         String       @default("USD")
+  status           String       @default("pending")
   expectedPayoutAt DateTime?
   paidAt           DateTime?
   createdBy        String?
-  createdAt        DateTime  @default(now())
+  createdAt        DateTime     @default(now())
   updatedAt        DateTime
-  Brand            Brand?    @relation(fields: [brandId], references: [id])
-  User             User?     @relation(fields: [createdBy], references: [id])
-  Talent           Talent    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  Deal             Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  Brand            Brand?       @relation(fields: [brandId], references: [id])
+  User             User?        @relation(fields: [createdBy], references: [id])
+  Talent           Talent       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  Deal             Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
   Commission       Commission[] // One payout can cover multiple commissions
 
   @@index([brandId])
@@ -1472,13 +1472,13 @@ model Talent {
   id                      String                    @id
   userId                  String                    @unique
   name                    String
-  displayName             String?                   // Display name for UI
-  legalName               String?                   // Legal name for contracts
-  primaryEmail            String?                   // Primary contact email
-  representationType      String?                   // EXCLUSIVE, NON_EXCLUSIVE, FRIEND_OF_HOUSE, UGC, FOUNDER
-  status                  String?                   // ACTIVE, PAUSED, ARCHIVED
-  managerId               String?                   // Admin manager ID
-  notes                   String?                   // Internal notes
+  displayName             String? // Display name for UI
+  legalName               String? // Legal name for contracts
+  primaryEmail            String? // Primary contact email
+  representationType      String? // EXCLUSIVE, NON_EXCLUSIVE, FRIEND_OF_HOUSE, UGC, FOUNDER
+  status                  String? // ACTIVE, PAUSED, ARCHIVED
+  managerId               String? // Admin manager ID
+  notes                   String? // Internal notes
   categories              String[]
   stage                   String?
   createdAt               DateTime                  @default(now())
@@ -1512,7 +1512,7 @@ model TalentEmail {
   id        String   @id @default(cuid())
   talentId  String
   email     String
-  label     String?  // e.g. "Manager", "Assistant", "Personal"
+  label     String? // e.g. "Manager", "Assistant", "Personal"
   isPrimary Boolean  @default(false)
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -1551,20 +1551,20 @@ model TalentTask {
 }
 
 model TalentSocial {
-  id               String          @id @default(cuid())
-  talentId         String
-  platform         SocialPlatform
-  handle           String
-  url              String
-  followers        Int?
-  following        Int?
-  postCount        Int?
-  displayName      String?
-  profileImageUrl  String?
-  verified         Boolean         @default(false)
-  lastScrapedAt    DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id              String         @id @default(cuid())
+  talentId        String
+  platform        SocialPlatform
+  handle          String
+  url             String
+  followers       Int?
+  following       Int?
+  postCount       Int?
+  displayName     String?
+  profileImageUrl String?
+  verified        Boolean        @default(false)
+  lastScrapedAt   DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   talent Talent @relation(fields: [talentId], references: [id], onDelete: Cascade)
 
@@ -1588,13 +1588,13 @@ model TalentUserAccess {
   id        String   @id @default(cuid())
   talentId  String
   userId    String
-  role      String   @default("VIEW")  // VIEW | MANAGE
+  role      String   @default("VIEW") // VIEW | MANAGE
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  Talent    Talent   @relation("TalentAccess", fields: [talentId], references: [id], onDelete: Cascade)
-  User      User     @relation("TalentAccessGiven", fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  Talent Talent @relation("TalentAccess", fields: [talentId], references: [id], onDelete: Cascade)
+  User   User   @relation("TalentAccessGiven", fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([talentId, userId])
   @@index([talentId])
   @@index([userId])
@@ -1617,7 +1617,7 @@ model EmailClickEvent {
   id           String       @id
   emailId      String
   clickedAt    DateTime     @default(now())
-  linkUrl      String       // The URL that was clicked
+  linkUrl      String // The URL that was clicked
   ip           String?
   userAgent    String?
   metadata     Json?
@@ -1700,7 +1700,7 @@ model User {
   Submission                              Submission[]
   Talent                                  Talent?
   TalentAssignment                        TalentAssignment[]
-  TalentAccessGiven                       TalentUserAccess[]        @relation("TalentAccessGiven")
+  TalentAccessGiven                       TalentUserAccess[]       @relation("TalentAccessGiven")
   PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
   PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
   UGCRequests                             UGCRequest[]             @relation("UGCRequests")
@@ -1709,6 +1709,7 @@ model User {
   UGCListings                             UGCListing[]             @relation("UGCListings")
   IntegrationConnection                   IntegrationConnection[]
   XeroConnections                         XeroConnection[]
+  UserDashboardConfigs                    UserDashboardConfig[]
 }
 
 model WellnessCheckin {
@@ -1725,7 +1726,7 @@ model WellnessCheckin {
 
 model XeroConnection {
   id           String    @id
-  userId       String?   // Link to user if applicable
+  userId       String? // Link to user if applicable
   connected    Boolean   @default(false)
   tenantId     String?
   accessToken  String?
@@ -1741,17 +1742,17 @@ model XeroConnection {
 
 // V1.1: Integration Connection Model for Slack, Notion, Google Drive
 model IntegrationConnection {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
-  platform      String   // "slack", "notion", "google_drive"
+  platform      String // "slack", "notion", "google_drive"
   connected     Boolean   @default(false)
   accessToken   String?
   refreshToken  String?
   expiresAt     DateTime?
-  webhookUrl    String?   // For Slack webhooks
-  workspaceId   String?   // For Notion workspace
-  workspaceName String?   // For Notion workspace name
-  metadata      Json?     // Platform-specific data
+  webhookUrl    String? // For Slack webhooks
+  workspaceId   String? // For Notion workspace
+  workspaceName String? // For Notion workspace name
+  metadata      Json? // Platform-specific data
   lastSyncedAt  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -2030,15 +2031,15 @@ model PageBlockDraft {
 
 // Missing models - added for TypeScript compatibility
 model UGCRequest {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  status    String   @default("pending")
+  status    String    @default("pending")
   brief     String?
   budget    Float?
   deadline  DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  User      User     @relation("UGCRequests", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  User      User      @relation("UGCRequests", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -2086,10 +2087,10 @@ model BrandIntelligence {
 }
 
 model NegotiationInsight {
-  id       String   @id @default(cuid())
-  dealId   String
-  insight  String?
-  metadata Json?
+  id        String   @id @default(cuid())
+  dealId    String
+  insight   String?
+  metadata  Json?
   createdAt DateTime @default(now())
 
   @@index([dealId])
@@ -2111,95 +2112,95 @@ model UGCListing {
 }
 
 model Reconciliation {
-  id        String   @id @default(cuid())
-  type      String
+  id          String   @id @default(cuid())
+  type        String
   referenceId String
-  invoiceId String?  @unique
-  amount    Float
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  invoiceId   String?  @unique
+  amount      Float
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([referenceId])
   @@index([type])
 }
 
 model RevenueSource {
-  id                  String                @id @default(cuid())
-  talentId            String
-  platform            String                // SHOPIFY, TIKTOK_SHOP, LTK, AMAZON, CUSTOM
-  displayName         String                // e.g. "The Break Store", "Glow Up Shop"
-  externalAccountId   String?               // Platform-specific account ID (encrypted in future)
-  status              String                @default("CONNECTED") // CONNECTED, DISCONNECTED, ERROR, PAUSED
-  apiKeyHash          String?               // Hashed API key for validation (never store plain)
-  lastSyncedAt        DateTime?             // Last time we pulled revenue data
-  syncError           String?               // Error message from last sync attempt
-  metadata            Json?                 // Platform-specific config (store ID, API endpoint, etc.)
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  
-  Talent              Talent                @relation(fields: [talentId], references: [id], onDelete: Cascade)
-  RevenueEvent        RevenueEvent[]
-  
+  id                String    @id @default(cuid())
+  talentId          String
+  platform          String // SHOPIFY, TIKTOK_SHOP, LTK, AMAZON, CUSTOM
+  displayName       String // e.g. "The Break Store", "Glow Up Shop"
+  externalAccountId String? // Platform-specific account ID (encrypted in future)
+  status            String    @default("CONNECTED") // CONNECTED, DISCONNECTED, ERROR, PAUSED
+  apiKeyHash        String? // Hashed API key for validation (never store plain)
+  lastSyncedAt      DateTime? // Last time we pulled revenue data
+  syncError         String? // Error message from last sync attempt
+  metadata          Json? // Platform-specific config (store ID, API endpoint, etc.)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  Talent       Talent         @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  RevenueEvent RevenueEvent[]
+
+  @@unique([talentId, platform, externalAccountId])
   @@index([talentId])
   @@index([platform])
   @@index([status])
   @@index([talentId, platform]) // For finding all Shopify stores for a talent
-  @@unique([talentId, platform, externalAccountId])
 }
 
 model RevenueEvent {
-  id                String            @id @default(cuid())
-  revenueSourceId   String
-  date              DateTime          // Date the revenue occurred
-  grossAmount       Float             // Gross/total revenue
-  netAmount         Float             // Net after fees/commissions
-  currency          String            @default("GBP") // Always store with currency
-  type              String            // SALE, COMMISSION, REFUND, PAYOUT, OTHER
-  sourceReference   String?           // Platform transaction ID (for deduplication)
-  metadata          Json?             // Platform-specific data
-  createdAt         DateTime          @default(now())
-  
-  RevenueSource     RevenueSource     @relation(fields: [revenueSourceId], references: [id], onDelete: Cascade)
-  
+  id              String   @id @default(cuid())
+  revenueSourceId String
+  date            DateTime // Date the revenue occurred
+  grossAmount     Float // Gross/total revenue
+  netAmount       Float // Net after fees/commissions
+  currency        String   @default("GBP") // Always store with currency
+  type            String // SALE, COMMISSION, REFUND, PAYOUT, OTHER
+  sourceReference String? // Platform transaction ID (for deduplication)
+  metadata        Json? // Platform-specific data
+  createdAt       DateTime @default(now())
+
+  RevenueSource RevenueSource @relation(fields: [revenueSourceId], references: [id], onDelete: Cascade)
+
+  @@unique([revenueSourceId, sourceReference]) // Prevent duplicate transactions
   @@index([revenueSourceId])
   @@index([date])
   @@index([type])
   @@index([revenueSourceId, date]) // For aggregation queries
-  @@unique([revenueSourceId, sourceReference]) // Prevent duplicate transactions
 }
 
 model RevenueGoal {
-  id            String    @id @default(cuid())
-  talentId      String
-  goalType      String    // MONTHLY_TOTAL, QUARTERLY_TOTAL, ANNUAL_TOTAL, PLATFORM_SPECIFIC
-  platform      String?   // NULL for total, or SHOPIFY, TIKTOK_SHOP, etc. for platform-specific
-  targetAmount  Float
-  currency      String    @default("GBP")
-  timeframe     Json      // { startDate, endDate } for custom periods
-  notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  Talent        Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(cuid())
+  talentId     String
+  goalType     String // MONTHLY_TOTAL, QUARTERLY_TOTAL, ANNUAL_TOTAL, PLATFORM_SPECIFIC
+  platform     String? // NULL for total, or SHOPIFY, TIKTOK_SHOP, etc. for platform-specific
+  targetAmount Float
+  currency     String   @default("GBP")
+  timeframe    Json // { startDate, endDate } for custom periods
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  Talent Talent @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([talentId, goalType, platform])
   @@index([talentId])
   @@index([goalType])
-  @@unique([talentId, goalType, platform])
 }
 
 model UserDashboardConfig {
-  id                String    @id @default(cuid())
-  userId            String
-  dashboardType     String    // ADMIN_OVERVIEW, TALENT_OVERVIEW, EXCLUSIVE_TALENT_OVERVIEW
-  snapshots         Json      // Array of { snapshotId, enabled, order }
-  customizations    Json?     // Additional user preferences per snapshot
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  dashboardType  String // ADMIN_OVERVIEW, TALENT_OVERVIEW, EXCLUSIVE_TALENT_OVERVIEW
+  snapshots      Json // Array of { snapshotId, enabled, order }
+  customizations Json? // Additional user preferences per snapshot
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, dashboardType])
   @@index([userId])
   @@index([dashboardType])
-  @@unique([userId, dashboardType])
 }
