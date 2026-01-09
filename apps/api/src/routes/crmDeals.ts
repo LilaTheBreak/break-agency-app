@@ -169,7 +169,7 @@ router.get("/", async (req, res) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch deals";
     logError("Failed to fetch deals", error, { userId: req.user?.id, route: req.path });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       error: errorMessage,
       message: errorMessage,

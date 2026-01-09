@@ -64,7 +64,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.json(safeBrands);
   } catch (error) {
     console.error("[CRM BRANDS] Error fetching brands:", error);
-    res.status(500).json({ error: "Failed to fetch brands" });
+    return res.status(500).json({ error: "Failed to fetch brands" });
   }
 });
 

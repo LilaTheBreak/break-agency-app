@@ -59,7 +59,7 @@ router.get("/", async (req, res) => {
   } catch (error) {
     // Phase 4: Fail loudly - no empty arrays on error
     logError("Failed to fetch campaigns", error, { userId: req.user?.id });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch campaigns",
       message: error instanceof Error ? error.message : "Unknown error"
     });

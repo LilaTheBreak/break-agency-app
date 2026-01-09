@@ -45,7 +45,7 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch contacts";
     logError("Failed to fetch contacts", error, { userId: req.user?.id, route: req.path });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       success: false,
       error: errorMessage,
       message: errorMessage,
