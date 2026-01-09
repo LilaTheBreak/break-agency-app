@@ -77,9 +77,9 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: 
     });
     await syncBrandPivots(campaignId, [brand]);
     const payload = await fetchCampaign(campaignId, req.user!.id);
-    res.json({ campaign: payload });
+    return res.json({ campaign: payload });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Unable to add brand" });
+    return res.status(500).json({ error: error instanceof Error ? error.message : "Unable to add brand" });
   }
 });
 
@@ -181,9 +181,9 @@ router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => 
     if (!canAccessCampaign(campaign, req.user!.id, req.user!.role)) {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
-    res.json({ campaign });
+    return res.json({ campaign });
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : "Unable to load campaign" });
+    return res.status(500).json({ error: error instanceof Error ? error.message : "Unable to load campaign" });
   }
 });
 
