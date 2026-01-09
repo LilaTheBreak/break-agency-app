@@ -297,7 +297,7 @@ export function ExclusiveTalentSnapshot() {
           Updated {new Date(data.meta.generatedAt).toLocaleTimeString()}
         </p>
         <Link
-          to="/admin/view/exclusive"
+          to="/admin/talent"
           className="inline-flex items-center gap-2 rounded-full border border-brand-red text-brand-red px-4 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.2em] hover:bg-brand-red/5 transition-colors"
         >
           Manage All →
