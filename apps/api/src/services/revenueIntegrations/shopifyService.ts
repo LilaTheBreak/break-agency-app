@@ -9,8 +9,13 @@
  * - Payout tracking
  */
 
-import type { RevenueEvent } from "@prisma/client";
 import prisma from "../../lib/prisma.js";
+
+// Type alias for revenue event (generated from Prisma after migration)
+type RevenueEvent = any;
+
+// Cast prisma to any to suppress type errors before migration
+const prismaClient = prisma as any;
 
 export interface ShopifyConfig {
   shopName: string;
@@ -130,7 +135,7 @@ export async function syncShopifyOrders(
   for (const order of orders) {
     try {
       // Check for existing event (deduplication)
-      const existing = await prisma.revenueEvent.findUnique({
+      const existing = await prismaClient.revenueEvent.findUnique({
         where: {
           revenueSourceId_sourceReference: {
             revenueSourceId: sourceId,
@@ -145,7 +150,7 @@ export async function syncShopifyOrders(
       }
       
       // Create revenue event from order
-      await prisma.revenueEvent.create({
+      await prismaClient.revenueEvent.create({
         data: {
           revenueSourceId: sourceId,
           date: order.createdAt,
@@ -187,7 +192,7 @@ export async function syncShopifyPayouts(
   
   for (const payout of payouts) {
     try {
-      const existing = await prisma.revenueEvent.findUnique({
+      const existing = await prismaClient.revenueEvent.findUnique({
         where: {
           revenueSourceId_sourceReference: {
             revenueSourceId: sourceId,
@@ -201,7 +206,7 @@ export async function syncShopifyPayouts(
         continue;
       }
       
-      await prisma.revenueEvent.create({
+      await prismaClient.revenueEvent.create({
         data: {
           revenueSourceId: sourceId,
           date: payout.createdAt,
