@@ -180,7 +180,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     recentPosts.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
     recentPosts.splice(10); // Keep top 10
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         totalFollowers,
@@ -197,7 +197,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Social analytics fetch failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to load social analytics',
       message: error.message
@@ -283,7 +283,7 @@ router.get('/:platform', requireAuth, async (req: Request, res: Response) => {
       ? posts.reduce((sum, p) => sum + (p.engagementRate || 0), 0) / posts.length
       : 0;
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         platform: profile.platform,
@@ -336,7 +336,7 @@ router.get('/:platform', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error(`${req.params.platform} analytics fetch failed:`, error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: `Failed to load ${req.params.platform} analytics`,
       message: error.message
@@ -393,7 +393,7 @@ router.get('/:platform/metrics', requireAuth, async (req: Request, res: Response
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         platform: platform.toLowerCase(),
@@ -412,7 +412,7 @@ router.get('/:platform/metrics', requireAuth, async (req: Request, res: Response
     });
   } catch (error: any) {
     console.error(`Time-series metrics fetch failed:`, error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to load time-series metrics',
       message: error.message

@@ -72,7 +72,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     allPosts.sort((a, b) => (b.engagementRate || 0) - (a.engagementRate || 0));
     const topPosts = allPosts.slice(0, limit);
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         posts: topPosts,
@@ -85,7 +85,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Top posts fetch failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: 'Failed to load top posts',
       message: error.message

@@ -144,10 +144,10 @@ router.get("/profiles/:email", async (req: Request, res: Response) => {
     if (!user) {
       return res.json({ profile: createDefaultProfile(email) });
     }
-    res.json({ profile: formatProfile(user) });
+    return res.json({ profile: formatProfile(user) });
   } catch (error) {
     console.error("Error fetching profile", error);
-    res.status(500).json({ error: "Failed to load profile" });
+    return res.status(500).json({ error: "Failed to load profile" });
   }
 });
 
@@ -195,10 +195,10 @@ router.put("/profiles/:email", async (req: Request, res: Response) => {
       metadata: { userId: user.id, email } as any,
     });
 
-    res.json({ profile });
+    return res.json({ profile });
   } catch (error) {
     console.error("Error saving profile", error);
-    res.status(500).json({ error: "Failed to save profile" });
+    return res.status(500).json({ error: "Failed to save profile" });
   }
 });
 

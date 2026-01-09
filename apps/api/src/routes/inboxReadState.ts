@@ -28,9 +28,9 @@ router.post("/api/inbox/mark-read", requireAuth, async (req: Request, res: Respo
     } else {
       await prisma.inboxMessage.update({ where: { id }, data: { isRead: true } });
     }
-    res.status(200).json({ success: true });
+    return res.status(200).json({ success: true });
   } catch (error) {
-    res.status(500).json({ success: false, error: "Failed to mark as read." });
+    return res.status(500).json({ success: false, error: "Failed to mark as read." });
   }
 });
 
@@ -46,7 +46,7 @@ router.post("/api/inbox/mark-unread", requireAuth, async (req: Request, res: Res
   if (type === "email") await prisma.inboundEmail.update({ where: { id }, data: { isRead: false } });
   else await prisma.inboxMessage.update({ where: { id }, data: { isRead: false } });
 
-  res.status(200).json({ success: true });
+  return res.status(200).json({ success: true });
 });
 
 export default router;

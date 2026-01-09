@@ -74,7 +74,7 @@ router.post("/run/:dealId", async (req: Request, res: Response) => {
       console.error("Failed to log audit event:", logError);
     }
 
-    res.json({ 
+    return res.json({ 
       success: true,
       intelligence: {
         ...intelligence,
@@ -84,7 +84,7 @@ router.post("/run/:dealId", async (req: Request, res: Response) => {
     });
   } catch (error) {
     logError("Failed to generate deal intelligence", error, { dealId: req.params.dealId });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to generate intelligence",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -131,7 +131,7 @@ router.get("/:dealId", async (req: Request, res: Response) => {
 
     // Return structured intelligence
     const insights = intelligence.insights as any;
-    res.json({ 
+    return res.json({ 
       success: true,
       intelligence: {
         id: intelligence.id,
@@ -147,7 +147,7 @@ router.get("/:dealId", async (req: Request, res: Response) => {
     });
   } catch (error) {
     logError("Failed to fetch deal intelligence", error, { dealId: req.params.dealId });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to fetch intelligence",
       message: error instanceof Error ? error.message : "Unknown error"
     });
@@ -203,7 +203,7 @@ Please let me know if you'd like to discuss further.
 
 Best regards`;
 
-    res.json({ 
+    return res.json({ 
       subject,
       body,
       dealId,
@@ -211,7 +211,7 @@ Best regards`;
     });
   } catch (error) {
     logError("Failed to generate draft email", error, { dealId: req.params.dealId });
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to generate draft email",
       message: error instanceof Error ? error.message : "Unknown error"
     });

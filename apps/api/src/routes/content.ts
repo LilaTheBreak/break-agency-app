@@ -362,10 +362,10 @@ router.get("/pages", async (req: Request, res: Response) => {
       .filter((page): page is NonNullable<typeof page> => page !== null);
 
     console.log(`[CMS] GET /pages: Found ${enrichedPages.length} editable pages (filtered from ${dbPages.length} DB pages)`);
-    res.json({ pages: enrichedPages });
+    return res.json({ pages: enrichedPages });
   } catch (error) {
     console.error("[CMS] Failed to fetch pages:", error);
-    res.status(500).json({ error: "Failed to fetch pages" });
+    return res.status(500).json({ error: "Failed to fetch pages" });
   }
 });
 
@@ -414,7 +414,7 @@ router.get("/pages/:slug", async (req: Request, res: Response) => {
     // If preview mode, return drafts; otherwise return published blocks
     const blocks = preview ? page.drafts : page.blocks;
 
-    res.json({
+    return res.json({
       page: {
         id: page.id,
         slug: page.slug,
@@ -434,7 +434,7 @@ router.get("/pages/:slug", async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Failed to fetch page:", error);
-    res.status(500).json({ error: "Failed to fetch page" });
+    return res.status(500).json({ error: "Failed to fetch page" });
   }
 });
 
@@ -513,10 +513,10 @@ router.post("/pages/:slug/blocks", async (req: Request, res: Response) => {
       console.error("Failed to log admin activity:", logError);
     }
 
-    res.status(201).json({ block });
+    return res.status(201).json({ block });
   } catch (error) {
     console.error("Failed to create block:", error);
-    res.status(500).json({ error: "Failed to create block" });
+    return res.status(500).json({ error: "Failed to create block" });
   }
 });
 
@@ -580,10 +580,10 @@ router.put("/blocks/:id", async (req: Request, res: Response) => {
       console.error("Failed to log admin activity:", logError);
     }
 
-    res.json({ block });
+    return res.json({ block });
   } catch (error) {
     console.error("Failed to update block:", error);
-    res.status(500).json({ error: "Failed to update block" });
+    return res.status(500).json({ error: "Failed to update block" });
   }
 });
 
@@ -621,10 +621,10 @@ router.delete("/blocks/:id", async (req: Request, res: Response) => {
       console.error("Failed to log admin activity:", logError);
     }
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
     console.error("Failed to delete block:", error);
-    res.status(500).json({ error: "Failed to delete block" });
+    return res.status(500).json({ error: "Failed to delete block" });
   }
 });
 
@@ -677,10 +677,10 @@ router.post("/blocks/:id/duplicate", async (req: Request, res: Response) => {
       console.error("Failed to log admin activity:", logError);
     }
 
-    res.status(201).json({ block: newBlock });
+    return res.status(201).json({ block: newBlock });
   } catch (error) {
     console.error("Failed to duplicate block:", error);
-    res.status(500).json({ error: "Failed to duplicate block" });
+    return res.status(500).json({ error: "Failed to duplicate block" });
   }
 });
 
@@ -732,10 +732,10 @@ router.post("/pages/:slug/blocks/reorder", async (req: Request, res: Response) =
       console.error("Failed to log admin activity:", logError);
     }
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (error) {
     console.error("Failed to reorder blocks:", error);
-    res.status(500).json({ error: "Failed to reorder blocks" });
+    return res.status(500).json({ error: "Failed to reorder blocks" });
   }
 });
 
@@ -800,10 +800,10 @@ router.post("/pages/:slug/drafts", async (req: Request, res: Response) => {
       })
     );
 
-    res.json({ drafts: createdDrafts });
+    return res.json({ drafts: createdDrafts });
   } catch (error) {
     console.error("Failed to save drafts:", error);
-    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to save drafts" });
+    return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to save drafts" });
   }
 });
 
@@ -873,10 +873,10 @@ router.post("/pages/:slug/publish", async (req: Request, res: Response) => {
       console.error("Failed to log admin activity:", logError);
     }
 
-    res.json({ blocks: publishedBlocks });
+    return res.json({ blocks: publishedBlocks });
   } catch (error) {
     console.error("Failed to publish page:", error);
-    res.status(500).json({ error: "Failed to publish page" });
+    return res.status(500).json({ error: "Failed to publish page" });
   }
 });
 

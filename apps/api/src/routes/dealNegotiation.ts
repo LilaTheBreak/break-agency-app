@@ -11,7 +11,7 @@ router.post("/suggest", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: true, message: "dealId required" });
     }
     const result = await suggestReply(dealId, req.user!.id);
-    res.json({ ok: true, data: result });
+    return res.json({ ok: true, data: result });
   } catch (error) {
     next(error);
   }
