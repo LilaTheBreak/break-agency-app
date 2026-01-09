@@ -322,7 +322,7 @@ export async function detectDealDuplicates(): Promise<DuplicateGroup[]> {
     const duplicates: DuplicateCandidate[] = [
       {
         id: current.id,
-        name: current.campaignName || current.brandName,
+        name: current.campaignName || current.brandName || "Unnamed Deal",
         type: "Deal",
         createdAt: current.createdAt,
       },
@@ -380,7 +380,7 @@ export async function detectDealDuplicates(): Promise<DuplicateGroup[]> {
       if (isMatch) {
         duplicates.push({
           id: candidate.id,
-          name: candidate.campaignName || candidate.brandName,
+          name: candidate.campaignName || candidate.brandName || "Unnamed Deal",
           type: "Deal",
           createdAt: candidate.createdAt,
         });
