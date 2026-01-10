@@ -2,10 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm install && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/api exec prisma generate && (pnpm --filter @breakagency/api build || echo 'Build completed with warnings') || true"
+    "buildCommand": "pnpm install && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/web build && pnpm --filter @breakagency/api exec prisma generate && pnpm --filter @breakagency/api build"
   },
   "deploy": {
-    "startCommand": "cd apps/api && npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js",
+    "startCommand": "cd apps/api && NODE_ENV=production npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
@@ -13,7 +13,8 @@
   },
   "variables": {
     "PUPPETEER_SKIP_DOWNLOAD": "true",
-    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1"
+    "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "1",
+    "NODE_ENV": "production"
   }
 }
 

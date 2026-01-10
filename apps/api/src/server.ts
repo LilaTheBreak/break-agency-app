@@ -774,6 +774,43 @@ app.use(auditMiddleware);
 // ------------------------------------------------------
 app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
+// Serve web app static assets in production
+const webDistPath = path.resolve(process.cwd(), "../web/dist");
+const webIndexPath = path.join(webDistPath, "index.html");
+
+// Only serve static web app if it exists (built in Railway/production)
+try {
+  const fs = require("fs");
+  if (fs.existsSync(webDistPath)) {
+    console.log(`[WEB] Serving static web app from ${webDistPath}`);
+    
+    // Serve static assets with cache headers
+    app.use(express.static(webDistPath, {
+      maxAge: "1d",
+      etag: false,
+      cacheControl: true
+    }));
+    
+    // SPA routing: serve index.html for all non-API routes
+    app.get("*", (req, res) => {
+      // Don't serve index.html for API routes
+      if (req.path.startsWith("/api") || req.path.startsWith("/webhooks") || req.path.startsWith("/health")) {
+        return res.status(404).json({ error: "Not found" });
+      }
+      
+      if (fs.existsSync(webIndexPath)) {
+        res.sendFile(webIndexPath);
+      } else {
+        res.status(404).json({ error: "Web app not found" });
+      }
+    });
+  } else {
+    console.log("[WEB] Web app not found at", webDistPath, "- API mode only");
+  }
+} catch (err) {
+  console.warn("[WEB] Could not set up web static serving:", err instanceof Error ? err.message : err);
+}
+
 // ------------------------------------------------------
 // BASE ROUTE
 // ------------------------------------------------------
