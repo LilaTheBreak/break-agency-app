@@ -280,6 +280,26 @@ validateGmailCredentials();
 
 const app = express();
 
+// ========================================================
+// COMPREHENSIVE BOOT LOGGING
+// ========================================================
+console.log("\n" + "=".repeat(60));
+console.log("SERVER BOOT ENVIRONMENT");
+console.log("=".repeat(60));
+console.log({
+  NODE_ENV: process.env.NODE_ENV || "development",
+  hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+  hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+  hasGoogleRedirectUri: !!process.env.GOOGLE_REDIRECT_URI,
+  hasFrontendOrigin: !!process.env.FRONTEND_ORIGIN,
+  hasWebAppUrl: !!process.env.WEB_APP_URL,
+  hasWebhookToken: !!process.env.WEBHOOK_VERIFY_TOKEN,
+  hasDatabase: !!process.env.DATABASE_URL,
+  loadedFromDotenv: process.env.NODE_ENV !== 'production',
+  timestamp: new Date().toISOString()
+});
+console.log("=".repeat(60) + "\n");
+
 // Add Sentry request handler (must be first middleware)
 // Note: setupExpressErrorHandler sets up both request and error handlers
 // But we need to call it after routes are defined, so we'll set it up later
@@ -305,23 +325,40 @@ const allowedOrigins = combinedOrigins
   .filter((v, i, arr) => arr.indexOf(v) === i); // Remove duplicates
 
 // Validate each origin is a valid URL
+const invalidOrigins: string[] = [];
 allowedOrigins.forEach((origin, index) => {
   try {
     new URL(origin);
   } catch (error) {
-    console.error(`\n❌ INVALID FRONTEND_ORIGIN[${index}]: "${origin}"`);
-    console.error(`   Each comma-separated origin must be a valid URL (e.g., https://domain.com)`);
-    if (process.env.NODE_ENV === "production") {
-      process.exit(1);
-    }
+    console.warn(`\n⚠️  INVALID FRONTEND_ORIGIN[${index}]: "${origin}"`);
+    console.warn(`   Each comma-separated origin must be a valid URL (e.g., https://domain.com)`);
+    console.warn(`   This origin will be skipped`);
+    invalidOrigins.push(origin);
   }
 });
 
-console.log("✅ FRONTEND_ORIGIN validated:");
-allowedOrigins.forEach((origin, i) => {
-  console.log(`   [${i}] "${origin}"`);
-});
-console.log(`   Total: ${allowedOrigins.length} origins allowed`);
+// Remove invalid origins
+const validOrigins = allowedOrigins.filter(o => !invalidOrigins.includes(o));
+
+// Warn if all origins are invalid
+if (validOrigins.length === 0) {
+  console.warn("\n⚠️  WARNING: No valid FRONTEND_ORIGIN found. CORS disabled for safety.");
+  console.warn("   Set FRONTEND_ORIGIN or WEB_APP_URL to valid HTTPS URLs");
+  console.warn("   Example: FRONTEND_ORIGIN=https://app.yourdomain.com");
+}
+
+console.log("✅ FRONTEND_ORIGIN validation complete:");
+if (validOrigins.length > 0) {
+  validOrigins.forEach((origin, i) => {
+    console.log(`   [${i}] "${origin}"`);
+  });
+  console.log(`   Total: ${validOrigins.length} valid origins`);
+} else {
+  console.log("   (No valid origins - CORS will be restricted)");
+}
+
+// Use validOrigins instead of allowedOrigins
+const finalAllowedOrigins = validOrigins;
 
 // ------------------------------------------------------
 // CORE MIDDLEWARE
@@ -338,7 +375,7 @@ console.log("[MONITORING] Performance monitoring initialized");
 app.use(cors({
   origin: (origin, callback) => {
     console.log(`[CORS] Incoming origin: "${origin}"`);
-    console.log(`[CORS] Allowed origins:`, allowedOrigins);
+    console.log(`[CORS] Allowed origins:`, finalAllowedOrigins);
     
     // Allow requests with no origin (server-to-server, Postman, etc.)
     if (!origin) {
@@ -347,7 +384,7 @@ app.use(cors({
     }
     
     // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
+    if (finalAllowedOrigins.includes(origin)) {
       console.log(`[CORS] Origin "${origin}" is ALLOWED`);
       return callback(null, true);
     }
@@ -361,7 +398,7 @@ app.use(cors({
     
     // Origin not allowed
     console.warn(`[CORS] Origin "${origin}" is BLOCKED`);
-    console.warn(`[CORS] Allowed origins are:`, allowedOrigins);
+    console.warn(`[CORS] Allowed origins are:`, finalAllowedOrigins);
     return callback(null, false); // Don't throw error, just don't add CORS headers
   },
   credentials: true,
@@ -427,7 +464,7 @@ app.use(express.urlencoded({ extended: true, limit: "350mb" }));
 // ------------------------------------------------------
 app.get("/api/cors-debug", (_req, res) => {
   return res.json({
-    allowedOrigins,
+    allowedOrigins: finalAllowedOrigins,
     env: {
       FRONTEND_ORIGIN: process.env.FRONTEND_ORIGIN || "(not set)",
       WEB_APP_URL: process.env.WEB_APP_URL || "(not set)",

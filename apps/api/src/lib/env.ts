@@ -31,9 +31,13 @@ function getEnvRequired(name: string, productionOnly: boolean = true): string {
 }
 
 // Unified Google OAuth config
-const redirectUri = process.env.NODE_ENV === 'production'
-  ? getEnvRequired('GOOGLE_REDIRECT_URI')
-  : process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/api/auth/google/callback';
+// NOTE: In production, GOOGLE_REDIRECT_URI is strongly recommended but not required at boot time.
+// If missing, Gmail OAuth will be gracefully disabled (via validateGmailCredentials)
+// rather than crashing the entire server.
+const redirectUri = process.env.GOOGLE_REDIRECT_URI || 
+  (process.env.NODE_ENV !== 'production' 
+    ? 'http://localhost:5001/api/auth/google/callback'
+    : 'https://api.thebreakco.com/api/auth/google/callback'); // Production fallback
 
 export const googleConfig = {
   clientId: getEnv("GOOGLE_CLIENT_ID"),
