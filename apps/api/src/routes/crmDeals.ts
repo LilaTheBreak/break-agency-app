@@ -31,6 +31,12 @@ router.get("/snapshot", async (req, res) => {
     // SECURITY FIX: Scope to effective user to prevent accessing other talents' deals while impersonating
     const effectiveUserId = getEffectiveUserId(req);
 
+    // Fetch talent to get currency preference
+    const talent = await prisma.talent.findFirst({
+      where: { userId: effectiveUserId },
+      select: { currency: true },
+    });
+
     // Fetch deals for effective user only
     const allDeals = await prisma.deal.findMany({
       where: {
@@ -98,7 +104,7 @@ router.get("/snapshot", async (req, res) => {
       },
       meta: {
         totalDeals: allDeals.length,
-        currency: "GBP",
+        currency: talent?.currency || "GBP",
         generatedAt: new Date().toISOString(),
       },
     });

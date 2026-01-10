@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../lib/prisma.js";
 import { logError } from "../../lib/logger.js";
-import { Roles } from "@breakagency/shared";
+import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
 
 const router = Router({ mergeParams: true });
 
@@ -17,10 +17,10 @@ const router = Router({ mergeParams: true });
 router.get("/", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const userRole = (req as any).user?.role;
+    const user = (req as any).user;
 
     // Check permissions
-    if (userRole !== Roles.ADMIN && userRole !== Roles.SUPERADMIN) {
+    if (!isAdmin(user) && !isSuperAdmin(user)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -100,11 +100,11 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { currency, managers } = req.body;
-    const userRole = (req as any).user?.role;
-    const userId = (req as any).user?.id;
+    const user = (req as any).user;
+    const userId = user?.id;
 
     // Check permissions
-    if (userRole !== Roles.ADMIN && userRole !== Roles.SUPERADMIN) {
+    if (!isAdmin(user) && !isSuperAdmin(user)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -231,10 +231,10 @@ router.post("/", async (req: Request, res: Response) => {
  */
 router.get("/available-managers", async (req: Request, res: Response) => {
   try {
-    const userRole = (req as any).user?.role;
+    const user = (req as any).user;
 
     // Check permissions
-    if (userRole !== Roles.ADMIN && userRole !== Roles.SUPERADMIN) {
+    if (!isAdmin(user) && !isSuperAdmin(user)) {
       return res.status(403).json({ error: "Unauthorized" });
     }
 

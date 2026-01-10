@@ -109,6 +109,7 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
       console.log(`[SOCIAL_INTELLIGENCE] No connected social accounts for ${talentId} - returning empty state`);
       const emptyResult = {
         connected: false,
+        currency: talent?.currency || "GBP",
         platforms: [],
         overview: null,
         contentPerformance: [],
@@ -175,6 +176,7 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
 
     const result = {
       connected: true,
+      currency: talent.currency || "GBP",
       platforms,
       overview: intelligence.overview,
       contentPerformance: intelligence.contentPerformance,

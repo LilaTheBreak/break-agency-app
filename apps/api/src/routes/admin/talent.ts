@@ -525,7 +525,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         stage: deal.stage,
         status: deal.stage, // Keep for backward compatibility with frontend
         value: deal.value,
-        currency: deal.currency || "USD",
+        currency: deal.currency || talent.currency || "GBP",
         expectedClose: deal.expectedClose,
         notes: deal.notes,
         aiSummary: deal.aiSummary,
