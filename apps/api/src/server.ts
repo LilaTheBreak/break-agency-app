@@ -273,23 +273,10 @@ if (!gcsValidation.valid) {
   console.log("✅ GCS configuration validated");
 }
 
-const credentialValidation = validateProductionCredentials();
-
-if (!credentialValidation.valid) {
-  console.error("\n❌ INVALID GOOGLE OAUTH CREDENTIALS:");
-  credentialValidation.errors.forEach(err => console.error(`   - ${err}`));
-  
-  if (process.env.NODE_ENV === "production") {
-    console.error("\n🚨 FATAL: Cannot start server in production with invalid credentials");
-    console.error("   Please set valid GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI");
-    process.exit(1);
-  } else {
-    console.warn("\n⚠️  WARNING: Invalid credentials detected in development mode");
-    console.warn("   Gmail features will not work correctly");
-  }
-} else {
-  console.log("✅ Google OAuth credentials validated");
-}
+// Validate and initialize Gmail credentials
+// If invalid, Gmail integration will be disabled gracefully (returns 503 on /api/gmail requests)
+// This prevents platform outage due to credential issues
+validateGmailCredentials();
 
 const app = express();
 
