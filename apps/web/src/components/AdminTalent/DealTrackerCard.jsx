@@ -35,7 +35,7 @@ export function DealTrackerCard({ deal, onEdit, onDelete, isLoading = false }) {
 
   return (
     <div
-      className={`rounded-2xl border border-brand-black/10 ${bgColor} overflow-hidden transition-all hover:shadow-md hover:border-brand-black/20`}
+      className={`rounded-2xl border border-brand-black/10 ${bgColor} overflow-hidden transition-all duration-300 ease-out hover:shadow-lg hover:border-brand-red/30 hover:-translate-y-1 group`}
     >
       {/* Header with Status and Actions */}
       <div className="flex items-start justify-between border-b border-brand-black/10 bg-brand-white/50 px-4 py-3">

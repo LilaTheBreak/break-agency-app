@@ -97,11 +97,16 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
         return (
           <div
             key={idx}
-            className={`rounded-2xl border border-brand-black/10 ${bgClass} p-4`}
+            className={`rounded-2xl border border-brand-black/10 ${bgClass} p-4 transition-all duration-300 hover:shadow-md hover:border-brand-black/20 hover:scale-105`}
+            style={{
+              animationDelay: `${idx * 50}ms`,
+              animation: 'fadeInUp 0.6s ease-out forwards',
+              opacity: 0,
+            }}
           >
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{card.label}</p>
-              <Icon className={`h-4 w-4 ${card.color}`} />
+              <Icon className={`h-4 w-4 ${card.color} transition-transform duration-300`} />
             </div>
             <p className="font-display text-2xl uppercase text-brand-black">{card.value}</p>
             {card.subtext && (
@@ -110,6 +115,18 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
           </div>
         );
       })}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </section>
   );
 }

@@ -127,24 +127,24 @@ export default function DealFilterPanel({
       {/* Filter Button with Badge */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition ${
+        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-300 ease-out ${
           hasActiveFilters
-            ? 'border-brand-red bg-brand-red/5 text-brand-red'
-            : 'border-brand-black/10 bg-brand-white text-brand-black hover:border-brand-black/20'
+            ? 'border-brand-red bg-brand-red/5 text-brand-red shadow-sm hover:shadow-md'
+            : 'border-brand-black/10 bg-brand-white text-brand-black hover:border-brand-red/30 hover:bg-brand-red/2'
         }`}
       >
         <span className="text-sm font-medium">Filters</span>
         {hasActiveFilters && (
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold bg-brand-red text-brand-white">
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold bg-brand-red text-brand-white animate-pulse">
             {activeFilterCount}
           </span>
         )}
-        <ChevronDown className={`w-4 h-4 transition ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Filter Panel */}
       {isOpen && (
-        <div className="absolute z-20 top-full right-0 mt-2 w-80 rounded-xl border border-brand-black/10 bg-brand-white shadow-lg p-6">
+        <div className="absolute z-20 top-full right-0 mt-2 w-80 rounded-xl border border-brand-black/10 bg-brand-white shadow-lg p-6 animate-in fade-in slide-in-from-top-2 duration-300">
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-sm font-semibold text-brand-black">Filter & Sort Deals</h3>

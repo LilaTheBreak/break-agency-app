@@ -57,7 +57,7 @@ export function DealPipelineChart({ deals = [] }) {
   }
 
   return (
-    <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-6">
+    <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-6 transition-all duration-300 hover:shadow-md hover:border-brand-black/20">
       {/* Title */}
       <div className="mb-6">
         <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">Pipeline Distribution</p>
@@ -69,12 +69,12 @@ export function DealPipelineChart({ deals = [] }) {
 
       {/* Pipeline bars */}
       <div className="space-y-3">
-        {pipelineData.map((stage) => {
+        {pipelineData.map((stage, idx) => {
           const percentage = totalValue > 0 ? (stage.value / totalValue) * 100 : 0;
           const bgColor = stageColors[stage.key] || "bg-gray-200";
 
           return (
-            <div key={stage.key ?? "leads"}>
+            <div key={stage.key ?? "leads"} style={{ animationDelay: `${idx * 50}ms`, animation: 'fadeInLeft 0.6s ease-out forwards', opacity: 0 }}>
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs font-semibold text-brand-black uppercase tracking-[0.1em]">
                   {stage.label}
@@ -88,7 +88,7 @@ export function DealPipelineChart({ deals = [] }) {
               </div>
               <div className="w-full h-2 rounded-full bg-brand-black/5 overflow-hidden">
                 <div
-                  className={`h-full ${bgColor} transition-all`}
+                  className={`h-full ${bgColor} transition-all duration-700 ease-out`}
                   style={{ width: `${Math.max(percentage, 5)}%` }}
                 />
               </div>
@@ -110,6 +110,18 @@ export function DealPipelineChart({ deals = [] }) {
           <p className="font-semibold text-brand-black">{deals.length}</p>
         </div>
       </div>
+      <style>{`
+        @keyframes fadeInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
