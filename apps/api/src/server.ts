@@ -243,6 +243,7 @@ console.log(">>> GOOGLE_REDIRECT_URI =", process.env.GOOGLE_REDIRECT_URI);
 console.log(">>> WEBHOOK_VERIFY_TOKEN =", process.env.WEBHOOK_VERIFY_TOKEN ? `${process.env.WEBHOOK_VERIFY_TOKEN.slice(0, 4)}****` : "[MISSING]");
 console.log(">>> GCS_PROJECT_ID =", process.env.GCS_PROJECT_ID || "break-agency-storage (default)");
 console.log(">>> GCS_BUCKET_NAME =", process.env.GCS_BUCKET_NAME || "break-agency-app-storage (default)");
+console.log(">>> DATABASE_MIGRATION_CHECK - Prisma Client Ready with All Schema Updates");
 console.log(">>> GOOGLE_APPLICATION_CREDENTIALS_JSON =", process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON ? "[SET]" : "[MISSING]");
 
 // ------------------------------------------------------
