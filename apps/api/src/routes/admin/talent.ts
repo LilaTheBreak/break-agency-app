@@ -54,25 +54,34 @@ router.get("/", async (req: Request, res: Response) => {
       console.log("[TALENT] Filtering by representationType:", representationType);
     }
     
+    console.log("[TALENT] About to call prisma.talent.findMany with whereClause:", JSON.stringify(whereClause));
+    
     // Fetch talents with User relation included - critical for rendering
     // Note: Talent model doesn't have createdAt/updatedAt fields, so we order by id instead
-    const talentsWithoutUser = await prisma.talent.findMany({
-      where: whereClause,
-      include: {
-        User: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            avatarUrl: true,
+    let talentsWithoutUser: any[] = [];
+    try {
+      talentsWithoutUser = await prisma.talent.findMany({
+        where: whereClause,
+        include: {
+          User: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              avatarUrl: true,
+            },
           },
         },
-      },
-      orderBy: {
-        id: "desc", // Order by id since createdAt doesn't exist on Talent model
-      },
-      take: talentLimit,
-    });
+        orderBy: {
+          id: "desc", // Order by id since createdAt doesn't exist on Talent model
+        },
+        take: talentLimit,
+      });
+      console.log("[TALENT] Successfully fetched", talentsWithoutUser.length, "talents from database");
+    } catch (findManyError) {
+      console.error("[TALENT] ERROR in findMany call:", findManyError);
+      throw new Error(`[TALENT] Prisma findMany failed: ${findManyError instanceof Error ? findManyError.message : String(findManyError)}`);
+    }
     console.log("[TALENT] Found", talentsWithoutUser.length, "talents with User relation");
     
     // Use talentsWithoutUser as the base, then enrich with Deal data
@@ -341,6 +350,15 @@ router.get("/", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("[TALENT] Error fetching talent list:", error);
     console.error("[TALENT] Error stack:", error instanceof Error ? error.stack : "No stack available");
+    
+    // Log detailed error information
+    if (error instanceof Error) {
+      console.error("[TALENT] Error name:", error.name);
+      console.error("[TALENT] Error message:", error.message);
+      console.error("[TALENT] Error cause:", (error as any).cause);
+      console.error("[TALENT] Error code:", (error as any).code);
+    }
+    
     logError("Failed to fetch talent list", error, { userId: req.user?.id, route: req.path });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/admin/talent', method: 'GET' },
@@ -352,6 +370,10 @@ router.get("/", async (req: Request, res: Response) => {
       success: false,
       error: error instanceof Error ? error.message : "Failed to fetch talent list",
       message: error instanceof Error ? error.message : "Failed to fetch talent list",
+      details: process.env.NODE_ENV === 'development' ? {
+        name: error instanceof Error ? error.name : 'Unknown',
+        stack: error instanceof Error ? error.stack : 'No stack'
+      } : undefined,
       code: "TALENT_FETCH_FAILED"
     });
   }
