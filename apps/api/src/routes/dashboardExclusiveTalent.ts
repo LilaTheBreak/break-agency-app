@@ -105,7 +105,7 @@ router.get(
         
         // Fetch manager info for talents that have managers
         const managerIds = Array.from(
-          new Set(exclusiveTalents.map(t => t.managerId).filter(Boolean))
+          new Set(exclusiveTalents.map(t => t.managerId).filter((id): id is string => id !== null && id !== undefined))
         );
         const managers = managerIds.length > 0
           ? await prisma.user.findMany({

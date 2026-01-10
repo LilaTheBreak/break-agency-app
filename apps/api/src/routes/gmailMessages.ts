@@ -17,10 +17,18 @@ const gmailSyncLimiter = createRateLimiter({
   statusCode: 429,
 });
 
-// GET /messages — list last 50 inbox messages
+// GET /messages — list last 50 inbox messages (grouped by thread)
+// Returns InboxMessage records with full email threads
 router.get("/messages", requireAuth, async (req, res, next) => {
   try {
     const userId = req.user!.id;
+    const unreadOnly = req.query.unreadOnly === "true";
+    
+    console.log(`[GMAIL MESSAGES] Fetching messages for user ${userId}`, {
+      unreadOnly,
+      limit: 50,
+      timestamp: new Date().toISOString()
+    });
     
     // Check if Gmail is connected
     const token = await prisma.gmailToken.findUnique({ 
@@ -54,15 +62,31 @@ router.get("/messages", requireAuth, async (req, res, next) => {
     }
 
     const messages = await prisma.inboxMessage.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        platform: "gmail",
+        // Support filtering by unread status
+        ...(unreadOnly && { isRead: false })
+      },
       orderBy: { lastMessageAt: "desc" },
       take: 50,
-      include: { InboundEmail: { orderBy: { receivedAt: "asc" } } }
+      include: { 
+        InboundEmail: { 
+          orderBy: { receivedAt: "asc" },
+          take: 50 // Limit emails per thread to prevent huge payloads
+        } 
+      }
+    });
+    
+    console.log(`[GMAIL MESSAGES] Retrieved ${messages.length} messages for user ${userId}`, {
+      lastSyncedAt: token.lastSyncedAt?.toISOString() || "never",
+      empty: messages.length === 0,
+      timestamp: new Date().toISOString()
     });
     
     // Log if inbox is empty but Gmail is connected (might need sync)
     if (messages.length === 0 && token.lastSyncedAt === null) {
-      console.log(`[GMAIL MESSAGES] Inbox is empty for user ${userId} and never synced. User may need to trigger sync.`);
+      console.log(`[GMAIL MESSAGES] Inbox is empty for user ${userId} and never synced. Initial sync may still be running or pending.`);
     }
     
     res.json(messages);
@@ -71,6 +95,7 @@ router.get("/messages", requireAuth, async (req, res, next) => {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       userId: req.user?.id,
+      timestamp: new Date().toISOString()
     });
     next(error);
   }

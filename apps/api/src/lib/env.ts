@@ -50,22 +50,46 @@ console.log({
 export function validateProductionCredentials(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  // Check for test/placeholder credentials
-  if (!googleConfig.clientId || googleConfig.clientId === "test") {
-    errors.push("GOOGLE_CLIENT_ID is missing or set to 'test'");
+  // Placeholder patterns that indicate invalid credentials
+  const placeholderPatterns = [
+    "test",
+    "your-google-client-id",
+    "your-google-client-secret",
+    "xxxxxx",
+    "placeholder",
+    "example",
+    "undefined",
+    ""
+  ];
+  
+  // Check for test/placeholder credentials - STRICT validation
+  const normalizedClientId = (googleConfig.clientId || "").toLowerCase().trim();
+  const normalizedClientSecret = (googleConfig.clientSecret || "").toLowerCase().trim();
+  const normalizedRedirectUri = (googleConfig.redirectUri || "").toLowerCase().trim();
+  
+  if (!googleConfig.clientId || 
+      placeholderPatterns.some(p => normalizedClientId === p.toLowerCase())) {
+    errors.push("GOOGLE_CLIENT_ID is missing or set to a placeholder value (must be a real Google OAuth 2.0 Client ID)");
   }
   
-  if (!googleConfig.clientSecret || googleConfig.clientSecret === "test") {
-    errors.push("GOOGLE_CLIENT_SECRET is missing or set to 'test'");
+  if (!googleConfig.clientSecret || 
+      placeholderPatterns.some(p => normalizedClientSecret === p.toLowerCase())) {
+    errors.push("GOOGLE_CLIENT_SECRET is missing or set to a placeholder value (must be a real Google OAuth 2.0 Client Secret)");
   }
   
-  if (!googleConfig.redirectUri) {
-    errors.push("GOOGLE_REDIRECT_URI is missing");
+  if (!googleConfig.redirectUri || 
+      placeholderPatterns.some(p => normalizedRedirectUri.includes(p.toLowerCase()))) {
+    errors.push("GOOGLE_REDIRECT_URI is missing or invalid (must be a valid HTTPS URL registered in Google Cloud Console)");
+  }
+  
+  // Client ID should be long (Google OAuth 2.0 format: xxx-yyy.apps.googleusercontent.com)
+  if (googleConfig.clientId && !googleConfig.clientId.includes("apps.googleusercontent.com")) {
+    errors.push("GOOGLE_CLIENT_ID does not match Google OAuth 2.0 format (should end with .apps.googleusercontent.com)");
   }
   
   // Warn about localhost in production
-  if (process.env.NODE_ENV === "production" && googleConfig.redirectUri.includes("localhost")) {
-    errors.push("GOOGLE_REDIRECT_URI contains 'localhost' in production environment");
+  if (process.env.NODE_ENV === "production" && googleConfig.redirectUri?.includes("localhost")) {
+    errors.push("GOOGLE_REDIRECT_URI contains 'localhost' in production environment (must be HTTPS domain)");
   }
   
   return {

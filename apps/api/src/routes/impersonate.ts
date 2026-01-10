@@ -4,7 +4,7 @@ import { prisma } from "../db/client.js";
 import { isSuperAdmin } from "../lib/roleHelpers.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
-import { logAuditEvent } from "../services/auditLogger.js";
+import { logAuditEvent } from "../lib/auditLogger.js";
 import { setAuthCookie, SESSION_COOKIE_NAME } from "../lib/jwt.js";
 
 const router = Router();
@@ -58,6 +58,12 @@ router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
     const { talentUserId } = req.body;
     const adminUserId = req.user?.id;
 
+    console.log("[IMPERSONATE] Start request:", {
+      talentUserId,
+      adminUserId,
+      bodyReceived: JSON.stringify(req.body)
+    });
+
     // Validation
     if (!talentUserId) {
       return res.status(400).json({ error: "talentUserId is required" });
@@ -67,8 +73,9 @@ router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
       return res.status(401).json({ error: "Admin user not authenticated" });
     }
 
-    // Fetch the talent user
-    const talentUser = await prisma.user.findUnique({
+    // Try to find the user first
+    console.log("[IMPERSONATE] Looking up user with ID:", talentUserId);
+    let talentUser = await prisma.user.findUnique({
       where: { id: talentUserId },
       select: {
         id: true,
@@ -80,7 +87,39 @@ router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
     });
 
     if (!talentUser) {
-      return res.status(404).json({ error: "Talent user not found" });
+      // If user not found, try to look up by talent ID and get the linked user
+      console.log("[IMPERSONATE] User not found, trying to find talent by ID:", talentUserId);
+      const talent = await prisma.talent.findUnique({
+        where: { id: talentUserId },
+        include: {
+          User: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              status: true,
+            },
+          },
+        },
+      });
+
+      if (!talent || !talent.User) {
+        console.error("[IMPERSONATE] Neither user nor talent found:", {
+          talentUserId,
+          talentExists: !!talent,
+          userExists: talent?.User ? true : false
+        });
+        return res.status(404).json({
+          error: "Talent user not found",
+          details: "No user or talent found with the provided ID. Please ensure the talent exists and has a linked user account.",
+          providedId: talentUserId
+        });
+      }
+
+      console.log("[IMPERSONATE] Found talent with linked user");
+      // Use the talent's linked user for impersonation
+      talentUser = talent.User;
     }
 
     // Security: Cannot impersonate other admins or founders
@@ -105,10 +144,10 @@ router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
     const impersonationStartedAt = Date.now();
     
     const impersonationPayload = {
-      id: talentUserId,  // req.user.id will be talent ID
+      id: talentUser.id,  // req.user.id will be talent ID
       adminId: adminUserId,  // Original admin preserved in token
       impersonating: true,
-      actingAsUserId: talentUserId,  // Talent being impersonated
+      actingAsUserId: talentUser.id,  // Talent being impersonated
       actingAsRole: talentUser.role,
       impersonationStartedAt,
     };
@@ -127,11 +166,12 @@ router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
     setAuthCookie(res, impersonationToken);
 
     // Log the impersonation start (server-side, backend-generated)
-    await logAuditEvent({
-      eventType: "IMPERSONATION_STARTED",
-      userId: adminUserId,
-      targetUserId: talentUserId,
+    await logAuditEvent(req, {
+      action: "IMPERSONATION_STARTED",
+      entityType: "User",
+      entityId: talentUser.id,
       metadata: {
+        adminUserId,
         talentName: talentUser.name,
         talentEmail: talentUser.email,
         talentRole: talentUser.role,
@@ -145,7 +185,7 @@ router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
     res.json({
       success: true,
       impersonationStarted: {
-        talentId: talentUserId,
+        talentId: talentUser.id,
         talentName: talentUser.name,
         talentEmail: talentUser.email,
         talentRole: talentUser.role,
@@ -155,8 +195,11 @@ router.post("/start", (req: ImpersonationRequest, res: Response, next) => {
       token: impersonationToken,
     });
   } catch (error) {
-    console.error("[IMPERSONATE] Error starting impersonation:", error);
-    res.status(500).json({ error: "Failed to start impersonation" });
+    console.error("[IMPERSONATE] Unexpected error:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -209,11 +252,12 @@ router.post("/stop", async (req: ImpersonationRequest, res: Response) => {
     });
 
     // Log the impersonation end - using server-calculated duration
-    await logAuditEvent({
-      eventType: "IMPERSONATION_ENDED",
-      userId: adminUserId,
-      targetUserId: talentUserId,
+    await logAuditEvent(req, {
+      action: "IMPERSONATION_ENDED",
+      entityType: "User",
+      entityId: talentUserId,
       metadata: {
+        adminUserId,
         talentName: talentUser?.name,
         talentEmail: talentUser?.email,
         talentRole: talentUser?.role,

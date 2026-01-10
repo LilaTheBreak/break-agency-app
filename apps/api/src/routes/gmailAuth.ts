@@ -13,8 +13,9 @@ const router = Router();
 // GET /api/gmail/auth/status - Check if Gmail is connected
 router.get("/status", requireAuth, async (req, res) => {
   try {
+    const userId = req.user!.id;
     const token = await prisma.gmailToken.findUnique({
-      where: { userId: req.user!.id },
+      where: { userId },
       select: { 
         refreshToken: true, 
         expiryDate: true, 
@@ -25,6 +26,7 @@ router.get("/status", requireAuth, async (req, res) => {
     });
     
     if (!token || !token.refreshToken) {
+      console.log(`[GMAIL AUTH STATUS] User ${userId} not connected to Gmail`);
       return res.json({
         connected: false,
         status: "disconnected",
@@ -43,13 +45,14 @@ router.get("/status", requireAuth, async (req, res) => {
     
     // Get sync stats
     const emailCount = await prisma.inboundEmail.count({
-      where: { userId: req.user!.id }
+      where: { userId, platform: "gmail" }
     });
 
     // Get CRM creation stats from metadata
     const emailsWithCrmLinks = await prisma.inboundEmail.count({
       where: {
-        userId: req.user!.id,
+        userId,
+        platform: "gmail",
         metadata: {
           path: ["crmContactId"],
           not: null
@@ -78,9 +81,24 @@ router.get("/status", requireAuth, async (req, res) => {
     // Get error count from audit logs (GMAIL_SYNC_FAILED actions)
     const errorCount = await prisma.auditLog.count({
       where: {
-        userId: req.user!.id,
+        userId,
         action: "GMAIL_SYNC_FAILED"
       }
+    });
+    
+    // Log verification checklist on successful connection
+    console.log(`[GMAIL AUTH STATUS] Verification checklist for user ${userId}`, {
+      status: "✓ Connected",
+      userId: userId.substring(0, 8) + "...",
+      tokensStored: "✓ Yes",
+      refreshTokenPresent: "✓ Yes",
+      expiryDate: token.expiryDate?.toISOString() || "no expiry (unlimited)",
+      lastSyncedAt: token.lastSyncedAt?.toISOString() || "never",
+      currentEmailCount: emailCount,
+      emailsWithCRMLinks: emailsWithCrmLinks,
+      contactsCreated: contactsFromGmail,
+      brandsCreated: brandsFromGmail,
+      recentErrors: errorCount
     });
     
     return res.json({
@@ -110,7 +128,15 @@ router.get("/status", requireAuth, async (req, res) => {
 });
 
 router.get("/url", requireAuth, (req, res) => {
-  const url = getGmailAuthUrl(req.user!.id);
+  const userId = req.user!.id;
+  const url = getGmailAuthUrl(userId);
+  
+  console.log(`[GMAIL AUTH] Generated OAuth URL for user ${userId}`, {
+    redirectUri: url.includes("redirect_uri") ? "✓ Present" : "✗ Missing",
+    scopes: url.includes("scope") ? "✓ Present" : "✗ Missing",
+    timestamp: new Date().toISOString()
+  });
+  
   return res.json({ url });
 });
 
@@ -142,7 +168,17 @@ router.get("/callback", oauthCallbackLimiter, async (req, res) => {
   try {
     const tokens = await exchangeCodeForTokens(code);
     
+    console.log(`[GMAIL AUTH CALLBACK] ✓ Successfully exchanged code for tokens`, {
+      userId,
+      hasAccessToken: !!tokens.accessToken,
+      hasRefreshToken: !!tokens.refreshToken,
+      expiresAt: tokens.expiresAt?.toISOString() || "no expiry",
+      scope: tokens.scope || "default scopes",
+      timestamp: new Date().toISOString()
+    });
+    
     if (!tokens.refreshToken) {
+      console.error(`[GMAIL AUTH CALLBACK] ⚠️  WARNING: No refresh token received for user ${userId}. Gmail tokens may not persist.`);
       const errorRedirect = `${getFrontendUrl().replace(/\/$/, "")}/admin/inbox?gmail_error=missing_refresh_token`;
       return res.redirect(302, errorRedirect);
     }
@@ -171,19 +207,38 @@ router.get("/callback", oauthCallbackLimiter, async (req, res) => {
       }
     });
     
+    console.log(`[GMAIL AUTH CALLBACK] ✓ Stored tokens in GmailToken table for user ${userId}`, {
+      expiryDate: tokens.expiresAt?.toISOString() || "no expiry",
+      refreshTokenStored: true,
+      timestamp: new Date().toISOString()
+    });
+    
     // WORKFLOW ASSERTION: OAuth connect → Sync attempt must be made
     const { syncInboxForUser } = await import("../services/gmail/syncInbox.js");
     syncInboxForUser(userId)
       .then((stats) => {
-        console.log(`[GMAIL CALLBACK] ✅ Initial sync completed for user ${userId}:`, stats);
+        console.log(`[GMAIL CALLBACK] ✅ Initial sync completed successfully for user ${userId}`, {
+          imported: stats.imported,
+          updated: stats.updated,
+          skipped: stats.skipped,
+          failed: stats.failed,
+          contactsCreated: stats.contactsCreated || 0,
+          brandsCreated: stats.brandsCreated || 0,
+          timestamp: new Date().toISOString()
+        });
+        
         // Assertion: Verify sync actually ran
         if (stats.imported === 0 && stats.updated === 0 && stats.skipped === 0) {
-          console.warn(`[GMAIL CALLBACK] ⚠️  Sync completed but no messages processed - may indicate empty inbox or sync issue`);
+          console.warn(`[GMAIL CALLBACK] ⚠️  Sync completed but no messages processed for user ${userId} - inbox may be empty or sync may have issues`);
         }
       })
       .catch((syncError) => {
         const errorMessage = syncError instanceof Error ? syncError.message : String(syncError);
-        console.error(`[GMAIL CALLBACK] ❌ CRITICAL: Initial sync failed for user ${userId}:`, errorMessage);
+        console.error(`[GMAIL CALLBACK] ❌ Initial sync failed for user ${userId}:`, {
+          error: errorMessage,
+          timestamp: new Date().toISOString(),
+          note: "Gmail auth succeeded, but initial sync failed. User can retry manually."
+        });
         // Log critical error but don't block OAuth completion
         // This allows user to manually sync later
       });

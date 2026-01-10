@@ -19,6 +19,7 @@ import { requestContextMiddleware } from "./middleware/requestContext.js";
 import { auditMiddleware } from "./middleware/audit.js";
 import { attachUserFromSession } from "./middleware/auth.js";
 import { impersonationMiddleware } from "./middleware/impersonationMiddleware.js";
+import { validateGmailCredentials, requireGmailEnabled } from "./middleware/gmailValidation.js";
 
 // Jobs / Cron
 import { registerEmailQueueJob } from "./jobs/emailQueue.js";
@@ -39,6 +40,7 @@ import gmailAnalysisRouter from "./routes/gmailAnalysis.js";
 import gmailInboxRouter from "./routes/gmailInbox.js";
 import gmailMessagesRouter from "./routes/gmailMessages.js";
 import gmailWebhookRouter from "./routes/gmailWebhook.js";
+import gmailHealthRouter from "./routes/gmailHealth.js";
 import cronRouter from "./routes/cron.js";
 import inboxAwaitingRouter from "./routes/inboxAwaitingReply.js";
 import inboxPriorityRouter from "./routes/inboxPriority.js";
@@ -480,7 +482,18 @@ app.use("/api/whatsapp-inbox", whatsappInboxRouter);
 
 // ------------------------------------------------------
 // GMAIL
+// IMPORTANT: Gmail requires valid OAuth credentials to function
+// If credentials are missing or placeholder values, routes return 503
 // ------------------------------------------------------
+// Health check endpoint (always available, doesn't require auth)
+app.use("/api/gmail", gmailHealthRouter);
+
+// Validate Gmail credentials at server startup (before routes are registered)
+validateGmailCredentials();
+
+// Apply Gmail validation middleware to all Gmail routes
+app.use("/api/gmail", requireGmailEnabled);
+
 app.use("/api/gmail/auth", gmailAuthRouter);
 app.use("/api/gmail/analysis", gmailAnalysisRouter);
 app.use("/api/gmail/inbox", gmailInboxRouter);
