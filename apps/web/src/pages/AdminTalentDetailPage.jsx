@@ -2629,7 +2629,7 @@ function CommerceTab({ talent, isExclusive }) {
     );
   }
 
-  return <AdminRevenueManagement talentId={talent.id} />;
+  return <AdminRevenueManagement talentId={talent.id} isAdmin={true} />;
 }
 
 function DeliverablesTab({ talent }) {
