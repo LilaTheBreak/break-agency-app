@@ -57,9 +57,19 @@ interface GoalProgress {
 
 interface AdminRevenueManagementProps {
   talentId: string;
+  isAdmin?: boolean;
 }
 
-const AdminRevenueManagement: FC<AdminRevenueManagementProps> = ({ talentId }) => {
+// Platform icons mapping
+const platformIcons = {
+  SHOPIFY: "🛍️",
+  TIKTOK_SHOP: "🎵",
+  LTK: "📱",
+  AMAZON: "🎁",
+  CUSTOM: "🔗",
+};
+
+const AdminRevenueManagement: FC<AdminRevenueManagementProps> = ({ talentId, isAdmin = true }) => {
   const [sources, setSources] = useState<RevenueSource[]>([]);
   const [summary, setSummary] = useState<RevenueSummary | null>(null);
   const [platformBreakdown, setPlatformBreakdown] = useState<PlatformBreakdown[]>([]);
@@ -211,160 +221,220 @@ const AdminRevenueManagement: FC<AdminRevenueManagementProps> = ({ talentId }) =
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500">Loading revenue data...</div>
+      <div className="flex items-center justify-center p-12">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-brand-black/20 border-t-brand-red mx-auto"></div>
+          <p className="text-sm text-brand-black/60">Loading commerce data...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8 py-6">
+      {/* Error State */}
       {error && (
-        <div className="rounded-lg bg-red-50 p-4 text-red-700">
-          {error}
-          <button
-            onClick={() => setError(null)}
-            className="ml-2 text-sm underline hover:no-underline"
-          >
-            Dismiss
-          </button>
+        <div className="rounded-3xl border border-red-200/50 bg-red-50/50 px-6 py-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="font-subtitle text-xs uppercase tracking-[0.3em] text-red-600">Error</p>
+              <p className="mt-1 text-sm text-brand-black/80">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-700"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Revenue Summary Cards */}
+      {/* Commerce Overview */}
       {summary && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div className="rounded-lg bg-white p-4 shadow">
-            <div className="text-sm text-gray-600">Total Revenue (Net)</div>
-            <div className="mt-2 text-2xl font-bold text-green-600">
-              £{summary.totalNet.toFixed(2)}
+        <div className="space-y-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-2xl uppercase text-brand-black">Commerce Overview</h2>
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">This Month</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {/* Total Revenue Card */}
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-sm">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Total Revenue</p>
+              <div className="mt-4">
+                <p className="font-display text-2xl text-brand-black">£{summary.totalNet.toFixed(0)}</p>
+                <p className="mt-2 text-xs text-brand-black/50">Gross: £{summary.totalGross.toFixed(2)}</p>
+              </div>
             </div>
-            <div className="mt-1 text-xs text-gray-500">Gross: £{summary.totalGross.toFixed(2)}</div>
-          </div>
 
-          <div className="rounded-lg bg-white p-4 shadow">
-            <div className="text-sm text-gray-600">Active Sources</div>
-            <div className="mt-2 text-2xl font-bold text-blue-600">{summary.sourceCount}</div>
-            <div className="mt-1 text-xs text-gray-500">Connected platforms</div>
-          </div>
-
-          <div className="rounded-lg bg-white p-4 shadow">
-            <div className="text-sm text-gray-600">Total Events</div>
-            <div className="mt-2 text-2xl font-bold text-purple-600">{summary.eventCount}</div>
-            <div className="mt-1 text-xs text-gray-500">Transactions tracked</div>
-          </div>
-
-          <div className="rounded-lg bg-white p-4 shadow">
-            <div className="text-sm text-gray-600">Avg per Source</div>
-            <div className="mt-2 text-2xl font-bold text-indigo-600">
-              £{(summary.totalNet / (summary.sourceCount || 1)).toFixed(2)}
+            {/* Active Sources Card */}
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-sm">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Connected</p>
+              <div className="mt-4">
+                <p className="font-display text-2xl text-brand-black">{summary.sourceCount}</p>
+                <p className="mt-2 text-xs text-brand-black/50">Revenue source{summary.sourceCount !== 1 ? "s" : ""}</p>
+              </div>
             </div>
-            <div className="mt-1 text-xs text-gray-500">Per platform</div>
+
+            {/* Total Events Card */}
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-sm">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Transactions</p>
+              <div className="mt-4">
+                <p className="font-display text-2xl text-brand-black">{summary.eventCount}</p>
+                <p className="mt-2 text-xs text-brand-black/50">Total tracked</p>
+              </div>
+            </div>
+
+            {/* Average per Source Card */}
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-sm">
+              <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Avg per Source</p>
+              <div className="mt-4">
+                <p className="font-display text-2xl text-brand-black">
+                  £{(summary.totalNet / (summary.sourceCount || 1)).toFixed(0)}
+                </p>
+                <p className="mt-2 text-xs text-brand-black/50">Per platform</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Platform Breakdown */}
+      {/* Revenue by Platform */}
       {platformBreakdown.length > 0 && (
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h3 className="text-lg font-semibold text-gray-900">Revenue by Platform</h3>
-          <div className="mt-4 space-y-3">
-            {platformBreakdown.map((platform) => (
-              <div key={platform.platform} className="flex items-center justify-between border-b pb-3">
-                <div>
-                  <div className="font-medium text-gray-900">{platform.platform}</div>
-                  <div className="text-xs text-gray-500">
-                    {platform.sourceCount} source{platform.sourceCount !== 1 ? "s" : ""} • {platform.eventCount} events
+        <div className="space-y-4">
+          <h2 className="font-display text-2xl uppercase text-brand-black">Revenue by Platform</h2>
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-sm">
+            <div className="space-y-4">
+              {platformBreakdown.map((platform, idx) => (
+                <div key={platform.platform}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{(platformIcons as any)[platform.platform] || "💰"}</span>
+                      <div>
+                        <p className="font-semibold text-brand-black">{platform.platform}</p>
+                        <p className="text-xs text-brand-black/50">
+                          {platform.sourceCount} store{platform.sourceCount !== 1 ? "s" : ""} • {platform.eventCount} transaction{platform.eventCount !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-lg text-brand-black">£{platform.totalNet.toFixed(2)}</p>
+                      <p className="text-xs text-brand-black/50">Gross: £{platform.totalGross.toFixed(2)}</p>
+                    </div>
                   </div>
+                  {idx < platformBreakdown.length - 1 && (
+                    <div className="mt-4 border-t border-brand-black/5" />
+                  )}
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">£{platform.totalNet.toFixed(2)}</div>
-                  <div className="text-xs text-gray-500">Gross: £{platform.totalGross.toFixed(2)}</div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* Revenue Sources */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Revenue Sources</h3>
-          <button
-            onClick={() => setShowAddSource(!showAddSource)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700"
-          >
-            {showAddSource ? "Cancel" : "Add Source"}
-          </button>
+      <div className="space-y-4">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-2xl uppercase text-brand-black">Revenue Sources</h2>
+          {isAdmin && (
+            <button
+              onClick={() => setShowAddSource(!showAddSource)}
+              className="font-subtitle text-xs uppercase tracking-[0.3em] text-brand-red transition-colors hover:text-brand-red/80"
+            >
+              {showAddSource ? "Cancel" : "+ Add Source"}
+            </button>
+          )}
         </div>
 
         {showAddSource && (
-          <div className="mt-4 space-y-3 rounded-lg bg-gray-50 p-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Platform</label>
-              <select
-                value={newSource.platform}
-                onChange={(e) => setNewSource({ ...newSource, platform: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-white/50 p-6">
+            <div className="space-y-4">
+              <div>
+                <label className="font-subtitle block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">
+                  Platform
+                </label>
+                <select
+                  value={newSource.platform}
+                  onChange={(e) => setNewSource({ ...newSource, platform: e.target.value })}
+                  className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black placeholder:text-brand-black/40 focus:outline-none focus:ring-1 focus:ring-brand-red"
+                >
+                  <option value="SHOPIFY">Shopify</option>
+                  <option value="TIKTOK_SHOP">TikTok Shop</option>
+                  <option value="LTK">LTK (Like To Know It)</option>
+                  <option value="AMAZON">Amazon Affiliate</option>
+                  <option value="CUSTOM">Custom Affiliate</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-subtitle block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., My Shopify Store"
+                  value={newSource.displayName}
+                  onChange={(e) => setNewSource({ ...newSource, displayName: e.target.value })}
+                  className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black placeholder:text-brand-black/40 focus:outline-none focus:ring-1 focus:ring-brand-red"
+                />
+              </div>
+
+              <div>
+                <label className="font-subtitle block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">
+                  Account ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., shop_abc123def456"
+                  value={newSource.externalAccountId}
+                  onChange={(e) => setNewSource({ ...newSource, externalAccountId: e.target.value })}
+                  className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black placeholder:text-brand-black/40 focus:outline-none focus:ring-1 focus:ring-brand-red"
+                />
+              </div>
+
+              <button
+                onClick={handleAddSource}
+                className="w-full rounded-2xl bg-brand-red py-3 font-semibold text-brand-white text-sm uppercase tracking-[0.3em] transition-colors hover:bg-brand-red/90"
               >
-                <option value="SHOPIFY">Shopify</option>
-                <option value="TIKTOK_SHOP">TikTok Shop</option>
-                <option value="LTK">LTK (Like To Know It)</option>
-                <option value="AMAZON">Amazon Affiliate</option>
-                <option value="CUSTOM">Custom Affiliate</option>
-              </select>
+                Connect Store
+              </button>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Display Name</label>
-              <input
-                type="text"
-                placeholder="e.g., My Shopify Store"
-                value={newSource.displayName}
-                onChange={(e) => setNewSource({ ...newSource, displayName: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">External Account ID</label>
-              <input
-                type="text"
-                placeholder="e.g., shop_abc123def456"
-                value={newSource.externalAccountId}
-                onChange={(e) => setNewSource({ ...newSource, externalAccountId: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </div>
-
-            <button
-              onClick={handleAddSource}
-              className="w-full rounded-lg bg-green-600 py-2 text-white text-sm font-medium hover:bg-green-700"
-            >
-              Create Source
-            </button>
           </div>
         )}
 
         {sources.length === 0 ? (
-          <div className="mt-4 text-center text-gray-500">No revenue sources yet. Add one to get started.</div>
+          <div className="rounded-3xl border border-brand-black/10 bg-brand-white/30 p-12 text-center">
+            <p className="text-brand-black/60">No revenue sources connected yet.</p>
+            {isAdmin && (
+              <p className="mt-2 text-xs text-brand-black/40">
+                Connect a Shopify store, TikTok Shop, LTK, or affiliate account to start tracking revenue.
+              </p>
+            )}
+          </div>
         ) : (
-          <div className="mt-4 space-y-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {sources.map((source) => (
-              <div key={source.id} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
-                <div>
-                  <div className="font-medium text-gray-900">{source.displayName}</div>
-                  <div className="text-xs text-gray-500">
-                    {source.platform} • Added {new Date(source.createdAt).toLocaleDateString()}
+              <div key={source.id} className="group rounded-3xl border border-brand-black/10 bg-brand-white p-6 transition-all hover:border-brand-red/20 hover:shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{(platformIcons as any)[source.platform] || "💰"}</span>
+                    <div>
+                      <p className="font-semibold text-brand-black">{source.displayName}</p>
+                      <p className="text-xs text-brand-black/50 mt-1">
+                        {source.platform} • {new Date(source.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDeleteSource(source.id)}
+                      className="opacity-0 transition-opacity group-hover:opacity-100 text-brand-black/40 hover:text-brand-red"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-                <button
-                  onClick={() => handleDeleteSource(source.id)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  Delete
-                </button>
               </div>
             ))}
           </div>
@@ -372,115 +442,138 @@ const AdminRevenueManagement: FC<AdminRevenueManagementProps> = ({ talentId }) =
       </div>
 
       {/* Revenue Goals */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Revenue Goals</h3>
-          <button
-            onClick={() => setShowAddGoal(!showAddGoal)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white text-sm hover:bg-blue-700"
-          >
-            {showAddGoal ? "Cancel" : "Add Goal"}
-          </button>
-        </div>
-
-        {showAddGoal && (
-          <div className="mt-4 space-y-3 rounded-lg bg-gray-50 p-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Goal Type</label>
-              <select
-                value={newGoal.goalType}
-                onChange={(e) => setNewGoal({ ...newGoal, goalType: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              >
-                <option value="MONTHLY_TOTAL">Monthly Total</option>
-                <option value="QUARTERLY_TOTAL">Quarterly Total</option>
-                <option value="ANNUAL_TOTAL">Annual Total</option>
-                <option value="PLATFORM_SPECIFIC">Platform Specific</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Target Amount (£)</label>
-              <input
-                type="number"
-                min="0"
-                step="100"
-                value={newGoal.targetAmount}
-                onChange={(e) => setNewGoal({ ...newGoal, targetAmount: parseFloat(e.target.value) })}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </div>
-
-            {newGoal.goalType === "PLATFORM_SPECIFIC" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Platform</label>
-                <select
-                  value={newGoal.platform}
-                  onChange={(e) => setNewGoal({ ...newGoal, platform: e.target.value })}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Select platform</option>
-                  <option value="SHOPIFY">Shopify</option>
-                  <option value="TIKTOK_SHOP">TikTok Shop</option>
-                  <option value="LTK">LTK</option>
-                  <option value="AMAZON">Amazon Affiliate</option>
-                </select>
-              </div>
-            )}
-
+      {isAdmin && (
+        <div className="space-y-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-2xl uppercase text-brand-black">Revenue Goals</h2>
             <button
-              onClick={handleAddGoal}
-              className="w-full rounded-lg bg-green-600 py-2 text-white text-sm font-medium hover:bg-green-700"
+              onClick={() => setShowAddGoal(!showAddGoal)}
+              className="font-subtitle text-xs uppercase tracking-[0.3em] text-brand-red transition-colors hover:text-brand-red/80"
             >
-              Create Goal
+              {showAddGoal ? "Cancel" : "+ Add Goal"}
             </button>
           </div>
-        )}
 
-        {goals.length === 0 ? (
-          <div className="mt-4 text-center text-gray-500">No goals set yet. Add one to track progress.</div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {goals.map((progress) => (
-              <div key={progress.goal.id} className="rounded-lg border border-gray-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">{progress.goal.goalType.replace(/_/g, " ")}</div>
-                    {progress.goal.platform && (
-                      <div className="text-xs text-gray-500">{progress.goal.platform}</div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteGoal(progress.goal.id)}
-                    className="text-red-600 hover:text-red-700"
+          {showAddGoal && (
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white/50 p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="font-subtitle block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">
+                    Goal Type
+                  </label>
+                  <select
+                    value={newGoal.goalType}
+                    onChange={(e) => setNewGoal({ ...newGoal, goalType: e.target.value })}
+                    className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black placeholder:text-brand-black/40 focus:outline-none focus:ring-1 focus:ring-brand-red"
                   >
-                    Delete
-                  </button>
+                    <option value="MONTHLY_TOTAL">Monthly Total</option>
+                    <option value="QUARTERLY_TOTAL">Quarterly Total</option>
+                    <option value="ANNUAL_TOTAL">Annual Total</option>
+                    <option value="PLATFORM_SPECIFIC">Platform Specific</option>
+                  </select>
                 </div>
 
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Progress</span>
-                    <span className="font-semibold text-gray-900">{progress.percentageOfTarget}%</span>
-                  </div>
-                  <div className="mt-2 h-2 rounded-full bg-gray-200">
-                    <div
-                      className={`h-2 rounded-full transition-all ${
-                        progress.isOnTrack ? "bg-green-600" : "bg-orange-600"
-                      }`}
-                      style={{ width: `${Math.min(progress.percentageOfTarget, 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <span>£{progress.actualAmount.toFixed(2)} of £{progress.goal.targetAmount}</span>
-                    <span>{progress.daysRemaining} days left</span>
+                <div>
+                  <label className="font-subtitle block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">
+                    Target Amount
+                  </label>
+                  <div className="flex items-center">
+                    <span className="mr-2 text-brand-black">£</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={newGoal.targetAmount}
+                      onChange={(e) => setNewGoal({ ...newGoal, targetAmount: parseFloat(e.target.value) })}
+                      className="flex-1 rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black placeholder:text-brand-black/40 focus:outline-none focus:ring-1 focus:ring-brand-red"
+                    />
                   </div>
                 </div>
+
+                {newGoal.goalType === "PLATFORM_SPECIFIC" && (
+                  <div>
+                    <label className="font-subtitle block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">
+                      Platform
+                    </label>
+                    <select
+                      value={newGoal.platform}
+                      onChange={(e) => setNewGoal({ ...newGoal, platform: e.target.value })}
+                      className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black placeholder:text-brand-black/40 focus:outline-none focus:ring-1 focus:ring-brand-red"
+                    >
+                      <option value="">Select platform</option>
+                      <option value="SHOPIFY">Shopify</option>
+                      <option value="TIKTOK_SHOP">TikTok Shop</option>
+                      <option value="LTK">LTK</option>
+                      <option value="AMAZON">Amazon Affiliate</option>
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  onClick={handleAddGoal}
+                  className="w-full rounded-2xl bg-brand-red py-3 font-semibold text-brand-white text-sm uppercase tracking-[0.3em] transition-colors hover:bg-brand-red/90"
+                >
+                  Set Goal
+                </button>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+
+          {goals.length === 0 ? (
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white/30 p-12 text-center">
+              <p className="text-brand-black/60">No revenue goals set yet.</p>
+              <p className="mt-2 text-xs text-brand-black/40">Create monthly, quarterly, or annual targets to track progress.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {goals.map((progress) => (
+                <div key={progress.goal.id} className="group rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-brand-black">
+                        {progress.goal.goalType.replace(/_/g, " ")}
+                      </p>
+                      {progress.goal.platform && (
+                        <p className="text-xs text-brand-black/50 mt-1">{progress.goal.platform}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteGoal(progress.goal.id)}
+                      className="opacity-0 transition-opacity group-hover:opacity-100 text-brand-black/40 hover:text-brand-red"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-brand-black/60">Progress</span>
+                      <span className="font-display text-lg text-brand-black">{Math.round(progress.percentageOfTarget)}%</span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="h-2 rounded-full bg-brand-black/10 overflow-hidden">
+                      <div
+                        className={`h-full transition-all rounded-full ${
+                          progress.isOnTrack ? "bg-brand-red" : "bg-brand-black/40"
+                        }`}
+                        style={{ width: `${Math.min(progress.percentageOfTarget, 100)}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-brand-black/50">
+                      <span>£{progress.actualAmount.toFixed(0)} of £{progress.goal.targetAmount}</span>
+                      <span className={progress.isOnTrack ? "text-brand-black/60" : "text-brand-black/40"}>
+                        {progress.daysRemaining} days left
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
