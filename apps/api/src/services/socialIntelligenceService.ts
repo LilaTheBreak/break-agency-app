@@ -60,7 +60,6 @@ interface SocialIntelligenceData {
   }>;
   notes: string;
   updatedAt: Date;
-  isDemo: boolean; // Phase 5: Always false (no demo data in production)
 }
 
 /**
@@ -104,7 +103,10 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
       },
     });
 
+    console.log(`[SOCIAL_INTELLIGENCE] Fetching for talent ${talentId}, found ${talent?.SocialAccountConnection?.length || 0} connected accounts`);
+    
     if (!talent || !talent.SocialAccountConnection.length) {
+      console.log(`[SOCIAL_INTELLIGENCE] No connected social accounts for ${talentId} - returning empty state`);
       const emptyResult = {
         connected: false,
         platforms: [],
@@ -115,7 +117,6 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
         paidContent: [],
         notes: "",
         updatedAt: new Date(),
-        isDemo: false,
       };
       // Cache empty results for shorter TTL (1 hour)
       try {
@@ -128,9 +129,17 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
 
     // Get connected platforms
     const platforms = talent.SocialAccountConnection.map((acc) => acc.platform);
+    console.log(`[SOCIAL_INTELLIGENCE] Processing platforms for ${talentId}:`, platforms);
 
     // Fetch real data from all sources (APIs, database, NLP, etc.)
     let intelligence = await getRealSocialIntelligence(talentId, talent, platforms);
+    
+    console.log(`[SOCIAL_INTELLIGENCE] Data fetch result for ${talentId}:`, {
+      hasData: !!intelligence,
+      hasOverview: !!intelligence?.overview,
+      contentCount: intelligence?.contentPerformance?.length || 0,
+      keywordCount: intelligence?.keywords?.length || 0,
+    });
     
     // Fallback: If data unavailable, return empty sections (no fabricated data in production)
     if (!intelligence) {
@@ -174,7 +183,6 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
       paidContent: intelligence.paidContent,
       notes: notes || "",
       updatedAt: new Date(),
-      isDemo: !intelligence.hasRealData,
     };
 
     // Cache the result for 12 hours (real data) or 1 hour (empty/incomplete data)
@@ -433,17 +441,16 @@ async function getRealPaidCampaigns(talentId: string) {
 
     // Calculate metrics for each campaign
     const paidContentArray = campaigns.map((campaign) => {
-      // Extract metrics from activity or use calculated values
+      // Extract metrics from activity metadata
       const campaignMetadata =
         campaign.activity && campaign.activity.length > 0
           ? campaign.activity[campaign.activity.length - 1]
           : {};
 
-      // Base metrics (can be stored in activity or metadata)
-      const reach = (campaignMetadata as any).reach || Math.floor(Math.random() * 50000) + 10000;
-      const engagements =
-        (campaignMetadata as any).engagements || Math.floor(Math.random() * 2000) + 500;
-      const spend = (campaignMetadata as any).spend || Math.floor(Math.random() * 5000) + 500;
+      // Use only actual stored metrics (no fabricated numbers)
+      const reach = (campaignMetadata as any).reach || 0;
+      const engagements = (campaignMetadata as any).engagements || 0;
+      const spend = (campaignMetadata as any).spend || 0;
 
       // Calculate derived metrics
       const costPerEngagement = spend > 0 && engagements > 0 ? spend / engagements : 0;
@@ -507,8 +514,10 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
     );
 
     const socialProfiles = profiles.filter((p) => p !== null) as any[];
+    console.log(`[SOCIAL_INTELLIGENCE] Found ${socialProfiles.length} social profiles for ${talentId}`);
 
     if (socialProfiles.length === 0) {
+      console.log(`[SOCIAL_INTELLIGENCE] No social profiles found - returning null (will use fallback)`);
       return null;
     }
 
@@ -521,6 +530,8 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
         }))
       )
       .sort((a, b) => (b.engagementRate || 0) - (a.engagementRate || 0));
+    
+    console.log(`[SOCIAL_INTELLIGENCE] Found ${allPosts.length} posts for ${talentId}`);
 
     if (allPosts.length === 0) {
       return null;
@@ -616,187 +627,6 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
   }
 }
 
-/**
- * Phase 0.2: Generate stable, seeded demo data
- * 
- * ⚠️ DEPRECATED: Phase 5 — No longer used
- * Kept for reference/rollback only. Production uses real data with empty fallback.
- * Same talentId always produces same numbers (predictable for demo)
- */
-function generateStableDemo(talentId: string, talent: any, platforms: string[]) {
-  // Create a seeded random function using talentId
-  const seed = talentId
-    .split('')
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
-  const seededRandom = (min: number, max: number): number => {
-    const seedValue = Math.sin(seed * 12.9898 + Date.now() / 1000000) * 43758.5453;
-    const normalized = seedValue - Math.floor(seedValue);
-    return min + normalized * (max - min);
-  };
-
-  return {
-    hasRealData: false,
-    overview: {
-      totalReach: Math.floor(seededRandom(50000, 500000)),
-      engagementRate: parseFloat(seededRandom(1.5, 6.5).toFixed(2)),
-      followerGrowth: Math.floor(seededRandom(-100, 5000)),
-      postCount: Math.floor(seededRandom(15, 45)),
-      avgPostsPerWeek: parseFloat(seededRandom(2, 7).toFixed(1)),
-      topPlatform: platforms[0] || "Instagram",
-      topPlatformFollowers: Math.floor(seededRandom(50000, 500000)),
-      sentimentScore: parseFloat(seededRandom(0.65, 0.95).toFixed(2)),
-    },
-    contentPerformance: [
-      {
-        id: "demo-1",
-        platform: platforms[0] || "Instagram",
-        caption: "Behind-the-scenes content (demo)",
-        format: "video",
-        likes: Math.floor(seededRandom(5000, 50000)),
-        comments: Math.floor(seededRandom(200, 2000)),
-        saves: Math.floor(seededRandom(100, 1000)),
-        engagementRate: parseFloat(seededRandom(3.5, 8).toFixed(2)),
-        tags: ["Brand-friendly", "High-conversion"],
-      },
-      {
-        id: "demo-2",
-        platform: platforms[0] || "Instagram",
-        caption: "Product integration (demo)",
-        format: "carousel",
-        likes: Math.floor(seededRandom(8000, 45000)),
-        comments: Math.floor(seededRandom(300, 1500)),
-        saves: Math.floor(seededRandom(200, 800)),
-        engagementRate: parseFloat(seededRandom(2.8, 7).toFixed(2)),
-        tags: ["Community-led"],
-      },
-      {
-        id: "demo-3",
-        platform: platforms[1] || "TikTok",
-        caption: "Trending audio (demo)",
-        format: "reels",
-        likes: Math.floor(seededRandom(50000, 500000)),
-        comments: Math.floor(seededRandom(1000, 8000)),
-        saves: Math.floor(seededRandom(500, 5000)),
-        engagementRate: parseFloat(seededRandom(4.2, 9.5).toFixed(2)),
-        tags: ["Viral-moment"],
-      },
-      {
-        id: "demo-4",
-        platform: platforms[0] || "Instagram",
-        caption: "Lifestyle content (demo)",
-        format: "photo",
-        likes: Math.floor(seededRandom(3000, 15000)),
-        comments: Math.floor(seededRandom(100, 800)),
-        saves: Math.floor(seededRandom(50, 300)),
-        engagementRate: parseFloat(seededRandom(1.2, 3.5).toFixed(2)),
-        tags: ["Brand-friendly"],
-      },
-      {
-        id: "demo-5",
-        platform: platforms[2] || "YouTube",
-        caption: "Long-form collaboration (demo)",
-        format: "video",
-        likes: Math.floor(seededRandom(10000, 100000)),
-        comments: Math.floor(seededRandom(500, 5000)),
-        saves: Math.floor(seededRandom(200, 2000)),
-        engagementRate: parseFloat(seededRandom(2.5, 6.5).toFixed(2)),
-        tags: ["Brand-pitch"],
-      },
-      {
-        id: "demo-6",
-        platform: platforms[0] || "Instagram",
-        caption: "Q&A with community (demo)",
-        format: "story",
-        likes: Math.floor(seededRandom(2000, 10000)),
-        comments: Math.floor(seededRandom(150, 1000)),
-        saves: 0,
-        engagementRate: parseFloat(seededRandom(3.2, 7.8).toFixed(2)),
-        tags: ["Community-led"],
-      },
-      {
-        id: "demo-7",
-        platform: platforms[0] || "Instagram",
-        caption: "Educational content (demo)",
-        format: "carousel",
-        likes: Math.floor(seededRandom(4000, 20000)),
-        comments: Math.floor(seededRandom(250, 1500)),
-        saves: Math.floor(seededRandom(300, 1200)),
-        engagementRate: parseFloat(seededRandom(2.8, 5.5).toFixed(2)),
-        tags: ["Community-led"],
-      },
-      {
-        id: "demo-8",
-        platform: platforms[1] || "TikTok",
-        caption: "Trend-jacking (demo)",
-        format: "reels",
-        likes: Math.floor(seededRandom(30000, 300000)),
-        comments: Math.floor(seededRandom(800, 5000)),
-        saves: Math.floor(seededRandom(400, 3000)),
-        engagementRate: parseFloat(seededRandom(3.8, 8.2).toFixed(2)),
-        tags: ["Creative-risk"],
-      },
-    ],
-    keywords: [
-      { term: "lifestyle", frequency: 487, category: "core" as const },
-      { term: "fashion", frequency: 456, category: "core" as const },
-      { term: "confidence", frequency: 342, category: "core" as const },
-      { term: "beauty", frequency: 289, category: "core" as const },
-      { term: "motivation", frequency: 267, category: "core" as const },
-      { term: "wellness", frequency: 198, category: "emerging" as const },
-      { term: "sustainability", frequency: 156, category: "emerging" as const },
-      { term: "mental health", frequency: 142, category: "emerging" as const },
-      { term: "tech", frequency: 89, category: "declining" as const },
-      { term: "politics", frequency: 34, category: "declining" as const },
-    ],
-    community: {
-      commentVolume: Math.floor(seededRandom(5000, 30000)),
-      commentTrend: parseFloat(seededRandom(-15, 25).toFixed(1)),
-      responseRate: parseFloat(seededRandom(0.4, 0.85).toFixed(2)),
-      responseTrend: parseFloat(seededRandom(-10, 20).toFixed(1)),
-      averageSentiment: parseFloat(seededRandom(0.68, 0.92).toFixed(2)),
-      consistencyScore: parseFloat(seededRandom(0.6, 0.95).toFixed(2)),
-      alerts: [
-        {
-          message: "Sample demo data — not real analytics",
-          context: "This is demo visualization data only",
-        },
-      ],
-    },
-    paidContent: [
-      {
-        id: `campaign-${talentId}-1`,
-        name: "Holiday Season Promotion",
-        platform: "Instagram",
-        postType: "Campaign",
-        reach: Math.floor(seededRandom(50000, 200000)),
-        engagements: Math.floor(seededRandom(3000, 15000)),
-        costPerEngagement: parseFloat(seededRandom(0.3, 1.5).toFixed(2)),
-        performance: "Strong" as const,
-      },
-      {
-        id: `campaign-${talentId}-2`,
-        name: "Summer Brand Collab",
-        platform: "TikTok",
-        postType: "Campaign",
-        reach: Math.floor(seededRandom(100000, 500000)),
-        engagements: Math.floor(seededRandom(8000, 40000)),
-        costPerEngagement: parseFloat(seededRandom(0.2, 0.8).toFixed(2)),
-        performance: "Strong" as const,
-      },
-      {
-        id: `campaign-${talentId}-3`,
-        name: "Product Launch",
-        platform: "Multi-platform",
-        postType: "Campaign",
-        reach: Math.floor(seededRandom(30000, 150000)),
-        engagements: Math.floor(seededRandom(2000, 10000)),
-        costPerEngagement: parseFloat(seededRandom(0.5, 2.5).toFixed(2)),
-        performance: "Average" as const,
-      },
-    ],
-  };
-}
 
 /**
  * Extract keywords from post captions

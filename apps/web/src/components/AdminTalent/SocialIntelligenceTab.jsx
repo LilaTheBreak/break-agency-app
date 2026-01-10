@@ -131,20 +131,125 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
   };
 
   if (!talent?.socialAccounts || talent.socialAccounts.length === 0) {
+    // CRITICAL FIX: Check the actual API response (data.connected) instead of stale talent object
+    // The backend returns { connected: true/false } based on SocialAccountConnection records
+    // But we also need to handle the initial loading state
+    if (!socialData || socialData.connected === false) {
+      return (
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
+          <MessageCircle className="h-12 w-12 text-brand-black/30 mx-auto mb-4" />
+          <p className="text-sm uppercase tracking-[0.2em] text-brand-black/60 mb-2">No Connected Socials</p>
+          <p className="text-xs text-brand-black/50 max-w-sm mx-auto">
+            Connect Instagram, TikTok, or YouTube to unlock social intelligence, audience insights, and community analysis.
+          </p>
+        </div>
+      );
+    }
+    // If socialData exists and connected=true, continue to render below
+  }
+
+  // If we have real social intelligence data, show it
+  if (socialData && socialData.connected === true && (socialData.overview || socialData.contentPerformance?.length > 0)) {
     return (
-      <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
-        <MessageCircle className="h-12 w-12 text-brand-black/30 mx-auto mb-4" />
-        <p className="text-sm uppercase tracking-[0.2em] text-brand-black/60 mb-2">No Connected Socials</p>
-        <p className="text-xs text-brand-black/50 max-w-sm mx-auto">
-          Connect Instagram, TikTok, or YouTube to unlock social intelligence, audience insights, and community analysis.
-        </p>
+      <div className="space-y-6">
+        {/* PHASE 5: Production-ready — Demo warning removed, real data integrated */}
+
+        {/* Refresh Controls */}
+        {socialData && (
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={handleRefreshAnalytics}
+              disabled={refreshing}
+              className={`flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold px-4 py-2 rounded-full transition ${
+                refreshing
+                  ? "bg-brand-black/10 text-brand-black/60 cursor-not-allowed"
+                  : "bg-brand-red text-white hover:bg-brand-red/90 cursor-pointer"
+              }`}
+              title="Refresh data (rate limited to once per hour)"
+            >
+              <RotateCcw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+        )}
+
+        {/* Section 1: Social Overview */}
+        <SocialOverview data={socialData} loading={loading} talent={talent} />
+
+        {/* Section 2: Content Performance */}
+        <ContentPerformanceSection data={socialData} loading={loading} />
+
+        {/* Section 3: Keywords & Themes */}
+        <KeywordsThemesSection data={socialData} loading={loading} />
+
+        {/* Section 4: Community Health */}
+        <CommunityHealthSection data={socialData} loading={loading} />
+
+        {/* Section 5: Paid / Boosted Performance */}
+        <PaidPerformanceSection data={socialData} loading={loading} />
+
+        {/* Section 6: Agent Insights & Notes */}
+        <AgentInsightsSection 
+          agentNotes={agentNotes}
+          onNotesChange={setAgentNotes}
+          onSave={handleSaveNotes}
+          saving={savingNotes}
+        />
       </div>
     );
   }
 
+  // Connected but no data yet (awaiting first sync or API failure)
+  if (socialData && socialData.connected === true && !socialData.overview) {
+    return (
+      <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
+        <Zap className="h-12 w-12 text-brand-black/30 mx-auto mb-4 animate-pulse" />
+        <p className="text-sm uppercase tracking-[0.2em] text-brand-black/60 mb-2">Social Profiles Connected</p>
+        <p className="text-xs text-brand-black/50 max-w-sm mx-auto">
+          Analytics are being processed. They should appear within a few moments. Check back shortly or click refresh to force an update.
+        </p>
+        {socialData && (
+          <button
+            onClick={handleRefreshAnalytics}
+            disabled={refreshing}
+            className={`mt-4 flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold px-4 py-2 rounded-full transition mx-auto ${
+              refreshing
+                ? "bg-brand-black/10 text-brand-black/60 cursor-not-allowed"
+                : "bg-brand-red text-white hover:bg-brand-red/90 cursor-pointer"
+            }`}
+            title="Refresh data (rate limited to once per hour)"
+          >
+            <RotateCcw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Default loading state
   return (
     <div className="space-y-6">
       {/* PHASE 5: Production-ready — Demo warning removed, real data integrated */}
+
+      {/* Refresh Controls */}
+      {socialData && (
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={handleRefreshAnalytics}
+            disabled={refreshing}
+            className={`flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold px-4 py-2 rounded-full transition ${
+              refreshing
+                ? "bg-brand-black/10 text-brand-black/60 cursor-not-allowed"
+                : "bg-brand-red text-white hover:bg-brand-red/90 cursor-pointer"
+            }`}
+            title="Refresh data (rate limited to once per hour)"
+          >
+            <RotateCcw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
+      )}
 
       {/* Section 1: Social Overview */}
       <SocialOverview data={socialData} loading={loading} talent={talent} />

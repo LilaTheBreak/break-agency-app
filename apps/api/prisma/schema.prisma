@@ -1331,24 +1331,29 @@ model SignatureRequest {
 }
 
 model SocialAccountConnection {
-  id            String          @id
-  creatorId     String
-  platform      String
-  handle        String
-  connected     Boolean         @default(false)
-  accessToken   String?
-  refreshToken  String?
-  expiresAt     DateTime?
-  lastSyncedAt  DateTime?
-  metadata      Json?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime
-  Talent        Talent          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  SocialProfile SocialProfile?
-  SocialSyncLog SocialSyncLog[]
+  id              String          @id
+  creatorId       String
+  platform        String
+  handle          String
+  profileUrl      String?         // URL or profile link (for validation/display)
+  connected       Boolean         @default(false)
+  connectionType  String          @default("MANUAL")  // MANUAL or OAUTH
+  syncStatus      String          @default("PENDING")  // PENDING, SYNCING, READY, ERROR
+  accessToken     String?
+  refreshToken    String?
+  expiresAt       DateTime?
+  lastSyncedAt    DateTime?
+  syncError       String?         // Error message if sync fails
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  Talent          Talent          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  SocialProfile   SocialProfile?
+  SocialSyncLog   SocialSyncLog[]
 
   @@unique([creatorId, platform])
   @@index([creatorId, connected])
+  @@index([syncStatus])
   @@index([platform])
 }
 

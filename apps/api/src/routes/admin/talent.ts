@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import { requireRole } from "../../middleware/requireRole.js";
 import prisma from "../../lib/prisma.js";
+import redis from "../../lib/redis.js";
 import { TaskStatus, SocialPlatform } from "@prisma/client";
 import { z } from "zod";
 import { isAdmin, isSuperAdmin } from "../../lib/roleHelpers.js";
@@ -1683,6 +1684,51 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
         lastScrapedAt,
       },
     });
+
+    // CRITICAL FIX: Also create a SocialAccountConnection record for Social Intelligence
+    // This is required because getTalentSocialIntelligence() looks for SocialAccountConnection
+    // with connected=true, but the TalentSocial route was only creating TalentSocial records.
+    let accountConnection = null;
+    try {
+      accountConnection = await prisma.socialAccountConnection.upsert({
+        where: {
+          creatorId_platform: {
+            creatorId: id,
+            platform: platform as any, // Platform enum matching
+          },
+        },
+        update: {
+          handle,
+          connected: true, // Mark as connected since admin verified it
+          updatedAt: new Date(),
+        },
+        create: {
+          id: `conn_${id}_${platform}_${Date.now()}`, // Unique ID
+          creatorId: id,
+          platform: platform as any,
+          handle,
+          connected: true, // Mark as connected
+          updatedAt: new Date(),
+        },
+      });
+      console.log("[TALENT SOCIAL] Created SocialAccountConnection for Social Intelligence", {
+        connectionId: accountConnection.id,
+        talentId: id,
+        platform,
+        handle,
+      });
+    } catch (connError) {
+      console.warn("[TALENT SOCIAL] Failed to create SocialAccountConnection:", connError);
+      // Don't block the response - TalentSocial was created successfully
+    }
+
+    // Clear Social Intelligence cache so new data will be fetched
+    try {
+      await redis.del(`social_intel:${id}`);
+      console.log("[TALENT SOCIAL] Cleared Social Intelligence cache for:", id);
+    } catch (cacheError) {
+      console.warn("[TALENT SOCIAL] Cache clear failed:", cacheError);
+    }
 
     console.log("[TALENT SOCIAL] Successfully created social profile", { 
       socialId: social.id, 
