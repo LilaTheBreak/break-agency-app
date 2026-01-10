@@ -13,7 +13,7 @@ import {
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart
+  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
@@ -26,6 +26,7 @@ import { CollapsibleDetailSection } from "../components/AdminTalent/CollapsibleD
 import { DealStatusBadge } from "../components/AdminTalent/DealStatusBadge.jsx";
 import { DealTrackerCard } from "../components/AdminTalent/DealTrackerCard.jsx";
 import { DealPipelineChart } from "../components/AdminTalent/DealPipelineChart.jsx";
+import { SocialIntelligenceTab } from "../components/AdminTalent/SocialIntelligenceTab.jsx";
 import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
 
 const REPRESENTATION_TYPES = [
@@ -44,6 +45,7 @@ const STATUS_OPTIONS = [
 
 const TABS = [
   { id: "overview", label: "Overview", icon: User },
+  { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
   { id: "deals", label: "Deal Tracker", icon: Briefcase },
   { id: "opportunities", label: "Opportunities", icon: TrendingUp },
   { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
@@ -1291,6 +1293,9 @@ export function AdminTalentDetailPage() {
       <div className="space-y-6">
         {activeTab === "overview" && (
           <OverviewTab talent={talent} isExclusive={isExclusive} />
+        )}
+        {activeTab === "social-intelligence" && (
+          <SocialIntelligenceTab talent={talent} talentId={talentId} onRefreshProfileImage={fetchTalentData} />
         )}
         {activeTab === "deals" && (
           <DealsTab talent={talent} onDealCreated={fetchTalentData} />

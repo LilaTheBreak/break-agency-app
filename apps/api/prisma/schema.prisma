@@ -1496,6 +1496,7 @@ model Talent {
   profileImageUrl         String? // Auto-fetched social profile image URL
   profileImageSource      String   @default("initials") // instagram | tiktok | youtube | manual | initials
   lastProfileImageSyncAt  DateTime? // Timestamp of last profile image sync
+  socialIntelligenceNotes String? // Agent strategic notes on social intelligence
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   AIPromptHistory         AIPromptHistory[]

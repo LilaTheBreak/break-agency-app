@@ -1974,6 +1974,65 @@ router.get("/:id/profile-image", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/admin/talent/:id/social-intelligence
+ * Fetch aggregated social media intelligence & analytics for talent
+ */
+router.get("/:id/social-intelligence", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    console.log("[SOCIAL_INTELLIGENCE] Fetching social intelligence for talent:", talentId);
+
+    const { getTalentSocialIntelligence } = await import("../../services/socialIntelligenceService.js");
+    const intelligenceData = await getTalentSocialIntelligence(talentId);
+
+    return sendSuccess(res, { data: intelligenceData }, 200, "Social intelligence retrieved");
+  } catch (error) {
+    console.error("[SOCIAL_INTELLIGENCE] Error:", error);
+    logError("Failed to fetch social intelligence", error, { talentId: req.params.id });
+    return handleApiError(res, error, "Failed to fetch social intelligence", "SOCIAL_INTELLIGENCE_FETCH_FAILED");
+  }
+});
+
+/**
+ * POST /api/admin/talent/:id/social-intelligence/notes
+ * Save agent insights/notes for talent social intelligence
+ */
+router.post("/:id/social-intelligence/notes", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const { notes } = req.body;
+
+    if (!notes || typeof notes !== "string") {
+      sendError(res, "VALIDATION_ERROR", "Notes must be a string", 400);
+      return;
+    }
+
+    console.log("[SOCIAL_INTELLIGENCE] Saving notes for talent:", talentId);
+
+    const { saveSocialIntelligenceNotes } = await import("../../services/socialIntelligenceService.js");
+    await saveSocialIntelligenceNotes(talentId, notes);
+
+    // Log admin activity
+    try {
+      await logAdminActivity(req, {
+        event: "SAVE_SOCIAL_INTELLIGENCE_NOTES",
+        metadata: {
+          talentId,
+        },
+      });
+    } catch (logError) {
+      console.error("[SOCIAL_INTELLIGENCE] Failed to log activity:", logError);
+    }
+
+    return sendSuccess(res, { success: true }, 200, "Notes saved successfully");
+  } catch (error) {
+    console.error("[SOCIAL_INTELLIGENCE] Error saving notes:", error);
+    logError("Failed to save social intelligence notes", error, { talentId: req.params.id });
+    return handleApiError(res, error, "Failed to save notes", "SOCIAL_INTELLIGENCE_SAVE_FAILED");
+  }
+});
+
 export default router;
 
 
