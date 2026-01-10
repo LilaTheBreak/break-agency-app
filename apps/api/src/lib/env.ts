@@ -3,10 +3,12 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// Ensure .env loads BEFORE anything else
-dotenv.config({
-  path: path.resolve(process.cwd(), ".env"),
-});
+// Ensure .env loads BEFORE anything else (only in non-production)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({
+    path: path.resolve(process.cwd(), ".env"),
+  });
+}
 
 function getEnv(name: string, fallback?: string): string {
   const value = process.env[name] || fallback;

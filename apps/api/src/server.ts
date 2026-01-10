@@ -220,7 +220,10 @@ import prisma from "./db/client.js";
 // Performance dashboard
 import performanceRouter from "./routes/admin/performance.js";
 
-dotenv.config();
+// Load .env only in non-production environments (development/staging)
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 // ------------------------------------------------------
 // ENV DEBUG LOGGING
