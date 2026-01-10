@@ -113,6 +113,17 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
 
   return (
     <div className="space-y-6">
+      {/* PHASE 0: Demo Data Warning */}
+      <div className="rounded-3xl border border-amber-400/50 bg-amber-50/80 p-4 flex items-start gap-3">
+        <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-amber-900">Demo Data — Not Real Analytics</p>
+          <p className="text-xs text-amber-800 mt-1">
+            This tab displays sample data for visualization. Real social analytics are coming soon. Do not use for commercial decisions until upgraded.
+          </p>
+        </div>
+      </div>
+
       {/* Section 1: Social Overview */}
       <SocialOverview data={socialData} loading={loading} talent={talent} />
 

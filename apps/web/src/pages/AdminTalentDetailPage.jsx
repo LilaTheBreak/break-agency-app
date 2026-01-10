@@ -45,7 +45,7 @@ const STATUS_OPTIONS = [
 
 const TABS = [
   { id: "overview", label: "Overview", icon: User },
-  { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
+  { id: "social-intelligence", label: "Social Intelligence (Demo)", icon: BarChart3 },
   { id: "deals", label: "Deal Tracker", icon: Briefcase },
   { id: "opportunities", label: "Opportunities", icon: TrendingUp },
   { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
