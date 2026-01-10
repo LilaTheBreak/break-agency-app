@@ -2,10 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm install && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/web build && pnpm --filter @breakagency/api exec prisma generate && pnpm --filter @breakagency/api build"
+    "buildCommand": "pnpm install && pnpm --filter @breakagency/api exec prisma generate && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/web build && pnpm --filter @breakagency/api build && echo 'Build completed successfully'"
   },
   "deploy": {
-    "startCommand": "cd apps/api && NODE_ENV=production npx prisma migrate resolve --rolled-back 20260110_add_talent_notes_fields --schema=./prisma/schema.prisma || true && npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js",
+    "startCommand": "cd apps/api && NODE_ENV=production npx prisma migrate deploy --schema=./prisma/schema.prisma && echo 'Migrations completed' && node dist/server.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
