@@ -107,8 +107,8 @@ router.get("/", async (req: Request, res: Response) => {
             }
             
             // Fetch social accounts for primary handle display
-            let socialAccounts = [];
-            let primarySocialHandle = null;
+            let socialAccounts: Array<{ platform: string; handle: string }> = [];
+            let primarySocialHandle: string | null = null;
             try {
               socialAccounts = await prisma.socialAccountConnection.findMany({
                 where: { creatorId: talent.id, connected: true },
@@ -381,11 +381,11 @@ router.get("/:id", async (req: Request, res: Response) => {
     console.log("[TALENT GET] Found talent, fetching relations for ID:", id);
 
     // Fetch relations separately with ordering (findUnique doesn't support orderBy on relations)
-    let deals = [];
-    let tasks = [];
-    let payments = [];
-    let payouts = [];
-    let socialAccounts = [];
+    let deals: any[] = [];
+    let tasks: any[] = [];
+    let payments: any[] = [];
+    let payouts: any[] = [];
+    let socialAccounts: any[] = [];
     
     try {
       deals = await prisma.deal.findMany({
@@ -1220,7 +1220,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
       commissions: commissionCount,
     });
 
-    const blockingCounts = [];
+    const blockingCounts: string[] = [];
     if (dealCount > 0) blockingCounts.push(`${dealCount} deal(s)`);
     if (taskCount > 0) blockingCounts.push(`${taskCount} task(s)`);
     if (paymentCount > 0) blockingCounts.push(`${paymentCount} payment(s)`);

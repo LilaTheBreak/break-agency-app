@@ -400,7 +400,7 @@ export class TalentProfileImageService {
         total: talents.length,
         successful: 0,
         failed: 0,
-        errors: [],
+        errors: [] as Array<{ talentId: string; error?: string }>,
       };
 
       for (const talent of talents) {
