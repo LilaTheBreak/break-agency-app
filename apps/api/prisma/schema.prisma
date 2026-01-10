@@ -1494,7 +1494,8 @@ model Talent {
   primaryEmail            String? // Primary contact email
   representationType      String? // EXCLUSIVE, NON_EXCLUSIVE, FRIEND_OF_HOUSE, UGC, FOUNDER
   status                  String? // ACTIVE, PAUSED, ARCHIVED
-  managerId               String? // Admin manager ID
+  managerId               String? // Admin manager ID (deprecated - use TalentManagerAssignment instead)
+  currency                String   @default("GBP") // Currency code: GBP, USD, EUR, AED, etc.
   notes                   String? // Internal notes
   categories              String[]
   stage                   String?
@@ -1530,9 +1531,11 @@ model Talent {
   RevenueSource           RevenueSource[]
   RevenueGoal             RevenueGoal[]
   CommunityConnections    CommunityConnection[]
+  ManagerAssignments      TalentManagerAssignment[] @relation("TalentManagers")
 
   @@index([lastProfileImageSyncAt])
   @@index([profileImageSource])
+  @@index([currency])
 }
 
 model TalentEmail {
@@ -1550,6 +1553,24 @@ model TalentEmail {
   @@unique([talentId, email])
   @@index([talentId])
   @@index([email])
+}
+
+// Manager assignment - allows multiple managers per talent
+model TalentManagerAssignment {
+  id        String   @id @default(cuid())
+  talentId  String
+  managerId String
+  role      String   @default("SECONDARY") // PRIMARY or SECONDARY manager
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  talent  Talent @relation("TalentManagers", fields: [talentId], references: [id], onDelete: Cascade)
+  manager User   @relation("ManagerAssignments", fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([talentId, managerId])
+  @@index([talentId])
+  @@index([managerId])
+  @@index([role])
 }
 
 enum TaskStatus {
@@ -1728,6 +1749,7 @@ model User {
   Talent                                  Talent?
   TalentAssignment                        TalentAssignment[]
   TalentAccessGiven                       TalentUserAccess[]       @relation("TalentAccessGiven")
+  ManagerAssignments                      TalentManagerAssignment[] @relation("ManagerAssignments")
   PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
   PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
   UGCRequests                             UGCRequest[]             @relation("UGCRequests")
