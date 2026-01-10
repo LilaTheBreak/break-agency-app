@@ -1602,14 +1602,21 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
     const { id } = req.params;
     let { platform, handle, url, followers } = req.body;
 
+    if (!id || id.trim() === "") {
+      console.warn("[TALENT SOCIAL] Missing or empty talent ID");
+      return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
+    }
+
     // Validate talent exists
     const talent = await prisma.talent.findUnique({ where: { id } });
     if (!talent) {
+      console.warn("[TALENT SOCIAL] Talent not found:", id);
       return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
 
     // Validate inputs
     if (!platform || !handle) {
+      console.warn("[TALENT SOCIAL] Missing required fields", { platform, handle });
       return sendError(res, "INVALID_INPUT", "platform and handle are required", 400);
     }
 
@@ -1674,6 +1681,13 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
       },
     });
 
+    console.log("[TALENT SOCIAL] Successfully created social profile", { 
+      socialId: social.id, 
+      talentId: id, 
+      platform, 
+      handle 
+    });
+
     await logAdminActivity(req, {
       action: "TALENT_SOCIAL_ADDED",
       entityType: "TalentSocial",
@@ -1689,6 +1703,7 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
     return res.status(201).json(social);
   } catch (error) {
     console.error("[TALENT SOCIAL POST ERROR]", error);
+    logError("Failed to add talent social profile", error, { talentId: req.params.id });
     return handleApiError(res, error, "Failed to add social profile", "SOCIAL_ADD_FAILED");
   }
 });
@@ -1701,8 +1716,16 @@ router.get("/:id/socials", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    if (!id) {
+    if (!id || id.trim() === "") {
+      console.warn("[TALENT SOCIALS] Missing or empty talent ID");
       return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
+    }
+
+    // Verify talent exists first
+    const talent = await prisma.talent.findUnique({ where: { id } });
+    if (!talent) {
+      console.warn("[TALENT SOCIALS] Talent not found:", id);
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
 
     const socials = await prisma.talentSocial.findMany({
@@ -1715,9 +1738,11 @@ router.get("/:id/socials", async (req: Request, res: Response) => {
       return res.json([]);
     }
 
+    console.log("[TALENT SOCIALS] Successfully fetched", socials.length, "socials for talent", id);
     return res.json(socials);
   } catch (error) {
     console.error("[TALENT SOCIALS GET ERROR]", error);
+    logError("Failed to fetch talent social profiles", error, { talentId: req.params.id });
     return handleApiError(res, error, "Failed to fetch social profiles", "SOCIALS_FETCH_FAILED");
   }
 });
@@ -1730,12 +1755,20 @@ router.delete("/socials/:socialId", async (req: Request, res: Response) => {
   try {
     const { socialId } = req.params;
 
+    if (!socialId || socialId.trim() === "") {
+      console.warn("[TALENT SOCIAL DELETE] Missing or empty social ID");
+      return sendError(res, "VALIDATION_ERROR", "Social ID is required", 400);
+    }
+
     const social = await prisma.talentSocial.findUnique({ where: { id: socialId } });
     if (!social) {
+      console.warn("[TALENT SOCIAL DELETE] Social profile not found:", socialId);
       return sendError(res, "NOT_FOUND", "Social profile not found", 404);
     }
 
     await prisma.talentSocial.delete({ where: { id: socialId } });
+
+    console.log("[TALENT SOCIAL DELETE] Successfully deleted social profile", { socialId, talentId: social.talentId });
 
     await logAdminActivity(req, {
       action: "TALENT_SOCIAL_DELETED",
@@ -1747,6 +1780,7 @@ router.delete("/socials/:socialId", async (req: Request, res: Response) => {
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error("[TALENT SOCIAL DELETE ERROR]", error);
+    logError("Failed to delete talent social profile", error, { socialId: req.params.socialId });
     return handleApiError(res, error, "Failed to delete social profile", "SOCIAL_DELETE_FAILED");
   }
 });

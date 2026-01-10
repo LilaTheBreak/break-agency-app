@@ -149,6 +149,9 @@ function extractAction(path) {
   if (path.includes('/update')) return 'update item';
   if (path.includes('/create')) return 'create item';
   if (path.includes('/sync')) return 'sync data';
+  if (path.includes('/socials')) return 'manage social profiles';
+  if (path.includes('/talent')) return 'manage talent';
+  if (path.includes('/campaigns')) return 'load campaigns';
   
   // Fallback to resource name
   return lastPart || 'complete action';
