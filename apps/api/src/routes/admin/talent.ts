@@ -2136,14 +2136,53 @@ router.get("/:id/social-intelligence", async (req: Request, res: Response) => {
     const { id: talentId } = req.params;
     console.log("[SOCIAL_INTELLIGENCE] Fetching social intelligence for talent:", talentId);
 
+    if (!talentId || talentId.trim() === "") {
+      console.warn("[SOCIAL_INTELLIGENCE] Missing or empty talent ID");
+      return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
+    }
+
+    // Verify talent exists
+    console.log("[SOCIAL_INTELLIGENCE] Verifying talent exists");
+    const talent = await prisma.talent.findUnique({ where: { id: talentId } });
+    if (!talent) {
+      console.warn("[SOCIAL_INTELLIGENCE] Talent not found:", talentId);
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    console.log("[SOCIAL_INTELLIGENCE] Getting social intelligence service");
     const { getTalentSocialIntelligence } = await import("../../services/socialIntelligenceService.js");
+    
+    console.log("[SOCIAL_INTELLIGENCE] Calling getTalentSocialIntelligence");
     const intelligenceData = await getTalentSocialIntelligence(talentId);
 
+    console.log("[SOCIAL_INTELLIGENCE] Successfully retrieved intelligence data");
     return sendSuccess(res, { data: intelligenceData }, 200, "Social intelligence retrieved");
   } catch (error) {
-    console.error("[SOCIAL_INTELLIGENCE] Error:", error);
+    console.error("[SOCIAL_INTELLIGENCE ERROR] Exception caught:", {
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorCode: (error as any)?.code,
+      errorCause: (error as any)?.cause,
+      talentId: req.params.id,
+    });
+    console.error("[SOCIAL_INTELLIGENCE ERROR] Full stack:", error);
     logError("Failed to fetch social intelligence", error, { talentId: req.params.id });
-    return handleApiError(res, error, "Failed to fetch social intelligence", "SOCIAL_INTELLIGENCE_FETCH_FAILED");
+    
+    // Return more detailed error for debugging
+    const isDev = process.env.NODE_ENV !== 'production';
+    return sendError(
+      res,
+      "SOCIAL_INTELLIGENCE_FETCH_FAILED",
+      error instanceof Error ? error.message : "Failed to fetch social intelligence",
+      500,
+      isDev ? {
+        errorType: error instanceof Error ? error.name : typeof error,
+        errorCode: (error as any)?.code,
+        context: "GET /api/admin/talent/:id/social-intelligence",
+        talentId: req.params.id,
+        stack: error instanceof Error ? error.stack : undefined,
+      } : undefined
+    );
   }
 });
 

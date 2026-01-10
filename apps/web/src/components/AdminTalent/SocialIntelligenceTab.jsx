@@ -40,9 +40,16 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
 
       try {
         setLoading(true);
+        console.log("[SOCIAL_INTELLIGENCE_TAB] Fetching for talent:", talentId);
         const response = await fetch(`/api/admin/talent/${talentId}/social-intelligence`);
         
         if (!response.ok) {
+          console.warn("[SOCIAL_INTELLIGENCE_TAB] Response not OK:", {
+            status: response.status,
+            statusText: response.statusText,
+            contentType: response.headers.get('content-type'),
+          });
+          
           if (response.status === 404) {
             // No social data available - set empty state
             setSocialData({
@@ -58,15 +65,44 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
             setError(null);
             return;
           }
-          throw new Error(`Failed to fetch: ${response.statusText}`);
+          
+          // Try to get error details from response
+          const contentType = response.headers.get('content-type');
+          let errorDetails = response.statusText;
+          try {
+            if (contentType?.includes('application/json')) {
+              const errorData = await response.json();
+              errorDetails = errorData.error?.message || errorData.message || response.statusText;
+            } else {
+              const text = await response.text();
+              // Capture first 200 chars of HTML/text response for debugging
+              errorDetails = text.substring(0, 200);
+              console.error("[SOCIAL_INTELLIGENCE_TAB] Non-JSON response:", errorDetails);
+            }
+          } catch (parseErr) {
+            console.warn("[SOCIAL_INTELLIGENCE_TAB] Could not parse error response:", parseErr);
+          }
+          
+          throw new Error(`Failed to fetch social intelligence: ${errorDetails}`);
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType?.includes('application/json')) {
+          console.error("[SOCIAL_INTELLIGENCE_TAB] Response is not JSON:", contentType);
+          const text = await response.text();
+          throw new Error(`Invalid response format. Expected JSON, got ${contentType}. Response: ${text.substring(0, 200)}`);
         }
 
         const data = await response.json();
+        console.log("[SOCIAL_INTELLIGENCE_TAB] Successfully fetched data");
         setSocialData(data.data);
         setAgentNotes(data.data?.notes || "");
         setError(null);
       } catch (err) {
-        console.error("Error fetching social intelligence:", err);
+        console.error("[SOCIAL_INTELLIGENCE_TAB] Error fetching social intelligence:", {
+          message: err.message,
+          talentId: talentId,
+        });
         setError(err.message);
         setSocialData(null);
       } finally {
