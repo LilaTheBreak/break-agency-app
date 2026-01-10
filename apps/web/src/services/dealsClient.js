@@ -10,6 +10,12 @@ export async function fetchDeals(filters = {}) {
   return res.json();
 }
 
+export async function fetchDeal(dealId) {
+  const response = await apiFetch(`/api/deals/${dealId}`);
+  if (!response.ok) throw new Error("Failed to fetch deal");
+  return response.json();
+}
+
 export async function createDeal(payload) {
   const response = await apiFetch("/api/deals", {
     method: "POST",
