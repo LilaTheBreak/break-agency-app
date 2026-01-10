@@ -1811,9 +1811,32 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
 
     return res.status(201).json(social);
   } catch (error) {
-    console.error("[TALENT SOCIAL POST ERROR]", error);
+    console.error("[TALENT SOCIAL POST ERROR] Exception caught:", {
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorCode: (error as any)?.code,
+      errorCause: (error as any)?.cause,
+      talentId: req.params.id,
+      requestBody: { platform: req.body.platform, handle: req.body.handle },
+    });
+    console.error("[TALENT SOCIAL POST ERROR] Full stack:", error);
     logError("Failed to add talent social profile", error, { talentId: req.params.id });
-    return handleApiError(res, error, "Failed to add social profile", "SOCIAL_ADD_FAILED");
+    
+    // Return more detailed error for debugging
+    const isDev = process.env.NODE_ENV !== 'production';
+    return sendError(
+      res,
+      "SOCIAL_ADD_FAILED",
+      error instanceof Error ? error.message : "Failed to add social profile",
+      500,
+      isDev ? {
+        errorType: error instanceof Error ? error.name : typeof error,
+        errorCode: (error as any)?.code,
+        context: "POST /api/admin/talent/:id/socials",
+        talentId: req.params.id,
+        stack: error instanceof Error ? error.stack : undefined,
+      } : undefined
+    );
   }
 });
 
@@ -1830,13 +1853,17 @@ router.get("/:id/socials", async (req: Request, res: Response) => {
       return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
     }
 
+    console.log("[TALENT SOCIALS GET] Starting query for talent:", id);
+
     // Verify talent exists first
+    console.log("[TALENT SOCIALS GET] Checking talent existence");
     const talent = await prisma.talent.findUnique({ where: { id } });
     if (!talent) {
       console.warn("[TALENT SOCIALS] Talent not found:", id);
       return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
 
+    console.log("[TALENT SOCIALS GET] Fetching socials from database");
     const socials = await prisma.talentSocial.findMany({
       where: { talentId: id },
       orderBy: { createdAt: "desc" },
@@ -1850,9 +1877,31 @@ router.get("/:id/socials", async (req: Request, res: Response) => {
     console.log("[TALENT SOCIALS] Successfully fetched", socials.length, "socials for talent", id);
     return res.json(socials);
   } catch (error) {
-    console.error("[TALENT SOCIALS GET ERROR]", error);
+    console.error("[TALENT SOCIALS GET ERROR] Exception caught:", {
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorCode: (error as any)?.code,
+      errorCause: (error as any)?.cause,
+      talentId: req.params.id,
+    });
+    console.error("[TALENT SOCIALS GET ERROR] Full stack:", error);
     logError("Failed to fetch talent social profiles", error, { talentId: req.params.id });
-    return handleApiError(res, error, "Failed to fetch social profiles", "SOCIALS_FETCH_FAILED");
+    
+    // Return more detailed error for debugging
+    const isDev = process.env.NODE_ENV !== 'production';
+    return sendError(
+      res, 
+      "SOCIALS_FETCH_FAILED", 
+      error instanceof Error ? error.message : "Failed to fetch social profiles",
+      500,
+      isDev ? {
+        errorType: error instanceof Error ? error.name : typeof error,
+        errorCode: (error as any)?.code,
+        context: "GET /api/admin/talent/:id/socials",
+        talentId: req.params.id,
+        stack: error instanceof Error ? error.stack : undefined,
+      } : undefined
+    );
   }
 });
 
@@ -1888,9 +1937,31 @@ router.delete("/socials/:socialId", async (req: Request, res: Response) => {
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("[TALENT SOCIAL DELETE ERROR]", error);
+    console.error("[TALENT SOCIAL DELETE ERROR] Exception caught:", {
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorCode: (error as any)?.code,
+      errorCause: (error as any)?.cause,
+      socialId: req.params.socialId,
+    });
+    console.error("[TALENT SOCIAL DELETE ERROR] Full stack:", error);
     logError("Failed to delete talent social profile", error, { socialId: req.params.socialId });
-    return handleApiError(res, error, "Failed to delete social profile", "SOCIAL_DELETE_FAILED");
+    
+    // Return more detailed error for debugging
+    const isDev = process.env.NODE_ENV !== 'production';
+    return sendError(
+      res,
+      "SOCIAL_DELETE_FAILED",
+      error instanceof Error ? error.message : "Failed to delete social profile",
+      500,
+      isDev ? {
+        errorType: error instanceof Error ? error.name : typeof error,
+        errorCode: (error as any)?.code,
+        context: "DELETE /api/admin/talent/socials/:socialId",
+        socialId: req.params.socialId,
+        stack: error instanceof Error ? error.stack : undefined,
+      } : undefined
+    );
   }
 });
 
