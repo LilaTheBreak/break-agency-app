@@ -1626,7 +1626,6 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
 
     let profileImageUrl: string | null = null;
     let displayName: string | null = null;
-    let following: number | null = null;
     let postCount: number | null = null;
     let lastScrapedAt: Date | null = null;
 
@@ -1656,7 +1655,6 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
           displayName = profileData.displayName || null;
           profileImageUrl = profileData.profileImageUrl || null;
           followers = profileData.followers || followers || null;
-          following = profileData.following || null;
           postCount = profileData.postCount || null;
           lastScrapedAt = new Date();
         }
@@ -1679,7 +1677,6 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
         followers: followers || null,
         displayName,
         profileImageUrl,
-        following,
         postCount,
         lastScrapedAt,
       },
@@ -1745,7 +1742,7 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
         talentId: id, 
         platform, 
         handle,
-        scrapedData: lastScrapedAt ? { followers, following, postCount } : null,
+        scrapedData: lastScrapedAt ? { followers, postCount } : null,
       },
     });
 
