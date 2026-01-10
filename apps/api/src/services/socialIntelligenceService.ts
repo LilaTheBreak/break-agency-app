@@ -220,6 +220,68 @@ async function calculateCombinedSentiment(talentId: string, posts: any[]): Promi
 }
 
 /**
+ * PHASE 2.2: Calculate community health metrics
+ * Computes real engagement trends, consistency, and response rates
+ */
+async function calculateCommunityHealthMetrics(talentId: string, allPosts: any[], socialProfiles: any[]) {
+  try {
+    // Calculate comment volume from all posts
+    const totalComments = allPosts.reduce((sum, p) => sum + (p.commentCount || 0), 0);
+    const avgCommentVolume = Math.floor(totalComments / Math.max(allPosts.length, 1));
+
+    // Calculate engagement consistency (variance in engagement rates)
+    const engagementRates = allPosts.map((p) => p.engagementRate || 0);
+    const avgEngagement = engagementRates.reduce((a, b) => a + b, 0) / engagementRates.length;
+    const variance = engagementRates.reduce((sum, rate) => sum + Math.pow(rate - avgEngagement, 2), 0) / engagementRates.length;
+    // Convert variance to 0-1 consistency score (lower variance = higher consistency)
+    const consistencyScore = parseFloat((1 - Math.min(variance / 100, 1)).toFixed(2));
+
+    // Calculate response rate (estimate based on comment-to-engagement ratio)
+    // Response rate = comments / (likes + comments)
+    const totalLikes = allPosts.reduce((sum, p) => sum + (p.likeCount || 0), 0);
+    const totalEngagements = totalLikes + totalComments;
+    const responseRate = totalEngagements > 0 
+      ? parseFloat((totalComments / totalEngagements).toFixed(2))
+      : 0.5;
+
+    // Calculate comment trend (simulate based on recency - newer posts should have more comments)
+    // This is a simplified trend; real implementation would use time-series data
+    const recentPostsComments = allPosts.slice(0, 3).reduce((sum, p) => sum + (p.commentCount || 0), 0) / 3;
+    const olderPostsComments = allPosts.slice(-3).reduce((sum, p) => sum + (p.commentCount || 0), 0) / 3;
+    const commentTrend = olderPostsComments > 0 
+      ? parseFloat((((recentPostsComments - olderPostsComments) / olderPostsComments * 100).toFixed(1)))
+      : 0;
+
+    // Response trend (similar logic)
+    const recentResponseRate = allPosts.slice(0, 3).length > 0
+      ? allPosts.slice(0, 3).reduce((sum, p) => sum + (p.commentCount || 0), 0) / allPosts.slice(0, 3).reduce((sum, p) => sum + ((p.likeCount || 0) + (p.commentCount || 0)), 0) * 100
+      : 50;
+    const olderResponseRate = allPosts.slice(-3).length > 0
+      ? allPosts.slice(-3).reduce((sum, p) => sum + (p.commentCount || 0), 0) / allPosts.slice(-3).reduce((sum, p) => sum + ((p.likeCount || 0) + (p.commentCount || 0)), 0) * 100
+      : 50;
+    const responseTrend = parseFloat((recentResponseRate - olderResponseRate).toFixed(1));
+
+    return {
+      commentVolume: avgCommentVolume,
+      commentTrend: parseFloat(commentTrend.toFixed(1)),
+      responseRate,
+      responseTrend,
+      consistencyScore,
+    };
+  } catch (err) {
+    console.error("[SOCIAL_INTELLIGENCE] Error calculating community health:", err);
+    // Return safe defaults
+    return {
+      commentVolume: 0,
+      commentTrend: 0,
+      responseRate: 0.5,
+      responseTrend: 0,
+      consistencyScore: 0.75,
+    };
+  }
+}
+
+/**
  * Phase 1: Fetch real data from SocialPost and SocialMetric tables
  * Returns null if insufficient data exists
  */
@@ -323,6 +385,9 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
     const realSentiment = await calculateCombinedSentiment(talentId, allPosts);
     const captionSentiment = calculateSentimentFromPostCaptions(allPosts);
 
+    // PHASE 2.2: Calculate real community health metrics
+    const communityHealth = await calculateCommunityHealthMetrics(talentId, allPosts, socialProfiles);
+
     return {
       hasRealData: true,
       overview: {
@@ -338,12 +403,12 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
       contentPerformance,
       keywords,
       community: {
-        commentVolume: Math.floor(totalEngagements / Math.max(allPosts.length, 1)),
-        commentTrend: 12.5,
-        responseRate: 0.68,
-        responseTrend: 8.2,
+        commentVolume: communityHealth.commentVolume,
+        commentTrend: communityHealth.commentTrend,
+        responseRate: communityHealth.responseRate,
+        responseTrend: communityHealth.responseTrend,
         averageSentiment: realSentiment,
-        consistencyScore: 0.82,
+        consistencyScore: communityHealth.consistencyScore,
         alerts: [],
       },
       paidContent: [], // Phase 4
