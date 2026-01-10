@@ -29,19 +29,35 @@ router.use((req: Request, res: Response, next) => {
 /**
  * GET /api/admin/talent
  * List all talent with summary metrics
+ * 
+ * Query parameters:
+ * - representationType: Filter by EXCLUSIVE or NON_EXCLUSIVE
+ * - limit: Maximum number of results (default: all)
  */
 router.get("/", async (req: Request, res: Response) => {
   try {
     console.log("[TALENT] GET /api/admin/talent - Fetching all talents");
     console.log("[TALENT] User making request:", req.user?.id, req.user?.role);
+    console.log("[TALENT] Query parameters:", req.query);
+    
+    const { representationType, limit } = req.query;
+    const talentLimit = limit ? parseInt(limit as string, 10) : undefined;
     
     // First, try a simple count to verify connection
     const totalCount = await prisma.talent.count();
     console.log("[TALENT] Total talent count in database:", totalCount);
     
+    // Build where clause for filtering
+    const whereClause: any = {};
+    if (representationType && representationType !== "all") {
+      whereClause.representationType = representationType;
+      console.log("[TALENT] Filtering by representationType:", representationType);
+    }
+    
     // Fetch talents with User relation included - critical for rendering
     // Note: Talent model doesn't have createdAt/updatedAt fields, so we order by id instead
     const talentsWithoutUser = await prisma.talent.findMany({
+      where: whereClause,
       include: {
         User: {
           select: {
@@ -55,6 +71,7 @@ router.get("/", async (req: Request, res: Response) => {
       orderBy: {
         id: "desc", // Order by id since createdAt doesn't exist on Talent model
       },
+      take: talentLimit,
     });
     console.log("[TALENT] Found", talentsWithoutUser.length, "talents with User relation");
     
