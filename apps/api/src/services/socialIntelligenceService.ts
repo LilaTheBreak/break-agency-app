@@ -1,5 +1,8 @@
 import prisma from "../lib/prisma.js";
+import Sentiment from "sentiment";
 import type { SocialAccountConnection, Talent } from "@prisma/client";
+
+const sentimentAnalyzer = new Sentiment();
 
 interface SocialIntelligenceData {
   connected: boolean;
@@ -124,6 +127,99 @@ export async function getTalentSocialIntelligence(talentId: string): Promise<Soc
 }
 
 /**
+ * Calculate sentiment from email comments and text
+ * Uses sentiment.js to analyze text and convert to 0-1 scale
+ * sentiment.js returns score where:
+ *   > 0 = positive
+ *   < 0 = negative
+ *   = 0 = neutral
+ */
+async function calculateSentimentFromComments(talentId: string): Promise<number> {
+  try {
+    // Fetch inbound emails related to this talent
+    const emails = await prisma.inboundEmail.findMany({
+      where: { talentId },
+      select: { body: true },
+      take: 50,
+    });
+
+    if (emails.length === 0) {
+      return 0.75; // Default neutral-positive if no data
+    }
+
+    let totalScore = 0;
+    let validScores = 0;
+
+    for (const email of emails) {
+      if (email.body) {
+        const analysis = sentimentAnalyzer.analyze(email.body);
+        // Convert sentiment score (-infinity to +infinity) to 0-1 scale
+        // Using sigmoid function: 1 / (1 + e^(-x))
+        const normalized = 1 / (1 + Math.exp(-analysis.score / 10));
+        totalScore += normalized;
+        validScores++;
+      }
+    }
+
+    if (validScores === 0) {
+      return 0.75;
+    }
+
+    const avgSentiment = totalScore / validScores;
+    return parseFloat(avgSentiment.toFixed(2));
+  } catch (err) {
+    console.error("[SOCIAL_INTELLIGENCE] Error calculating sentiment from comments:", err);
+    return 0.75; // Fallback
+  }
+}
+
+/**
+ * Calculate sentiment from social post captions
+ * Analyzes the tone of post captions to gauge content sentiment
+ */
+function calculateSentimentFromPostCaptions(posts: any[]): number {
+  try {
+    if (posts.length === 0) {
+      return 0.75;
+    }
+
+    let totalScore = 0;
+    let validScores = 0;
+
+    for (const post of posts) {
+      if (post.caption) {
+        const analysis = sentimentAnalyzer.analyze(post.caption);
+        const normalized = 1 / (1 + Math.exp(-analysis.score / 10));
+        totalScore += normalized;
+        validScores++;
+      }
+    }
+
+    if (validScores === 0) {
+      return 0.75;
+    }
+
+    const avgSentiment = totalScore / validScores;
+    return parseFloat(avgSentiment.toFixed(2));
+  } catch (err) {
+    console.error("[SOCIAL_INTELLIGENCE] Error calculating sentiment from captions:", err);
+    return 0.75;
+  }
+}
+
+/**
+ * Combine sentiment from multiple sources
+ * Weighted: 60% comments, 40% captions
+ */
+async function calculateCombinedSentiment(talentId: string, posts: any[]): Promise<number> {
+  const commentSentiment = await calculateSentimentFromComments(talentId);
+  const captionSentiment = calculateSentimentFromPostCaptions(posts);
+
+  const combined = (commentSentiment * 0.6 + captionSentiment * 0.4);
+  return parseFloat(combined.toFixed(2));
+}
+
+/**
  * Phase 1: Fetch real data from SocialPost and SocialMetric tables
  * Returns null if insufficient data exists
  */
@@ -223,6 +319,10 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
     // Extract real keywords from post captions
     const keywords = extractKeywordsFromPosts(allPosts);
 
+    // PHASE 2.1: Calculate real sentiment from comments and captions
+    const realSentiment = await calculateCombinedSentiment(talentId, allPosts);
+    const captionSentiment = calculateSentimentFromPostCaptions(allPosts);
+
     return {
       hasRealData: true,
       overview: {
@@ -233,7 +333,7 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
         avgPostsPerWeek: Math.round((allPosts.length / 4) * 10) / 10,
         topPlatform: socialProfiles[0]?.platform || "Instagram",
         topPlatformFollowers: followerCount,
-        sentimentScore: 0.78, // Placeholder - Phase 2
+        sentimentScore: realSentiment, // Real sentiment from Phase 2.1
       },
       contentPerformance,
       keywords,
@@ -242,7 +342,7 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
         commentTrend: 12.5,
         responseRate: 0.68,
         responseTrend: 8.2,
-        averageSentiment: 0.78,
+        averageSentiment: realSentiment,
         consistencyScore: 0.82,
         alerts: [],
       },

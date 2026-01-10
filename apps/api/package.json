@@ -59,6 +59,7 @@
     "prom-client": "^14.2.0",
     "puppeteer": "^24.34.0",
     "resend": "^6.4.2",
+    "sentiment": "^5.0.2",
     "stripe": "^15.5.0",
     "tesseract.js": "^5.1.0",
     "textract": "^2.5.0",
