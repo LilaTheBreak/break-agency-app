@@ -52,7 +52,7 @@ router.post("/campaigns", ensureManager, async (req: Request, res: Response) => 
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/campaigns', method: 'POST' },
     });
-    handleApiError(res, error, 'Failed to create campaign', 'CAMPAIGN_CREATE_FAILED');
+    return handleApiError(res, error, 'Failed to create campaign', 'CAMPAIGN_CREATE_FAILED');
   }
 });
 
@@ -136,6 +136,20 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
     // Format and return
     const formatted = safeCampaigns.map((campaign) => {
       try {
+        if (!campaign || !campaign.id) {
+          console.warn("[CAMPAIGNS] Invalid campaign object");
+          return {
+            id: "unknown",
+            title: "Unknown Campaign",
+            stage: "UNKNOWN",
+            brandSummaries: [],
+            aggregated: {
+              totalReach: 0,
+              revenuePerBrand: {},
+              pacingPerBrand: {}
+            }
+          };
+        }
         return formatCampaign(campaign);
       } catch (formatError) {
         console.error("[CAMPAIGNS] Error formatting campaign:", campaign?.id, formatError);
@@ -155,17 +169,27 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
       }
     });
     console.log("[CAMPAIGNS] Returning", formatted.length, "formatted campaigns");
-    return sendList(res, formatted);
+    
+    // CRITICAL: Ensure response is sent before exiting
+    if (!res.headersSent) {
+      return sendList(res, formatted);
+    }
   } catch (error) {
     // Log with explicit error code
     logError("Failed to fetch campaigns", error, { userId: req.user?.id, targetId });
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/campaigns/user/:userId', method: 'GET' },
     });
-    return res.status(500).json({
-      error: "CAMPAIGNS_QUERY_FAILED",
-      message: error instanceof Error ? error.message : "Unknown error"
-    });
+    
+    // CRITICAL: Only send error response if headers haven't been sent
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: "CAMPAIGNS_QUERY_FAILED",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    } else {
+      console.error("[CAMPAIGNS] Headers already sent, cannot send error response");
+    }
   }
 });
 
@@ -228,7 +252,7 @@ router.put("/campaigns/:id", ensureManager, async (req: Request, res: Response) 
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: '/campaigns/:id', method: 'PUT' },
     });
-    handleApiError(res, error, 'Failed to update campaign', 'CAMPAIGN_UPDATE_FAILED');
+    return handleApiError(res, error, 'Failed to update campaign', 'CAMPAIGN_UPDATE_FAILED');
   }
 });
 

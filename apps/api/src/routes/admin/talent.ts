@@ -1686,10 +1686,10 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json(social);
+    return res.status(201).json(social);
   } catch (error) {
     console.error("[TALENT SOCIAL POST ERROR]", error);
-    handleApiError(res, error, "Failed to add social profile", "SOCIAL_ADD_FAILED");
+    return handleApiError(res, error, "Failed to add social profile", "SOCIAL_ADD_FAILED");
   }
 });
 
@@ -1701,15 +1701,24 @@ router.get("/:id/socials", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    if (!id) {
+      return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
+    }
+
     const socials = await prisma.talentSocial.findMany({
       where: { talentId: id },
       orderBy: { createdAt: "desc" },
     });
 
-    res.json(socials);
+    if (!Array.isArray(socials)) {
+      console.warn("[TALENT SOCIALS] Expected array but got:", typeof socials);
+      return res.json([]);
+    }
+
+    return res.json(socials);
   } catch (error) {
     console.error("[TALENT SOCIALS GET ERROR]", error);
-    handleApiError(res, error, "Failed to fetch social profiles", "SOCIALS_FETCH_FAILED");
+    return handleApiError(res, error, "Failed to fetch social profiles", "SOCIALS_FETCH_FAILED");
   }
 });
 
@@ -1735,14 +1744,15 @@ router.delete("/socials/:socialId", async (req: Request, res: Response) => {
       metadata: { talentId: social.talentId },
     });
 
-    res.status(200).json({ success: true });
+    return res.status(200).json({ success: true });
   } catch (error) {
     console.error("[TALENT SOCIAL DELETE ERROR]", error);
-    handleApiError(res, error, "Failed to delete social profile", "SOCIAL_DELETE_FAILED");
+    return handleApiError(res, error, "Failed to delete social profile", "SOCIAL_DELETE_FAILED");
   }
 });
 
 export default router;
+
 
 
 
