@@ -1502,6 +1502,8 @@ model Talent {
   profileImageSource      String   @default("initials") // instagram | tiktok | youtube | manual | initials
   lastProfileImageSyncAt  DateTime? // Timestamp of last profile image sync
   socialIntelligenceNotes String? // Agent strategic notes on social intelligence
+  analyticsNotes          String? // Admin notes from analytics dashboard
+  comparisonNotes         String? // Comparison notes vs other profiles (stored as JSON)
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   AIPromptHistory         AIPromptHistory[]

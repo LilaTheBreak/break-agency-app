@@ -64,6 +64,7 @@ import AdminUserApprovals from "./pages/AdminUserApprovals.jsx";
 import { AdminUsersPage } from "./pages/AdminUsersPage.jsx";
 import { AdminBrandsPage } from "./pages/AdminBrandsPage.jsx";
 import { AdminCampaignsPage } from "./pages/AdminCampaignsPage.jsx";
+import { AdminAnalyticsPage } from "./pages/AdminAnalyticsPage.jsx";
 import { AdminEventsPage } from "./pages/AdminEventsPage.jsx";
 import { AdminDealsPage } from "./pages/AdminDealsPage.jsx";
 import { AdminTalentPage } from "./pages/AdminTalentPage.jsx";
@@ -710,6 +711,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminCampaignsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <AdminAnalyticsPage session={session} />
             </ProtectedRoute>
           }
         />

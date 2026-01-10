@@ -11,6 +11,7 @@ export const ADMIN_NAV_LINKS = [
   { label: "Opportunities", to: "/admin/opportunities" },
   { label: "Deals", to: "/admin/deals" },
   { label: "Campaigns", to: "/admin/campaigns" },
+  { label: "Analytics", to: "/admin/analytics" },
   
   // Communication & Operations
   { label: "Messaging", to: "/admin/messaging" },

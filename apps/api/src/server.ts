@@ -131,6 +131,9 @@ import adminDuplicatesRouter from "./routes/admin/duplicates.js";
 // Admin Diagnostics
 import adminDiagnosticsRouter from "./routes/admin/diagnostics.js";
 
+// Admin Analytics (Global analytics command centre)
+import adminAnalyticsRouter from "./routes/admin/analytics.js";
+
 // CMS: Block-Based Content Management
 import contentRouter from "./routes/content.js";
 import { ensureCmsPagesExist } from "./lib/cmsSeeder.js";
@@ -635,6 +638,7 @@ app.use("/api/admin/dashboard", dashboardExclusiveTalentRouter);
 app.use("/api/admin/deals", adminDealsRouter);
 app.use("/api/admin/duplicates", adminDuplicatesRouter);
 app.use("/api/admin/diagnostics", adminDiagnosticsRouter);
+app.use("/api/admin/analytics", adminAnalyticsRouter);
 
 // ------------------------------------------------------
 // AI
