@@ -1484,6 +1484,36 @@ function DealsTab({ talent, onDealCreated }) {
   const [editError, setEditError] = useState("");
   const [fetchingDeal, setFetchingDeal] = useState(false);
 
+  // Closed deals state
+  const [closedDealsData, setClosedDealsData] = useState(null);
+  const [closedDealsLoading, setClosedDealsLoading] = useState(false);
+  const [closedDealsError, setClosedDealsError] = useState("");
+
+  // Load closed deals when tab is active
+  useEffect(() => {
+    if (dealView !== "closed") return;
+    
+    const loadClosedDeals = async () => {
+      setClosedDealsLoading(true);
+      setClosedDealsError("");
+      try {
+        const response = await fetch(`/api/admin/deals/closed?talentId=${talent.id}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch closed deals: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setClosedDealsData(data);
+      } catch (err) {
+        console.error("[CLOSED_DEALS] Error loading:", err);
+        setClosedDealsError(err.message);
+      } finally {
+        setClosedDealsLoading(false);
+      }
+    };
+    
+    loadClosedDeals();
+  }, [dealView, talent.id]);
+
   // Load deal data when edit modal opens
   useEffect(() => {
     if (!editModalOpen || !selectedDeal?.id) {
@@ -1750,11 +1780,19 @@ function DealsTab({ talent, onDealCreated }) {
   const filteredDeals = useMemo(() => {
     let filtered = deals;
     
-    // Split into Opportunities (no stage) vs Deals (has stage)
+    // Split into Opportunities (no stage) vs Deals (has stage but not closed) vs Closed
     if (dealView === "opportunities") {
       filtered = filtered.filter(d => !d.stage);
-    } else {
-      filtered = filtered.filter(d => d.stage);
+    } else if (dealView === "deals") {
+      filtered = filtered.filter(d => d.stage && !["COMPLETED", "LOST"].includes(d.stage));
+    } else if (dealView === "closed") {
+      // For closed view, we'll use the API data, but filter local copy for safety
+      filtered = filtered.filter(d => ["COMPLETED", "LOST"].includes(d.stage || ""));
+    }
+    
+    // Skip frontend filtering for closed view (use API data instead)
+    if (dealView === "closed") {
+      return filtered;
     }
     
     if (stageFilter !== "ALL") {
@@ -1900,7 +1938,7 @@ function DealsTab({ talent, onDealCreated }) {
 
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      {/* Deal/Opportunity Toggle */}
+      {/* Deal/Opportunity/Closed Toggle */}
       <div className="mb-6 flex items-center justify-between border-b border-brand-black/10 pb-4">
         <div className="flex gap-2">
           <button
@@ -1921,16 +1959,31 @@ function DealsTab({ talent, onDealCreated }) {
                 : "text-brand-black/60 hover:text-brand-black"
             }`}
           >
-            Deals ({deals.filter(d => d.stage).length})
+            Deals ({deals.filter(d => d.stage && !["COMPLETED", "LOST"].includes(d.stage)).length})
+          </button>
+          <button
+            onClick={() => setDealView("closed")}
+            className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] rounded-lg transition ${
+              dealView === "closed"
+                ? "bg-gray-100 text-gray-700 border border-gray-300"
+                : "text-brand-black/60 hover:text-brand-black"
+            }`}
+          >
+            Closed ({deals.filter(d => ["COMPLETED", "LOST"].includes(d.stage)).length})
           </button>
         </div>
         <button
           type="button"
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black"
+          onClick={() => setDealView !== "closed" && setCreateOpen(true)}
+          disabled={dealView === "closed"}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] ${
+            dealView === "closed"
+              ? "bg-brand-black/10 text-brand-black/40 cursor-not-allowed"
+              : "bg-brand-red text-white hover:bg-brand-black"
+          }`}
         >
           <Plus className="h-4 w-4" />
-          Add {dealView === "opportunities" ? "Opportunity" : "Deal"}
+          Add {dealView === "opportunities" ? "Opportunity" : dealView === "deals" ? "Deal" : ""}
         </button>
       </div>
 
@@ -2092,6 +2145,104 @@ function DealsTab({ talent, onDealCreated }) {
               }}
             />
           ))}
+        </div>
+      )}
+
+      {/* Closed Deals View */}
+      {dealView === "closed" && (
+        <div className="space-y-6">
+          {closedDealsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-brand-black/60">Loading closed deals...</p>
+            </div>
+          ) : closedDealsError ? (
+            <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+              <p className="text-sm text-red-700">Error loading closed deals: {closedDealsError}</p>
+            </div>
+          ) : closedDealsData?.deals?.length === 0 ? (
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+              <p className="text-sm text-brand-black/60">Closed deals will appear here once opportunities are completed.</p>
+            </div>
+          ) : closedDealsData?.deals ? (
+            <>
+              {/* Closed Deals Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Total Closed</p>
+                  <p className="font-display text-xl uppercase text-brand-black">
+                    {closedDealsData.summary.totalClosed}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Closed Won</p>
+                  <p className="font-display text-xl uppercase text-brand-black">
+                    £{(closedDealsData.summary.closedWonValue || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Paid vs Unpaid</p>
+                  <p className="font-display text-sm uppercase text-brand-black">
+                    £{(closedDealsData.summary.paid || 0).toLocaleString()} / £{(closedDealsData.summary.unpaid || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Avg Deal Value</p>
+                  <p className="font-display text-xl uppercase text-brand-black">
+                    £{(closedDealsData.summary.avgDealValue || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Closed Deals Table */}
+              <div className="rounded-3xl border border-brand-black/10 bg-brand-white overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-brand-black/10 bg-brand-linen/50">
+                      <th className="px-6 py-4 text-left text-xs uppercase tracking-[0.2em] font-semibold text-brand-black">Brand</th>
+                      <th className="px-6 py-4 text-left text-xs uppercase tracking-[0.2em] font-semibold text-brand-black">Deal Name</th>
+                      <th className="px-6 py-4 text-left text-xs uppercase tracking-[0.2em] font-semibold text-brand-black">Outcome</th>
+                      <th className="px-6 py-4 text-right text-xs uppercase tracking-[0.2em] font-semibold text-brand-black">Value</th>
+                      <th className="px-6 py-4 text-left text-xs uppercase tracking-[0.2em] font-semibold text-brand-black">Payment</th>
+                      <th className="px-6 py-4 text-left text-xs uppercase tracking-[0.2em] font-semibold text-brand-black">Closed Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {closedDealsData.deals.map((deal, idx) => (
+                      <tr key={deal.id} className={idx !== closedDealsData.deals.length - 1 ? "border-b border-brand-black/5" : ""}>
+                        <td className="px-6 py-4 text-sm text-brand-black">{deal.brandName || "—"}</td>
+                        <td className="px-6 py-4 text-sm text-brand-black">{deal.campaignName || deal.notes?.substring(0, 30) || "—"}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold uppercase tracking-[0.15em] ${
+                            deal.stage === "COMPLETED"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}>
+                            {deal.stage === "COMPLETED" ? "Won" : "Lost"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm font-medium text-brand-black">
+                          {deal.currency === "GBP" ? "£" : deal.currency === "USD" ? "$" : deal.currency === "EUR" ? "€" : deal.currency}
+                          {(deal.value || 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`text-xs font-semibold uppercase tracking-[0.15em] ${
+                            deal.paymentStatus === "PAID" || deal.paymentStatus === "PARTIAL"
+                              ? "text-green-600"
+                              : "text-gray-600"
+                          }`}>
+                            {deal.paymentStatus || "—"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-brand-black/70">
+                          {deal.closedAt ? new Date(deal.closedAt).toLocaleDateString() : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : null}
         </div>
       )}
 

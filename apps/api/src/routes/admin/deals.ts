@@ -13,6 +13,142 @@ const router = Router();
 router.use(requireAuth);
 
 /**
+ * GET /api/deals/closed
+ * Get closed deals with financial summary
+ * 
+ * Query params:
+ * - talentId: Filter by talent ID
+ * - fromDate: Filter deals closed on or after this date (ISO 8601)
+ * - toDate: Filter deals closed on or before this date (ISO 8601)
+ * 
+ * Returns:
+ * {
+ *   summary: {
+ *     totalClosed: number,
+ *     closedWonValue: number,
+ *     closedLostValue: number,
+ *     paid: number,
+ *     unpaid: number,
+ *     avgDealValue: number,
+ *     largestDeal: number
+ *   },
+ *   deals: [{ id, brandName, value, currency, paymentStatus, closedAt, stage, ... }]
+ * }
+ */
+router.get("/closed", async (req: Request, res: Response) => {
+  try {
+    const { talentId, fromDate, toDate } = req.query;
+    const userId = req.user?.id;
+
+    console.log("[CLOSED_DEALS] Fetching closed deals:", { talentId, fromDate, toDate });
+
+    if (!talentId || typeof talentId !== "string") {
+      return sendError(res, "VALIDATION_ERROR", "talentId is required", 400);
+    }
+
+    // Parse and validate dates if provided
+    let fromDateObj: Date | null = null;
+    let toDateObj: Date | null = null;
+
+    if (fromDate && typeof fromDate === "string") {
+      fromDateObj = new Date(fromDate);
+      if (isNaN(fromDateObj.getTime())) {
+        return sendError(res, "VALIDATION_ERROR", "fromDate must be valid ISO 8601 date", 400);
+      }
+    }
+
+    if (toDate && typeof toDate === "string") {
+      toDateObj = new Date(toDate);
+      if (isNaN(toDateObj.getTime())) {
+        return sendError(res, "VALIDATION_ERROR", "toDate must be valid ISO 8601 date", 400);
+      }
+    }
+
+    // Build where clause: CLOSED_WON or COMPLETED for won deals, LOST for lost deals
+    const whereClause: any = {
+      talentId,
+      stage: {
+        in: ["COMPLETED", "LOST"],
+      },
+    };
+
+    // Add date filters if provided
+    if (fromDateObj) {
+      whereClause.closedAt = whereClause.closedAt || {};
+      whereClause.closedAt.gte = fromDateObj;
+    }
+    if (toDateObj) {
+      whereClause.closedAt = whereClause.closedAt || {};
+      whereClause.closedAt.lte = toDateObj;
+    }
+
+    console.log("[CLOSED_DEALS] Query where clause:", JSON.stringify(whereClause));
+
+    // Fetch closed deals
+    const closedDeals = await prisma.deal.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        brandName: true,
+        brandId: true,
+        value: true,
+        currency: true,
+        paymentStatus: true,
+        closedAt: true,
+        stage: true,
+        campaignName: true,
+        notes: true,
+      },
+      orderBy: { closedAt: "desc" },
+    });
+
+    console.log("[CLOSED_DEALS] Found", closedDeals.length, "closed deals");
+
+    // Calculate metrics
+    const totalClosed = closedDeals.length;
+    const closedWonDeals = closedDeals.filter((d) => d.stage === "COMPLETED");
+    const closedLostDeals = closedDeals.filter((d) => d.stage === "LOST");
+
+    const closedWonValue = closedWonDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+    const closedLostValue = closedLostDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+
+    const paidDeals = closedDeals.filter((d) => d.paymentStatus === "PAID");
+    const unpaidDeals = closedDeals.filter((d) => d.paymentStatus !== "PAID");
+
+    const paid = paidDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+    const unpaid = unpaidDeals.reduce((sum, d) => sum + (d.value || 0), 0);
+
+    const avgDealValue = totalClosed > 0 ? Math.round((closedWonValue + closedLostValue) / totalClosed) : 0;
+    const largestDeal = totalClosed > 0 ? Math.max(...closedDeals.map((d) => d.value || 0)) : 0;
+
+    const summary = {
+      totalClosed,
+      closedWonValue,
+      closedLostValue,
+      paid,
+      unpaid,
+      avgDealValue,
+      largestDeal,
+    };
+
+    console.log("[CLOSED_DEALS] Summary:", summary);
+
+    return sendSuccess(res, { summary, deals: closedDeals }, 200, "Closed deals retrieved");
+  } catch (error) {
+    const talentId = req.query.talentId;
+    console.error("[CLOSED_DEALS] Error fetching closed deals:", error);
+    logError("Failed to fetch closed deals", error, { talentId, userId: req.user?.id });
+
+    return sendError(
+      res,
+      "CLOSED_DEALS_FETCH_FAILED",
+      error instanceof Error ? error.message : "Failed to fetch closed deals",
+      500
+    );
+  }
+});
+
+/**
  * DELETE /api/admin/deals/:dealId
  * Delete a deal by ID
  * 
