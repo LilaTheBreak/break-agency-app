@@ -26,6 +26,7 @@ import { CollapsibleDetailSection } from "../components/AdminTalent/CollapsibleD
 import { DealStatusBadge } from "../components/AdminTalent/DealStatusBadge.jsx";
 import { DealTrackerCard } from "../components/AdminTalent/DealTrackerCard.jsx";
 import { DealPipelineChart } from "../components/AdminTalent/DealPipelineChart.jsx";
+import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
 
 const REPRESENTATION_TYPES = [
   { value: "EXCLUSIVE", label: "Exclusive", color: "bg-brand-red text-white", description: "Full-service representation" },
@@ -1445,6 +1446,7 @@ function DealsTab({ talent, onDealCreated }) {
   const [editingDealId, setEditingDealId] = useState(null);
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState("");
+  const [dealFilters, setDealFilters] = useState({});
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [dealToDelete, setDealToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState("");
@@ -1660,34 +1662,82 @@ function DealsTab({ talent, onDealCreated }) {
         return dPayStatus === payStatus;
       });
     }
+
+    // Apply advanced filters from DealFilterPanel
+    if (dealFilters.stages && dealFilters.stages.length > 0) {
+      filtered = filtered.filter(d => dealFilters.stages.includes(d.stage || ''));
+    }
+    if (dealFilters.valueMin !== undefined) {
+      filtered = filtered.filter(d => d.value && d.value >= dealFilters.valueMin);
+    }
+    if (dealFilters.valueMax !== undefined) {
+      filtered = filtered.filter(d => d.value && d.value <= dealFilters.valueMax);
+    }
+    if (dealFilters.dateMin) {
+      const minDate = new Date(dealFilters.dateMin).getTime();
+      filtered = filtered.filter(d => d.expectedClose && new Date(d.expectedClose).getTime() >= minDate);
+    }
+    if (dealFilters.dateMax) {
+      const maxDate = new Date(dealFilters.dateMax).getTime();
+      filtered = filtered.filter(d => d.expectedClose && new Date(d.expectedClose).getTime() <= maxDate);
+    }
+
     return filtered;
-  }, [deals, dealView, stageFilter, currencyFilter, paymentFilter]);
+  }, [deals, dealView, stageFilter, currencyFilter, paymentFilter, dealFilters]);
 
   const sortedDeals = useMemo(() => {
     const sorted = [...filteredDeals];
-    if (sortBy === "dueDate") {
-      sorted.sort((a, b) => {
-        const dateA = a.expectedClose ? new Date(a.expectedClose) : new Date(0);
-        const dateB = b.expectedClose ? new Date(b.expectedClose) : new Date(0);
-        return dateA - dateB;
-      });
-    } else if (sortBy === "brand") {
-      sorted.sort((a, b) => {
-        const nameA = (a.brand?.name || a.brandName || "").toLowerCase();
-        const nameB = (b.brand?.name || b.brandName || "").toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-    } else if (sortBy === "stage") {
-      sorted.sort((a, b) => {
-        const stageA = a.stage || "";
-        const stageB = b.stage || "";
-        return stageA.localeCompare(stageB);
-      });
-    } else if (sortBy === "value") {
-      sorted.sort((a, b) => (b.value || 0) - (a.value || 0));
+    
+    // Use advanced sort from filter panel if available
+    const activeSortBy = dealFilters.sortBy || sortBy;
+    
+    switch (activeSortBy) {
+      case 'newest':
+        sorted.sort((a, b) => {
+          const dateA = a.expectedClose ? new Date(a.expectedClose).getTime() : Infinity;
+          const dateB = b.expectedClose ? new Date(b.expectedClose).getTime() : Infinity;
+          return dateA - dateB;
+        });
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => {
+          const dateA = a.expectedClose ? new Date(a.expectedClose).getTime() : -Infinity;
+          const dateB = b.expectedClose ? new Date(b.expectedClose).getTime() : -Infinity;
+          return dateB - dateA;
+        });
+        break;
+      case 'highestValue':
+        sorted.sort((a, b) => (b.value || 0) - (a.value || 0));
+        break;
+      case 'lowestValue':
+        sorted.sort((a, b) => (a.value || 0) - (b.value || 0));
+        break;
+      case 'brandAZ':
+        sorted.sort((a, b) => {
+          const nameA = (a.brand?.name || a.brandName || '').toLowerCase();
+          const nameB = (b.brand?.name || b.brandName || '').toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        break;
+      case 'brandZA':
+        sorted.sort((a, b) => {
+          const nameA = (a.brand?.name || a.brandName || '').toLowerCase();
+          const nameB = (b.brand?.name || b.brandName || '').toLowerCase();
+          return nameB.localeCompare(nameA);
+        });
+        break;
+      case 'dueDate':
+      default:
+        sorted.sort((a, b) => {
+          const dateA = a.expectedClose ? new Date(a.expectedClose) : new Date(0);
+          const dateB = b.expectedClose ? new Date(b.expectedClose) : new Date(0);
+          return dateA - dateB;
+        });
+        break;
     }
+    
     return sorted;
-  }, [filteredDeals, sortBy]);
+  }, [filteredDeals, sortBy, dealFilters.sortBy]);
 
   // Calculate totals in GBP
   const totals = useMemo(() => {
@@ -1881,6 +1931,26 @@ function DealsTab({ talent, onDealCreated }) {
           </p>
         </div>
       </div>
+
+      {/* Filter Panel & Pipeline Chart */}
+      {dealView === "deals" && deals.length > 0 && (
+        <div className="mb-6 flex items-center justify-between">
+          <DealFilterPanel
+            filters={dealFilters}
+            onFiltersChange={setDealFilters}
+            dealCount={sortedDeals.length}
+          />
+          {sortedDeals.length > 0 && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-red text-brand-white font-medium text-sm hover:bg-brand-red/90 transition"
+            >
+              <Plus className="w-4 h-4" />
+              New Deal
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Pipeline Chart */}
       {dealView === "deals" && sortedDeals.length > 0 && (
