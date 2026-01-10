@@ -149,6 +149,205 @@ router.get("/closed", async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/admin/deals/closed/export
+ * Export closed deals as CSV or PDF
+ * 
+ * Body:
+ * - talentId: Talent ID to filter (required)
+ * - format: 'csv' or 'pdf' (default: 'csv')
+ * - fromDate: Optional date filter (ISO 8601)
+ * - toDate: Optional date filter (ISO 8601)
+ */
+router.post("/closed/export", async (req: Request, res: Response) => {
+  try {
+    const { talentId, format = "csv", fromDate, toDate } = req.body;
+    const userId = req.user?.id;
+
+    console.log("[CLOSED_DEALS_EXPORT] Exporting closed deals:", { talentId, format });
+
+    if (!talentId || typeof talentId !== "string") {
+      return sendError(res, "VALIDATION_ERROR", "talentId is required", 400);
+    }
+
+    if (format !== "csv" && format !== "pdf") {
+      return sendError(res, "VALIDATION_ERROR", "format must be 'csv' or 'pdf'", 400);
+    }
+
+    // Parse and validate dates if provided
+    let fromDateObj: Date | null = null;
+    let toDateObj: Date | null = null;
+
+    if (fromDate && typeof fromDate === "string") {
+      fromDateObj = new Date(fromDate);
+      if (isNaN(fromDateObj.getTime())) {
+        return sendError(res, "VALIDATION_ERROR", "fromDate must be valid ISO 8601 date", 400);
+      }
+    }
+
+    if (toDate && typeof toDate === "string") {
+      toDateObj = new Date(toDate);
+      if (isNaN(toDateObj.getTime())) {
+        return sendError(res, "VALIDATION_ERROR", "toDate must be valid ISO 8601 date", 400);
+      }
+    }
+
+    // Build where clause
+    const whereClause: any = {
+      talentId,
+      stage: {
+        in: ["COMPLETED", "LOST"],
+      },
+    };
+
+    if (fromDateObj) {
+      whereClause.closedAt = whereClause.closedAt || {};
+      whereClause.closedAt.gte = fromDateObj;
+    }
+    if (toDateObj) {
+      whereClause.closedAt = whereClause.closedAt || {};
+      whereClause.closedAt.lte = toDateObj;
+    }
+
+    // Fetch closed deals
+    const closedDeals = await prisma.deal.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        brandName: true,
+        brandId: true,
+        value: true,
+        currency: true,
+        paymentStatus: true,
+        closedAt: true,
+        stage: true,
+        campaignName: true,
+        notes: true,
+      },
+      orderBy: { closedAt: "desc" },
+    });
+
+    console.log("[CLOSED_DEALS_EXPORT] Found", closedDeals.length, "deals to export");
+
+    if (format === "csv") {
+      // Generate CSV
+      const headers = ["Brand", "Campaign", "Status", "Value", "Currency", "Payment Status", "Closed Date", "Notes"];
+      const rows = closedDeals.map((deal) => [
+        deal.brandName || "",
+        deal.campaignName || "",
+        deal.stage === "COMPLETED" ? "Won" : "Lost",
+        (deal.value || 0).toString(),
+        deal.currency || "USD",
+        deal.paymentStatus || "",
+        deal.closedAt ? new Date(deal.closedAt).toLocaleDateString("en-GB") : "",
+        (deal.notes || "").replace(/"/g, '""'), // Escape quotes in CSV
+      ]);
+
+      const csv = [
+        headers.join(","),
+        ...rows.map((row) =>
+          row
+            .map((cell) => {
+              // Quote cells containing commas, quotes, or newlines
+              if (cell.includes(",") || cell.includes('"') || cell.includes("\n")) {
+                return `"${cell}"`;
+              }
+              return cell;
+            })
+            .join(",")
+        ),
+      ].join("\n");
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="closed-deals-${talentId}-${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    } else if (format === "pdf") {
+      // Generate PDF - using simple HTML table approach with newline separation
+      // For a production system, consider using a library like jsPDF or pdfkit
+      const pdfContent = generatePDFContent(closedDeals, talentId);
+      
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="closed-deals-${talentId}-${new Date().toISOString().split('T')[0]}.pdf"`);
+      return res.send(pdfContent);
+    }
+  } catch (error) {
+    const talentId = req.body?.talentId;
+    console.error("[CLOSED_DEALS_EXPORT] Error exporting closed deals:", error);
+    logError("Failed to export closed deals", error, { talentId, userId: req.user?.id });
+
+    return sendError(
+      res,
+      "CLOSED_DEALS_EXPORT_FAILED",
+      error instanceof Error ? error.message : "Failed to export closed deals",
+      500
+    );
+  }
+});
+
+/**
+ * Helper function to generate PDF content
+ * Creates a basic PDF-like text document
+ */
+function generatePDFContent(
+  deals: Array<{
+    brandName: string | null;
+    campaignName: string | null;
+    value: number | null;
+    currency: string | null;
+    paymentStatus: string | null;
+    closedAt: Date | null;
+    stage: string;
+    notes: string | null;
+  }>,
+  talentId: string
+): Buffer {
+  // For basic PDF export, use a simple text-based approach
+  // Production systems should use jsPDF or pdfkit
+  const lines: string[] = [];
+  
+  lines.push("CLOSED DEALS EXPORT");
+  lines.push(`Talent ID: ${talentId}`);
+  lines.push(`Generated: ${new Date().toLocaleDateString("en-GB")} ${new Date().toLocaleTimeString("en-GB")}`);
+  lines.push("");
+  lines.push("=" .repeat(80));
+  lines.push("");
+  
+  // Summary
+  const totalClosed = deals.length;
+  const totalWon = deals.filter((d) => d.stage === "COMPLETED").length;
+  const totalLost = deals.filter((d) => d.stage === "LOST").length;
+  const totalValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
+  const paidValue = deals.filter((d) => d.paymentStatus === "PAID").reduce((sum, d) => sum + (d.value || 0), 0);
+  
+  lines.push("SUMMARY");
+  lines.push(`Total Closed Deals: ${totalClosed}`);
+  lines.push(`Won: ${totalWon}, Lost: ${totalLost}`);
+  lines.push(`Total Value: ${totalValue}`);
+  lines.push(`Paid: ${paidValue}`);
+  lines.push("");
+  lines.push("=" .repeat(80));
+  lines.push("");
+  
+  // Deals table
+  lines.push("DEALS");
+  lines.push("");
+  
+  deals.forEach((deal, idx) => {
+    lines.push(`${idx + 1}. ${deal.brandName || "Unknown Brand"}`);
+    lines.push(`   Campaign: ${deal.campaignName || "—"}`);
+    lines.push(`   Status: ${deal.stage === "COMPLETED" ? "WON" : "LOST"}`);
+    lines.push(`   Value: ${deal.currency || "USD"} ${(deal.value || 0).toLocaleString()}`);
+    lines.push(`   Payment: ${deal.paymentStatus || "—"}`);
+    lines.push(`   Closed: ${deal.closedAt ? new Date(deal.closedAt).toLocaleDateString("en-GB") : "—"}`);
+    if (deal.notes) {
+      lines.push(`   Notes: ${deal.notes}`);
+    }
+    lines.push("");
+  });
+  
+  return Buffer.from(lines.join("\n"), "utf-8");
+}
+
+/**
  * DELETE /api/admin/deals/:dealId
  * Delete a deal by ID
  * 

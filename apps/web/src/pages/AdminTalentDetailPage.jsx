@@ -1488,6 +1488,8 @@ function DealsTab({ talent, onDealCreated }) {
   const [closedDealsData, setClosedDealsData] = useState(null);
   const [closedDealsLoading, setClosedDealsLoading] = useState(false);
   const [closedDealsError, setClosedDealsError] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportError, setExportError] = useState("");
 
   // Load closed deals when tab is active
   useEffect(() => {
@@ -1761,6 +1763,58 @@ function DealsTab({ talent, onDealCreated }) {
       toast.error("Failed to save deal: " + err.message);
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  // Export closed deals as CSV or PDF
+  const handleExportClosedDeals = async (format) => {
+    setExportError("");
+    setExportLoading(true);
+    
+    try {
+      const response = await fetch("/api/admin/deals/closed/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          talentId: talent.id,
+          format: format,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `Export failed: ${response.statusText}`);
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `closed-deals.${format}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match) {
+          filename = match[1];
+        }
+      }
+
+      // Download file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Closed deals exported as ${format.toUpperCase()}`);
+    } catch (err) {
+      console.error("[EXPORT ERROR]", err);
+      const errorMsg = err.message || "Failed to export closed deals";
+      setExportError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -2165,6 +2219,31 @@ function DealsTab({ talent, onDealCreated }) {
             </div>
           ) : closedDealsData?.deals ? (
             <>
+              {/* Export Error */}
+              {exportError && (
+                <div className="rounded-lg border border-red-300 bg-red-50 p-4 mb-4">
+                  <p className="text-sm text-red-700">Export error: {exportError}</p>
+                </div>
+              )}
+
+              {/* Export Buttons */}
+              <div className="flex gap-3 mb-6">
+                <button
+                  onClick={() => handleExportClosedDeals("csv")}
+                  disabled={exportLoading}
+                  className="flex items-center gap-2 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-linen/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {exportLoading ? "Exporting..." : "📥 Export CSV"}
+                </button>
+                <button
+                  onClick={() => handleExportClosedDeals("pdf")}
+                  disabled={exportLoading}
+                  className="flex items-center gap-2 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-linen/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {exportLoading ? "Exporting..." : "📄 Export PDF"}
+                </button>
+              </div>
+
               {/* Closed Deals Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
