@@ -1331,25 +1331,25 @@ model SignatureRequest {
 }
 
 model SocialAccountConnection {
-  id              String          @id
-  creatorId       String
-  platform        String
-  handle          String
-  profileUrl      String?         // URL or profile link (for validation/display)
-  connected       Boolean         @default(false)
-  connectionType  String          @default("MANUAL")  // MANUAL or OAUTH
-  syncStatus      String          @default("PENDING")  // PENDING, SYNCING, READY, ERROR
-  accessToken     String?
-  refreshToken    String?
-  expiresAt       DateTime?
-  lastSyncedAt    DateTime?
-  syncError       String?         // Error message if sync fails
-  metadata        Json?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime
-  Talent          Talent          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  SocialProfile   SocialProfile?
-  SocialSyncLog   SocialSyncLog[]
+  id             String          @id
+  creatorId      String
+  platform       String
+  handle         String
+  profileUrl     String? // URL or profile link (for validation/display)
+  connected      Boolean         @default(false)
+  connectionType String          @default("MANUAL") // MANUAL or OAUTH
+  syncStatus     String          @default("PENDING") // PENDING, SYNCING, READY, ERROR
+  accessToken    String?
+  refreshToken   String?
+  expiresAt      DateTime?
+  lastSyncedAt   DateTime?
+  syncError      String? // Error message if sync fails
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  Talent         Talent          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  SocialProfile  SocialProfile?
+  SocialSyncLog  SocialSyncLog[]
 
   @@unique([creatorId, platform])
   @@index([creatorId, connected])
@@ -1495,12 +1495,12 @@ model Talent {
   representationType      String? // EXCLUSIVE, NON_EXCLUSIVE, FRIEND_OF_HOUSE, UGC, FOUNDER
   status                  String? // ACTIVE, PAUSED, ARCHIVED
   managerId               String? // Admin manager ID (deprecated - use TalentManagerAssignment instead)
-  currency                String   @default("GBP") // Currency code: GBP, USD, EUR, AED, etc.
+  currency                String                    @default("GBP") // Currency code: GBP, USD, EUR, AED, etc.
   notes                   String? // Internal notes
   categories              String[]
   stage                   String?
   profileImageUrl         String? // Auto-fetched social profile image URL
-  profileImageSource      String   @default("initials") // instagram | tiktok | youtube | manual | initials
+  profileImageSource      String                    @default("initials") // instagram | tiktok | youtube | manual | initials
   lastProfileImageSyncAt  DateTime? // Timestamp of last profile image sync
   socialIntelligenceNotes String? // Agent strategic notes on social intelligence
   analyticsNotes          String? // Admin notes from analytics dashboard
@@ -1676,12 +1676,12 @@ model EmailClickEvent {
 }
 
 model User {
-  id                                      String                   @id
-  email                                   String                   @unique
+  id                                      String                    @id
+  email                                   String                    @unique
   password                                String?
   name                                    String?
   avatarUrl                               String?
-  createdAt                               DateTime                 @default(now())
+  createdAt                               DateTime                  @default(now())
   updatedAt                               DateTime
   accountType                             String?
   admin_notes                             String?
@@ -1689,40 +1689,40 @@ model User {
   creator_score                           Int?
   creator_score_reason                    Json?
   friends_of_house_id                     String?
-  include_in_roster                       Boolean                  @default(false)
+  include_in_roster                       Boolean                   @default(false)
   location                                String?
-  managedTalentIds                        String[]                 @default([])
-  onboardingComplete                      Boolean?                 @default(false)
+  managedTalentIds                        String[]                  @default([])
+  onboardingComplete                      Boolean?                  @default(false)
   onboardingSkippedAt                     DateTime?
   onboarding_responses                    Json?
-  onboarding_status                       String?                  @default("pending_review")
+  onboarding_status                       String?                   @default("pending_review")
   pronouns                                String?
-  role                                    String                   @default("CREATOR")
+  role                                    String                    @default("CREATOR")
   role_recommended                        String?
   roster_category                         String?
   socialLinks                             Json?
   status                                  String?
-  subscriptionStatus                      String?                  @default("free")
+  subscriptionStatus                      String?                   @default("free")
   timezone                                String?
-  ugcApproved                             Boolean                  @default(false)
+  ugcApproved                             Boolean                   @default(false)
   ugcRates                                Json?
-  ugc_categories                          String[]                 @default([])
+  ugc_categories                          String[]                  @default([])
   ugc_portfolio_url                       String?
-  upgrade_suggested                       Boolean?                 @default(false)
+  upgrade_suggested                       Boolean?                  @default(false)
   resetToken                              String?
   resetTokenExpiry                        DateTime?
   AgentProfile                            AgentProfile?
   AgentPolicy                             AgentPolicy?
   AiTokenLog                              AiTokenLog[]
-  ApprovalsCreated                        Approval[]               @relation("ApprovalRequestor")
-  ApprovalsHandled                        Approval[]               @relation("ApprovalApprover")
+  ApprovalsCreated                        Approval[]                @relation("ApprovalRequestor")
+  ApprovalsHandled                        Approval[]                @relation("ApprovalApprover")
   AuditLog                                AuditLog[]
   BrandCampaign                           BrandCampaign[]
-  CalendarEventsCreated                   CalendarEvent[]          @relation("CalendarEventCreator")
+  CalendarEventsCreated                   CalendarEvent[]           @relation("CalendarEventCreator")
   CreatorEvent                            CreatorEvent[]
   CreatorTask                             CreatorTask[]
-  CrmTasksCreated                         CrmTask[]                @relation("TaskCreatedBy")
-  CrmTasksOwned                           CrmTask[]                @relation("TaskOwner")
+  CrmTasksCreated                         CrmTask[]                 @relation("TaskCreatedBy")
+  CrmTasksOwned                           CrmTask[]                 @relation("TaskOwner")
   Deal                                    Deal[]
   DealTimeline                            DealTimeline[]
   EmailFeedback                           EmailFeedback[]
@@ -1734,12 +1734,12 @@ model User {
   GmailToken                              GmailToken?
   GoogleAccount                           GoogleAccount?
   InboundEmail                            InboundEmail[]
-  InternalTasksAssigned                   InternalQueueTask[]      @relation("InternalTaskAssignedTo")
-  InternalTasksCreated                    InternalQueueTask[]      @relation("InternalTaskCreatedBy")
+  InternalTasksAssigned                   InternalQueueTask[]       @relation("InternalTaskAssignedTo")
+  InternalTasksCreated                    InternalQueueTask[]       @relation("InternalTaskCreatedBy")
   Notification                            Notification[]
   OpportunityApplication                  OpportunityApplication[]
-  Outreach_Outreach_createdByToUser       Outreach[]               @relation("Outreach_createdByToUser")
-  Outreach_Outreach_linkedCreatorIdToUser Outreach[]               @relation("Outreach_linkedCreatorIdToUser")
+  Outreach_Outreach_createdByToUser       Outreach[]                @relation("Outreach_createdByToUser")
+  Outreach_Outreach_linkedCreatorIdToUser Outreach[]                @relation("Outreach_linkedCreatorIdToUser")
   Payout                                  Payout[]
   Commission                              Commission[]
   Resource                                Resource[]
@@ -1748,14 +1748,14 @@ model User {
   Submission                              Submission[]
   Talent                                  Talent?
   TalentAssignment                        TalentAssignment[]
-  TalentAccessGiven                       TalentUserAccess[]       @relation("TalentAccessGiven")
+  TalentAccessGiven                       TalentUserAccess[]        @relation("TalentAccessGiven")
   ManagerAssignments                      TalentManagerAssignment[] @relation("ManagerAssignments")
-  PageBlockCreatedBy                      PageBlock[]              @relation("PageBlockCreatedBy")
-  PageBlockDraftCreatedBy                 PageBlockDraft[]         @relation("PageBlockDraftCreatedBy")
-  UGCRequests                             UGCRequest[]             @relation("UGCRequests")
-  DealDrafts                              DealDraft[]              @relation("DealDrafts")
-  OutreachPlans                           OutreachPlan[]           @relation("OutreachPlans")
-  UGCListings                             UGCListing[]             @relation("UGCListings")
+  PageBlockCreatedBy                      PageBlock[]               @relation("PageBlockCreatedBy")
+  PageBlockDraftCreatedBy                 PageBlockDraft[]          @relation("PageBlockDraftCreatedBy")
+  UGCRequests                             UGCRequest[]              @relation("UGCRequests")
+  DealDrafts                              DealDraft[]               @relation("DealDrafts")
+  OutreachPlans                           OutreachPlan[]            @relation("OutreachPlans")
+  UGCListings                             UGCListing[]              @relation("UGCListings")
   IntegrationConnection                   IntegrationConnection[]
   XeroConnections                         XeroConnection[]
   UserDashboardConfigs                    UserDashboardConfig[]

@@ -24,26 +24,31 @@ import {
 import { toast } from "react-hot-toast";
 import PlatformIcon, { platformNames, platformColors } from "./PlatformIcon";
 
-interface SocialConnection {
-  id: string;
-  platform: string;
-  handle: string;
-  profileUrl?: string;
-  connected: boolean;
-  connectionType: "MANUAL" | "OAUTH";
-  syncStatus: "PENDING" | "SYNCING" | "READY" | "ERROR";
-  syncError?: string;
-  lastSyncedAt?: string;
-  createdAt: string;
-}
+/**
+ * @typedef {Object} SocialConnection
+ * @property {string} id
+ * @property {string} platform
+ * @property {string} handle
+ * @property {string} [profileUrl]
+ * @property {boolean} connected
+ * @property {"MANUAL" | "OAUTH"} connectionType
+ * @property {"PENDING" | "SYNCING" | "READY" | "ERROR"} syncStatus
+ * @property {string} [syncError]
+ * @property {string} [lastSyncedAt]
+ * @property {string} createdAt
+ */
 
-interface SocialProfilesCardProps {
-  talentId: string;
-  onConnectionsChange?: () => void;
-}
+/**
+ * @typedef {Object} SocialProfilesCardProps
+ * @property {string} talentId
+ * @property {() => void} [onConnectionsChange]
+ */
 
-export function SocialProfilesCard({ talentId, onConnectionsChange }: SocialProfilesCardProps) {
-  const [connections, setConnections] = useState<SocialConnection[]>([]);
+/**
+ * @param {SocialProfilesCardProps} props
+ */
+export function SocialProfilesCard({ talentId, onConnectionsChange }) {
+  const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({

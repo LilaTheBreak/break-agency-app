@@ -525,7 +525,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         stage: deal.stage,
         status: deal.stage, // Keep for backward compatibility with frontend
         value: deal.value,
-        currency: deal.currency || talent.currency || "GBP",
+        currency: deal.currency || "GBP",
         expectedClose: deal.expectedClose,
         notes: deal.notes,
         aiSummary: deal.aiSummary,
@@ -1685,7 +1685,7 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
     // CRITICAL FIX: Also create a SocialAccountConnection record for Social Intelligence
     // This is required because getTalentSocialIntelligence() looks for SocialAccountConnection
     // with connected=true, but the TalentSocial route was only creating TalentSocial records.
-    let accountConnection = null;
+    let accountConnection: any = null;
     try {
       accountConnection = await prisma.socialAccountConnection.upsert({
         where: {
