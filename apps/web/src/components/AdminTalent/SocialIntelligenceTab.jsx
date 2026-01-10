@@ -219,7 +219,7 @@ function SocialOverview({ data, loading, talent }) {
       <div className="flex items-center gap-2 mb-6">
         <BarChart3 className="h-4 w-4 text-brand-black/60" />
         <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Social Overview</p>
-        <p className="text-xs text-brand-black/50 ml-auto">Last 30 days</p>
+        <p className="text-xs text-brand-black/50 ml-auto">{formatTimestamp(data.updatedAt, "Last 30 days")}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -297,7 +297,7 @@ function ContentPerformanceSection({ data, loading }) {
       <div className="flex items-center gap-2 mb-6">
         <TrendingUp className="h-4 w-4 text-brand-black/60" />
         <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Content Performance</p>
-        <p className="text-xs text-brand-black/50 ml-auto">Top performers</p>
+        <p className="text-xs text-brand-black/50 ml-auto">{formatTimestamp(data.updatedAt, "Top performers")}</p>
       </div>
 
       <div className="space-y-3">
@@ -399,7 +399,7 @@ function KeywordsThemesSection({ data, loading }) {
       <div className="flex items-center gap-2 mb-6">
         <Zap className="h-4 w-4 text-brand-black/60" />
         <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Keywords & Themes</p>
-        <p className="text-xs text-brand-black/50 ml-auto">From comments & captions</p>
+        <p className="text-xs text-brand-black/50 ml-auto">{formatTimestamp(data.updatedAt, "From comments & captions")}</p>
       </div>
 
       {coreThemes.length > 0 && (
@@ -511,6 +511,7 @@ function CommunityHealthSection({ data, loading }) {
       <div className="flex items-center gap-2 mb-6">
         <Users className="h-4 w-4 text-brand-black/60" />
         <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Community Health</p>
+        <p className="text-xs text-brand-black/50 ml-auto">{formatTimestamp(data.updatedAt, "Last 30 days")}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -582,7 +583,7 @@ function PaidPerformanceSection({ data, loading }) {
       <div className="flex items-center gap-2 mb-6">
         <TrendingUp className="h-4 w-4 text-brand-black/60" />
         <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Paid & Boosted Performance</p>
-        <p className="text-xs text-brand-black/50 ml-auto">Campaign review</p>
+        <p className="text-xs text-brand-black/50 ml-auto">{formatTimestamp(data.updatedAt, "Campaign review")}</p>
       </div>
 
       {paid.length === 0 ? (
@@ -737,6 +738,14 @@ function formatNumber(num) {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
   return num.toString();
+}
+
+function formatTimestamp(date, label = "Last 30 days") {
+  if (!date) return label;
+  const d = new Date(date);
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const day = d.getDate();
+  return `Updated ${month} ${day} · ${label}`;
 }
 
 function getSentimentLabel(score) {
