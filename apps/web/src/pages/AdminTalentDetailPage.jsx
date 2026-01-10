@@ -28,6 +28,7 @@ import { DealTrackerCard } from "../components/AdminTalent/DealTrackerCard.jsx";
 import { DealPipelineChart } from "../components/AdminTalent/DealPipelineChart.jsx";
 import { SocialIntelligenceTab } from "../components/AdminTalent/SocialIntelligenceTab.jsx";
 import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
+import DealManagementPanel from "../components/AdminTalent/DealManagementPanel.jsx";
 
 const REPRESENTATION_TYPES = [
   { value: "EXCLUSIVE", label: "Exclusive", color: "bg-brand-red text-white", description: "Full-service representation" },
@@ -2649,192 +2650,15 @@ function DealsTab({ talent, onDealCreated }) {
         </div>
       )}
 
-      {/* Edit Deal Modal */}
-      {editModalOpen && selectedDeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="relative w-full max-w-md mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={() => setEditModalOpen(false)}
-              className="absolute right-4 top-4 text-brand-black/40 hover:text-brand-black"
-            >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Title */}
-            <h2 className="mb-4 font-subtitle text-base uppercase tracking-[0.35em] text-brand-red">Edit Deal</h2>
-
-            {/* Loading State */}
-            {fetchingDeal && (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-8 w-8 border-2 border-brand-black/10 border-t-brand-red rounded-full animate-spin" />
-              </div>
-            )}
-
-            {!fetchingDeal && (
-              <>
-                {/* Error Message */}
-                {editError && (
-                  <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3">
-                    <p className="text-sm text-red-700">{editError}</p>
-                  </div>
-                )}
-
-                {/* Form */}
-                <div className="space-y-4">
-                  {/* Deal Name */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                      Deal Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.dealName}
-                      onChange={(e) => setEditForm({...editForm, dealName: e.target.value})}
-                      placeholder="Deal name"
-                      className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Brand */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                      Brand *
-                    </label>
-                    <select
-                      value={editForm.brandId}
-                      onChange={(e) => setEditForm({...editForm, brandId: e.target.value})}
-                      className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
-                    >
-                      <option value="">Select a brand...</option>
-                      {brands.map((brand) => (
-                        <option key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Stage */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                      Stage
-                    </label>
-                    <select
-                      value={editForm.stage}
-                      onChange={(e) => setEditForm({...editForm, stage: e.target.value})}
-                      className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
-                    >
-                      <option value="">No stage</option>
-                      <option value="NEW_LEAD">In discussion</option>
-                      <option value="NEGOTIATION">In discussion</option>
-                      <option value="CONTRACT_SENT">Awaiting contract</option>
-                      <option value="CONTRACT_SIGNED">Contract signed</option>
-                      <option value="DELIVERABLES_IN_PROGRESS">Live</option>
-                      <option value="PAYMENT_PENDING">Live</option>
-                      <option value="PAYMENT_RECEIVED">Completed</option>
-                      <option value="COMPLETED">Completed</option>
-                      <option value="LOST">Declined</option>
-                    </select>
-                  </div>
-
-                  {/* Value */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                        Value (£k)
-                      </label>
-                      <input
-                        type="number"
-                        value={editForm.value}
-                        onChange={(e) => setEditForm({...editForm, value: e.target.value})}
-                        placeholder="50"
-                        step="0.1"
-                        className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                        Currency
-                      </label>
-                      <select
-                        value={editForm.currency}
-                        onChange={(e) => setEditForm({...editForm, currency: e.target.value})}
-                        className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
-                      >
-                        <option value="GBP">GBP</option>
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="AUD">AUD</option>
-                        <option value="CAD">CAD</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Expected Close Date */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                      Expected Close Date
-                    </label>
-                    <input
-                      type="date"
-                      value={editForm.expectedClose}
-                      onChange={(e) => setEditForm({...editForm, expectedClose: e.target.value})}
-                      className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
-                    />
-                  </div>
-
-                  {/* Notes */}
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                      Notes
-                    </label>
-                    <textarea
-                      value={editForm.notes}
-                      onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
-                      placeholder="Deal notes, scope, or additional details..."
-                      rows={3}
-                      className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Buttons */}
-                <div className="mt-6 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setEditModalOpen(false)}
-                    className="flex-1 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-black/5 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveEditDeal}
-                    disabled={editLoading}
-                    className="flex-1 rounded-lg bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-brand-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {editLoading ? (
-                      <>
-                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <FileEdit className="h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Professional Deal Management Panel */}
+      <DealManagementPanel
+        deal={selectedDeal}
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSave={loadTalentData}
+        talent={talent}
+        userRole="admin"
+      />
     </section>
   );
 }
