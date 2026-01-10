@@ -230,7 +230,7 @@ const PRICING_PREVIEW = [
   },
   {
     title: "Brand programs",
-    price: "From $12k per initiative",
+    price: "From £12k per initiative",
     detail: "Multi-market creator sourcing, production, and reporting for premium launches and seasonal moments."
   },
   {

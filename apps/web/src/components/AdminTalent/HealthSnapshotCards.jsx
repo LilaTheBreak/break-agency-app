@@ -1,6 +1,15 @@
 import React from "react";
 import { TrendingUp, DollarSign, CheckSquare, BarChart3 } from "lucide-react";
 
+// Local currency formatter for GBP formatting
+const formatCompactCurrency = (amount, currency = "GBP") => {
+  if (!amount || amount === 0) return `${currency === "GBP" ? "£" : "$"}0`;
+  const symbol = currency === "GBP" ? "£" : currency === "USD" ? "$" : "£";
+  if (amount >= 1000000) return `${symbol}${(amount / 1000000).toFixed(1)}M`;
+  if (amount >= 1000) return `${symbol}${(amount / 1000).toFixed(1)}k`;
+  return `${symbol}${amount.toFixed(0)}`;
+};
+
 /**
  * HealthSnapshotCards Component
  * 
@@ -61,14 +70,16 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
     {
       label: "Active Pipeline",
       value: dealCount,
-      subtext: `$${(pipelineValue / 1000).toFixed(0)}k value`,
+      subtext: dealCount === 0 ? "No active deals" : formatCompactCurrency(pipelineValue, talent.currency || "GBP"),
       icon: TrendingUp,
       color: "text-blue-600",
     },
     {
       label: "Total Earnings",
-      value: `$${(totalEarnings / 1000).toFixed(0)}k`,
-      subtext: `${netEarnings > 0 ? "+" : ""}$${(netEarnings / 1000).toFixed(0)}k net`,
+      value: formatCompactCurrency(totalEarnings, talent.currency || "GBP"),
+      subtext: netEarnings > 0 
+        ? `${formatCompactCurrency(netEarnings, talent.currency || "GBP")} net`
+        : "No earnings yet",
       icon: DollarSign,
       color: "text-green-600",
     },

@@ -116,7 +116,7 @@ export default function DealAIPanel({ emailId, dealId }) {
               <div>
                 <p className="text-xs uppercase tracking-[0.25em] text-brand-black/60">Value</p>
                 <p className="text-sm font-medium text-brand-black mt-1">
-                  {extracted.currency || "$"}{extracted.dealValue.toLocaleString()}
+                  {extracted.currency || "£"}{extracted.dealValue.toLocaleString()}
                 </p>
               </div>
             )}
