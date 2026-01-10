@@ -1490,6 +1490,17 @@ function DealsTab({ talent, onDealCreated }) {
   const [closedDealsError, setClosedDealsError] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
   const [exportError, setExportError] = useState("");
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [selectedExportFields, setSelectedExportFields] = useState({
+    brand: true,
+    campaign: true,
+    status: true,
+    value: true,
+    currency: true,
+    paymentStatus: true,
+    closedDate: true,
+    notes: false,
+  });
 
   // Load closed deals when tab is active
   useEffect(() => {
@@ -1766,18 +1777,21 @@ function DealsTab({ talent, onDealCreated }) {
     }
   };
 
-  // Export closed deals as CSV or PDF
+  // Export closed deals as CSV, PDF, or XLSX
   const handleExportClosedDeals = async (format) => {
     setExportError("");
     setExportLoading(true);
     
     try {
+      const selectedFields = Object.keys(selectedExportFields).filter((k) => selectedExportFields[k]);
+      
       const response = await fetch("/api/admin/deals/closed/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           talentId: talent.id,
           format: format,
+          selectedFields: selectedFields.length > 0 ? selectedFields : undefined,
         }),
       });
 
@@ -1807,7 +1821,9 @@ function DealsTab({ talent, onDealCreated }) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success(`Closed deals exported as ${format.toUpperCase()}`);
+      const formatLabel = format === "csv" ? "CSV" : format === "pdf" ? "PDF" : "Excel";
+      toast.success(`Closed deals exported as ${formatLabel}`);
+      setShowExportOptions(false);
     } catch (err) {
       console.error("[EXPORT ERROR]", err);
       const errorMsg = err.message || "Failed to export closed deals";
@@ -2227,22 +2243,88 @@ function DealsTab({ talent, onDealCreated }) {
               )}
 
               {/* Export Buttons */}
-              <div className="flex gap-3 mb-6">
+              <div className="flex flex-wrap gap-3 mb-6 items-center">
                 <button
                   onClick={() => handleExportClosedDeals("csv")}
                   disabled={exportLoading}
                   className="flex items-center gap-2 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-linen/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {exportLoading ? "Exporting..." : "📥 Export CSV"}
+                  {exportLoading ? "Exporting..." : "📥 CSV"}
                 </button>
                 <button
                   onClick={() => handleExportClosedDeals("pdf")}
                   disabled={exportLoading}
                   className="flex items-center gap-2 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-linen/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                  {exportLoading ? "Exporting..." : "📄 Export PDF"}
+                  {exportLoading ? "Exporting..." : "📊 PDF"}
+                </button>
+                <button
+                  onClick={() => handleExportClosedDeals("xlsx")}
+                  disabled={exportLoading}
+                  className="flex items-center gap-2 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-linen/50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {exportLoading ? "Exporting..." : "📈 Excel"}
+                </button>
+                <button
+                  onClick={() => setShowExportOptions(!showExportOptions)}
+                  className="flex items-center gap-2 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-linen/50 transition"
+                >
+                  ⚙️ {showExportOptions ? "Hide" : "Show"} Fields
                 </button>
               </div>
+
+              {/* Field Selector */}
+              {showExportOptions && (
+                <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-6 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-brand-black">Export Fields</h3>
+                    <button
+                      onClick={() => {
+                        setSelectedExportFields({
+                          brand: true,
+                          campaign: true,
+                          status: true,
+                          value: true,
+                          currency: true,
+                          paymentStatus: true,
+                          closedDate: true,
+                          notes: true,
+                        });
+                      }}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      Select All
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { id: "brand", label: "Brand" },
+                      { id: "campaign", label: "Campaign" },
+                      { id: "status", label: "Status" },
+                      { id: "value", label: "Value" },
+                      { id: "currency", label: "Currency" },
+                      { id: "paymentStatus", label: "Payment" },
+                      { id: "closedDate", label: "Closed Date" },
+                      { id: "notes", label: "Notes" },
+                    ].map((field) => (
+                      <label key={field.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedExportFields[field.id]}
+                          onChange={(e) =>
+                            setSelectedExportFields((prev) => ({
+                              ...prev,
+                              [field.id]: e.target.checked,
+                            }))
+                          }
+                          className="w-4 h-4 accent-brand-black"
+                        />
+                        <span className="text-sm text-brand-black">{field.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Closed Deals Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

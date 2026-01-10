@@ -24,6 +24,7 @@ import { validateGmailCredentials, requireGmailEnabled } from "./middleware/gmai
 // Jobs / Cron
 import { registerEmailQueueJob } from "./jobs/emailQueue.js";
 import { registerCronJobs } from "./cron/index.js";
+import { initializeScheduledExports } from "./services/scheduledExportService.js";
 
 // Webhooks
 import { stripeWebhookHandler } from "./routes/webhooks.js";
@@ -958,6 +959,14 @@ const server = app.listen(PORT, async () => {
   } catch (error) {
     console.error("[CMS] Failed to seed CMS pages on startup:", error);
     // Don't crash server - CMS will work once pages are manually seeded
+  }
+
+  // Initialize scheduled export jobs
+  try {
+    await initializeScheduledExports();
+  } catch (error) {
+    console.error("[SCHEDULED_EXPORTS] Failed to initialize on startup:", error);
+    // Don't crash server - exports will still work manually
   }
 });
 
