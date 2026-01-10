@@ -23,6 +23,9 @@ import { HealthSnapshotCards } from "../components/AdminTalent/HealthSnapshotCar
 import { TalentSocialProfilesAccordion } from "../components/AdminTalent/TalentSocialProfilesAccordion.jsx";
 import { QuickEmailInput } from "../components/AdminTalent/QuickEmailInput.jsx";
 import { CollapsibleDetailSection } from "../components/AdminTalent/CollapsibleDetailSection.jsx";
+import { DealStatusBadge } from "../components/AdminTalent/DealStatusBadge.jsx";
+import { DealTrackerCard } from "../components/AdminTalent/DealTrackerCard.jsx";
+import { DealPipelineChart } from "../components/AdminTalent/DealPipelineChart.jsx";
 
 const REPRESENTATION_TYPES = [
   { value: "EXCLUSIVE", label: "Exclusive", color: "bg-brand-red text-white", description: "Full-service representation" },
@@ -1879,7 +1882,14 @@ function DealsTab({ talent, onDealCreated }) {
         </div>
       </div>
 
-      {/* Deal Tracker Table */}
+      {/* Pipeline Chart */}
+      {dealView === "deals" && sortedDeals.length > 0 && (
+        <div className="mb-6">
+          <DealPipelineChart deals={sortedDeals} />
+        </div>
+      )}
+
+      {/* Deal Cards or Table */}
       {sortedDeals.length === 0 ? (
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
           <p className="text-brand-black/60">
@@ -1889,286 +1899,21 @@ function DealsTab({ talent, onDealCreated }) {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-brand-white border-b border-brand-black/10">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Brand</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Scope of Work</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Currency</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Fee</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Stage</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Due Date</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Payment</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Notes</th>
-                {isSuperAdmin && (
-                  <th className="px-4 py-3 text-center text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedDeals.map((deal) => {
-                const scope = deal.aiSummary || deal.notes || "—";
-                const dueDate = deal.expectedClose 
-                  ? new Date(deal.expectedClose).toISOString().split('T')[0]
-                  : "";
-                const paymentStatus = getPaymentStatus(deal.stage);
-
-                return (
-                  <tr key={deal.id} className="border-b border-brand-black/5 hover:bg-brand-black/5 transition-colors">
-                    {/* Brand */}
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-brand-black">
-                        {deal.brand?.name || deal.brandName || "—"}
-                      </span>
-                    </td>
-
-                    {/* Scope of Work */}
-                    <td className="px-4 py-3">
-                      {editingDealId === deal.id && editingField === "scope" ? (
-                        <input
-                          type="text"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => handleEditField(deal.id, "scope", editValue)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleEditField(deal.id, "scope", editValue);
-                            if (e.key === "Escape") {
-                              setEditingDealId(null);
-                              setEditingField(null);
-                              setEditValue("");
-                            }
-                          }}
-                          autoFocus
-                          className="w-full max-w-xs rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
-                        />
-                      ) : (
-                        <span 
-                          onClick={() => {
-                            setEditingDealId(deal.id);
-                            setEditingField("scope");
-                            setEditValue(scope);
-                          }}
-                          className="text-brand-black/80 text-xs max-w-[200px] truncate block cursor-pointer hover:underline" 
-                          title={scope}
-                        >
-                          {scope}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Currency */}
-                    <td className="px-4 py-3">
-                      {editingDealId === deal.id && editingField === "currency" ? (
-                        <select
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => handleEditField(deal.id, "currency", editValue)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Escape") {
-                              setEditingDealId(null);
-                              setEditingField(null);
-                            }
-                          }}
-                          autoFocus
-                          className="w-24 rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
-                        >
-                          <option value="GBP">GBP</option>
-                          <option value="USD">USD</option>
-                          <option value="EUR">EUR</option>
-                          <option value="AUD">AUD</option>
-                          <option value="CAD">CAD</option>
-                        </select>
-                      ) : (
-                        <span 
-                          onClick={() => {
-                            setEditingDealId(deal.id);
-                            setEditingField("currency");
-                            setEditValue(deal.currency || "GBP");
-                          }}
-                          className="text-brand-black/60 uppercase text-xs cursor-pointer hover:underline"
-                        >
-                          {deal.currency || "GBP"}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Fee */}
-                    <td className="px-4 py-3">
-                      {editingDealId === deal.id && editingField === "fee" ? (
-                        <input
-                          type="number"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => handleEditField(deal.id, "fee", editValue)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleEditField(deal.id, "fee", editValue);
-                            if (e.key === "Escape") {
-                              setEditingDealId(null);
-                              setEditingField(null);
-                              setEditValue("");
-                            }
-                          }}
-                          autoFocus
-                          className="w-32 rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
-                        />
-                      ) : (
-                        <span 
-                          onClick={() => {
-                            setEditingDealId(deal.id);
-                            setEditingField("fee");
-                            setEditValue(deal.value || "");
-                          }}
-                          className="font-medium text-brand-black cursor-pointer hover:underline"
-                        >
-                          {deal.value ? `${deal.currency || "GBP"} ${deal.value.toLocaleString()}` : "—"}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Stage */}
-                    <td className="px-4 py-3">
-                      {editingDealId === deal.id && editingField === "stage" ? (
-                        <select
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => handleEditField(deal.id, "stage", editValue)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Escape") {
-                              setEditingDealId(null);
-                              setEditingField(null);
-                            }
-                          }}
-                          autoFocus
-                          className="rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
-                        >
-                          <option value="">Clear Stage (Opportunity)</option>
-                          <option value="NEW_LEAD">In discussion</option>
-                          <option value="NEGOTIATION">Negotiation</option>
-                          <option value="CONTRACT_SENT">Contract Sent</option>
-                          <option value="CONTRACT_SIGNED">Contract Signed</option>
-                          <option value="DELIVERABLES_IN_PROGRESS">Deliverables</option>
-                          <option value="PAYMENT_PENDING">Payment Pending</option>
-                          <option value="COMPLETED">Completed</option>
-                          <option value="LOST">Declined</option>
-                        </select>
-                      ) : (
-                        <span 
-                          onClick={() => {
-                            setEditingDealId(deal.id);
-                            setEditingField("stage");
-                            setEditValue(deal.stage || "");
-                          }}
-                          className={`inline-block rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] cursor-pointer hover:underline ${
-                            deal.stage === "COMPLETED" ? "bg-green-100 text-green-700" :
-                            deal.stage === "LOST" ? "bg-gray-100 text-gray-700" :
-                            ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(deal.stage) ? "bg-blue-100 text-blue-700" :
-                            deal.stage ? "bg-yellow-100 text-yellow-700" :
-                            "bg-purple-100 text-purple-700"
-                          }`}
-                        >
-                          {deal.stage ? stageLabels[deal.stage] || deal.stage : "Opportunity"}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Due Date */}
-                    <td className="px-4 py-3">
-                      {editingDealId === deal.id && editingField === "expectedCloseDate" ? (
-                        <input
-                          type="date"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => handleEditField(deal.id, "expectedCloseDate", editValue)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Escape") {
-                              setEditingDealId(null);
-                              setEditingField(null);
-                              setEditValue("");
-                            }
-                          }}
-                          autoFocus
-                          className="w-32 rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
-                        />
-                      ) : (
-                        <span 
-                          onClick={() => {
-                            setEditingDealId(deal.id);
-                            setEditingField("expectedCloseDate");
-                            setEditValue(dueDate);
-                          }}
-                          className="text-brand-black/60 text-xs cursor-pointer hover:underline"
-                        >
-                          {dueDate || "—"}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Payment Status */}
-                    <td className="px-4 py-3">
-                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                        paymentStatus === "Paid" ? "bg-green-100 text-green-700" :
-                        paymentStatus === "Unpaid" ? "bg-red-100 text-red-700" :
-                        "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {paymentStatus}
-                      </span>
-                    </td>
-
-                    {/* Notes */}
-                    <td className="px-4 py-3">
-                      {editingDealId === deal.id && editingField === "notes" ? (
-                        <input
-                          type="text"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => handleEditField(deal.id, "notes", editValue)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleEditField(deal.id, "notes", editValue);
-                            if (e.key === "Escape") {
-                              setEditingDealId(null);
-                              setEditingField(null);
-                              setEditValue("");
-                            }
-                          }}
-                          autoFocus
-                          className="w-full max-w-xs rounded-lg border border-brand-red bg-brand-white px-3 py-2 text-xs focus:outline-none"
-                        />
-                      ) : (
-                        <span 
-                          onClick={() => {
-                            setEditingDealId(deal.id);
-                            setEditingField("notes");
-                            setEditValue(deal.notes || "");
-                          }}
-                          className="text-brand-black/60 text-xs max-w-[150px] truncate block cursor-pointer hover:underline" 
-                          title={deal.notes || ""}
-                        >
-                          {deal.notes || "—"}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Actions Column */}
-                    {isSuperAdmin && (
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => {
-                            setDealToDelete(deal);
-                            setDeleteModalOpen(true);
-                          }}
-                          className="inline-flex items-center justify-center p-2 text-brand-black/60 hover:text-brand-red hover:bg-brand-red/5 rounded-lg transition"
-                          title="Delete deal"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {sortedDeals.map((deal) => (
+            <DealTrackerCard
+              key={deal.id}
+              deal={deal}
+              onEdit={() => {
+                setEditingDealId(deal.id);
+                // Open edit modal if needed
+              }}
+              onDelete={() => {
+                setDealToDelete(deal);
+                setDeleteModalOpen(true);
+              }}
+            />
+          ))}
         </div>
       )}
 
