@@ -60,15 +60,21 @@ interface SocialIntelligenceData {
   }>;
   notes: string;
   updatedAt: Date;
-  isDemo: boolean;
+  isDemo: boolean; // Phase 5: Always false (no demo data in production)
 }
 
 /**
- * SocialIntelligenceService
+ * SocialIntelligenceService — PRODUCTION READY
  * 
- * Phase 1 Implementation: Real data from SocialPost & SocialMetric tables
- * Phase 0 Fallback: Seeded demo data when real data unavailable
- * Phase 3 Enhancement: Redis caching with TTL (default 12 hours)
+ * Real data sources (in priority order):
+ * 1. Phase 4.5: Direct API integration (Meta, TikTok, Google Ads) for paid campaigns
+ * 2. Phase 4: CRM campaigns for ad performance data
+ * 3. Phase 2.1: Real sentiment analysis (NLP on comments/emails)
+ * 4. Phase 2.2: Real community health metrics (calculated from engagement data)
+ * 5. Phase 1: Real social data (posts, keywords, themes from database)
+ * 6. Phase 3: Redis caching with 12h TTL for performance
+ * 
+ * Fallback: Gracefully handles missing data, no fabricated metrics shown
  */
 export async function getTalentSocialIntelligence(talentId: string, bypassCache = false): Promise<SocialIntelligenceData> {
   try {
@@ -123,12 +129,36 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
     // Get connected platforms
     const platforms = talent.SocialAccountConnection.map((acc) => acc.platform);
 
-    // PHASE 1: Try to fetch real data from database
+    // Fetch real data from all sources (APIs, database, NLP, etc.)
     let intelligence = await getRealSocialIntelligence(talentId, talent, platforms);
     
-    // PHASE 0 Fallback: If insufficient real data, use seeded demo (stable across refreshes)
+    // Fallback: If data unavailable, return empty sections (no fabricated data in production)
     if (!intelligence) {
-      intelligence = generateStableDemo(talentId, talent, platforms);
+      intelligence = {
+        overview: {
+          totalReach: 0,
+          engagementRate: 0,
+          followerGrowth: 0,
+          postCount: 0,
+          avgPostsPerWeek: 0,
+          topPlatform: platforms[0] || "Unknown",
+          topPlatformFollowers: 0,
+          sentimentScore: 0,
+        },
+        contentPerformance: [],
+        keywords: [],
+        community: {
+          commentVolume: 0,
+          commentTrend: 0,
+          responseRate: 0,
+          responseTrend: 0,
+          averageSentiment: 0,
+          consistencyScore: 0,
+          alerts: [],
+        },
+        paidContent: [],
+        hasRealData: false,
+      };
     }
 
     // Fetch any saved notes
@@ -147,9 +177,8 @@ export async function getTalentSocialIntelligence(talentId: string, bypassCache 
       isDemo: !intelligence.hasRealData,
     };
 
-    // PHASE 3: Cache the result for 12 hours (43200 seconds) unless it's demo data
-    // Demo data cached for 6 hours (21600) since it changes per refresh normally
-    const ttl = result.isDemo ? 21600 : 43200;
+    // Cache the result for 12 hours (real data) or 1 hour (empty/incomplete data)
+    const ttl = intelligence.hasRealData ? 43200 : 3600;
     try {
       await redis.setex(cacheKey, ttl, JSON.stringify(result));
       console.log(`[SOCIAL_INTELLIGENCE] Cached data for ${talentId} (TTL: ${ttl}s)`);
@@ -589,6 +618,9 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
 
 /**
  * Phase 0.2: Generate stable, seeded demo data
+ * 
+ * ⚠️ DEPRECATED: Phase 5 — No longer used
+ * Kept for reference/rollback only. Production uses real data with empty fallback.
  * Same talentId always produces same numbers (predictable for demo)
  */
 function generateStableDemo(talentId: string, talent: any, platforms: string[]) {

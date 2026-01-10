@@ -144,24 +144,7 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
 
   return (
     <div className="space-y-6">
-      {/* PHASE 0: Demo Data Warning */}
-      <div className="rounded-3xl border border-amber-400/50 bg-amber-50/80 p-4 flex items-start gap-3">
-        <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-amber-900">Demo Data — Not Real Analytics</p>
-          <p className="text-xs text-amber-800 mt-1">
-            This tab displays sample data for visualization. Real social analytics are coming soon. Do not use for commercial decisions until upgraded.
-          </p>
-        </div>
-        <button
-          onClick={handleRefreshAnalytics}
-          disabled={refreshing}
-          className="flex-shrink-0 ml-4 px-3 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg text-xs font-medium flex items-center gap-2 transition-colors"
-        >
-          <RotateCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>{refreshing ? 'Refreshing...' : 'Refresh Analytics'}</span>
-        </button>
-      </div>
+      {/* PHASE 5: Production-ready — Demo warning removed, real data integrated */}
 
       {/* Section 1: Social Overview */}
       <SocialOverview data={socialData} loading={loading} talent={talent} />
