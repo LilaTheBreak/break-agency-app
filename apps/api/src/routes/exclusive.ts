@@ -464,6 +464,17 @@ router.post("/socials/connect", async (req, res) => {
     const existing = await prisma.socialAccountConnection.findUnique({ where: { creatorId_platform: { creatorId: creator.id, platform } } });
     if (existing) {
       const updated = await prisma.socialAccountConnection.update({ where: { id: existing.id }, data: { handle, connected: true } });
+      
+      // Trigger async profile image sync
+      setImmediate(async () => {
+        try {
+          const { talentProfileImageService } = await import("../services/talent/TalentProfileImageService.js");
+          await talentProfileImageService.syncTalentProfileImage(creator.id);
+        } catch (error) {
+          console.warn("[EXCLUSIVE SYNC] Profile image sync error:", error);
+        }
+      });
+      
       return res.json(updated);
     }
     const social = await prisma.socialAccountConnection.create({ 
@@ -476,6 +487,17 @@ router.post("/socials/connect", async (req, res) => {
         updatedAt: new Date()
       } 
     });
+    
+    // Trigger async profile image sync
+    setImmediate(async () => {
+      try {
+        const { talentProfileImageService } = await import("../services/talent/TalentProfileImageService.js");
+        await talentProfileImageService.syncTalentProfileImage(creator.id);
+      } catch (error) {
+        console.warn("[EXCLUSIVE SYNC] Profile image sync error:", error);
+      }
+    });
+    
     res.json(social);
   } catch (error) {
     res.status(500).json({ error: "Failed to connect social account" });
@@ -490,6 +512,18 @@ router.post("/socials/disconnect", async (req, res) => {
     const social = await prisma.socialAccountConnection.findUnique({ where: { creatorId_platform: { creatorId: creator.id, platform } } });
     if (!social) return res.status(404).json({ error: "Social account not found" });
     await prisma.socialAccountConnection.update({ where: { id: social.id }, data: { connected: false } });
+    
+    // Trigger async profile image sync/clear
+    // If all social accounts are disconnected, profile image will revert to initials
+    setImmediate(async () => {
+      try {
+        const { talentProfileImageService } = await import("../services/talent/TalentProfileImageService.js");
+        await talentProfileImageService.syncTalentProfileImage(creator.id);
+      } catch (error) {
+        console.warn("[EXCLUSIVE DISCONNECT] Profile image sync error:", error);
+      }
+    });
+    
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Failed to disconnect social account" });

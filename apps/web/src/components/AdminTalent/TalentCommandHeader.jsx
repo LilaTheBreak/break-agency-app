@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Edit2, MoreVertical } from "lucide-react";
+import { Edit2, MoreVertical, RefreshCw } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 /**
@@ -13,10 +13,41 @@ import { toast } from "react-hot-toast";
  * This is the "Command" layer of the 3-tier architecture:
  * Identity → Health → Workspaces
  */
-export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = false }) {
+export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = false, onRefreshProfileImage }) {
   const [showActions, setShowActions] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   if (!talent) return null;
+
+  // Handle profile image refresh
+  const handleRefreshProfileImage = async () => {
+    if (!talent.id || isRefreshing) return;
+    
+    try {
+      setIsRefreshing(true);
+      const response = await fetch(`/api/admin/talent/${talent.id}/profile-image/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Sync failed: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      toast.success(`Profile photo updated from ${data.data.source || 'social media'}`);
+      
+      // Call parent callback to refresh talent data
+      if (onRefreshProfileImage) {
+        await onRefreshProfileImage();
+      }
+    } catch (error) {
+      console.error('Profile image sync error:', error);
+      toast.error('Could not refresh profile photo. Try again later.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Extract initials from name
   const getInitials = (name) => {
@@ -53,7 +84,15 @@ export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = fals
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <div className="flex-shrink-0">
-            {talent.linkedUser?.avatarUrl ? (
+            {/* Priority: Social profile image > User avatar > Initials */}
+            {talent.profileImageUrl ? (
+              <img
+                src={talent.profileImageUrl}
+                alt={talent.displayName || talent.name}
+                className="h-16 w-16 rounded-full border-2 border-brand-black/10 object-cover"
+                title={`Profile photo from ${talent.profileImageSource}`}
+              />
+            ) : talent.linkedUser?.avatarUrl ? (
               <img
                 src={talent.linkedUser.avatarUrl}
                 alt={talent.displayName || talent.name}
@@ -113,7 +152,7 @@ export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = fals
 
             {/* Dropdown */}
             {showActions && (
-              <div className="absolute right-0 z-10 mt-2 w-40 rounded-2xl border border-brand-black/10 bg-brand-white shadow-lg">
+              <div className="absolute right-0 z-10 mt-2 w-48 rounded-2xl border border-brand-black/10 bg-brand-white shadow-lg">
                 <button
                   onClick={() => {
                     onViewAs();
@@ -122,6 +161,19 @@ export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = fals
                   className="w-full px-4 py-3 text-left text-xs uppercase tracking-[0.2em] text-brand-black/70 transition-colors hover:bg-brand-black/5"
                 >
                   View as Talent
+                </button>
+                <hr className="border-brand-black/5" />
+                <button
+                  onClick={() => {
+                    handleRefreshProfileImage();
+                    setShowActions(false);
+                  }}
+                  disabled={isRefreshing}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-xs uppercase tracking-[0.2em] text-brand-black/70 transition-colors hover:bg-brand-black/5 disabled:opacity-50"
+                  title="Fetch latest profile photo from connected social accounts"
+                >
+                  <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh Photo'}
                 </button>
                 <hr className="border-brand-black/5" />
                 <button

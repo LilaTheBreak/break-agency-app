@@ -1493,6 +1493,9 @@ model Talent {
   notes                   String? // Internal notes
   categories              String[]
   stage                   String?
+  profileImageUrl         String? // Auto-fetched social profile image URL
+  profileImageSource      String   @default("initials") // instagram | tiktok | youtube | manual | initials
+  lastProfileImageSyncAt  DateTime? // Timestamp of last profile image sync
   createdAt               DateTime                  @default(now())
   updatedAt               DateTime                  @updatedAt
   AIPromptHistory         AIPromptHistory[]
@@ -1519,6 +1522,9 @@ model Talent {
   RevenueSource           RevenueSource[]
   RevenueGoal             RevenueGoal[]
   CommunityConnections    CommunityConnection[]
+
+  @@index([lastProfileImageSyncAt])
+  @@index([profileImageSource])
 }
 
 model TalentEmail {

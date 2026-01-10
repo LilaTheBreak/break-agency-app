@@ -493,6 +493,9 @@ router.get("/:id", async (req: Request, res: Response) => {
       userId: talent.userId,
       managerId: talent.managerId,
       notes: talent.notes,
+      profileImageUrl: talent.profileImageUrl || null,
+      profileImageSource: talent.profileImageSource || "initials",
+      lastProfileImageSyncAt: talent.lastProfileImageSyncAt || null,
       categories: talent.categories,
       stage: talent.stage,
       linkedUser: talent.User
@@ -1700,6 +1703,30 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
       },
     });
 
+    // Trigger profile image sync asynchronously (don't block response)
+    // This will fetch the best available profile image from connected social accounts
+    setImmediate(async () => {
+      try {
+        const { talentProfileImageService } = await import(
+          "../../services/talent/TalentProfileImageService.js"
+        );
+        const syncResult = await talentProfileImageService.syncTalentProfileImage(id);
+        if (syncResult.success) {
+          console.log("[TALENT PROFILE IMAGE] Auto-synced after social add:", {
+            talentId: id,
+            source: syncResult.source,
+          });
+        } else {
+          console.warn("[TALENT PROFILE IMAGE] Auto-sync failed after social add:", {
+            talentId: id,
+            error: syncResult.error,
+          });
+        }
+      } catch (error) {
+        console.error("[TALENT PROFILE IMAGE] Async sync error:", error);
+      }
+    });
+
     return res.status(201).json(social);
   } catch (error) {
     console.error("[TALENT SOCIAL POST ERROR]", error);
@@ -1782,6 +1809,168 @@ router.delete("/socials/:socialId", async (req: Request, res: Response) => {
     console.error("[TALENT SOCIAL DELETE ERROR]", error);
     logError("Failed to delete talent social profile", error, { socialId: req.params.socialId });
     return handleApiError(res, error, "Failed to delete social profile", "SOCIAL_DELETE_FAILED");
+  }
+});
+
+/**
+ * POST /api/admin/talent/:id/profile-image/sync
+ * Manually trigger profile image sync for a talent
+ * 
+ * Fetches profile image from connected social accounts in priority order:
+ * 1. Instagram
+ * 2. TikTok
+ * 3. YouTube
+ * 4. Revert to initials if no social accounts connected
+ * 
+ * This is called automatically when:
+ * - A new social account is connected
+ * - A social account is reconnected
+ * - Cron job runs daily for batch sync
+ * 
+ * Manual sync can be triggered here or via frontend "Refresh" button.
+ */
+router.post("/:id/profile-image/sync", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { forceRefresh } = req.body || {};
+
+    if (!id || id.trim() === "") {
+      return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
+    }
+
+    // Validate talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Import service dynamically to avoid circular dependencies
+    const { talentProfileImageService } = await import(
+      "../../services/talent/TalentProfileImageService.js"
+    );
+
+    const result = await talentProfileImageService.syncTalentProfileImage(id);
+
+    if (result.success) {
+      console.log("[TALENT PROFILE IMAGE] Sync successful for talent:", id, {
+        source: result.source,
+        imageUrl: result.imageUrl ? result.imageUrl.substring(0, 50) + "..." : "initials",
+      });
+
+      await logAdminActivity(req, {
+        action: "TALENT_PROFILE_IMAGE_SYNCED",
+        entityType: "Talent",
+        entityId: id,
+        metadata: {
+          source: result.source,
+          imageUrl: result.imageUrl ? result.imageUrl.substring(0, 100) : null,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Profile image updated from ${result.source}`,
+        data: {
+          talentId: id,
+          source: result.source,
+          imageUrl: result.imageUrl,
+          syncedAt: new Date(),
+        },
+      });
+    } else {
+      console.warn("[TALENT PROFILE IMAGE] Sync failed for talent:", id, {
+        error: result.error,
+      });
+
+      return sendError(
+        res,
+        "SYNC_FAILED",
+        `Failed to sync profile image: ${result.error}`,
+        500
+      );
+    }
+  } catch (error) {
+    console.error("[TALENT PROFILE IMAGE SYNC ERROR]", error);
+    logError("Failed to sync talent profile image", error, { talentId: req.params.id });
+    return handleApiError(res, error, "Failed to sync profile image", "PROFILE_IMAGE_SYNC_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/profile-image
+ * Get current profile image information for a talent
+ * 
+ * Returns:
+ * - profileImageUrl: URL of the current profile image
+ * - profileImageSource: Where image comes from (instagram, tiktok, youtube, manual, initials)
+ * - lastProfileImageSyncAt: When the image was last synced from social account
+ */
+router.get("/:id/profile-image", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || id.trim() === "") {
+      return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
+    }
+
+    const talent = await prisma.talent.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        profileImageUrl: true,
+        profileImageSource: true,
+        lastProfileImageSyncAt: true,
+        SocialAccountConnection: {
+          where: { connected: true },
+          select: {
+            id: true,
+            platform: true,
+            handle: true,
+            SocialProfile: {
+              select: {
+                profileImageUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Determine if we can auto-sync (have connected social accounts)
+    const canAutoSync = talent.SocialAccountConnection && talent.SocialAccountConnection.length > 0;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        talentId: id,
+        talentName: talent.name,
+        profileImageUrl: talent.profileImageUrl,
+        profileImageSource: talent.profileImageSource || "initials",
+        lastProfileImageSyncAt: talent.lastProfileImageSyncAt,
+        connectedPlatforms: talent.SocialAccountConnection.map((conn) => ({
+          platform: conn.platform,
+          handle: conn.handle,
+          hasProfileImage: !!conn.SocialProfile?.profileImageUrl,
+        })),
+        canAutoSync,
+        nextSyncRecommended:
+          !talent.lastProfileImageSyncAt ||
+          new Date(talent.lastProfileImageSyncAt).getTime() < Date.now() - 24 * 60 * 60 * 1000,
+      },
+    });
+  } catch (error) {
+    console.error("[TALENT PROFILE IMAGE GET ERROR]", error);
+    logError("Failed to fetch talent profile image info", error, { talentId: req.params.id });
+    return handleApiError(res, error, "Failed to fetch profile image info", "PROFILE_IMAGE_GET_FAILED");
   }
 });
 

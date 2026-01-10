@@ -276,6 +276,34 @@ export function registerCronJobs() {
         throw err; // Phase 3: Fail loudly
       }
     }, { timezone: TIMEZONE });
+
+    // Daily talent profile image sync (every day at 2am)
+    // Fetches latest profile images from connected social accounts
+    cron.schedule("0 2 * * *", async () => {
+      try {
+        console.log("[CRON] Starting daily talent profile image sync...");
+        const { talentProfileImageService } = await import("../services/talent/TalentProfileImageService.js");
+        
+        const result = await talentProfileImageService.syncAllTalents({
+          limit: 200, // Sync up to 200 talents per run
+          forceRefresh: false,
+          minHoursSinceLastSync: 24, // Only sync if last sync was > 24 hours ago
+        });
+
+        console.log("[CRON] Daily talent profile image sync completed", {
+          total: result.total,
+          successful: result.successful,
+          failed: result.failed,
+        });
+
+        if (result.errors && result.errors.length > 0) {
+          console.warn("[CRON] Profile image sync had errors:", result.errors.slice(0, 5));
+        }
+      } catch (err) {
+        console.error("[CRON] Talent profile image sync failed:", err);
+        // Don't throw - continue with other cron jobs
+      }
+    }, { timezone: TIMEZONE });
     
     console.log("[CRON] All cron jobs registered successfully");
   } catch (error) {
