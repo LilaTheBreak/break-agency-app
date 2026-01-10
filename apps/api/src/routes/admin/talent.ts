@@ -2033,6 +2033,43 @@ router.post("/:id/social-intelligence/notes", async (req: Request, res: Response
   }
 });
 
+/**
+ * POST /api/admin/talent/:id/social-intelligence/refresh
+ * Force refresh social intelligence data (bypasses cache, rate-limited)
+ */
+router.post("/:id/social-intelligence/refresh", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    console.log("[SOCIAL_INTELLIGENCE] Refreshing social intelligence for talent:", talentId);
+
+    const { refreshTalentSocialIntelligence } = await import("../../services/socialIntelligenceService.js");
+    const refreshResult = await refreshTalentSocialIntelligence(talentId);
+
+    if (!refreshResult.success) {
+      return sendError(res, "REFRESH_RATE_LIMITED", refreshResult.message, 429);
+    }
+
+    // Log admin activity
+    try {
+      await logAdminActivity(req, {
+        event: "REFRESH_SOCIAL_INTELLIGENCE",
+        metadata: {
+          talentId,
+          timestamp: new Date(),
+        },
+      });
+    } catch (logError) {
+      console.error("[SOCIAL_INTELLIGENCE] Failed to log activity:", logError);
+    }
+
+    return sendSuccess(res, { data: refreshResult.data }, 200, refreshResult.message);
+  } catch (error) {
+    console.error("[SOCIAL_INTELLIGENCE] Error refreshing:", error);
+    logError("Failed to refresh social intelligence", error, { talentId: req.params.id });
+    return handleApiError(res, error, "Failed to refresh analytics", "SOCIAL_INTELLIGENCE_REFRESH_FAILED");
+  }
+});
+
 export default router;
 
 

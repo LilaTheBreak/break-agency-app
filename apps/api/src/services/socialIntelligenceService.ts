@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
 import Sentiment from "sentiment";
+import redis from "../lib/redis.js";
 import type { SocialAccountConnection, Talent } from "@prisma/client";
 
 const sentimentAnalyzer = new Sentiment();
@@ -66,9 +67,26 @@ interface SocialIntelligenceData {
  * 
  * Phase 1 Implementation: Real data from SocialPost & SocialMetric tables
  * Phase 0 Fallback: Seeded demo data when real data unavailable
+ * Phase 3 Enhancement: Redis caching with TTL (default 12 hours)
  */
-export async function getTalentSocialIntelligence(talentId: string): Promise<SocialIntelligenceData> {
+export async function getTalentSocialIntelligence(talentId: string, bypassCache = false): Promise<SocialIntelligenceData> {
   try {
+    // PHASE 3: Check Redis cache first (unless explicitly bypassed)
+    const cacheKey = `social_intel:${talentId}`;
+    if (!bypassCache) {
+      try {
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+          const parsed = JSON.parse(cachedData);
+          console.log(`[SOCIAL_INTELLIGENCE] Cache hit for ${talentId}`);
+          return parsed;
+        }
+      } catch (cacheErr) {
+        console.warn("[SOCIAL_INTELLIGENCE] Cache read error, continuing without cache:", cacheErr);
+        // Continue without cache - not a fatal error
+      }
+    }
+
     // Fetch talent and social accounts
     const talent = await prisma.talent.findUnique({
       where: { id: talentId },
@@ -80,7 +98,7 @@ export async function getTalentSocialIntelligence(talentId: string): Promise<Soc
     });
 
     if (!talent || !talent.SocialAccountConnection.length) {
-      return {
+      const emptyResult = {
         connected: false,
         platforms: [],
         overview: null,
@@ -92,6 +110,13 @@ export async function getTalentSocialIntelligence(talentId: string): Promise<Soc
         updatedAt: new Date(),
         isDemo: false,
       };
+      // Cache empty results for shorter TTL (1 hour)
+      try {
+        await redis.setex(cacheKey, 3600, JSON.stringify(emptyResult));
+      } catch (cacheErr) {
+        console.warn("[SOCIAL_INTELLIGENCE] Cache write error:", cacheErr);
+      }
+      return emptyResult;
     }
 
     // Get connected platforms
@@ -108,7 +133,7 @@ export async function getTalentSocialIntelligence(talentId: string): Promise<Soc
     // Fetch any saved notes
     const notes = await getSavedNotes(talentId);
 
-    return {
+    const result = {
       connected: true,
       platforms,
       overview: intelligence.overview,
@@ -120,9 +145,65 @@ export async function getTalentSocialIntelligence(talentId: string): Promise<Soc
       updatedAt: new Date(),
       isDemo: !intelligence.hasRealData,
     };
+
+    // PHASE 3: Cache the result for 12 hours (43200 seconds) unless it's demo data
+    // Demo data cached for 6 hours (21600) since it changes per refresh normally
+    const ttl = result.isDemo ? 21600 : 43200;
+    try {
+      await redis.setex(cacheKey, ttl, JSON.stringify(result));
+      console.log(`[SOCIAL_INTELLIGENCE] Cached data for ${talentId} (TTL: ${ttl}s)`);
+    } catch (cacheErr) {
+      console.warn("[SOCIAL_INTELLIGENCE] Cache write error:", cacheErr);
+      // Continue without cache - not a fatal error
+    }
+
+    return result;
   } catch (error) {
     console.error("[SOCIAL_INTELLIGENCE] Error:", error);
     throw error;
+  }
+}
+
+/**
+ * PHASE 3: Force refresh social intelligence data
+ * Clears cache and recalculates, returns fresh data
+ * Rate-limited per talentId (max once per hour via Redis)
+ */
+export async function refreshTalentSocialIntelligence(talentId: string): Promise<{ success: boolean; message: string; data?: SocialIntelligenceData }> {
+  try {
+    const cacheKey = `social_intel:${talentId}`;
+    const refreshLimitKey = `social_intel_refresh_limit:${talentId}`;
+
+    // Check if already refreshed in the last hour
+    const refreshCount = await redis.get(refreshLimitKey);
+    if (refreshCount) {
+      return {
+        success: false,
+        message: "Analytics were refreshed recently. Please wait before refreshing again. (Rate limited to once per hour)",
+      };
+    }
+
+    // Clear the cache
+    await redis.del(cacheKey);
+    console.log(`[SOCIAL_INTELLIGENCE] Cleared cache for ${talentId}`);
+
+    // Set rate limit flag (expires in 1 hour)
+    await redis.setex(refreshLimitKey, 3600, "1");
+
+    // Fetch fresh data (bypassCache = true)
+    const freshData = await getTalentSocialIntelligence(talentId, true);
+
+    return {
+      success: true,
+      message: "Analytics refreshed successfully. New data is now available.",
+      data: freshData,
+    };
+  } catch (error) {
+    console.error("[SOCIAL_INTELLIGENCE] Error refreshing data:", error);
+    return {
+      success: false,
+      message: "Failed to refresh analytics. Please try again later.",
+    };
   }
 }
 

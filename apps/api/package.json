@@ -44,6 +44,7 @@
     "helmet": "^7.2.0",
     "html-entities": "^2.6.0",
     "http-errors": "^2.0.1",
+    "ioredis": "^5.9.1",
     "js-base64": "^3.7.8",
     "jsdom": "^27.3.0",
     "jsonwebtoken": "^9.0.2",
