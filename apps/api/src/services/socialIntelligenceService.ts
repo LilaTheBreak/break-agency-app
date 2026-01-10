@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import Sentiment from "sentiment";
 import redis from "../lib/redis.js";
+import { getPaidCampaignsFromAPIs } from "./paidAdsService.js";
 import type { SocialAccountConnection, Talent } from "@prisma/client";
 
 const sentimentAnalyzer = new Sentiment();
@@ -363,11 +364,27 @@ async function calculateCommunityHealthMetrics(talentId: string, allPosts: any[]
 }
 
 /**
- * Phase 4: Fetch real paid campaign data from CrmCampaign table
- * Calculates campaign performance metrics based on linked campaigns
+ * Phase 4.5: Fetch real paid campaign data from direct APIs or CRM
+ * Tries Meta/TikTok/Google Ads APIs first, falls back to CRM campaigns
  */
 async function getRealPaidCampaigns(talentId: string) {
   try {
+    // PHASE 4.5: Try direct APIs first (Instagram, TikTok, YouTube Ads)
+    console.log(`[SOCIAL_INTELLIGENCE] Fetching paid campaigns from direct APIs for ${talentId}`);
+    const apiCampaigns = await getPaidCampaignsFromAPIs(talentId);
+
+    if (apiCampaigns && apiCampaigns.length > 0) {
+      console.log(
+        `[SOCIAL_INTELLIGENCE] Got ${apiCampaigns.length} campaigns from direct APIs, using those`
+      );
+      return apiCampaigns;
+    }
+
+    // PHASE 4 Fallback: Use CRM campaigns
+    console.log(
+      `[SOCIAL_INTELLIGENCE] No API campaigns found, falling back to CRM campaigns for ${talentId}`
+    );
+
     // Fetch campaigns linked to this talent
     const campaigns = await prisma.crmCampaign.findMany({
       where: {
@@ -381,25 +398,27 @@ async function getRealPaidCampaigns(talentId: string) {
     });
 
     if (!campaigns || campaigns.length === 0) {
-      console.log(`[SOCIAL_INTELLIGENCE] No campaigns found for talent ${talentId}`);
+      console.log(`[SOCIAL_INTELLIGENCE] No campaigns found in CRM for talent ${talentId}`);
       return [];
     }
 
     // Calculate metrics for each campaign
     const paidContentArray = campaigns.map((campaign) => {
       // Extract metrics from activity or use calculated values
-      const campaignMetadata = campaign.activity && campaign.activity.length > 0
-        ? campaign.activity[campaign.activity.length - 1]
-        : {};
+      const campaignMetadata =
+        campaign.activity && campaign.activity.length > 0
+          ? campaign.activity[campaign.activity.length - 1]
+          : {};
 
       // Base metrics (can be stored in activity or metadata)
       const reach = (campaignMetadata as any).reach || Math.floor(Math.random() * 50000) + 10000;
-      const engagements = (campaignMetadata as any).engagements || Math.floor(Math.random() * 2000) + 500;
+      const engagements =
+        (campaignMetadata as any).engagements || Math.floor(Math.random() * 2000) + 500;
       const spend = (campaignMetadata as any).spend || Math.floor(Math.random() * 5000) + 500;
-      
+
       // Calculate derived metrics
       const costPerEngagement = spend > 0 && engagements > 0 ? spend / engagements : 0;
-      
+
       // Performance rating based on standard benchmarks (0.5-2.0 cost per engagement is good)
       let performance: "Strong" | "Average" | "Underperforming" = "Average";
       if (costPerEngagement < 0.5) {
@@ -420,7 +439,9 @@ async function getRealPaidCampaigns(talentId: string) {
       };
     });
 
-    console.log(`[SOCIAL_INTELLIGENCE] Found ${paidContentArray.length} campaigns for talent ${talentId}`);
+    console.log(
+      `[SOCIAL_INTELLIGENCE] Found ${paidContentArray.length} CRM campaigns for talent ${talentId}`
+    );
     return paidContentArray;
   } catch (error) {
     console.error("[SOCIAL_INTELLIGENCE] Error fetching paid campaigns:", error);
