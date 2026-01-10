@@ -13,7 +13,7 @@ import {
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical
+  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
@@ -40,6 +40,7 @@ const TABS = [
   { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
   { id: "contracts", label: "Contracts", icon: FileText },
   { id: "payments", label: "Payments & Finance", icon: DollarSign },
+  { id: "commerce", label: "Commerce", icon: ShoppingCart },
   { id: "access", label: "Access Control", icon: User },
   { id: "notes", label: "Notes & History", icon: FileEdit },
   { id: "files", label: "Files & Assets", icon: Archive },
@@ -1326,6 +1327,9 @@ export function AdminTalentDetailPage() {
         {activeTab === "payments" && (
           <RevenueTab talent={talent} isExclusive={isExclusive} />
         )}
+        {activeTab === "commerce" && (
+          <CommerceTab talent={talent} isExclusive={isExclusive} />
+        )}
         {activeTab === "access" && (
           <AccessControlTab talent={talent} />
         )}
@@ -2605,6 +2609,21 @@ function RevenueTab({ talent, isExclusive }) {
         <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Revenue</p>
         <p className="text-brand-black/60">
           Revenue details are only available for Exclusive Talent.
+        </p>
+      </section>
+    );
+  }
+
+  return <AdminRevenueManagement talentId={talent.id} />;
+}
+
+function CommerceTab({ talent, isExclusive }) {
+  if (!isExclusive) {
+    return (
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Commerce</p>
+        <p className="text-brand-black/60">
+          Commerce management is only available for Exclusive Talent.
         </p>
       </section>
     );
