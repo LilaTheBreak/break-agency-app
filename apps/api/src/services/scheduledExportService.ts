@@ -4,8 +4,16 @@ import prisma from "../lib/prisma.js";
 import { logError, logInfo } from "../lib/logger.js";
 
 const resendApiKey = process.env.RESEND_API_KEY || "";
-const resendClient = new Resend(resendApiKey);
 const emailFrom = process.env.EMAIL_FROM || "console@thebreak.co";
+
+// Lazy-initialize Resend client only when needed
+let resendClient: Resend | null = null;
+function getResendClient(): Resend {
+  if (!resendClient && resendApiKey) {
+    resendClient = new Resend(resendApiKey);
+  }
+  return resendClient as Resend;
+}
 
 let cronJobs: Map<string, any> = new Map();
 
@@ -151,7 +159,13 @@ async function executeExportJob(talentId: string, schedule: any) {
     // Send email with HTML and attachment
     const htmlContent = generateEmailHTML(talent.name || talent.id, stats);
 
-    await resendClient.emails.send({
+    const client = getResendClient();
+    if (!resendApiKey) {
+      console.warn("[SCHEDULED_EXPORTS] Skipping email send - RESEND_API_KEY not configured");
+      return;
+    }
+
+    await client.emails.send({
       from: emailFrom,
       to: schedule.email,
       subject: `Closed Deals Report - ${talent.name || "Your Talent"} [${new Date().toLocaleDateString()}]`,
