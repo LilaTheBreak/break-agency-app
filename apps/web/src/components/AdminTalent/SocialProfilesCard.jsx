@@ -69,14 +69,18 @@ export function SocialProfilesCard({ talentId, onConnectionsChange }) {
 
   const fetchConnections = async () => {
     try {
-      const response = await fetch(`/api/admin/talent/${talentId}/social-connections`);
+      const response = await fetch(`/api/admin/talent/${talentId}/socials`);
       if (response.ok) {
         const data = await response.json();
-        setConnections(data.connections);
+        setConnections(Array.isArray(data) ? data : []);
+      } else {
+        console.error("Failed to fetch social profiles:", response.status);
+        setConnections([]);
       }
       setLoading(false);
     } catch (error) {
-      console.error("Failed to fetch connections:", error);
+      console.error("Error fetching social intelligence:", error);
+      setConnections([]);
       setLoading(false);
     }
   };

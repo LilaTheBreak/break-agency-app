@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAuth } from "../middleware/auth.js";
 // @ts-ignore - Module resolution issue
 import prisma from "../lib/prisma.js";
 // @ts-ignore - Module resolution issue
@@ -15,6 +16,9 @@ import {
 import { blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
 
 const router = Router();
+
+// Apply authentication middleware to all routes
+router.use(requireAuth);
 
 /**
  * GET /api/talent/:talentId/access-list

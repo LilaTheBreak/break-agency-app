@@ -123,6 +123,7 @@ import adminFinanceRouter from "./routes/admin/finance.js";
 // Admin Talent
 import adminTalentRouter from "./routes/admin/talent.js";
 import adminTalentSettingsRouter from "./routes/admin/talentSettings.js";
+import talentAccessRouter from "./routes/talentAccess.js";
 
 // Admin Deals
 import adminDealsRouter from "./routes/admin/deals.js";
@@ -639,6 +640,7 @@ app.use("/api/admin", adminUsersRouter);
 // ------------------------------------------------------
 app.use("/api/admin/talent", adminTalentRouter);
 app.use("/api/admin/talent/:id/settings", adminTalentSettingsRouter);
+app.use("/api/talent", talentAccessRouter);
 app.use("/api/admin/dashboard", dashboardExclusiveTalentRouter);
 app.use("/api/admin/deals", adminDealsRouter);
 app.use("/api/admin/duplicates", adminDuplicatesRouter);
