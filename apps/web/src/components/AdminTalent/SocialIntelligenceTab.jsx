@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TrendingUp, Eye, Users, MessageCircle, Share2, Heart, BarChart3, AlertCircle, Zap, MessageSquare, BookmarkIcon } from "lucide-react";
+import { TrendingUp, Eye, Users, MessageCircle, Share2, Heart, BarChart3, AlertCircle, Zap, MessageSquare, BookmarkIcon, RotateCcw } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 /**
@@ -28,6 +28,7 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
   const [error, setError] = useState(null);
   const [agentNotes, setAgentNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Fetch social intelligence data
   useEffect(() => {
@@ -99,6 +100,36 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
     }
   };
 
+  const handleRefreshAnalytics = async () => {
+    if (!talentId) return;
+
+    try {
+      setRefreshing(true);
+      const response = await fetch(`/api/admin/talent/${talentId}/social-intelligence/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.status === 429) {
+        toast.error("Analytics refresh limited to once per hour. Please try again later.");
+        return;
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to refresh analytics");
+      }
+
+      const result = await response.json();
+      setSocialData(result.data);
+      toast.success("Analytics refreshed and recalculated");
+    } catch (err) {
+      toast.error(err.message || "Failed to refresh analytics");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (!talent?.socialAccounts || talent.socialAccounts.length === 0) {
     return (
       <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
@@ -116,12 +147,20 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
       {/* PHASE 0: Demo Data Warning */}
       <div className="rounded-3xl border border-amber-400/50 bg-amber-50/80 p-4 flex items-start gap-3">
         <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold text-amber-900">Demo Data — Not Real Analytics</p>
           <p className="text-xs text-amber-800 mt-1">
             This tab displays sample data for visualization. Real social analytics are coming soon. Do not use for commercial decisions until upgraded.
           </p>
         </div>
+        <button
+          onClick={handleRefreshAnalytics}
+          disabled={refreshing}
+          className="flex-shrink-0 ml-4 px-3 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg text-xs font-medium flex items-center gap-2 transition-colors"
+        >
+          <RotateCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <span>{refreshing ? 'Refreshing...' : 'Refresh Analytics'}</span>
+        </button>
       </div>
 
       {/* Section 1: Social Overview */}
