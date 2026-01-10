@@ -18,6 +18,8 @@ import {
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
 import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection.jsx";
+import { TalentCommandHeader } from "../components/AdminTalent/TalentCommandHeader.jsx";
+import { HealthSnapshotCards } from "../components/AdminTalent/HealthSnapshotCards.jsx";
 
 const REPRESENTATION_TYPES = [
   { value: "EXCLUSIVE", label: "Exclusive", color: "bg-brand-red text-white", description: "Full-service representation" },
@@ -1127,7 +1129,7 @@ export function AdminTalentDetailPage() {
       subtitle={`Managing ${talent.displayName || talent.name}`}
       navLinks={ADMIN_NAV_LINKS}
     >
-      {/* Header with back button */}
+      {/* Navigation Bar */}
       <div className="mb-6 flex items-center justify-between">
         <button
           type="button"
@@ -1135,156 +1137,29 @@ export function AdminTalentDetailPage() {
           className="flex items-center gap-2 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Talent List
+          Back
         </button>
-        <div className="flex items-center gap-3">
-          <ViewAsTalentButton talentId={talent.id} talentName={talent.displayName || talent.name} />
-          <button
-            type="button"
-            onClick={() => setEditModalOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
-          >
-            <Edit2 className="h-4 w-4" />
-            Edit
-          </button>
-        </div>
       </div>
 
-      {/* Header Section with Profile Image and Social Handles */}
-      <section className="mb-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <div className="mb-6 flex items-start gap-6">
-          {/* Profile Image */}
-          <div className="flex-shrink-0">
-            {talent.linkedUser?.avatarUrl ? (
-              <img
-                src={talent.linkedUser.avatarUrl}
-                alt={talent.displayName || talent.name}
-                className="w-24 h-24 rounded-full object-cover border-2 border-brand-black/10"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-brand-red/10 flex items-center justify-center border-2 border-brand-black/10">
-                <span className="text-2xl font-semibold text-brand-red">
-                  {(talent.displayName || talent.name || "?").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
-                </span>
-              </div>
-            )}
-          </div>
-          
-          {/* Talent Info */}
-          <div className="flex-1 min-w-0">
-            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-2">Talent Profile</p>
-            <h3 className="font-display text-3xl uppercase mb-4">{talent.displayName || talent.name}</h3>
-            
-            {/* Social Handles */}
-            {talent.socialAccounts && talent.socialAccounts.length > 0 && (
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                {talent.socialAccounts.map((social) => {
-                  const platformIcon = {
-                    INSTAGRAM: "📷",
-                    TIKTOK: "🎵",
-                    YOUTUBE: "▶️",
-                    X: "🐦",
-                    LINKEDIN: "💼",
-                  }[social.platform] || "@";
-                  return (
-                    <a
-                      key={social.id}
-                      href={`https://${social.platform.toLowerCase()}.com/${social.handle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-full border border-brand-black/10 px-3 py-1.5 text-xs hover:bg-brand-black/5 transition-colors"
-                    >
-                      <span>{platformIcon}</span>
-                      <span className="font-medium">@{social.handle}</span>
-                    </a>
-                  );
-                })}
-              </div>
-            )}
-            
-            {/* Badges */}
-            <div className="flex items-center gap-4">
-              <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
-              <StatusBadge status={talent.status || "ACTIVE"} />
-            </div>
-          </div>
-        </div>
+      {/* TIER 1: Command Header (Identity) */}
+      <TalentCommandHeader
+        talent={talent}
+        onEdit={() => setEditModalOpen(true)}
+        onViewAs={() => {
+          // Navigate to ViewAsTalentButton logic
+          const talentUserId = talent.linkedUser?.id;
+          if (talentUserId) {
+            navigate(`/?impersonate=${talentUserId}`);
+          } else {
+            toast.error("Talent is not linked to a user account");
+          }
+        }}
+      />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <SnapshotCard
-            label="Open Opportunities"
-            value={talent.snapshot?.openOpportunities || 0}
-            icon={TrendingUp}
-          />
-          <SnapshotCard
-            label="Active Deals"
-            value={talent.snapshot?.activeDeals || 0}
-            icon={Briefcase}
-          />
-          <SnapshotCard
-            label="Active Campaigns"
-            value={talent.snapshot?.activeCampaigns || 0}
-            icon={FileText}
-          />
-          {isExclusive && (
-            <SnapshotCard
-              label="Total Revenue"
-              value={`£${((talent.snapshot?.totalRevenue || 0) / 1000).toFixed(1)}k`}
-              subtext={`Net: £${((talent.snapshot?.netRevenue || 0) / 1000).toFixed(1)}k`}
-              icon={DollarSign}
-            />
-          )}
-        </div>
+      {/* TIER 2: Health Snapshot (Key Metrics) */}
+      <HealthSnapshotCards talent={talent} />
 
-        {/* User Linking Section */}
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">Linked User Account</p>
-              {talent.linkedUser ? (
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-brand-black/40" />
-                  <span className="text-sm font-semibold text-brand-black">{talent.linkedUser.email}</span>
-                  {talent.linkedUser.name && (
-                    <span className="text-xs text-brand-black/60">({talent.linkedUser.name})</span>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-brand-black/40">
-                  <UserX className="h-4 w-4" />
-                  <span className="text-sm italic">Not linked to any user account</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {talent.linkedUser ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    // TODO: Implement unlink
-                    toast.info("Unlink functionality will be available after schema migration");
-                  }}
-                  className="flex items-center gap-2 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
-                >
-                  <Unlink className="h-4 w-4" />
-                  Unlink
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setLinkModalOpen(true)}
-                  className="flex items-center gap-2 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5"
-                >
-                  <Link2 className="h-4 w-4" />
-                  Link User
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Tabs */}
+      {/* TIER 3: Workspace Tabs */}
       <div className="mb-6 flex flex-wrap gap-2 border-b border-brand-black/10">
         {TABS.map((tab) => {
           const Icon = tab.icon;
