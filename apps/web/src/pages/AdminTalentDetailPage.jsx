@@ -20,6 +20,9 @@ import { DealChip } from "../components/DealChip.jsx";
 import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection.jsx";
 import { TalentCommandHeader } from "../components/AdminTalent/TalentCommandHeader.jsx";
 import { HealthSnapshotCards } from "../components/AdminTalent/HealthSnapshotCards.jsx";
+import { TalentSocialProfilesAccordion } from "../components/AdminTalent/TalentSocialProfilesAccordion.jsx";
+import { QuickEmailInput } from "../components/AdminTalent/QuickEmailInput.jsx";
+import { CollapsibleDetailSection } from "../components/AdminTalent/CollapsibleDetailSection.jsx";
 
 const REPRESENTATION_TYPES = [
   { value: "EXCLUSIVE", label: "Exclusive", color: "bg-brand-red text-white", description: "Full-service representation" },
@@ -1158,6 +1161,104 @@ export function AdminTalentDetailPage() {
 
       {/* TIER 2: Health Snapshot (Key Metrics) */}
       <HealthSnapshotCards talent={talent} />
+
+      {/* TIER 2B: Quick Details (Collapsible) */}
+      <section className="mb-6 space-y-3">
+        {/* Social Profiles */}
+        <TalentSocialProfilesAccordion
+          talent={talent}
+          onUpdate={fetchTalentData}
+        />
+
+        {/* Emails */}
+        <CollapsibleDetailSection title="Contact Information">
+          <QuickEmailInput talent={talent} onUpdate={fetchTalentData} />
+        </CollapsibleDetailSection>
+
+        {/* Representation Details */}
+        <CollapsibleDetailSection
+          title="Representation Details"
+          badge={talent.representationType || "NON_EXCLUSIVE"}
+        >
+          <div className="space-y-3">
+            <div className="rounded-lg bg-brand-white border border-brand-black/10 p-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Type
+              </p>
+              <p>
+                <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
+              </p>
+              <p className="mt-2 text-xs text-brand-black/50">
+                {REPRESENTATION_TYPES.find((t) => t.value === (talent.representationType || "NON_EXCLUSIVE"))?.description}
+              </p>
+            </div>
+
+            <div className="rounded-lg bg-brand-white border border-brand-black/10 p-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                Status
+              </p>
+              <p>
+                <StatusBadge status={talent.status || "ACTIVE"} />
+              </p>
+            </div>
+
+            {talent.legalName && (
+              <div className="rounded-lg bg-brand-white border border-brand-black/10 p-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                  Legal Name
+                </p>
+                <p className="text-sm text-brand-black">{talent.legalName}</p>
+              </div>
+            )}
+          </div>
+        </CollapsibleDetailSection>
+
+        {/* Linked User Account */}
+        <CollapsibleDetailSection
+          title="Linked User Account"
+          badge={talent.linkedUser ? "Connected" : "Not Linked"}
+        >
+          <div className="space-y-3">
+            {talent.linkedUser ? (
+              <>
+                <div className="rounded-lg bg-brand-white border border-brand-black/10 p-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                    Email
+                  </p>
+                  <p className="text-sm text-brand-black">{talent.linkedUser.email}</p>
+                </div>
+                {talent.linkedUser.name && (
+                  <div className="rounded-lg bg-brand-white border border-brand-black/10 p-3">
+                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
+                      Name
+                    </p>
+                    <p className="text-sm text-brand-black">{talent.linkedUser.name}</p>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    toast.info("Unlink functionality will be available after schema migration");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5 transition-colors"
+                >
+                  <Unlink className="h-4 w-4" />
+                  Unlink Account
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setLinkModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-xs uppercase tracking-[0.3em] text-white font-semibold hover:bg-brand-red/90 transition-colors"
+              >
+                <Link2 className="h-4 w-4" />
+                Link User Account
+              </button>
+            )}
+          </div>
+        </CollapsibleDetailSection>
+      </section>
 
       {/* TIER 3: Workspace Tabs */}
       <div className="mb-6 flex flex-wrap gap-2 border-b border-brand-black/10">
