@@ -6,7 +6,7 @@ import { fetchTalents, deleteTalent } from "../services/crmClient.js";
 import { apiFetch } from "../services/apiClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { PlatformLogo } from "../components/PlatformLogo.jsx";
-import { Plus, User, UserX, Search, Filter, Trash2 } from "lucide-react";
+import { Plus, User, UserX, Search, Filter, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
 
@@ -422,6 +422,54 @@ export function AdminTalentPage() {
     navigate(`/admin/talent/${talentId}`);
   };
 
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncProfileImages = async () => {
+    if (syncing || talents.length === 0) return;
+
+    try {
+      setSyncing(true);
+      let successCount = 0;
+      let errorCount = 0;
+
+      // Sync profile images for all talents that have social accounts
+      for (const talent of talents) {
+        if (!talent.primarySocialHandle) continue; // Skip talents without social handles
+
+        try {
+          const response = await apiFetch(`/api/admin/talent/${talent.id}/profile-image/sync`, {
+            method: 'POST',
+          });
+
+          if (response.ok) {
+            successCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (err) {
+          console.error(`Failed to sync profile image for ${talent.displayName}:`, err);
+          errorCount++;
+        }
+      }
+
+      // Show result
+      if (successCount > 0) {
+        toast.success(`✅ Synced ${successCount} profile image${successCount !== 1 ? 's' : ''}`);
+      }
+      if (errorCount > 0) {
+        console.warn(`⚠️ Failed to sync ${errorCount} profile image${errorCount !== 1 ? 's' : ''}`);
+      }
+
+      // Reload talents to show updated profile images
+      await loadTalents();
+    } catch (err) {
+      console.error('Bulk sync error:', err);
+      toast.error('Failed to sync profile images. Try again later.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <DashboardShell
       title="Talent Management"
@@ -437,14 +485,26 @@ export function AdminTalentPage() {
               {searchQuery || statusFilter !== "ALL" || typeFilter !== "ALL" ? ` (filtered from ${talents.length})` : ""}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setAddModalOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Add New Talent
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSyncProfileImages}
+              disabled={syncing || talents.length === 0}
+              className="flex items-center gap-2 rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Sync profile images from social media for all talents"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync Images'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAddModalOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Add New Talent
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
