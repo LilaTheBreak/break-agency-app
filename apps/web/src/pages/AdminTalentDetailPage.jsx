@@ -242,13 +242,25 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
     status: "ACTIVE",
     notes: "",
   });
+  const [managers, setManagers] = useState([]); // Currently assigned managers
+  const [selectedManagers, setSelectedManagers] = useState([]); // To-be-assigned manager IDs
+  const [availableManagers, setAvailableManagers] = useState([]); // List of eligible managers
+  const [loadingManagers, setLoadingManagers] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const formRef = useRef(null);
 
-  // Initialize form when modal opens
+  // Load available managers when modal opens
+  useEffect(() => {
+    if (open) {
+      loadAvailableManagers();
+    }
+  }, [open]);
+
+  // Load currently assigned managers
   useEffect(() => {
     if (open && talent) {
+      loadTalentManagers();
       setFormData({
         displayName: talent.displayName || talent.name || "",
         legalName: talent.legalName || "",
@@ -260,6 +272,78 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
       setError("");
     }
   }, [open, talent]);
+
+  const loadAvailableManagers = async () => {
+    setLoadingManagers(true);
+    try {
+      const response = await apiFetch(`/api/admin/users/managers`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableManagers(data.managers || []);
+      }
+    } catch (err) {
+      console.error("Failed to load managers:", err);
+    } finally {
+      setLoadingManagers(false);
+    }
+  };
+
+  const loadTalentManagers = async () => {
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talent.id}/managers`);
+      if (response.ok) {
+        const data = await response.json();
+        setManagers(data.managers || []);
+        // Set selected managers from current assignments
+        setSelectedManagers((data.managers || []).map(a => a.managerId));
+      }
+    } catch (err) {
+      console.error("Failed to load talent managers:", err);
+    }
+  };
+
+  const handleManagerToggle = (managerId) => {
+    setSelectedManagers(prev => {
+      if (prev.includes(managerId)) {
+        return prev.filter(id => id !== managerId);
+      } else {
+        return [...prev, managerId];
+      }
+    });
+  };
+
+  const saveManagers = async () => {
+    // Determine which managers to add/remove
+    const currentManagerIds = managers.map(a => a.managerId);
+    const toAdd = selectedManagers.filter(id => !currentManagerIds.includes(id));
+    const toRemove = currentManagerIds.filter(id => !selectedManagers.includes(id));
+
+    // Add new managers
+    for (const managerId of toAdd) {
+      try {
+        await apiFetch(`/api/admin/talent/${talent.id}/managers`, {
+          method: "POST",
+          body: JSON.stringify({ managerId, role: "SECONDARY" }),
+        });
+      } catch (err) {
+        console.error(`Failed to add manager ${managerId}:`, err);
+      }
+    }
+
+    // Remove managers
+    for (const managerId of toRemove) {
+      try {
+        await apiFetch(`/api/admin/talent/${talent.id}/managers/${managerId}`, {
+          method: "DELETE",
+        });
+      } catch (err) {
+        console.error(`Failed to remove manager ${managerId}:`, err);
+      }
+    }
+
+    // Reload managers
+    await loadTalentManagers();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -273,6 +357,7 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
     }
 
     try {
+      // Save basic talent info
       const response = await apiFetch(`/api/admin/talent/${talent.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -283,6 +368,9 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || errorData.error || `Failed to update talent (${response.status})`);
       }
+
+      // Save managers
+      await saveManagers();
 
       // CRITICAL: Parse response and verify it contains data before showing success
       const responseData = await response.json();
@@ -434,6 +522,40 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
                 rows={4}
                 placeholder="Enter any notes about this talent"
               />
+            </div>
+
+            {/* Management */}
+            <div>
+              <label className="block text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-3">
+                Talent Managers
+              </label>
+              {loadingManagers ? (
+                <p className="text-sm text-brand-black/60">Loading managers...</p>
+              ) : (
+                <div className="space-y-2 border border-brand-black/10 rounded-xl p-4 bg-brand-white">
+                  {availableManagers.length === 0 ? (
+                    <p className="text-sm text-brand-black/60">No eligible managers found</p>
+                  ) : (
+                    availableManagers.map((manager) => (
+                      <label key={manager.id} className="flex items-center gap-3 cursor-pointer hover:bg-brand-black/2 p-2 rounded">
+                        <input
+                          type="checkbox"
+                          checked={selectedManagers.includes(manager.id)}
+                          onChange={() => handleManagerToggle(manager.id)}
+                          className="w-4 h-4 rounded border-brand-black/20 cursor-pointer"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-brand-black">{manager.name || manager.email}</p>
+                          <p className="text-xs text-brand-black/50">{manager.email}</p>
+                        </div>
+                        <span className="text-xs font-semibold text-brand-black/40 uppercase tracking-[0.2em]">
+                          {manager.role}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </form>
         </div>

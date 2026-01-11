@@ -2262,9 +2262,189 @@ router.post("/:id/social-intelligence/refresh", async (req: Request, res: Respon
   }
 });
 
+/**
+ * GET /api/admin/users/managers
+ * Get all users who can be managers (SUPERADMIN, ADMIN, TALENT_MANAGER)
+ */
+router.get("/managers/list", async (req: Request, res: Response) => {
+  try {
+    const managers = await prisma.user.findMany({
+      where: {
+        role: {
+          in: ["SUPERADMIN", "ADMIN", "TALENT_MANAGER"],
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return sendSuccess(res, { managers }, 200, "Managers retrieved");
+  } catch (error) {
+    console.error("[MANAGERS] Error fetching managers:", error);
+    return handleApiError(res, error, "Failed to fetch managers", "MANAGERS_FETCH_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/managers
+ * Get all managers assigned to a talent
+ */
+router.get("/:id/managers", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const assignments = await prisma.talentManagerAssignment.findMany({
+      where: { talentId },
+      include: {
+        manager: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return sendSuccess(res, { managers: assignments }, 200, "Managers retrieved");
+  } catch (error) {
+    console.error("[TALENT_MANAGERS] Error fetching managers:", error);
+    return handleApiError(res, error, "Failed to fetch managers", "TALENT_MANAGERS_FETCH_FAILED");
+  }
+});
+
+/**
+ * POST /api/admin/talent/:id/managers
+ * Add a manager to a talent
+ */
+router.post("/:id/managers", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const { managerId, role = "SECONDARY" } = req.body;
+
+    if (!managerId) {
+      return sendError(res, "VALIDATION_ERROR", "managerId is required", 400);
+    }
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Verify manager exists and has correct role
+    const manager = await prisma.user.findUnique({
+      where: { id: managerId },
+    });
+
+    if (!manager) {
+      return sendError(res, "NOT_FOUND", "Manager user not found", 404);
+    }
+
+    if (!["SUPERADMIN", "ADMIN", "TALENT_MANAGER"].includes(manager.role)) {
+      return sendError(res, "VALIDATION_ERROR", "User is not eligible to be a manager", 400);
+    }
+
+    // Create assignment
+    const assignment = await prisma.talentManagerAssignment.upsert({
+      where: {
+        talentId_managerId: {
+          talentId,
+          managerId,
+        },
+      },
+      update: {
+        role,
+      },
+      create: {
+        talentId,
+        managerId,
+        role,
+      },
+      include: {
+        manager: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_MANAGER_ADDED",
+      metadata: {
+        talentId,
+        managerId,
+        managerName: manager.name,
+      },
+    });
+
+    return sendSuccess(res, { assignment }, 201, "Manager added to talent");
+  } catch (error) {
+    console.error("[TALENT_MANAGERS] Error adding manager:", error);
+    return handleApiError(res, error, "Failed to add manager", "TALENT_MANAGER_ADD_FAILED");
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/:id/managers/:managerId
+ * Remove a manager from a talent
+ */
+router.delete("/:id/managers/:managerId", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId, managerId } = req.params;
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Delete assignment
+    await prisma.talentManagerAssignment.delete({
+      where: {
+        talentId_managerId: {
+          talentId,
+          managerId,
+        },
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_MANAGER_REMOVED",
+      metadata: {
+        talentId,
+        managerId,
+      },
+    });
+
+    return sendSuccess(res, { success: true }, 200, "Manager removed from talent");
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Record to delete does not exist")) {
+      return sendError(res, "NOT_FOUND", "Manager assignment not found", 404);
+    }
+    console.error("[TALENT_MANAGERS] Error removing manager:", error);
+    return handleApiError(res, error, "Failed to remove manager", "TALENT_MANAGER_REMOVE_FAILED");
+  }
+});
+
 export default router;
-
-
-
-
 
