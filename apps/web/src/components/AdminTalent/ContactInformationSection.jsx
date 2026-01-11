@@ -54,12 +54,12 @@ export function ContactInformationSection({ talent, isEditing = false }) {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("personal"); // personal | addresses | banking | tax | travel | brands | measurements
 
-  // Load all data on mount
+  // Load all data on mount and when talent changes
   useEffect(() => {
     if (talent?.id) {
       loadAllData();
     }
-  }, [talent?.id]);
+  }, [talent?.id, isEditing]);
 
   const loadAllData = async () => {
     setLoading(true);
@@ -649,25 +649,63 @@ export function ContactInformationSection({ talent, isEditing = false }) {
   const handleSaveSection = async (section) => {
     setSaving(true);
     try {
-      // Save based on section type
-      const response = await apiFetch(
-        `/api/admin/talent/${talent.id}/${section === "personal" ? "personal-details" : section}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(section === "personal" ? personalDetails : {}),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to save");
+      // Build the request body with proper data
+      let requestBody = {};
+      
+      if (section === "personal") {
+        requestBody = personalDetails;
+      } else if (section === "addresses") {
+        requestBody = { addresses };
+      } else if (section === "banking") {
+        requestBody = bankingDetails;
+      } else if (section === "tax") {
+        requestBody = taxCompliance;
+      } else if (section === "travel") {
+        requestBody = travelInfo;
+      } else if (section === "brands") {
+        requestBody = brandPreferences;
+      } else if (section === "measurements") {
+        requestBody = measurements;
       }
 
-      toast.success(`${section} details saved`);
-      // Reload all data to ensure UI is up to date
-      await loadAllData();
+      const endpoint = `/api/admin/talent/${talent.id}/${
+        section === "personal" 
+          ? "personal-details" 
+          : section === "addresses"
+          ? "addresses"
+          : section === "banking"
+          ? "banking-details"
+          : section === "tax"
+          ? "tax-compliance"
+          : section === "travel"
+          ? "travel-info"
+          : section === "brands"
+          ? "brand-preferences"
+          : section === "measurements"
+          ? "measurements"
+          : section
+      }`;
+
+      const response = await apiFetch(endpoint, {
+        method: "PUT",
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save");
+      }
+
+      toast.success(`${section} details saved successfully`);
+      
+      // Reload all data to ensure UI is up to date with server state
+      setTimeout(() => {
+        loadAllData();
+      }, 300);
+      
     } catch (error) {
       console.error("Error saving:", error);
-      toast.error("Failed to save changes");
+      toast.error(error.message || "Failed to save changes");
     } finally {
       setSaving(false);
     }
@@ -676,6 +714,13 @@ export function ContactInformationSection({ talent, isEditing = false }) {
   const handleSaveAddress = async () => {
     setSaving(true);
     try {
+      // Validate required fields
+      if (!addressForm.addressLine1 || !addressForm.city || !addressForm.country) {
+        toast.error("Address Line 1, City, and Country are required");
+        setSaving(false);
+        return;
+      }
+
       const url = editingAddressId
         ? `/api/admin/talent/${talent.id}/addresses/${editingAddressId}`
         : `/api/admin/talent/${talent.id}/addresses`;
@@ -686,16 +731,36 @@ export function ContactInformationSection({ talent, isEditing = false }) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save address");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save address");
       }
 
-      toast.success(editingAddressId ? "Address updated" : "Address added");
+      toast.success(editingAddressId ? "Address updated successfully" : "Address added successfully");
+      
+      // Reset form
       setShowAddressForm(false);
       setEditingAddressId(null);
-      await loadAllData();
+      setAddressForm({
+        label: "Home",
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        stateCounty: "",
+        postcode: "",
+        country: "",
+        isPrimary: false,
+        isShippingAddress: false,
+        notes: "",
+      });
+      
+      // Reload all data to sync with server
+      setTimeout(() => {
+        loadAllData();
+      }, 300);
+      
     } catch (error) {
       console.error("Error saving address:", error);
-      toast.error("Failed to save address");
+      toast.error(error.message || "Failed to save address");
     } finally {
       setSaving(false);
     }
@@ -708,7 +773,7 @@ export function ContactInformationSection({ talent, isEditing = false }) {
   };
 
   const handleDeleteAddress = async (addressId) => {
-    if (!confirm("Delete this address?")) return;
+    if (!window.confirm("Delete this address? This cannot be undone.")) return;
 
     try {
       const response = await apiFetch(
@@ -717,14 +782,20 @@ export function ContactInformationSection({ talent, isEditing = false }) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to delete");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete");
       }
 
-      toast.success("Address deleted");
-      await loadAllData();
+      toast.success("Address deleted successfully");
+      
+      // Reload all data to sync with server
+      setTimeout(() => {
+        loadAllData();
+      }, 300);
+      
     } catch (error) {
       console.error("Error deleting address:", error);
-      toast.error("Failed to delete address");
+      toast.error(error.message || "Failed to delete address");
     }
   };
 
