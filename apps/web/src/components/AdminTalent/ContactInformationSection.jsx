@@ -663,6 +663,8 @@ export function ContactInformationSection({ talent, isEditing = false }) {
       }
 
       toast.success(`${section} details saved`);
+      // Reload all data to ensure UI is up to date
+      await loadAllData();
     } catch (error) {
       console.error("Error saving:", error);
       toast.error("Failed to save changes");
