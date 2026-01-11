@@ -14,7 +14,7 @@ import {
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock,
+  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock, Calendar,
   Upload, Download, Image, File, Video
 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -30,6 +30,7 @@ import { DealTrackerCard } from "../components/AdminTalent/DealTrackerCard.jsx";
 import { DealPipelineChart } from "../components/AdminTalent/DealPipelineChart.jsx";
 import { SocialIntelligenceTab } from "../components/AdminTalent/SocialIntelligenceTab.jsx";
 import { ContactInformationSection } from "../components/AdminTalent/ContactInformationSection.jsx";
+import { MeetingSection } from "../components/AdminTalent/MeetingSection.jsx";
 import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
 import DealManagementPanel from "../components/AdminTalent/DealManagementPanel.jsx";
 
@@ -53,6 +54,7 @@ const TABS = [
   { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
   { id: "deals", label: "Deal Tracker", icon: Briefcase },
   { id: "opportunities", label: "Opportunities", icon: TrendingUp },
+  { id: "meetings", label: "Meetings", icon: Calendar },
   { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
   { id: "contracts", label: "Contracts", icon: FileText },
   { id: "payments", label: "Payments & Finance", icon: DollarSign },
@@ -1445,6 +1447,9 @@ export function AdminTalentDetailPage() {
         )}
         {activeTab === "opportunities" && (
           <OpportunitiesTab talentId={talentId} isExclusive={isExclusive} />
+        )}
+        {activeTab === "meetings" && (
+          <MeetingSection talentId={talentId} />
         )}
         {activeTab === "deliverables" && (
           <DeliverablesTab talent={talent} />

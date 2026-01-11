@@ -1582,6 +1582,8 @@ model Talent {
   InternalNotes           TalentInternalNotes?
   Consent                 TalentConsent?
   Files                   TalentFile[]
+  Meetings                Meeting[]
+  MeetingActionItems      MeetingActionItem[]
 
   @@index([lastProfileImageSyncAt])
   @@index([profileImageSource])
@@ -1812,6 +1814,7 @@ model User {
   UserDashboardConfigs                    UserDashboardConfig[]
   BrandUsers                              BrandUser[]
   TalentFilesUploaded                     TalentFile[]            @relation("TalentFileUploader")
+  MeetingsCreated                         Meeting[]               @relation("MeetingCreator")
 }
 
 model WellnessCheckin {
@@ -2741,4 +2744,77 @@ model TalentFile {
   @@index([category])
   @@index([createdAt])
   @@index([uploadedBy])
+}
+
+// Meetings - Track talent meetings, notes, action items, and calendar sync
+model Meeting {
+  id                String    @id @default(cuid())
+  talentId          String
+  
+  // Meeting details
+  title             String
+  description       String?   // Agenda or meeting purpose
+  meetingType       String    @default("Internal") // Internal | Talent | Brand
+  platform          String    @default("In-Person") // Zoom | Google Meet | In-Person | Phone | Other
+  meetingLink       String?   // Zoom/Google Meet link
+  
+  // Timing
+  startTime         DateTime
+  endTime           DateTime?
+  
+  // Notes & Summary
+  notes             String?   // Rich text or markdown notes
+  summary           String?   // AI-generated or manual summary
+  
+  // Calendar sync
+  calendarEventId   String?   // External calendar event ID (Google Calendar, etc.)
+  calendarProvider  String    @default("google") // google | outlook | other
+  
+  // Metadata
+  createdBy         String    // User ID who created this meeting
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  createdByUser     User      @relation("MeetingCreator", fields: [createdBy], references: [id], onDelete: Restrict)
+  actionItems       MeetingActionItem[]
+  
+  @@index([talentId])
+  @@index([startTime])
+  @@index([createdAt])
+  @@index([calendarEventId])
+}
+
+// Action items extracted from or created during meetings
+model MeetingActionItem {
+  id                String    @id @default(cuid())
+  meetingId         String
+  talentId          String
+  
+  // Task details
+  title             String
+  description       String?
+  dueDate           DateTime?
+  
+  // Status tracking
+  status            String    @default("open") // open | completed | cancelled
+  
+  // Integration with Tasks system
+  linkedTaskId      String?   // Links to global Task system (if converted)
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  completedAt       DateTime?
+  
+  // Relations
+  meeting           Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([meetingId])
+  @@index([talentId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([linkedTaskId])
 }
