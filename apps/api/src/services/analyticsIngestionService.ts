@@ -202,8 +202,15 @@ export async function fetchInstagramProfile(
     // Call the Instagram platform service
     const result = await fetchInstagramMetrics(username);
 
+    logInfo("[ANALYTICS] Instagram metrics result", {
+      username,
+      metricsAvailable: !!result.metrics,
+      dataSource: result.dataSource,
+      error: result.error,
+    });
+
     if (!result.metrics) {
-      logError("[ANALYTICS] Instagram metrics not found", result.error, { username });
+      logError("[ANALYTICS] Instagram metrics not found", result.error || "Unknown error", { username });
       return {
         profile: { username, followerCount: 0 },
         error: result.error || "Failed to fetch Instagram metrics",
@@ -223,9 +230,11 @@ export async function fetchInstagramProfile(
       isVerified: metrics.isVerified,
     };
 
-    logInfo("[ANALYTICS] Instagram profile fetched", {
+    logInfo("[ANALYTICS] Instagram profile transformed", {
       username,
       followers: profile.followerCount,
+      posts: profile.postCount,
+      verified: profile.isVerified,
       source: result.dataSource || "SCRAPE",
     });
 

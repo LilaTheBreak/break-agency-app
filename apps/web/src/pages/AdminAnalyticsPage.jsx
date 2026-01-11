@@ -44,6 +44,16 @@ export function AdminAnalyticsPage({ session }) {
       setLoading(true);
       setError(null);
       
+      // DEBUG: Profile selected
+      console.log("[ANALYTICS_DEBUG] Profile selected:", {
+        type: profile.type,
+        id: profile.id,
+        platform: profile.platform,
+        handle: profile.handle,
+        url: profile.url,
+        timestamp: new Date().toISOString(),
+      });
+      
       let body = {};
       
       // Build request body based on profile type
@@ -56,19 +66,43 @@ export function AdminAnalyticsPage({ session }) {
         body.url = profile.url || `${profile.platform}/${profile.handle}`;
       }
       
+      // DEBUG: Request body built
+      console.log("[ANALYTICS_DEBUG] Request body:", body);
+      
       // Use POST /analyze endpoint for new style
       // Fall back to GET for legacy connected profiles
       if (profile.type === "external" || !profile.id) {
+        console.log("[ANALYTICS_DEBUG] Using POST /api/admin/analytics/analyze endpoint");
+        
         const response = await apiFetch("/api/admin/analytics/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
         
+        console.log("[ANALYTICS_DEBUG] API Response received:", {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText,
+        });
+        
         const data = await response.json();
+        
+        console.log("[ANALYTICS_DEBUG] API Response data:", {
+          keys: Object.keys(data),
+          overview: data?.overview,
+          error: data?.error,
+          details: data?.details,
+          syncStatus: data?.syncStatus,
+        });
         
         if (!response.ok) {
           const errorMsg = data?.details || data?.error || response.statusText || "Failed to fetch analytics";
+          console.error("[ANALYTICS_DEBUG] API Error:", {
+            errorMsg,
+            status: response.status,
+            fullError: data,
+          });
           throw new Error(errorMsg);
         }
         
@@ -76,6 +110,7 @@ export function AdminAnalyticsPage({ session }) {
         setDataFreshness(new Date());
         setSelectedProfile(profile);
         
+        console.log("[ANALYTICS_DEBUG] Analytics data set successfully");
         toast.success("Analytics loaded successfully");
       } else {
         // Legacy GET endpoint for connected profiles
@@ -92,17 +127,34 @@ export function AdminAnalyticsPage({ session }) {
         
         params.append("dateRange", dateRange);
         
-        const response = await apiFetch(`/api/admin/analytics?${params.toString()}`);
+        const endpoint = `/api/admin/analytics?${params.toString()}`;
+        console.log("[ANALYTICS_DEBUG] Using GET endpoint:", endpoint);
+        
+        const response = await apiFetch(endpoint);
+        
+        console.log("[ANALYTICS_DEBUG] API Response received:", {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText,
+        });
         
         const data = await response.json();
+        
+        console.log("[ANALYTICS_DEBUG] API Response data:", data);
         
         if (!response.ok) {
           // Handle specific error cases
           if (response.status === 404) {
             const errorMsg = data?.error || "Profile not found";
+            console.error("[ANALYTICS_DEBUG] Profile not found (404):", errorMsg);
             throw new Error(errorMsg);
           }
           const errorMsg = data?.details || data?.error || response.statusText || "Failed to fetch analytics";
+          console.error("[ANALYTICS_DEBUG] API Error:", {
+            errorMsg,
+            status: response.status,
+            fullError: data,
+          });
           throw new Error(errorMsg);
         }
         
@@ -110,10 +162,15 @@ export function AdminAnalyticsPage({ session }) {
         setDataFreshness(new Date());
         setSelectedProfile(profile);
         
+        console.log("[ANALYTICS_DEBUG] Analytics data set successfully");
         toast.success("Analytics loaded successfully");
       }
     } catch (err) {
-      console.error("Error fetching analytics:", err);
+      console.error("[ANALYTICS_DEBUG] Error fetching analytics:", {
+        message: err.message,
+        stack: err.stack,
+        timestamp: new Date().toISOString(),
+      });
       setError(err.message);
       toast.error("Failed to load analytics");
     } finally {
@@ -360,8 +417,60 @@ export function AdminAnalyticsPage({ session }) {
       {/* Error State */}
       {error && !loading && (
         <section className="rounded-3xl border border-red-200 bg-red-50 p-6">
-          <p className="text-sm text-red-800 font-semibold">Error loading analytics</p>
-          <p className="mt-2 text-xs text-red-700">{error}</p>
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div className="h-8 w-8 rounded-full bg-red-200 flex items-center justify-center text-red-700 font-bold">⚠️</div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-red-900">Failed to load analytics</h3>
+              <p className="mt-2 text-xs text-red-800">
+                {error}
+              </p>
+              
+              {/* Contextual help based on error type */}
+              <div className="mt-3 text-xs text-red-700 space-y-1">
+                {error.includes("private") && (
+                  <>
+                    <p className="font-semibold">ℹ️ Profile is private</p>
+                    <p>Instagram requires API authentication for private profiles. We currently support public profiles only.</p>
+                  </>
+                )}
+                {error.includes("not found") && (
+                  <>
+                    <p className="font-semibold">ℹ️ Profile not found</p>
+                    <p>Check that the username is spelled correctly and that the profile exists on the selected platform.</p>
+                  </>
+                )}
+                {error.includes("rate limit") && (
+                  <>
+                    <p className="font-semibold">ℹ️ Rate limit exceeded</p>
+                    <p>Too many requests. Please wait a few minutes before trying again.</p>
+                  </>
+                )}
+                {error.includes("timeout") && (
+                  <>
+                    <p className="font-semibold">ℹ️ Request timeout</p>
+                    <p>The platform took too long to respond. Try again in a moment.</p>
+                  </>
+                )}
+                {!error.includes("private") && !error.includes("not found") && !error.includes("rate limit") && !error.includes("timeout") && (
+                  <>
+                    <p className="font-semibold">ℹ️ Technical error</p>
+                    <p>Check the browser console (F12) for detailed debug logs to help troubleshoot this issue.</p>
+                  </>
+                )}
+              </div>
+              
+              {selectedProfile && (
+                <button
+                  onClick={handleRefresh}
+                  className="mt-4 inline-block rounded-full border border-red-300 bg-red-100 px-4 py-2 text-xs font-semibold text-red-800 hover:bg-red-200 transition"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
+          </div>
         </section>
       )}
 

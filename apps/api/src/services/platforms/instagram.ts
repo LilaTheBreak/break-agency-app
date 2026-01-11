@@ -183,75 +183,179 @@ async function scrapeInstagramProfile(
   try {
     // Add user-agent rotation to avoid blocks
     const userAgents = [
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
     ];
     const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
 
-    const url = `https://www.instagram.com/${username}/?__a=1&__d=dis`;
+    // Strategy 1: Try modern endpoint without the __a and __d parameters
+    // These parameters are known to be blocked by Instagram's anti-bot measures
+    let url = `https://www.instagram.com/${username}/`;
+    
+    logInfo("[INSTAGRAM] Attempting scrape (strategy 1: HTML parse)", {
+      username,
+      url: url,
+      userAgent: userAgent.substring(0, 40) + "...",
+    });
 
-    // Use AbortController for timeout since fetch doesn't support timeout in RequestInit
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       headers: {
         "User-Agent": userAgent,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive",
       },
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
+    logInfo("[INSTAGRAM] HTML response received", {
+      username,
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+    });
+
     if (!response.ok) {
       if (response.status === 404) {
-        logWarn("[INSTAGRAM] Profile not found", { username });
+        logWarn("[INSTAGRAM] Profile not found (404)", { username });
         return null;
       }
 
-      if (response.status === 429) {
-        logWarn("[INSTAGRAM] Rate limited by Instagram", { username });
+      if (response.status === 429 || response.status === 403) {
+        logWarn("[INSTAGRAM] Rate limited or forbidden", { username, status: response.status });
         return null;
       }
 
-      logWarn("[INSTAGRAM] Scrape request failed", {
+      logWarn("[INSTAGRAM] HTML response not OK", {
         username,
         status: response.status,
+        statusText: response.statusText,
       });
-      return null;
+      
+      // Try fallback strategy even if status is not OK
+      // Some profiles may still have data in the HTML
     }
 
-    const data: any = await response.json();
+    const html = await response.text();
+    logInfo("[INSTAGRAM] HTML body received", {
+      username,
+      size: html.length,
+    });
 
-    // Extract user info from Instagram's JSON response
-    const user = data.graphql?.user;
-
-    if (!user) {
-      return null;
+    // Try to extract data from the HTML
+    // Instagram embeds profile data in several ways:
+    // 1. In a script tag with id="__data"
+    // 2. In meta tags (og:image, og:description)
+    // 3. In the next.js data structure
+    
+    const profile = parseInstagramHTML(html, username);
+    
+    if (profile) {
+      logInfo("[INSTAGRAM] Profile parsed from HTML successfully", {
+        username,
+        followers: profile.followerCount,
+        posts: profile.postCount,
+      });
+      return profile;
     }
 
-    return {
-      username: user.username || username,
-      displayName: user.full_name || "",
-      biography: user.biography || "",
-      followerCount: user.edge_followed_by?.count || 0,
-      followingCount: user.edge_follow?.count || 0,
-      postCount: user.edge_owner_to_timeline_media?.count || 0,
-      profilePictureUrl: user.profile_pic_url_hd || "",
-      isVerified: user.is_verified || false,
-      isBusinessAccount: user.is_business_account || false,
-      category: user.business_category_name || "",
-      dataSource: "SCRAPE",
-      scrapedAt: new Date().toISOString(),
-    };
+    logWarn("[INSTAGRAM] Could not parse profile from HTML", { username });
+    return null;
+    
   } catch (error) {
-    if (error instanceof Error && error.message.includes("timeout")) {
-      logWarn("[INSTAGRAM] Scrape timeout", { username });
-      return null;
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        logWarn("[INSTAGRAM] Scrape timeout (10s)", { username });
+        return null;
+      }
+      logError("[INSTAGRAM] Scrape error", error, { username });
+    } else {
+      logError("[INSTAGRAM] Scrape error (unknown)", new Error(String(error)), { username });
+    }
+    return null;
+  }
+}
+
+/**
+ * Parse Instagram profile data from HTML page
+ */
+function parseInstagramHTML(html: string, username: string): InstagramProfileMetrics | null {
+  try {
+    // Try to extract from meta tags first (most reliable)
+    const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
+    const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
+    const ogDescriptionMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+
+    if (ogImageMatch && ogTitleMatch) {
+      logInfo("[INSTAGRAM] Extracted data from meta tags", { username });
+      
+      // Extract name from "Name's Photos & Videos on Instagram"
+      const titleText = ogTitleMatch[1];
+      const displayName = titleText.replace(/'s Photos & Videos on Instagram/, "").replace(/'s Reels & Photos on Instagram/, "");
+      
+      // Parse follower count from description if available
+      const description = ogDescriptionMatch?.[1] || "";
+      const followerMatch = description.match(/([0-9,.]+)\s*(?:Followers?|followers?)/);
+      const followerCount = followerMatch 
+        ? parseInt(followerMatch[1].replace(/,/g, ""), 10)
+        : 0;
+
+      return {
+        username,
+        displayName,
+        biography: description,
+        followerCount,
+        followingCount: 0,
+        postCount: 0,
+        profilePictureUrl: ogImageMatch[1],
+        isVerified: false,
+        isBusinessAccount: false,
+        dataSource: "SCRAPE",
+        scrapedAt: new Date().toISOString(),
+      };
     }
 
-    logError("[INSTAGRAM] Scrape error", error, { username });
+    // Try to extract from embedded JSON (next.js data)
+    // Look for patterns like: window.__initialData = {...}
+    const jsonMatch = html.match(/<script>window\.__initialData\s*=\s*({.+?});<\/script>/);
+    if (jsonMatch) {
+      try {
+        const data = JSON.parse(jsonMatch[1]);
+        const user = data?.user;
+        
+        if (user) {
+          logInfo("[INSTAGRAM] Extracted data from JSON in HTML", { username });
+          return {
+            username: user.username || username,
+            displayName: user.displayName || user.full_name || "",
+            biography: user.biography || "",
+            followerCount: user.followerCount || user.followers_count || 0,
+            followingCount: user.followingCount || user.following_count || 0,
+            postCount: user.postCount || user.media_count || 0,
+            profilePictureUrl: user.profilePictureUrl || user.profile_picture_url || "",
+            isVerified: user.isVerified || user.is_verified || false,
+            isBusinessAccount: user.is_business_account || false,
+            dataSource: "SCRAPE",
+            scrapedAt: new Date().toISOString(),
+          };
+        }
+      } catch (e) {
+        logWarn("[INSTAGRAM] Failed to parse JSON from HTML", { username });
+      }
+    }
+
+    // Last resort: try to extract from old __a=1 endpoint if available
+    // Some cached responses might still be in memory
+    logWarn("[INSTAGRAM] Could not extract data from HTML using any method", { username });
+    return null;
+  } catch (error) {
+    logError("[INSTAGRAM] Error parsing HTML", error, { username });
     return null;
   }
 }
