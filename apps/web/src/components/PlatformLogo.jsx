@@ -91,7 +91,9 @@ export function PlatformLogo({ platform, size = "md", showLabel = false }) {
         onError={(e) => {
           // Fallback if image fails to load
           e.target.style.display = "none";
-          e.target.nextElementSibling?.style.display = "flex";
+          if (e.target.nextElementSibling) {
+            e.target.nextElementSibling.style.display = "flex";
+          }
         }}
       />
       {/* Fallback emoji if image fails */}

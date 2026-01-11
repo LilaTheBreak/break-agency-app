@@ -136,7 +136,7 @@ function extractFromInitialState(data: any, username: string): InstagramProfileD
     return {
       username: user.username || username,
       displayName: user.full_name || user.name,
-      profileImageUrl: user.profile_pic_url || user.profile_picture?.url,
+      profileImageUrl: user.profile_pic_url || user.profile_picture?.url ? unescapeHtmlEntities(user.profile_pic_url || user.profile_picture?.url) : undefined,
       followers: user.follower_count || user.edge_followed_by?.count,
       following: user.following_count || user.edge_follow?.count,
       postCount: user.post_count || user.edge_owner_to_timeline_media?.count,
@@ -156,7 +156,7 @@ function extractFromLDJSON(data: any, username: string): InstagramProfileData | 
     return {
       username: data.alternateName || username,
       displayName: data.name,
-      profileImageUrl: data.image || data.avatar?.url,
+      profileImageUrl: data.image || data.avatar?.url ? unescapeHtmlEntities(data.image || data.avatar?.url) : undefined,
       followers: data.followers?.count,
       following: data.following?.count,
       postCount: data.givenName ? undefined : data.description?.match(/(\d+)\s*posts?/)?.[1] || undefined,
@@ -164,6 +164,22 @@ function extractFromLDJSON(data: any, username: string): InstagramProfileData | 
   } catch {
     return null;
   }
+}
+
+/**
+ * Unescape HTML entities in strings
+ * Converts &amp; to &, &quot; to ", etc.
+ */
+function unescapeHtmlEntities(text: string): string {
+  const htmlEntities: { [key: string]: string } = {
+    "&amp;": "&",
+    "&quot;": '"',
+    "&#39;": "'",
+    "&lt;": "<",
+    "&gt;": ">",
+  };
+  
+  return text.replace(/&(?:amp|quot|#39|lt|gt);/g, (match) => htmlEntities[match] || match);
 }
 
 /**
@@ -179,13 +195,13 @@ function extractFromMetaTags(html: string, username: string): InstagramProfileDa
     if (titleMatch) {
       // Extract name from "Name's Photos & Videos on Instagram"
       const name = titleMatch[1].replace(/'s Photos & Videos on Instagram/, "");
-      if (name) profileData.displayName = name;
+      if (name) profileData.displayName = unescapeHtmlEntities(name);
     }
 
     // og:image contains profile picture
     const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
     if (imageMatch) {
-      profileData.profileImageUrl = imageMatch[1];
+      profileData.profileImageUrl = unescapeHtmlEntities(imageMatch[1]);
     }
 
     // og:description sometimes contains bio with follower info
