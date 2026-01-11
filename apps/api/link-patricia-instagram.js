@@ -53,6 +53,36 @@ async function linkInstagram() {
       },
     });
     
+    // CRITICAL: Also create SocialAccountConnection for Social Intelligence service
+    console.log('🔗 Creating SocialAccountConnection for social intelligence...');
+    let accountConnection = null;
+    try {
+      accountConnection = await prisma.socialAccountConnection.upsert({
+        where: {
+          creatorId_platform: {
+            creatorId: talent.id,
+            platform: 'INSTAGRAM',
+          },
+        },
+        update: {
+          handle: 'patriciabright',
+          connected: true,
+          updatedAt: new Date(),
+        },
+        create: {
+          id: `conn_${talent.id}_INSTAGRAM_${Date.now()}`,
+          creatorId: talent.id,
+          platform: 'INSTAGRAM',
+          handle: 'patriciabright',
+          connected: true,
+          updatedAt: new Date(),
+        },
+      });
+      console.log('✅ SocialAccountConnection created');
+    } catch (connError) {
+      console.warn('⚠️  SocialAccountConnection creation failed:', connError.message);
+    }
+    
     console.log(`\n✅ Instagram linked successfully!`);
     console.log('───────────────────────────────────');
     console.log(`Platform: ${instaLink.platform}`);
@@ -60,6 +90,7 @@ async function linkInstagram() {
     console.log(`URL: ${instaLink.url}`);
     console.log(`Linked to: ${talent.name}`);
     console.log(`Created: ${instaLink.createdAt.toISOString()}`);
+    console.log(`Social Intelligence: ${accountConnection ? 'ENABLED' : 'FALLBACK MODE'}`);
     
     await prisma.$disconnect();
     process.exit(0);
