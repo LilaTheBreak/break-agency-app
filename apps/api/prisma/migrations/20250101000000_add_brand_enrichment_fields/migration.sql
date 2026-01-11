@@ -1,7 +1,4 @@
--- AlterTable
-ALTER TABLE "CrmBrand" ADD COLUMN "logoUrl" TEXT,
-ADD COLUMN "about" TEXT,
-ADD COLUMN "socialLinks" JSONB,
-ADD COLUMN "enrichedAt" TIMESTAMP(3),
-ADD COLUMN "enrichmentSource" TEXT;
+-- Migration skipped: All columns (logoUrl, about, socialLinks, enrichedAt, enrichmentSource)
+-- already exist in CrmBrand table. This migration was applied manually via database sync.
+-- No changes needed.
 
