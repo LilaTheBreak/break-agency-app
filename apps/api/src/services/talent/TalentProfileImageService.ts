@@ -359,9 +359,14 @@ export class TalentProfileImageService {
       'ggpht',
       'yt',
       'scontent',
+      'fbcdn',
+      'cdninstagram',
+      'i.instagram',
     ];
     
     if (!validDomains.some((d) => lowerUrl.includes(d))) {
+      // Log what URL was rejected for debugging
+      this.logger.warn(`URL rejected - domain not whitelisted: ${lowerUrl.substring(0, 50)}`);
       return false;
     }
 
@@ -372,7 +377,7 @@ export class TalentProfileImageService {
         timeout: 3000,
         maxRedirects: 2,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
       });
 
@@ -382,7 +387,15 @@ export class TalentProfileImageService {
       
       // Also check content-length to detect placeholder responses
       const contentLength = parseInt(response.headers['content-length'] || '0', 10);
-      const isReasonableSize = contentLength > 1000; // At least 1KB for a real image
+      const isReasonableSize = contentLength > 500; // Relaxed to 500 bytes for smaller images
+
+      if (!isImageType) {
+        this.logger.warn(`Content is not an image (${contentType}): ${url.substring(0, 50)}`);
+      }
+      
+      if (!isReasonableSize) {
+        this.logger.warn(`Image too small (${contentLength} bytes): ${url.substring(0, 50)}`);
+      }
 
       return isImageType && isReasonableSize;
     } catch (error) {
