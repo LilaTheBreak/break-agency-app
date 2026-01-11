@@ -141,7 +141,16 @@ async function scrapeTikTokProfile(
 
     const data: any = await response.json();
 
+    // 🚨 CRITICAL PROTECTION: If we got 200 but no data, TikTok changed response structure
     if (!data || !data.userInfo) {
+      if (response.status === 200) {
+        logError(
+          "[TIKTOK] CRITICAL: JSON_FETCH_OK_BUT_PARSE_FAILED",
+          new Error("API fetch succeeded (200) but no userInfo in response. TikTok may have changed their API structure."),
+          { username, dataKeys: data ? Object.keys(data) : "null" }
+        );
+        throw new Error("JSON_FETCH_OK_BUT_PARSE_FAILED");
+      }
       // Fallback: Try alternate endpoint
       return await scrapeTikTokProfileFallback(username, userAgent);
     }
@@ -202,6 +211,19 @@ async function scrapeTikTokProfileFallback(
 
     const html = await response.text();
 
+    // 🚨 CRITICAL PROTECTION: If we got 200 but couldn't parse, TikTok changed HTML structure
+    if (!html || html.length === 0) {
+      if (response.status === 200) {
+        logError(
+          "[TIKTOK] CRITICAL: HTML_FETCH_OK_BUT_PARSE_FAILED",
+          new Error("HTML fetch succeeded (200) but no content returned. TikTok may have changed their page structure."),
+          { username }
+        );
+        throw new Error("HTML_FETCH_OK_BUT_PARSE_FAILED");
+      }
+      return null;
+    }
+
     // Extract data from HTML (this is a simplified approach)
     // In production, use cheerio or similar for robust parsing
     const followerMatch = html.match(/"followerCount":(\d+)/);
@@ -210,6 +232,17 @@ async function scrapeTikTokProfileFallback(
     const videoMatch = html.match(/"videoCount":(\d+)/);
     const nameMatch = html.match(/"nickname":"([^"]+)"/);
     const verifiedMatch = html.match(/"verified":(\w+)/);
+
+    // Check if we could extract any meaningful data
+    const hasData = followerMatch || followingMatch || nameMatch;
+    if (!hasData && response.status === 200) {
+      logError(
+        "[TIKTOK] CRITICAL: HTML_FETCH_OK_BUT_PARSE_FAILED",
+        new Error("HTML fetch succeeded (200) but no data could be extracted. TikTok may have changed their page structure."),
+        { username, htmlSize: html.length }
+      );
+      throw new Error("HTML_FETCH_OK_BUT_PARSE_FAILED");
+    }
 
     return {
       username,

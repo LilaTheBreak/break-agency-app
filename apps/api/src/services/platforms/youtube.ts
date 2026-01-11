@@ -236,7 +236,16 @@ async function getChannelDetails(
 
     const data: any = await response.json();
 
+    // 🚨 CRITICAL PROTECTION: If we got 200 but no items, YouTube changed response structure
     if (!data.items || data.items.length === 0) {
+      if (response.status === 200) {
+        logError(
+          "[YOUTUBE] CRITICAL: JSON_FETCH_OK_BUT_PARSE_FAILED",
+          new Error("API fetch succeeded (200) but no items in response. YouTube may have changed their API structure."),
+          { channelId, dataKeys: data ? Object.keys(data) : "null" }
+        );
+        throw new Error("JSON_FETCH_OK_BUT_PARSE_FAILED");
+      }
       return null;
     }
 
@@ -313,6 +322,14 @@ async function getTopVideos(
     }
 
     const detailsData: any = await detailsResponse.json();
+
+    if (!detailsData.items || detailsData.items.length === 0) {
+      logWarn("[YOUTUBE] Details response returned 200 but no items found", {
+        channelId,
+        dataKeys: Object.keys(detailsData),
+      });
+      throw new Error("JSON_FETCH_OK_BUT_PARSE_FAILED");
+    }
 
     return detailsData.items.map((video: any) => ({
       videoId: video.id,
