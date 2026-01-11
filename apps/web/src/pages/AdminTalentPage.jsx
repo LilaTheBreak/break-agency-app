@@ -43,7 +43,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function Avatar({ user, name, size = "w-10 h-10" }) {
+function Avatar({ user, name, profileImageUrl, size = "w-10 h-10" }) {
   const initials = useMemo(() => {
     const displayName = user?.name || name || "?";
     return displayName
@@ -54,11 +54,13 @@ function Avatar({ user, name, size = "w-10 h-10" }) {
       .slice(0, 2);
   }, [user?.name, name]);
 
-  if (user?.avatarUrl) {
+  // Prefer talent profile image, then linked user avatar
+  const imageUrl = profileImageUrl || user?.avatarUrl;
+  if (imageUrl) {
     return (
       <img
-        src={user.avatarUrl}
-        alt={user.name || name}
+        src={imageUrl}
+        alt={user?.name || name}
         className={`${size} rounded-full object-cover border border-brand-black/10`}
       />
     );
@@ -556,7 +558,7 @@ export function AdminTalentPage() {
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <Avatar user={talent.linkedUser} name={talent.displayName || talent.name} />
+                        <Avatar user={talent.linkedUser} name={talent.displayName || talent.name} profileImageUrl={talent.profileImageUrl} />
                         <div className="min-w-0 flex-1">
                           <div className="font-semibold text-brand-black truncate">
                             {talent.displayName || talent.name}

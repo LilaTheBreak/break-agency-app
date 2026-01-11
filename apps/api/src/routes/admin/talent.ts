@@ -168,6 +168,7 @@ router.get("/", async (req: Request, res: Response) => {
                     avatarUrl: userData.avatarUrl,
                   }
                 : null,
+              profileImageUrl: talent.profileImageUrl || null,
               socialAccounts,
               primarySocialHandle,
               managerId: null,
@@ -190,6 +191,7 @@ router.get("/", async (req: Request, res: Response) => {
               representationType: talent.representationType || "NON_EXCLUSIVE", // FIXED: Use actual value
               status: talent.status || "ACTIVE", // FIXED: Use actual value
               linkedUser: null,
+              profileImageUrl: talent.profileImageUrl || null,
               managerId: null,
               metrics: {
                 openOpportunities: 0,
@@ -218,6 +220,7 @@ router.get("/", async (req: Request, res: Response) => {
           representationType: t.representationType || "NON_EXCLUSIVE", // FIXED: Use actual value
           status: t.status || "ACTIVE", // FIXED: Use actual value
           linkedUser: null,
+          profileImageUrl: t.profileImageUrl || null,
           managerId: null,
           metrics: {
             openOpportunities: 0,
@@ -258,6 +261,7 @@ router.get("/", async (req: Request, res: Response) => {
         displayName: t.displayName || t.name || "Unknown",
         representationType: t.representationType || "NON_EXCLUSIVE", // FIXED: Use actual value
         status: t.status || "ACTIVE", // FIXED: Use actual value
+        profileImageUrl: t.profileImageUrl || null,
         linkedUser: null,
         managerId: null,
         metrics: {
