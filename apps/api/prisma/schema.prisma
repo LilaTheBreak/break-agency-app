@@ -1464,6 +1464,27 @@ model ExternalSocialProfile {
   @@index([createdAt])
 }
 
+model TrendingTopicSnapshot {
+  id              String   @id @default(cuid())
+  talentId        String
+  source          String   // GOOGLE, TIKTOK, YOUTUBE, REDDIT, TWITTER
+  topic           String
+  velocity        Float    // How fast it's rising (0-100 scale)
+  volume          Float?   // Search/engagement volume if available
+  category        String?  // Topic category for grouping
+  relatedKeywords String[] @default([]) // Array of related keywords
+  relevanceScore  Float    // How relevant to this talent (0-1)
+  reasoning       String?  // Explanation of relevance
+  snapshotJson    Json     // Full source data
+  cachedUntil     DateTime // When this snapshot expires from cache
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([talentId, createdAt])
+  @@index([talentId, source])
+  @@index([createdAt])
+}
+
 model Submission {
   id            String       @id
   creatorId     String

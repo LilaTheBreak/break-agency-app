@@ -508,5 +508,80 @@ function buildAnalyticsFromExternalProfile(profile: any): any {
   };
 }
 
+/**
+ * GET /api/admin/analytics/trending/:talentId
+ * 
+ * Get trending topics for a specific talent
+ * Returns ranked, scored trending topics from multiple sources
+ * 
+ * Response includes:
+ * - topic: The trending topic
+ * - source: Where it's trending (GOOGLE, TIKTOK, YOUTUBE, etc)
+ * - relevanceScore: 0-1 indicating how relevant to this talent
+ * - reasoning: Why this topic is relevant
+ * - velocity: How fast it's trending (0-100)
+ */
+router.get("/trending/:talentId", async (req: Request, res: Response) => {
+  try {
+    const { talentId } = req.params;
+
+    logInfo("[TRENDS] GET trending topics request", { talentId });
+
+    // Import here to avoid circular dependencies
+    const { getTrendingTopicsForTalent } = await import(
+      "../../services/trends/trendingTopicsService.js"
+    );
+
+    const trendingTopics = await getTrendingTopicsForTalent(talentId);
+
+    if (!trendingTopics || trendingTopics.length === 0) {
+      logInfo("[TRENDS] No trending topics found for talent", { talentId });
+      return res.json({
+        talentId,
+        trends: [],
+        message: "No trending topics found. Check talent profile data.",
+        timestamp: new Date(),
+      });
+    }
+
+    // Format response with top 10 ranked trends
+    const response = {
+      talentId,
+      trends: trendingTopics.slice(0, 10).map((trend) => ({
+        topic: trend.topic,
+        source: trend.source,
+        relevanceScore: parseFloat((trend.relevanceScore * 100).toFixed(1)),
+        velocity: parseFloat(trend.velocity.toFixed(1)),
+        category: trend.category,
+        reasoning: trend.reasoning,
+        relatedKeywords: trend.relatedKeywords,
+      })),
+      stats: {
+        total: trendingTopics.length,
+        topScore: trendingTopics[0]?.relevanceScore
+          ? parseFloat((trendingTopics[0].relevanceScore * 100).toFixed(1))
+          : 0,
+        sources: [
+          ...new Set(trendingTopics.map((t) => t.source)),
+        ].sort(),
+      },
+      timestamp: new Date(),
+    };
+
+    logInfo("[TRENDS] Returning trending topics", {
+      talentId,
+      count: response.trends.length,
+    });
+
+    return res.json(response);
+  } catch (error) {
+    logError("[TRENDS] Failed to get trending topics", error, { talentId: req.params.talentId });
+    return res.status(500).json({
+      error: "Failed to fetch trending topics",
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
 export default router;
 
