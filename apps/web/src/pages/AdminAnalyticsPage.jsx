@@ -65,11 +65,13 @@ export function AdminAnalyticsPage({ session }) {
           body: JSON.stringify(body),
         });
         
+        const data = await response.json();
+        
         if (!response.ok) {
-          throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+          const errorMsg = data?.details || data?.error || response.statusText || "Failed to fetch analytics";
+          throw new Error(errorMsg);
         }
         
-        const data = await response.json();
         setAnalyticsData(data);
         setDataFreshness(new Date());
         setSelectedProfile(profile);
@@ -92,11 +94,18 @@ export function AdminAnalyticsPage({ session }) {
         
         const response = await apiFetch(`/api/admin/analytics?${params.toString()}`);
         
+        const data = await response.json();
+        
         if (!response.ok) {
-          throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+          // Handle specific error cases
+          if (response.status === 404) {
+            const errorMsg = data?.error || "Profile not found";
+            throw new Error(errorMsg);
+          }
+          const errorMsg = data?.details || data?.error || response.statusText || "Failed to fetch analytics";
+          throw new Error(errorMsg);
         }
         
-        const data = await response.json();
         setAnalyticsData(data);
         setDataFreshness(new Date());
         setSelectedProfile(profile);
@@ -139,11 +148,13 @@ export function AdminAnalyticsPage({ session }) {
           body: JSON.stringify(body),
         });
         
+        const data = await response.json();
+        
         if (!response.ok) {
-          throw new Error(`Failed to fetch comparison data`);
+          const errorMsg = data?.details || data?.error || "Failed to fetch comparison data";
+          throw new Error(errorMsg);
         }
         
-        const data = await response.json();
         setComparisonData(data);
         setComparisonProfile(profile);
         
@@ -161,11 +172,18 @@ export function AdminAnalyticsPage({ session }) {
         
         const response = await apiFetch(`/api/admin/analytics?${params.toString()}`);
         
+        const data = await response.json();
+        
         if (!response.ok) {
-          throw new Error(`Failed to fetch comparison data`);
+          // Handle specific error cases
+          if (response.status === 404) {
+            const errorMsg = data?.error || "Profile not found";
+            throw new Error(errorMsg);
+          }
+          const errorMsg = data?.details || data?.error || "Failed to fetch comparison data";
+          throw new Error(errorMsg);
         }
         
-        const data = await response.json();
         setComparisonData(data);
         setComparisonProfile(profile);
         
