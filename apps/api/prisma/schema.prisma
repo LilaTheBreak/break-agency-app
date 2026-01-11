@@ -1581,6 +1581,7 @@ model Talent {
   BrandPreferences        TalentBrandPreferences?
   InternalNotes           TalentInternalNotes?
   Consent                 TalentConsent?
+  Files                   TalentFile[]
 
   @@index([lastProfileImageSyncAt])
   @@index([profileImageSource])
@@ -1810,6 +1811,7 @@ model User {
   ExportSchedules                         ExportSchedule[]
   UserDashboardConfigs                    UserDashboardConfig[]
   BrandUsers                              BrandUser[]
+  TalentFilesUploaded                     TalentFile[]            @relation("TalentFileUploader")
 }
 
 model WellnessCheckin {
@@ -2699,4 +2701,44 @@ model TalentConsent {
   talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
   
   @@index([talentId])
+}
+
+// Files & Assets - Media kit, rate cards, press imagery, contracts, etc.
+model TalentFile {
+  id                      String    @id @default(cuid())
+  talentId                String
+  
+  // File metadata
+  fileName                String
+  fileType                String    // image / video / pdf / doc / audio / other
+  mimeType                String    
+  fileSize                Int       // in bytes
+  
+  // Organization
+  category                String    // "Media Kit" | "Rate Card" | "Press" | "Campaign Assets" | "Contracts" | "Other"
+  
+  // Storage
+  storageProvider         String    @default("s3") // s3 / gcs / local
+  storagePath             String    // Full path in storage
+  storageUrl              String?   // Public or signed URL
+  
+  // Access & Permissions
+  visibility              String    @default("admin-only") // admin-only | talent-admin
+  uploadedBy              String
+  
+  // Metadata
+  description             String?
+  tags                    String[]  @default([])
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  // Relations
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  uploadedByUser          User      @relation("TalentFileUploader", fields: [uploadedBy], references: [id], onDelete: Restrict)
+  
+  @@index([talentId])
+  @@index([category])
+  @@index([createdAt])
+  @@index([uploadedBy])
 }

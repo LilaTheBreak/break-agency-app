@@ -10,11 +10,12 @@ import { ViewAsTalentButton } from "../components/ViewAsTalentButton.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import AdminRevenueManagement from "../components/AdminRevenueManagement.jsx";
 import { getErrorMessage } from "../lib/errorHandler.js";
-import { 
+import {
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock
+  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock,
+  Upload, Download, Image, File, Video
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
@@ -3095,19 +3096,287 @@ function DeliverablesTab({ talent }) {
 }
 
 function FilesTab({ talentId }) {
+  const [files, setFiles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [category, setCategory] = useState("Media Kit");
+  const [description, setDescription] = useState("");
+  const fileInputRef = React.useRef(null);
+
+  const CATEGORIES = ["Media Kit", "Rate Card", "Press", "Campaign Assets", "Contracts", "Other"];
+
+  // Fetch files
+  const fetchFiles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await apiFetch(`/api/admin/talent/${talentId}/files`);
+      if (response.ok) {
+        const data = await response.json();
+        setFiles(data.data.files || []);
+      }
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      toast.error("Failed to load files");
+    } finally {
+      setLoading(false);
+    }
+  }, [talentId]);
+
+  useEffect(() => {
+    fetchFiles();
+  }, [fetchFiles]);
+
+  // Handle file upload
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", category);
+      formData.append("description", description);
+
+      const response = await apiFetch(`/api/admin/talent/${talentId}/files`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Upload failed");
+      }
+
+      toast.success("File uploaded successfully");
+      setShowUploadForm(false);
+      setCategory("Media Kit");
+      setDescription("");
+      await fetchFiles();
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error.message || "Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle drag and drop
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  // Handle file delete
+  const handleDeleteFile = async (fileId) => {
+    if (!confirm("Delete this file? This cannot be undone.")) return;
+
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talentId}/files/${fileId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Delete failed");
+
+      toast.success("File deleted");
+      await fetchFiles();
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete file");
+    }
+  };
+
+  // Group files by category
+  const grouped = files.reduce((acc, file) => {
+    if (!acc[file.category]) acc[file.category] = [];
+    acc[file.category].push(file);
+    return acc;
+  }, {});
+
+  if (loading) {
+    return (
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Files & Assets</p>
+        <div className="text-center py-12">
+          <div className="w-8 h-8 border-4 border-brand-black/10 border-t-brand-red rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-sm text-brand-black/60">Loading files...</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Files & Assets</p>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
-        <Archive className="h-12 w-12 text-brand-black/40 mx-auto mb-4" />
-        <p className="text-brand-black/60 mb-2">Files & Assets</p>
-        <p className="text-xs text-brand-black/50 mb-4">
-          Coming soon: Media kit, rate card, past campaign assets, and press imagery will be available here.
-        </p>
-        <p className="text-xs text-brand-black/40">
-          This section will support uploading and managing talent assets when the API endpoint is implemented.
-        </p>
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Files & Assets</p>
+        <button
+          type="button"
+          onClick={() => setShowUploadForm(!showUploadForm)}
+          className="px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] rounded-full bg-brand-red text-white hover:bg-brand-black transition-colors"
+        >
+          <Plus className="inline h-4 w-4 mr-2" />
+          Upload File
+        </button>
       </div>
+
+      {/* Upload Form */}
+      {showUploadForm && (
+        <div
+          className={`rounded-2xl border-2 border-dashed transition-colors p-8 text-center cursor-pointer ${
+            dragActive
+              ? "border-brand-red bg-brand-red/10"
+              : "border-brand-black/20 bg-brand-black/5 hover:border-brand-red hover:bg-brand-red/5"
+          }`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload className="h-12 w-12 text-brand-black/40 mx-auto mb-4" />
+          <p className="text-sm font-semibold text-brand-black mb-2">Drag and drop your file here</p>
+          <p className="text-xs text-brand-black/60 mb-4">or click to browse (max 500MB)</p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            hidden
+            onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])}
+          />
+
+          <div className="mt-6 pt-6 border-t border-brand-black/10 space-y-4">
+            <div>
+              <label className="block text-xs uppercase tracking-[0.2em] text-brand-black/60 mb-2">Category *</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-brand-black/10 text-sm focus:border-brand-black focus:outline-none"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-[0.2em] text-brand-black/60 mb-2">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional notes about this file"
+                rows={3}
+                className="w-full px-4 py-2 rounded-lg border border-brand-black/10 text-sm focus:border-brand-black focus:outline-none resize-none"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex-1 px-4 py-2 bg-brand-red text-white rounded-lg text-sm font-semibold hover:bg-brand-black disabled:opacity-50"
+              >
+                {uploading ? "Uploading..." : "Select File"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowUploadForm(false)}
+                className="px-4 py-2 border border-brand-black/20 rounded-lg text-sm hover:bg-brand-black/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Files List */}
+      {files.length === 0 ? (
+        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+          <Archive className="h-12 w-12 text-brand-black/40 mx-auto mb-4" />
+          <p className="text-sm font-semibold text-brand-black mb-2">No files yet</p>
+          <p className="text-xs text-brand-black/60">Upload your first file to get started</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {CATEGORIES.map((cat) => {
+            const catFiles = grouped[cat] || [];
+            if (catFiles.length === 0) return null;
+
+            return (
+              <div key={cat}>
+                <h4 className="text-xs uppercase tracking-[0.2em] text-brand-black/60 font-semibold mb-3">{cat}</h4>
+                <div className="space-y-2">
+                  {catFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-brand-black/10 hover:bg-brand-black/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {file.fileType === "image" && <Image className="h-5 w-5 text-brand-red flex-shrink-0" />}
+                        {file.fileType === "pdf" && <FileText className="h-5 w-5 text-brand-red flex-shrink-0" />}
+                        {file.fileType === "video" && <Video className="h-5 w-5 text-brand-red flex-shrink-0" />}
+                        {file.fileType === "doc" && <FileText className="h-5 w-5 text-brand-red flex-shrink-0" />}
+                        {!["image", "pdf", "video", "doc"].includes(file.fileType) && (
+                          <File className="h-5 w-5 text-brand-red flex-shrink-0" />
+                        )}
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-brand-black truncate">{file.fileName}</p>
+                          <div className="flex items-center gap-2 text-xs text-brand-black/60">
+                            <span>{(file.fileSize / 1024 / 1024).toFixed(1)}MB</span>
+                            <span>•</span>
+                            <span>{new Date(file.createdAt).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span>by {file.uploadedByUser?.name || "Unknown"}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 ml-4">
+                        <a
+                          href={file.storageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-brand-black/60 hover:text-brand-black hover:bg-brand-black/10 rounded-lg transition-colors"
+                          title="Download"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFile(file.id)}
+                          className="p-1.5 text-brand-red/60 hover:text-brand-red hover:bg-brand-red/10 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

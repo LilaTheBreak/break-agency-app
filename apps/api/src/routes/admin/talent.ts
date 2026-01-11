@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import { requireRole } from "../../middleware/requireRole.js";
+import upload from "../../middleware/multer.js";
 import prisma from "../../lib/prisma.js";
 import redis from "../../lib/redis.js";
 import { TaskStatus, SocialPlatform } from "@prisma/client";
@@ -14,6 +15,7 @@ import { validateRequestSafe, TalentCreateSchema, TalentUpdateSchema, TalentLink
 import * as Sentry from "@sentry/node";
 import { scrapeInstagramProfile } from "../../services/socialScrapers/instagram.js";
 import { normalizeInstagramHandle } from "../../services/socialScrapers/instagramUtils.js";
+import * as storage from "../../services/storage.js";
 
 const router = Router();
 
@@ -3076,6 +3078,274 @@ router.put("/:id/measurements", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("[CONTACT_INFO] Error updating measurements:", error);
     return handleApiError(res, error, "Failed to update measurements", "MEASUREMENTS_UPDATE_FAILED");
+  }
+});
+
+// ============================================
+// FILES & ASSETS ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/admin/talent/:talentId/files
+ * List all files for a talent, grouped by category
+ */
+router.get("/:talentId/files", async (req: Request, res: Response) => {
+  try {
+    const { talentId } = req.params;
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+      select: { id: true },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Fetch all files for this talent
+    const files = await prisma.talentFile.findMany({
+      where: { talentId },
+      select: {
+        id: true,
+        fileName: true,
+        fileType: true,
+        mimeType: true,
+        fileSize: true,
+        category: true,
+        visibility: true,
+        storageUrl: true,
+        uploadedBy: true,
+        createdAt: true,
+        uploadedByUser: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Group by category
+    const grouped = files.reduce(
+      (acc, file) => {
+        if (!acc[file.category]) {
+          acc[file.category] = [];
+        }
+        acc[file.category].push(file);
+        return acc;
+      },
+      {} as Record<string, typeof files>
+    );
+
+    return sendSuccess(
+      res,
+      {
+        files,
+        grouped,
+        totalCount: files.length,
+      },
+      200,
+      "Files retrieved"
+    );
+  } catch (error) {
+    console.error("[TALENT_FILES] Error listing files:", error);
+    return handleApiError(res, error, "Failed to list files", "FILES_LIST_FAILED");
+  }
+});
+
+/**
+ * POST /api/admin/talent/:talentId/files
+ * Upload a new file
+ * Body: FormData with file, category, visibility, description
+ */
+router.post("/:talentId/files", upload.single("file"), async (req: Request, res: Response) => {
+  try {
+    const { talentId } = req.params;
+    const { category, visibility = "admin-only", description } = req.body;
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+      select: { id: true },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Check if file is in request (would come from multipart middleware)
+    if (!req.file) {
+      return sendError(res, "VALIDATION_ERROR", "No file provided", 400);
+    }
+
+    if (!category) {
+      return sendError(res, "VALIDATION_ERROR", "Category is required", 400);
+    }
+
+    const validCategories = ["Media Kit", "Rate Card", "Press", "Campaign Assets", "Contracts", "Other"];
+    if (!validCategories.includes(category)) {
+      return sendError(res, "VALIDATION_ERROR", `Invalid category. Must be one of: ${validCategories.join(", ")}`, 400);
+    }
+
+    // Validate file
+    const validation = storage.validateFile(req.file.originalname, req.file.size, req.file.mimetype);
+
+    if (!validation.valid) {
+      return sendError(res, "VALIDATION_ERROR", validation.error || "File validation failed", 400);
+    }
+
+    // Upload to S3
+    const storagePath = storage.generateStoragePath(talentId, category, req.file.originalname);
+    const { url } = await storage.uploadFileToS3(storagePath, req.file.buffer, req.file.mimetype);
+
+    // Save to database
+    const fileRecord = await prisma.talentFile.create({
+      data: {
+        talentId,
+        fileName: req.file.originalname,
+        fileType: storage.getFileTypeFromMimeType(req.file.mimetype),
+        mimeType: req.file.mimetype,
+        fileSize: req.file.size,
+        category,
+        visibility,
+        storageProvider: "s3",
+        storagePath,
+        storageUrl: url,
+        uploadedBy: req.user!.id,
+        description,
+      },
+      include: {
+        uploadedByUser: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Log activity
+    await logAdminActivity(req, {
+      event: "TALENT_FILE_UPLOADED",
+      metadata: {
+        talentId,
+        fileId: fileRecord.id,
+        fileName: req.file.originalname,
+        category,
+        fileSize: req.file.size,
+      },
+    });
+
+    return sendSuccess(res, fileRecord, 201, "File uploaded successfully");
+  } catch (error) {
+    console.error("[TALENT_FILES] Error uploading file:", error);
+    return handleApiError(res, error, "Failed to upload file", "FILES_UPLOAD_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:talentId/files/:fileId
+ * Download a file (returns signed URL or streams file)
+ */
+router.get("/:talentId/files/:fileId", async (req: Request, res: Response) => {
+  try {
+    const { talentId, fileId } = req.params;
+
+    // Get file record
+    const file = await prisma.talentFile.findUnique({
+      where: { id: fileId },
+      select: {
+        id: true,
+        talentId: true,
+        fileName: true,
+        storageUrl: true,
+        storagePath: true,
+        visibility: true,
+      },
+    });
+
+    if (!file) {
+      return sendError(res, "NOT_FOUND", "File not found", 404);
+    }
+
+    // Verify talent matches
+    if (file.talentId !== talentId) {
+      return sendError(res, "NOT_FOUND", "File not found for this talent", 404);
+    }
+
+    // Check permissions
+    if (file.visibility === "admin-only" && (!isAdmin(req.user!) && !isSuperAdmin(req.user!))) {
+      return sendError(res, "FORBIDDEN", "You do not have permission to download this file", 403);
+    }
+
+    // Return signed URL
+    return sendSuccess(
+      res,
+      {
+        downloadUrl: file.storageUrl,
+        fileName: file.fileName,
+      },
+      200,
+      "Download URL generated"
+    );
+  } catch (error) {
+    console.error("[TALENT_FILES] Error downloading file:", error);
+    return handleApiError(res, error, "Failed to download file", "FILES_DOWNLOAD_FAILED");
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/:talentId/files/:fileId
+ * Delete a file (admin only)
+ */
+router.delete("/:talentId/files/:fileId", async (req: Request, res: Response) => {
+  try {
+    const { talentId, fileId } = req.params;
+
+    // Get file record
+    const file = await prisma.talentFile.findUnique({
+      where: { id: fileId },
+      select: {
+        id: true,
+        talentId: true,
+        fileName: true,
+        storagePath: true,
+      },
+    });
+
+    if (!file) {
+      return sendError(res, "NOT_FOUND", "File not found", 404);
+    }
+
+    // Verify talent matches
+    if (file.talentId !== talentId) {
+      return sendError(res, "NOT_FOUND", "File not found for this talent", 404);
+    }
+
+    // Delete from S3
+    await storage.deleteFileFromS3(file.storagePath);
+
+    // Delete from database
+    await prisma.talentFile.delete({
+      where: { id: fileId },
+    });
+
+    // Log activity
+    await logAdminActivity(req, {
+      event: "TALENT_FILE_DELETED",
+      metadata: {
+        talentId,
+        fileId,
+        fileName: file.fileName,
+      },
+    });
+
+    return sendSuccess(res, null, 200, "File deleted successfully");
+  } catch (error) {
+    console.error("[TALENT_FILES] Error deleting file:", error);
+    return handleApiError(res, error, "Failed to delete file", "FILES_DELETE_FAILED");
   }
 });
 
