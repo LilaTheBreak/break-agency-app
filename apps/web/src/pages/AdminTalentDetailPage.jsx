@@ -13,7 +13,7 @@ import {
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3
+  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
@@ -27,6 +27,7 @@ import { DealStatusBadge } from "../components/AdminTalent/DealStatusBadge.jsx";
 import { DealTrackerCard } from "../components/AdminTalent/DealTrackerCard.jsx";
 import { DealPipelineChart } from "../components/AdminTalent/DealPipelineChart.jsx";
 import { SocialIntelligenceTab } from "../components/AdminTalent/SocialIntelligenceTab.jsx";
+import { ContactInformationSection } from "../components/AdminTalent/ContactInformationSection.jsx";
 import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
 import DealManagementPanel from "../components/AdminTalent/DealManagementPanel.jsx";
 
@@ -46,6 +47,7 @@ const STATUS_OPTIONS = [
 
 const TABS = [
   { id: "overview", label: "Overview", icon: User },
+  { id: "contact-information", label: "Contact Information", icon: Lock },
   { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
   { id: "deals", label: "Deal Tracker", icon: Briefcase },
   { id: "opportunities", label: "Opportunities", icon: TrendingUp },
@@ -1428,6 +1430,9 @@ export function AdminTalentDetailPage() {
       <div className="space-y-6">
         {activeTab === "overview" && (
           <OverviewTab talent={talent} isExclusive={isExclusive} />
+        )}
+        {activeTab === "contact-information" && (
+          <ContactInformationSection talent={talent} isEditing={editModalOpen} />
         )}
         {activeTab === "social-intelligence" && (
           <SocialIntelligenceTab talent={talent} talentId={talentId} onRefreshProfileImage={fetchTalentData} />
