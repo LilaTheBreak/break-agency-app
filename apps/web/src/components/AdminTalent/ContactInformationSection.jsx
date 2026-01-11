@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Lock, Unlock, Eye, EyeOff, Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { apiFetch } from "../../lib/apiFetch.js";
+import { apiFetch } from "../../services/apiClient.js";
 
 /**
  * ContactInformationSection Component
