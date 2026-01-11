@@ -620,19 +620,39 @@ export function AdminBrandsPage({ session }) {
   };
   const safeSetCampaigns = (value) => {
     const safe = normalizeApiArray(value, 'campaigns');
-    setCampaigns(safe);
+    if (!Array.isArray(safe)) {
+      console.error('[CRITICAL] safeSetCampaigns: normalizeApiArray did not return array:', { value, safe, type: typeof safe });
+      setCampaigns([]);
+    } else {
+      setCampaigns(safe);
+    }
   };
   const safeSetEvents = (value) => {
     const safe = normalizeApiArray(value, 'events');
-    setEvents(safe);
+    if (!Array.isArray(safe)) {
+      console.error('[CRITICAL] safeSetEvents: normalizeApiArray did not return array:', { value, safe, type: typeof safe });
+      setEvents([]);
+    } else {
+      setEvents(safe);
+    }
   };
   const safeSetDeals = (value) => {
     const safe = normalizeApiArray(value, 'deals');
-    setDeals(safe);
+    if (!Array.isArray(safe)) {
+      console.error('[CRITICAL] safeSetDeals: normalizeApiArray did not return array:', { value, safe, type: typeof safe });
+      setDeals([]);
+    } else {
+      setDeals(safe);
+    }
   };
   const safeSetContracts = (value) => {
     const safe = normalizeApiArray(value, 'contracts');
-    setContracts(safe);
+    if (!Array.isArray(safe)) {
+      console.error('[CRITICAL] safeSetContracts: normalizeApiArray did not return array:', { value, safe, type: typeof safe });
+      setContracts([]);
+    } else {
+      setContracts(safe);
+    }
   };
   
   const [loading, setLoading] = useState(true);
@@ -820,16 +840,32 @@ export function AdminBrandsPage({ session }) {
   // CRITICAL: Use normalizeApiArray (without guard) to avoid warnings for expected API shapes
   // The guard warnings are too noisy for normal API responses like { brands: [...] }
   const safeBrandsState = useMemo(() => {
-    return normalizeApiArray(brands, 'brands');
+    const result = normalizeApiArray(brands, 'brands');
+    if (!Array.isArray(result)) {
+      console.error('[CRITICAL] safeBrandsState is not an array:', { result, brands, isArray: Array.isArray(result) });
+    }
+    return result;
   }, [brands]);
   const safeCampaignsState = useMemo(() => {
-    return normalizeApiArray(campaigns, 'campaigns');
+    const result = normalizeApiArray(campaigns, 'campaigns');
+    if (!Array.isArray(result)) {
+      console.error('[CRITICAL] safeCampaignsState is not an array:', { result, campaigns, isArray: Array.isArray(result) });
+    }
+    return result;
   }, [campaigns]);
   const safeEventsState = useMemo(() => {
-    return normalizeApiArray(events, 'events');
+    const result = normalizeApiArray(events, 'events');
+    if (!Array.isArray(result)) {
+      console.error('[CRITICAL] safeEventsState is not an array:', { result, events, isArray: Array.isArray(result) });
+    }
+    return result;
   }, [events]);
   const safeDealsState = useMemo(() => {
-    return normalizeApiArray(deals, 'deals');
+    const result = normalizeApiArray(deals, 'deals');
+    if (!Array.isArray(result)) {
+      console.error('[CRITICAL] safeDealsState is not an array:', { result, deals, isArray: Array.isArray(result) });
+    }
+    return result;
   }, [deals]);
   const safeContractsState = useMemo(() => {
     return normalizeApiArray(contracts, 'contracts');

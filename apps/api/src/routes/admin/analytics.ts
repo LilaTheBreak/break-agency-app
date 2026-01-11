@@ -28,6 +28,19 @@ router.post("/analyze", async (req: Request, res: Response) => {
     // Case 1: Analyze talent
     if (talentId && typeof talentId === "string") {
       try {
+        // Check if talent exists first
+        const talent = await prisma.talent.findUnique({
+          where: { id: talentId },
+        });
+        
+        if (!talent) {
+          logInfo("[ANALYTICS] Talent not found", { talentId });
+          return res.status(404).json({
+            error: "Talent not found",
+            details: `No talent found with ID: ${talentId}`,
+          });
+        }
+        
         const talentData = await getTalentSocialIntelligence(talentId);
         logInfo("[ANALYTICS] Talent analytics fetched", { talentId });
         return res.json({
@@ -121,6 +134,19 @@ router.get("/", async (req: Request, res: Response) => {
     // Case 1: Analyze talent by ID
     if (talentId && typeof talentId === "string") {
       try {
+        // Check if talent exists first
+        const talent = await prisma.talent.findUnique({
+          where: { id: talentId },
+        });
+        
+        if (!talent) {
+          logInfo("[ANALYTICS] Talent not found", { talentId });
+          return res.status(404).json({
+            error: "Talent not found",
+            details: `No talent found with ID: ${talentId}`,
+          });
+        }
+        
         const talentData = await getTalentSocialIntelligence(talentId);
         logInfo("[ANALYTICS] Talent analytics fetched", { talentId });
         return res.json({

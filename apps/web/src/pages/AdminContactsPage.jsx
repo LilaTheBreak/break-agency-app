@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { ContactChip } from "../components/ContactChip.jsx";
@@ -14,28 +15,36 @@ import {
 import Button, { PrimaryButton, SecondaryButton, DangerButton, TextButton } from "../components/Button.jsx";
 
 // Form field components (reused from AdminBrandsPage pattern)
-function Field({ label, value, onChange, placeholder }) {
+function Field({ label, value, onChange, placeholder, required = false }) {
   return (
     <div>
-      <label className="mb-1 block text-xs uppercase tracking-[0.35em] text-brand-black/60">{label}</label>
+      <label className="mb-2 block text-xs uppercase tracking-[0.35em] text-brand-black/60">
+        {label}
+        {required && <span className="text-brand-red ml-1">*</span>}
+      </label>
       <input
         type="text"
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        required={required}
         className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
       />
     </div>
   );
 }
 
-function Select({ label, value, onChange, options }) {
+function Select({ label, value, onChange, options, required = false }) {
   return (
     <div>
-      <label className="mb-1 block text-xs uppercase tracking-[0.35em] text-brand-black/60">{label}</label>
+      <label className="mb-2 block text-xs uppercase tracking-[0.35em] text-brand-black/60">
+        {label}
+        {required && <span className="text-brand-red ml-1">*</span>}
+      </label>
       <select
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
+        required={required}
         className="w-full rounded-2xl border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-brand-black focus:border-brand-black focus:outline-none focus:ring-2 focus:ring-brand-black/10"
       >
         {options.map((opt) => (
@@ -51,7 +60,7 @@ function Select({ label, value, onChange, options }) {
 function TextArea({ label, value, onChange, placeholder }) {
   return (
     <div>
-      <label className="mb-1 block text-xs uppercase tracking-[0.35em] text-brand-black/60">{label}</label>
+      <label className="mb-2 block text-xs uppercase tracking-[0.35em] text-brand-black/60">{label}</label>
       <textarea
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
@@ -66,17 +75,39 @@ function TextArea({ label, value, onChange, placeholder }) {
 function Drawer({ open, title, onClose, actions, children }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="fixed inset-0 bg-brand-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-3xl border-t border-brand-black/10 bg-brand-white shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-brand-black/10 bg-brand-white px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto">
+      {/* Darkened overlay backdrop */}
+      <div 
+        className="fixed inset-0 bg-brand-black/50 backdrop-blur-sm" 
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      
+      {/* Centered modal dialog */}
+      <div className="relative z-10 m-4 w-full max-w-2xl max-h-[85vh] flex flex-col rounded-3xl border border-brand-black/10 bg-brand-white shadow-2xl">
+        {/* Header - sticky to top */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-brand-black/10 bg-brand-white px-6 py-4 rounded-t-3xl">
           <h2 className="text-xl font-semibold uppercase tracking-[0.3em] text-brand-black">{title}</h2>
-          <button onClick={onClose} className="text-brand-black/60 hover:text-brand-black">
+          <button 
+            onClick={onClose} 
+            className="text-brand-black/60 hover:text-brand-black transition-colors"
+            aria-label="Close dialog"
+          >
             ✕
           </button>
         </div>
-        <div className="p-6 space-y-6">{children}</div>
-        {actions && <div className="sticky bottom-0 border-t border-brand-black/10 bg-brand-white px-6 py-4">{actions}</div>}
+        
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {children}
+        </div>
+        
+        {/* Footer with actions - sticky to bottom */}
+        {actions && (
+          <div className="sticky bottom-0 border-t border-brand-black/10 bg-brand-white px-6 py-4 rounded-b-3xl">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -239,23 +270,31 @@ export function AdminContactsPage({ session }) {
       setContacts((prev) => prev.filter((c) => c.id !== contactToDelete.id));
       setDeleteModalOpen(false);
       setContactToDelete(null);
+      toast.success("Contact deleted successfully");
     } catch (error) {
       console.error("[CONTACTS] Failed to delete contact:", error);
-      alert("Failed to delete contact: " + (error.message || "Please try again."));
+      const errorMsg = error?.message || "Failed to delete contact. Please try again.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
+    // ===== VALIDATION =====
     const firstName = editorDraft.firstName.trim();
     const lastName = editorDraft.lastName.trim();
-    if (!firstName || !lastName) {
-      alert("First name and last name are required");
+    
+    if (!firstName) {
+      toast.error("First name is required");
+      return;
+    }
+    if (!lastName) {
+      toast.error("Last name is required");
       return;
     }
     if (!editorDraft.brandId) {
-      alert("Brand is required");
+      toast.error("Brand is required");
       return;
     }
 
@@ -276,20 +315,29 @@ export function AdminContactsPage({ session }) {
       };
 
       if (editorMode === "create") {
-        const newContact = await createContact(contactData);
-        const contactArray = Array.isArray(newContact) ? newContact : newContact?.contact ? [newContact.contact] : [];
-        setContacts((prev) => [...contactArray, ...prev]);
+        const response = await createContact(contactData);
+        // API returns { contact: {...} }
+        const newContact = response?.contact;
+        if (newContact) {
+          setContacts((prev) => [newContact, ...prev]);
+          toast.success(`Contact "${firstName} ${lastName}" added successfully`);
+        } else {
+          throw new Error("Invalid response from server");
+        }
       } else {
         await updateContact(selectedContact.id, contactData);
         setContacts((prev) =>
           prev.map((c) => (c.id === selectedContact.id ? { ...c, ...contactData } : c))
         );
+        toast.success(`Contact "${firstName} ${lastName}" updated successfully`);
       }
 
+      // Close modal on success
       setEditorOpen(false);
     } catch (error) {
       console.error("[CONTACTS] Failed to save contact:", error);
-      alert("Failed to save contact: " + (error.message || "Please try again."));
+      const errorMsg = error?.message || "Failed to save contact. Please try again.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -411,32 +459,39 @@ export function AdminContactsPage({ session }) {
         }
       >
         <div className="space-y-6">
+          {/* Core Details Section */}
           <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
-            <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Core Details</p>
+            <div className="mb-5 flex items-center gap-2">
+              <p className="text-xs uppercase tracking-[0.35em] text-brand-red font-semibold">Core Details</p>
+              <p className="text-xs text-brand-black/50">(fields marked * are required)</p>
+            </div>
             <div className="space-y-4">
               <Select
-                label="Brand *"
+                label="Brand"
                 value={editorDraft.brandId}
                 onChange={(v) => setEditorDraft((prev) => ({ ...prev, brandId: v }))}
                 options={[
                   { value: "", label: "Select a brand" },
                   ...safeBrands.map((b) => ({ value: b.id, label: b.brandName || b.name || "Unknown" })),
                 ]}
+                required={true}
               />
               <Field
-                label="First Name *"
+                label="First Name"
                 value={editorDraft.firstName}
                 onChange={(v) => setEditorDraft((prev) => ({ ...prev, firstName: v }))}
                 placeholder="e.g. Sarah"
+                required={true}
               />
               <Field
-                label="Last Name *"
+                label="Last Name"
                 value={editorDraft.lastName}
                 onChange={(v) => setEditorDraft((prev) => ({ ...prev, lastName: v }))}
                 placeholder="e.g. Khan"
+                required={true}
               />
               <Field
-                label="Role / Title (optional)"
+                label="Role / Title"
                 value={editorDraft.role}
                 onChange={(v) => setEditorDraft((prev) => ({ ...prev, role: v }))}
                 placeholder="e.g. Partnerships Lead"
@@ -450,23 +505,24 @@ export function AdminContactsPage({ session }) {
             </div>
           </div>
 
+          {/* Contact Information Section */}
           <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
-            <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Contact Information</p>
+            <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-red font-semibold">Contact Information</p>
             <div className="space-y-4">
               <Field
-                label="Email (optional)"
+                label="Email"
                 value={editorDraft.email}
                 onChange={(v) => setEditorDraft((prev) => ({ ...prev, email: v }))}
                 placeholder="name@brand.com"
               />
               <Field
-                label="Phone (optional)"
+                label="Phone"
                 value={editorDraft.phone}
                 onChange={(v) => setEditorDraft((prev) => ({ ...prev, phone: v }))}
                 placeholder="+44…"
               />
               <Field
-                label="LinkedIn URL (optional)"
+                label="LinkedIn URL"
                 value={editorDraft.linkedInUrl}
                 onChange={(v) => setEditorDraft((prev) => ({ ...prev, linkedInUrl: v }))}
                 placeholder="https://linkedin.com/in/…"
@@ -480,8 +536,9 @@ export function AdminContactsPage({ session }) {
             </div>
           </div>
 
+          {/* Settings Section */}
           <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/40 p-6">
-            <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-black/60">Settings</p>
+            <p className="mb-5 text-xs uppercase tracking-[0.35em] text-brand-red font-semibold">Settings</p>
             <div className="space-y-4">
               <Field
                 label="Owner"
@@ -495,9 +552,9 @@ export function AdminContactsPage({ session }) {
                   type="checkbox"
                   checked={Boolean(editorDraft.primaryContact)}
                   onChange={(e) => setEditorDraft((prev) => ({ ...prev, primaryContact: e.target.checked }))}
-                  className="h-4 w-4"
+                  className="h-4 w-4 cursor-pointer"
                 />
-                <label htmlFor="primaryContact" className="text-sm text-brand-black/70">
+                <label htmlFor="primaryContact" className="text-sm text-brand-black/70 cursor-pointer flex-1">
                   Mark as primary contact for this brand
                 </label>
               </div>

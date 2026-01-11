@@ -227,8 +227,23 @@ router.post("/", async (req: Request, res: Response) => {
 
     return res.json({ brand });
   } catch (error) {
-    console.error("[CRM BRANDS] Error creating brand:", error);
-    res.status(500).json({ error: "Failed to create brand" });
+    console.error("[CRM BRANDS] Error creating brand:", error instanceof Error ? error.message : String(error));
+    console.error("[CRM BRANDS] Full error:", error);
+    
+    // Handle specific Prisma errors
+    if ((error as any)?.code === 'P2002') {
+      // Unique constraint violation (e.g., duplicate brandName)
+      const field = (error as any)?.meta?.target?.[0] || 'brand name';
+      return res.status(400).json({ 
+        error: `A brand with this ${field} already exists`,
+        code: 'DUPLICATE_BRAND'
+      });
+    }
+    
+    return res.status(500).json({ 
+      error: "Failed to create brand",
+      message: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 

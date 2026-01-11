@@ -69,9 +69,9 @@ export function AdminAnalyticsPage({ session }) {
       // DEBUG: Request body built
       console.log("[ANALYTICS_DEBUG] Request body:", body);
       
-      // Use POST /analyze endpoint for new style
-      // Fall back to GET for legacy connected profiles
-      if (profile.type === "external" || !profile.id) {
+      // Use POST /analyze endpoint for talent and external profiles
+      // Only use GET for legacy connected profiles that have a specific profileId
+      if (profile.type === "talent" || profile.type === "external" || !profile.id) {
         console.log("[ANALYTICS_DEBUG] Using POST /api/admin/analytics/analyze endpoint");
         
         const response = await apiFetch("/api/admin/analytics/analyze", {
