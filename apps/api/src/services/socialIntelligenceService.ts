@@ -499,14 +499,17 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
     });
 
     if (!connections || connections.length === 0) {
+      console.log(`[SOCIAL_INTELLIGENCE] No connected social accounts for ${talentId}`);
       return null;
     }
 
-    // Fetch all social profiles for these connections
-    const profiles = await Promise.all(
+    console.log(`[SOCIAL_INTELLIGENCE] Found ${connections.length} connections for ${talentId}`);
+
+    // Try to fetch SocialProfile records first
+    let socialProfiles = await Promise.all(
       connections.map(conn =>
         prisma.socialProfile.findUnique({
-          where: { id: conn.id },
+          where: { connectionId: conn.id },
           include: {
             posts: { orderBy: { postedAt: 'desc' }, take: 50 },
             metrics: { orderBy: { snapshotDate: 'desc' }, take: 30 },
@@ -515,16 +518,44 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
       )
     );
 
-    const socialProfiles = profiles.filter((p) => p !== null) as any[];
-    console.log(`[SOCIAL_INTELLIGENCE] Found ${socialProfiles.length} social profiles for ${talentId}`);
+    let socialProfilesFound = socialProfiles.filter((p) => p !== null) as any[];
+    console.log(`[SOCIAL_INTELLIGENCE] Found ${socialProfilesFound.length} SocialProfile records for ${talentId}`);
 
-    if (socialProfiles.length === 0) {
+    // If no SocialProfile records exist, fall back to TalentSocial records
+    if (socialProfilesFound.length === 0) {
+      console.log(`[SOCIAL_INTELLIGENCE] No SocialProfile records found, trying TalentSocial fallback`);
+      const talentSocials = await prisma.talentSocial.findMany({
+        where: { talentId },
+      });
+
+      if (talentSocials.length === 0) {
+        console.log(`[SOCIAL_INTELLIGENCE] No TalentSocial records found either - returning null`);
+        return null;
+      }
+
+      // Convert TalentSocial records to a format compatible with the rest of the code
+      socialProfilesFound = talentSocials.map(ts => ({
+        id: ts.id,
+        platform: ts.platform,
+        handle: ts.handle,
+        displayName: ts.displayName,
+        profileImageUrl: ts.profileImageUrl,
+        followerCount: ts.followers || 0,
+        postCount: ts.postCount || 0,
+        posts: [], // No post data from TalentSocial
+        metrics: [], // No metrics data from TalentSocial
+      }));
+
+      console.log(`[SOCIAL_INTELLIGENCE] Using ${socialProfilesFound.length} TalentSocial records as fallback`);
+    }
+
+    if (socialProfilesFound.length === 0) {
       console.log(`[SOCIAL_INTELLIGENCE] No social profiles found - returning null (will use fallback)`);
       return null;
     }
 
     // Combine posts from all profiles
-    const allPosts = socialProfiles
+    const allPosts = socialProfilesFound
       .flatMap((profile) =>
         (profile?.posts || []).map((post: any) => ({
           ...post,
@@ -535,30 +566,31 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
     
     console.log(`[SOCIAL_INTELLIGENCE] Found ${allPosts.length} posts for ${talentId}`);
 
-    if (allPosts.length === 0) {
-      return null;
-    }
+    // If no posts found, still calculate overview from available profile data
+    const hasPostData = allPosts.length > 0;
 
-    // Format top 8 posts for display
-    const contentPerformance = allPosts.slice(0, 8).map((post, idx) => ({
-      id: post.id,
-      platform: post.platform,
-      caption: post.caption || `Post ${idx + 1}`,
-      format:
-        post.mediaType === "VIDEO"
-          ? "video"
-          : post.mediaType === "CAROUSEL"
-            ? "carousel"
-            : "photo",
-      likes: post.likeCount || 0,
-      comments: post.commentCount || 0,
-      saves: post.saveCount || 0,
-      engagementRate: post.engagementRate || 0,
-      tags: [],
-    }));
+    // Format top 8 posts for display (or empty array if no posts)
+    const contentPerformance = hasPostData 
+      ? allPosts.slice(0, 8).map((post, idx) => ({
+          id: post.id,
+          platform: post.platform,
+          caption: post.caption || `Post ${idx + 1}`,
+          format:
+            post.mediaType === "VIDEO"
+              ? "video"
+              : post.mediaType === "CAROUSEL"
+                ? "carousel"
+                : "photo",
+          likes: post.likeCount || 0,
+          comments: post.commentCount || 0,
+          saves: post.saveCount || 0,
+          engagementRate: post.engagementRate || 0,
+          tags: [],
+        }))
+      : [];
 
     // Aggregate metrics across all profiles
-    const allMetrics = socialProfiles.flatMap((p) => p?.metrics || []);
+    const allMetrics = socialProfilesFound.flatMap((p) => p?.metrics || []);
 
     let totalEngagements = 0;
     let engagementSum = 0;
@@ -572,43 +604,59 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
       });
     }
 
-    // Calculate totals from posts
-    allPosts.forEach((p: any) => {
-      totalEngagements += (p.likeCount || 0) + (p.commentCount || 0);
-    });
+    // Calculate totals from posts (if available)
+    if (hasPostData) {
+      allPosts.forEach((p: any) => {
+        totalEngagements += (p.likeCount || 0) + (p.commentCount || 0);
+      });
+    }
 
     // Get follower info from profiles
-    socialProfiles.forEach((p: any) => {
+    socialProfilesFound.forEach((p: any) => {
       followerCount += p?.followerCount || 0;
     });
 
-    const avgEngagementRate =
-      engagementCount > 0
+    const avgEngagementRate = hasPostData
+      ? engagementCount > 0
         ? engagementSum / engagementCount
         : allPosts.reduce((sum, p) => sum + (p.engagementRate || 0), 0) /
-            allPosts.length;
+            allPosts.length
+      : 0; // No engagement rate if no posts
 
-    // Extract real keywords from post captions
-    const keywords = extractKeywordsFromPosts(allPosts);
+    // Extract real keywords from post captions (or empty if no posts)
+    const keywords = hasPostData ? extractKeywordsFromPosts(allPosts) : [];
 
-    // PHASE 2.1: Calculate real sentiment from comments and captions
-    const realSentiment = await calculateCombinedSentiment(talentId, allPosts);
-    const captionSentiment = calculateSentimentFromPostCaptions(allPosts);
+    // Calculate real sentiment from comments and captions
+    const realSentiment = hasPostData 
+      ? await calculateCombinedSentiment(talentId, allPosts)
+      : 0.75; // Default neutral if no post data
 
-    // PHASE 2.2: Calculate real community health metrics
-    const communityHealth = await calculateCommunityHealthMetrics(talentId, allPosts, socialProfiles);
+    const captionSentiment = hasPostData
+      ? calculateSentimentFromPostCaptions(allPosts)
+      : 0.75;
+
+    // Calculate real community health metrics
+    const communityHealth = hasPostData
+      ? await calculateCommunityHealthMetrics(talentId, allPosts, socialProfilesFound)
+      : {
+          commentVolume: 0,
+          commentTrend: 0,
+          responseRate: 0,
+          responseTrend: 0,
+          consistencyScore: 0,
+        };
 
     return {
-      hasRealData: true,
+      hasRealData: hasPostData || followerCount > 0, // Has real data if we have posts OR followers
       overview: {
-        totalReach: Math.floor(totalEngagements / Math.max(allPosts.length, 1)),
-        engagementRate: parseFloat(Math.min(avgEngagementRate, 100).toFixed(2)),
+        totalReach: hasPostData ? Math.floor(totalEngagements / Math.max(allPosts.length, 1)) : 0,
+        engagementRate: hasPostData ? parseFloat(Math.min(avgEngagementRate, 100).toFixed(2)) : 0,
         followerGrowth: 0, // Would need date tracking
         postCount: allPosts.length,
-        avgPostsPerWeek: Math.round((allPosts.length / 4) * 10) / 10,
-        topPlatform: socialProfiles[0]?.platform || "Instagram",
+        avgPostsPerWeek: hasPostData ? Math.round((allPosts.length / 4) * 10) / 10 : 0,
+        topPlatform: socialProfilesFound[0]?.platform || "Instagram",
         topPlatformFollowers: followerCount,
-        sentimentScore: realSentiment, // Real sentiment from Phase 2.1
+        sentimentScore: realSentiment,
       },
       contentPerformance,
       keywords,
