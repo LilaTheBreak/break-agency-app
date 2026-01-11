@@ -44,38 +44,65 @@ export function AdminAnalyticsPage({ session }) {
       setLoading(true);
       setError(null);
       
-      // Build query based on profile type
-      let url = "/api/admin/analytics";
-      const params = new URLSearchParams();
+      let body = {};
       
+      // Build request body based on profile type
       if (profile.type === "talent") {
-        params.append("talentId", profile.id);
+        body.talentId = profile.id;
       } else if (profile.type === "connected") {
-        params.append("profileId", profile.id);
+        body.talentId = profile.id;
       } else if (profile.type === "external") {
-        // External profile identified by platform + handle
-        params.append("platform", profile.platform);
-        params.append("handle", profile.handle);
+        // External profile: send URL
+        body.url = profile.url || `${profile.platform}/${profile.handle}`;
       }
       
-      if (platformFilter !== "ALL") {
-        params.append("platform", platformFilter);
+      // Use POST /analyze endpoint for new style
+      // Fall back to GET for legacy connected profiles
+      if (profile.type === "external" || !profile.id) {
+        const response = await apiFetch("/api/admin/analytics/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setAnalyticsData(data);
+        setDataFreshness(new Date());
+        setSelectedProfile(profile);
+        
+        toast.success("Analytics loaded successfully");
+      } else {
+        // Legacy GET endpoint for connected profiles
+        const params = new URLSearchParams();
+        if (profile.type === "talent") {
+          params.append("talentId", profile.id);
+        } else if (profile.type === "connected") {
+          params.append("profileId", profile.id);
+        }
+        
+        if (platformFilter !== "ALL") {
+          params.append("platform", platformFilter);
+        }
+        
+        params.append("dateRange", dateRange);
+        
+        const response = await apiFetch(`/api/admin/analytics?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setAnalyticsData(data);
+        setDataFreshness(new Date());
+        setSelectedProfile(profile);
+        
+        toast.success("Analytics loaded successfully");
       }
-      
-      params.append("dateRange", dateRange);
-      
-      const response = await apiFetch(`${url}?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch analytics: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      setAnalyticsData(data);
-      setDataFreshness(new Date());
-      setSelectedProfile(profile);
-      
-      toast.success("Analytics loaded successfully");
     } catch (err) {
       console.error("Error fetching analytics:", err);
       setError(err.message);
@@ -92,31 +119,58 @@ export function AdminAnalyticsPage({ session }) {
     try {
       setRefreshing(true);
       
-      let url = "/api/admin/analytics";
-      const params = new URLSearchParams();
+      let body = {};
       
+      // Build request body based on profile type
       if (profile.type === "talent") {
-        params.append("talentId", profile.id);
+        body.talentId = profile.id;
       } else if (profile.type === "connected") {
-        params.append("profileId", profile.id);
+        body.talentId = profile.id;
       } else if (profile.type === "external") {
-        params.append("platform", profile.platform);
-        params.append("handle", profile.handle);
+        // External profile: send URL
+        body.url = profile.url || `${profile.platform}/${profile.handle}`;
       }
       
-      params.append("dateRange", dateRange);
-      
-      const response = await apiFetch(`${url}?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch comparison data`);
+      // Use POST /analyze endpoint
+      if (profile.type === "external" || !profile.id) {
+        const response = await apiFetch("/api/admin/analytics/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch comparison data`);
+        }
+        
+        const data = await response.json();
+        setComparisonData(data);
+        setComparisonProfile(profile);
+        
+        toast.success("Comparison data loaded");
+      } else {
+        // Legacy GET endpoint for connected profiles
+        const params = new URLSearchParams();
+        if (profile.type === "talent") {
+          params.append("talentId", profile.id);
+        } else if (profile.type === "connected") {
+          params.append("profileId", profile.id);
+        }
+        
+        params.append("dateRange", dateRange);
+        
+        const response = await apiFetch(`/api/admin/analytics?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch comparison data`);
+        }
+        
+        const data = await response.json();
+        setComparisonData(data);
+        setComparisonProfile(profile);
+        
+        toast.success("Comparison data loaded");
       }
-      
-      const data = await response.json();
-      setComparisonData(data);
-      setComparisonProfile(profile);
-      
-      toast.success("Comparison data loaded");
     } catch (err) {
       console.error("Error fetching comparison:", err);
       toast.error("Failed to load comparison data");

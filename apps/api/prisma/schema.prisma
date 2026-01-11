@@ -1448,6 +1448,22 @@ model SocialSyncLog {
   @@index([rateLimitHit])
 }
 
+// External social profile (not connected to talent, read-only snapshots)
+model ExternalSocialProfile {
+  id             String   @id @default(cuid())
+  platform       String   // INSTAGRAM, TIKTOK, YOUTUBE
+  username       String
+  profileUrl     String
+  snapshotJson   String   // Serialized profile data (follower count, bio, etc)
+  lastFetchedAt  DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([platform, username])
+  @@index([platform, lastFetchedAt])
+  @@index([createdAt])
+}
+
 model Submission {
   id            String       @id
   creatorId     String

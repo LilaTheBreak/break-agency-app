@@ -100,6 +100,7 @@ export default function ProfileInputSelector({ onProfileSelect, disabled }) {
         name: formatHandle(parsed.handle),
         platform: parsed.platform,
         handle: parsed.handle,
+        url: externalUrl.trim(),
         external: true,
       };
 

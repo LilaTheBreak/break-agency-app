@@ -1,88 +1,170 @@
 import { Router, Request, Response } from "express";
 import prisma from "../../lib/prisma.js";
 import { getTalentSocialIntelligence } from "../../services/socialIntelligenceService.js";
-import { logError } from "../../lib/logger.js";
+import {
+  normalizeSocialInput,
+  syncExternalProfile,
+} from "../../services/analyticsIngestionService.js";
+import { logError, logInfo } from "../../lib/logger.js";
 
 const router = Router();
 
 /**
+ * POST /api/admin/analytics/analyze
+ * 
+ * Analyze ANY social profile (connected or external)
+ * Accepts:
+ * - talentId: Analyze a talent's connected profiles
+ * - url or handle: Paste URL or @handle for analysis
+ * 
+ * Returns full analytics data with sync status
+ */
+router.post("/analyze", async (req: Request, res: Response) => {
+  try {
+    const { talentId, url, forceRefresh } = req.body;
+
+    logInfo("[ANALYTICS] Analyze request", { talentId, url, forceRefresh });
+
+    // Case 1: Analyze talent
+    if (talentId && typeof talentId === "string") {
+      try {
+        const talentData = await getTalentSocialIntelligence(talentId);
+        logInfo("[ANALYTICS] Talent analytics fetched", { talentId });
+        return res.json({
+          ...talentData,
+          syncStatus: "idle",
+          updatedAt: new Date(),
+        });
+      } catch (err) {
+        logError("[ANALYTICS] Error fetching talent analytics", err, { talentId });
+        return res.status(500).json({
+          error: "Failed to fetch talent analytics",
+          details: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    // Case 2: Analyze external profile from URL/handle
+    if (url && typeof url === "string") {
+      // Normalize input
+      const normalized = normalizeSocialInput(url);
+
+      if (!normalized.isValid) {
+        logInfo("[ANALYTICS] Invalid input", { url, error: normalized.error });
+        return res.status(400).json({
+          error: "Invalid social profile input",
+          details: normalized.error,
+        });
+      }
+
+      // Sync profile and get fresh data
+      const syncResult = await syncExternalProfile(normalized, {
+        forceRefresh: forceRefresh === true,
+        maxAge: 12,
+      });
+
+      if (!syncResult.profile) {
+        logInfo("[ANALYTICS] Sync failed", {
+          platform: normalized.platform,
+          username: normalized.username,
+          error: syncResult.error,
+        });
+        return res.status(404).json({
+          error: "Could not fetch profile data",
+          details: syncResult.error,
+          platform: normalized.platform,
+          username: normalized.username,
+        });
+      }
+
+      // Build analytics response from external profile
+      const analytics = buildAnalyticsFromExternalProfile(syncResult.profile);
+      logInfo("[ANALYTICS] Analytics response built", {
+        platform: normalized.platform,
+        username: normalized.username,
+        cached: syncResult.cached,
+      });
+
+      return res.json({
+        ...analytics,
+        syncStatus: syncResult.cached ? "cached" : "synced",
+        updatedAt: syncResult.profile.lastFetchedAt,
+      });
+    }
+
+    return res.status(400).json({
+      error: "Missing required parameters",
+      details: "Provide either talentId or url",
+    });
+  } catch (error) {
+    logError("[ANALYTICS] Analyze request failed", error, {
+      userId: (req as any).user?.id,
+    });
+    return res.status(500).json({
+      error: "Failed to analyze profile",
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+/**
  * GET /api/admin/analytics
  * 
- * Global analytics endpoint supporting multiple input types:
- * - talentId: Analyze an internal talent profile
- * - profileId: Analyze a connected social profile
- * - platform + handle: Analyze any external social URL
+ * Legacy endpoint - redirects to POST /analyze
  */
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const { talentId, profileId, platform, handle, dateRange } = req.query;
+    const { talentId, profileId, url } = req.query;
+
+    logInfo("[ANALYTICS] GET request", { talentId, profileId, url });
 
     // Case 1: Analyze talent by ID
     if (talentId && typeof talentId === "string") {
       try {
         const talentData = await getTalentSocialIntelligence(talentId);
-        return res.json(talentData);
+        logInfo("[ANALYTICS] Talent analytics fetched", { talentId });
+        return res.json({
+          ...talentData,
+          syncStatus: "idle",
+          updatedAt: new Date(),
+        });
       } catch (err) {
-        console.error("[ANALYTICS] Error fetching talent analytics:", err);
+        logError("[ANALYTICS] Error fetching talent analytics", err, { talentId });
         return res.status(500).json({ error: "Failed to fetch talent analytics" });
       }
     }
 
-    // Case 2: Analyze connected profile by ID
-    if (profileId && typeof profileId === "string") {
-      try {
-        const profile = await prisma.socialProfile.findUnique({
-          where: { id: profileId },
-          include: {
-            posts: { orderBy: { postedAt: "desc" }, take: 100 },
-          },
+    // Case 2: Analyze external URL
+    if (url && typeof url === "string") {
+      const normalized = normalizeSocialInput(url);
+
+      if (!normalized.isValid) {
+        return res.status(400).json({
+          error: "Invalid social profile input",
+          details: normalized.error,
         });
-
-        if (!profile) {
-          return res.status(404).json({ error: "Profile not found" });
-        }
-
-        // Build analytics from profile data
-        const analytics = await buildAnalyticsFromProfile(profile, dateRange as string | undefined);
-        return res.json(analytics);
-      } catch (err) {
-        console.error("[ANALYTICS] Error fetching profile analytics:", err);
-        return res.status(500).json({ error: "Failed to fetch profile analytics" });
       }
-    }
 
-    // Case 3: Analyze external profile by platform + handle
-    if (platform && handle && typeof platform === "string" && typeof handle === "string") {
-      try {
-        // Check if profile already exists
-        let profile = await prisma.socialProfile.findFirst({
-          where: {
-            platform: platform.toUpperCase(),
-            handle: handle.toLowerCase(),
-          },
-          include: {
-            posts: { orderBy: { postedAt: "desc" }, take: 100 },
-          },
+      const syncResult = await syncExternalProfile(normalized, { maxAge: 12 });
+
+      if (!syncResult.profile) {
+        return res.status(404).json({
+          error: "Could not fetch profile data",
+          details: syncResult.error,
         });
-
-        if (!profile) {
-          // Return empty analytics for external profile (can be extended to fetch from APIs)
-          const emptyAnalytics = buildEmptyAnalytics(handle, platform.toUpperCase());
-          return res.json(emptyAnalytics);
-        }
-
-        // Build analytics from profile data
-        const analytics = await buildAnalyticsFromProfile(profile, dateRange as string | undefined);
-        return res.json(analytics);
-      } catch (err) {
-        console.error("[ANALYTICS] Error analyzing external profile:", err);
-        return res.status(500).json({ error: "Failed to analyze external profile" });
       }
+
+      const analytics = buildAnalyticsFromExternalProfile(syncResult.profile);
+      return res.json({
+        ...analytics,
+        syncStatus: syncResult.cached ? "cached" : "synced",
+        updatedAt: syncResult.profile.lastFetchedAt,
+      });
     }
 
     return res.status(400).json({ error: "Missing required parameters" });
   } catch (error) {
-    logError("Failed to fetch analytics", error, {
+    logError("[ANALYTICS] Failed to fetch analytics", error, {
       userId: (req as any).user?.id,
     });
     return res.status(500).json({ error: "Failed to fetch analytics" });
@@ -90,10 +172,72 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/analytics/connected-profiles
+ * POST /api/admin/analytics/refresh
  * 
- * Fetch all connected social profiles for quick selection
+ * Manually refresh cached data for a profile
+ * Clears cache and fetches fresh data
  */
+router.post("/refresh", async (req: Request, res: Response) => {
+  try {
+    const { url } = req.body;
+
+    if (!url || typeof url !== "string") {
+      return res.status(400).json({
+        error: "URL is required",
+      });
+    }
+
+    logInfo("[ANALYTICS] Manual refresh requested", { url: url.substring(0, 50) });
+
+    const normalized = normalizeSocialInput(url);
+
+    if (!normalized.isValid) {
+      return res.status(400).json({
+        error: "Invalid social profile input",
+        details: normalized.error,
+      });
+    }
+
+    // Force refresh (ignore cache)
+    const syncResult = await syncExternalProfile(normalized, {
+      forceRefresh: true,
+    });
+
+    if (!syncResult.profile) {
+      logInfo("[ANALYTICS] Refresh failed", {
+        platform: normalized.platform,
+        username: normalized.username,
+        error: syncResult.error,
+      });
+      return res.status(404).json({
+        error: "Could not refresh profile data",
+        details: syncResult.error,
+      });
+    }
+
+    const analytics = buildAnalyticsFromExternalProfile(syncResult.profile);
+    logInfo("[ANALYTICS] Refresh completed", {
+      platform: normalized.platform,
+      username: normalized.username,
+    });
+
+    return res.json({
+      ...analytics,
+      syncStatus: "synced",
+      updatedAt: syncResult.profile.lastFetchedAt,
+      refreshedAt: new Date(),
+    });
+  } catch (error) {
+    logError("[ANALYTICS] Refresh failed", error, {
+      userId: (req as any).user?.id,
+    });
+    return res.status(500).json({
+      error: "Failed to refresh profile",
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
 router.get("/connected-profiles", async (req: Request, res: Response) => {
   try {
     const profiles = await prisma.socialProfile.findMany({
@@ -322,4 +466,47 @@ async function buildAnalyticsFromProfile(profile: any, dateRange?: string | null
   };
 }
 
+/**
+ * Build analytics from external social profile (snapshot-based)
+ */
+function buildAnalyticsFromExternalProfile(profile: any): any {
+  const snapshot = profile.snapshotJson
+    ? JSON.parse(profile.snapshotJson)
+    : {};
+
+  return {
+    connected: false,
+    platform: profile.platform,
+    username: profile.username,
+    overview: {
+      totalReach: snapshot.followerCount || snapshot.subscriberCount || 0,
+      engagementRate: snapshot.engagementRate || 0,
+      followerGrowth: 0,
+      postCount: snapshot.videoCount || snapshot.postCount || 0,
+      avgPostsPerWeek: 0,
+      topPlatform: profile.platform,
+      topPlatformFollowers: snapshot.followerCount || snapshot.subscriberCount || 0,
+      sentimentScore: 0,
+      consistencyScore: 0,
+    },
+    contentPerformance: [],
+    keywords: [],
+    community: {
+      commentVolume: 0,
+      commentTrend: 0,
+      responseRate: 0,
+      responseTrend: 0,
+      averageSentiment: 0,
+      consistencyScore: 0,
+      alerts: snapshot.error
+        ? [`Data fetch error: ${snapshot.error}`]
+        : ["External profile - snapshot data"],
+    },
+    paidContent: [],
+    notes: "",
+    updatedAt: profile.lastFetchedAt,
+  };
+}
+
 export default router;
+
