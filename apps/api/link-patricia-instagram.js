@@ -56,6 +56,7 @@ async function linkInstagram() {
     // CRITICAL: Also create SocialAccountConnection for Social Intelligence service
     console.log('🔗 Creating SocialAccountConnection for social intelligence...');
     let accountConnection = null;
+    let socialProfile = null;
     try {
       accountConnection = await prisma.socialAccountConnection.upsert({
         where: {
@@ -67,6 +68,7 @@ async function linkInstagram() {
         update: {
           handle: 'patriciabright',
           connected: true,
+          syncStatus: 'READY',
           updatedAt: new Date(),
         },
         create: {
@@ -74,13 +76,41 @@ async function linkInstagram() {
           creatorId: talent.id,
           platform: 'INSTAGRAM',
           handle: 'patriciabright',
+          profileUrl: 'https://www.instagram.com/patriciabright/?hl=en',
           connected: true,
+          syncStatus: 'READY',
+          connectionType: 'MANUAL',
           updatedAt: new Date(),
         },
       });
-      console.log('✅ SocialAccountConnection created');
+      console.log('✅ SocialAccountConnection created:', accountConnection.id);
+      
+      // Also create SocialProfile record for social intelligence data
+      console.log('📊 Creating SocialProfile for social data...');
+      socialProfile = await prisma.socialProfile.upsert({
+        where: { connectionId: accountConnection.id },
+        update: {
+          handle: 'patriciabright',
+          displayName: 'Patricia Bright',
+          platform: 'INSTAGRAM',
+          lastSyncedAt: new Date(),
+          updatedAt: new Date(),
+        },
+        create: {
+          id: createId(),
+          connectionId: accountConnection.id,
+          platform: 'INSTAGRAM',
+          handle: 'patriciabright',
+          displayName: 'Patricia Bright',
+          profileImageUrl: null,
+          followerCount: 0,
+          lastSyncedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+      console.log('✅ SocialProfile created:', socialProfile.id);
     } catch (connError) {
-      console.warn('⚠️  SocialAccountConnection creation failed:', connError.message);
+      console.warn('⚠️  Account/Profile creation failed:', connError.message);
     }
     
     console.log(`\n✅ Instagram linked successfully!`);
@@ -90,7 +120,9 @@ async function linkInstagram() {
     console.log(`URL: ${instaLink.url}`);
     console.log(`Linked to: ${talent.name}`);
     console.log(`Created: ${instaLink.createdAt.toISOString()}`);
-    console.log(`Social Intelligence: ${accountConnection ? 'ENABLED' : 'FALLBACK MODE'}`);
+    console.log(`\n📊 Social Intelligence Setup:`);
+    console.log(`   Connection: ${accountConnection ? '✅ READY' : '⚠️  FALLBACK'}`);
+    console.log(`   Profile: ${socialProfile ? '✅ READY' : '⚠️  FALLBACK'}`);
     
     await prisma.$disconnect();
     process.exit(0);
