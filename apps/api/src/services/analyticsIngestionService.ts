@@ -59,7 +59,8 @@ export function normalizeSocialInput(input: string): NormalizedSocialInput {
     trimmed.includes("insta.com") ||
     (cleaned.startsWith("instagram.com") && !cleaned.includes("/p/"))
   ) {
-    const match = cleaned.match(/instagram\.com\/([a-z0-9._-]+)/i);
+    // Match username, handling query parameters like ?hl=en
+    const match = cleaned.match(/instagram\.com\/([a-z0-9._-]+)(?:\?|\/|$)/i);
     if (match) {
       const username = match[1];
       return {
@@ -73,7 +74,8 @@ export function normalizeSocialInput(input: string): NormalizedSocialInput {
 
   // TikTok
   if (trimmed.includes("tiktok.com") || trimmed.includes("vm.tiktok.com")) {
-    const match = cleaned.match(/tiktok\.com\/@?([a-z0-9._-]+)/i);
+    // Match @username format, handling query parameters like ?lang=en
+    const match = cleaned.match(/tiktok\.com\/@?([a-z0-9._-]+)(?:\?|\/|$)/i);
     if (match) {
       const username = match[1].replace(/^@/, "");
       return {
@@ -91,8 +93,8 @@ export function normalizeSocialInput(input: string): NormalizedSocialInput {
     trimmed.includes("youtu.be") ||
     trimmed.includes("yt.be")
   ) {
-    // Try @channel format
-    let match = cleaned.match(/youtube\.com\/@([a-z0-9._-]+)/i);
+    // Try @channel format, handling query parameters
+    let match = cleaned.match(/youtube\.com\/@([a-z0-9._-]+)(?:\?|\/|$)/i);
     if (match) {
       const username = match[1];
       return {
@@ -103,8 +105,8 @@ export function normalizeSocialInput(input: string): NormalizedSocialInput {
       };
     }
 
-    // Try /c/ format
-    match = cleaned.match(/youtube\.com\/c\/([a-z0-9._-]+)/i);
+    // Try /c/ format, handling query parameters
+    match = cleaned.match(/youtube\.com\/c\/([a-z0-9._-]+)(?:\?|\/|$)/i);
     if (match) {
       const username = match[1];
       return {
@@ -115,8 +117,8 @@ export function normalizeSocialInput(input: string): NormalizedSocialInput {
       };
     }
 
-    // Try /user/ format
-    match = cleaned.match(/youtube\.com\/user\/([a-z0-9._-]+)/i);
+    // Try /user/ format, handling query parameters
+    match = cleaned.match(/youtube\.com\/user\/([a-z0-9._-]+)(?:\?|\/|$)/i);
     if (match) {
       const username = match[1];
       return {
