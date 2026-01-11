@@ -134,7 +134,35 @@ router.get("/", async (req: Request, res: Response) => {
       }
     }
 
-    // Case 2: Analyze external URL
+    // Case 2: Analyze connected profile by ID (legacy support)
+    if (profileId && typeof profileId === "string") {
+      try {
+        // For connected profiles, fetch from ExternalSocialProfile
+        const profile = await prisma.externalSocialProfile.findUnique({
+          where: { id: profileId },
+        });
+
+        if (!profile) {
+          return res.status(404).json({
+            error: "Profile not found",
+            profileId,
+          });
+        }
+
+        const analytics = buildAnalyticsFromExternalProfile(profile);
+        logInfo("[ANALYTICS] Connected profile analytics fetched", { profileId });
+        return res.json({
+          ...analytics,
+          syncStatus: "idle",
+          updatedAt: profile.lastFetchedAt || new Date(),
+        });
+      } catch (err) {
+        logError("[ANALYTICS] Error fetching connected profile analytics", err, { profileId });
+        return res.status(500).json({ error: "Failed to fetch profile analytics" });
+      }
+    }
+
+    // Case 3: Analyze external URL
     if (url && typeof url === "string") {
       const normalized = normalizeSocialInput(url);
 
