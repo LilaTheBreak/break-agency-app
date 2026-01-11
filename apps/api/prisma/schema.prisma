@@ -1569,6 +1569,18 @@ model Talent {
   RevenueGoal             RevenueGoal[]
   CommunityConnections    CommunityConnection[]
   ManagerAssignments      TalentManagerAssignment[] @relation("TalentManagers")
+  
+  // Contact Information & Personal Details (NEW)
+  PersonalDetails         TalentPersonalDetails?
+  Addresses               TalentAddress[]
+  BankingDetails          TalentBankingDetails?
+  TaxCompliance           TalentTaxCompliance?
+  Representation          TalentRepresentation?
+  Measurements            TalentMeasurements?
+  TravelInfo              TalentTravelInfo?
+  BrandPreferences        TalentBrandPreferences?
+  InternalNotes           TalentInternalNotes?
+  Consent                 TalentConsent?
 
   @@index([lastProfileImageSyncAt])
   @@index([profileImageSource])
@@ -2398,4 +2410,293 @@ model ExportSchedule {
   @@unique([talentId, userId])
   @@index([userId])
   @@index([enabled])
+}
+
+// ============================================================
+// CONTACT INFORMATION & PERSONAL DETAILS MODELS
+// ============================================================
+
+// Core identity and legal information (LOCKED SECTION)
+model TalentPersonalDetails {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  // Legal Identity
+  legalFirstName          String?
+  legalLastName           String?
+  preferredName           String?
+  dateOfBirth             DateTime?
+  nationality             String?   // ISO country code
+  countryOfResidence      String?   // ISO country code
+  taxResidencyCountry     String?   // ISO country code
+  
+  // Government ID (ENCRYPTED)
+  governmentIdType        String?   // PASSPORT | NATIONAL_ID | DRIVER_LICENCE
+  governmentIdNumber      String?   @db.Text // Encrypted
+  idExpiryDate            DateTime?
+  idDocumentUrl           String?   // S3 URL to uploaded ID document
+  
+  // Additional Contact
+  secondaryEmail          String?
+  mobilePhoneNumber       String?   @db.Text // Encrypted
+  whatsappNumber          String?   @db.Text // Encrypted
+  emergencyContactName    String?
+  emergencyContactRelationship String?
+  emergencyContactPhone   String?   @db.Text // Encrypted
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  updatedBy               String?   // User ID who made the update
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([dateOfBirth])
+}
+
+// Multiple addresses support
+model TalentAddress {
+  id                      String    @id @default(cuid())
+  talentId                String
+  
+  label                   String    @default("Home") // Home | Business | Shipping | Temporary
+  addressLine1            String
+  addressLine2            String?
+  city                    String
+  stateCounty             String?
+  postcode                String?
+  country                 String    // ISO country code
+  
+  isPrimary               Boolean   @default(false)
+  isShippingAddress       Boolean   @default(false)
+  notes                   String?   // Access instructions, concierge info, etc
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@unique([talentId, isPrimary]) // Only one primary per talent (partially unique)
+  @@index([talentId])
+  @@index([isPrimary])
+  @@index([isShippingAddress])
+}
+
+// Banking & Payment Details (LOCKED SECTION)
+model TalentBankingDetails {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  accountHolderName       String?
+  bankName                String?
+  accountType             String?   // Personal | Business
+  accountNumber           String?   @db.Text // Encrypted
+  sortCode                String?   // UK sort code (Encrypted)
+  iban                    String?   @db.Text // International (Encrypted)
+  swiftBic                String?   @db.Text // SWIFT code (Encrypted)
+  currency                String?   @default("GBP")
+  countryOfBank           String?   // ISO country code
+  
+  preferredPaymentMethod  String?   // BankTransfer | PayPal | Wise
+  paypalEmail             String?
+  wiseAccountId           String?   // Encrypted
+  
+  notes                   String?   // e.g. "Invoices handled by accountant"
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  updatedBy               String?   // User ID who made the update
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Tax & Compliance Information (LOCKED SECTION)
+model TalentTaxCompliance {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  taxStatus               String?   // Individual | SoleTrader | LimitedCompany
+  companyName             String?
+  companyRegistrationNumber String?
+  
+  vatRegistered           Boolean   @default(false)
+  vatNumber               String?   @db.Text // Encrypted
+  
+  // UK Tax
+  utr                     String?   @db.Text // Encrypted (Unique Taxpayer Reference)
+  
+  // US Tax
+  einSsn                  String?   @db.Text // Encrypted (masked SSN)
+  
+  withholdingTaxRequired  Boolean   @default(false)
+  
+  // Tax Documents
+  taxFormsUploaded        String[]  // Array of form types: W-8BEN, W-9, Other
+  
+  accountantContactName   String?
+  accountantEmail         String?
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  updatedBy               String?   // User ID who made the update
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([taxStatus])
+}
+
+// Representation & Contracts
+model TalentRepresentation {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  representationType      String    // Exclusive | Non-exclusive
+  representationStartDate DateTime?
+  representationEndDate   DateTime?
+  
+  agencyCommissionPercent Float?
+  
+  contractSigned          Boolean   @default(false)
+  contractUrl             String?   // S3 URL to uploaded contract
+  
+  territoriesCovered      String[]  // List of country codes or regions
+  
+  notes                   String?   // Special clauses, terms, etc
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Sizing & Measurements for fashion/beauty
+model TalentMeasurements {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  // Clothing
+  clothingSize            String?   // UK/EU/US
+  dressSize               String?
+  topSize                 String?
+  bottomSize              String?
+  shoeSize                String?   // UK/EU/US
+  height                  String?   // e.g. "5'9\"" or "175cm"
+  bodyTypeNotes           String?
+  
+  // Beauty
+  skinTone                String?
+  skinType                String?
+  hairType                String?
+  hairColour              String?
+  allergiesSensitivities  String?
+  makeupPreferences       String?
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Travel & Logistics Information (LOCKED SECTION)
+model TalentTravelInfo {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  passportNumber          String?   @db.Text // Encrypted
+  passportExpiryDate      DateTime?
+  passportCountry         String?   // ISO country code
+  
+  visaStatusByCountry     String?   @db.Text // JSON object with country visa info
+  
+  preferredAirport        String?   // IATA code
+  preferredSeat           String?   // Aisle | Window
+  frequentFlyerPrograms   String[]  // Array of program names/numbers
+  
+  hotelPreferences        String?
+  dietaryRequirements     String?
+  accessibilityRequirements String?
+  
+  travelNotes             String?
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  updatedBy               String?   // User ID who made the update
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Brand Safety & Content Preferences
+model TalentBrandPreferences {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  restrictedCategories    String[]  // e.g. gambling, alcohol, weapons, etc
+  competitorConflicts     String[]  // Competitor brand names
+  brandAlignmentNotes     String?
+  
+  previousBrandBlacklist  String[]  // Brands never to work with
+  exclusivityRestrictions String?
+  
+  // Approval required for:
+  approvalRequiredForGifting Boolean @default(false)
+  approvalRequiredForUsageExtensions Boolean @default(false)
+  approvalRequiredForPaidAds Boolean @default(false)
+  
+  usageRightsPreferences  String?   // Notes on usage rights preferences
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Internal Admin Notes (LOCKED SECTION - hidden from talent)
+model TalentInternalNotes {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  riskFlags               String[]  // Risk flags
+  latePaymentHistory      Boolean   @default(false)
+  
+  preferredBrands         String[]  // Brands we like working with
+  
+  negotiationNotes        String?
+  specialHandlingInstructions String?
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  updatedBy               String    // Admin user ID
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Consent & Legal Confirmations
+model TalentConsent {
+  id                      String    @id @default(cuid())
+  talentId                String    @unique
+  
+  consentPersonalDataStorage Boolean @default(false)
+  consentBankingDetailsStorage Boolean @default(false)
+  consentShareDetailsWithBrands Boolean @default(false)
+  
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  updatedBy               String?   // User ID who made the update
+  
+  talent                  Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
 }
