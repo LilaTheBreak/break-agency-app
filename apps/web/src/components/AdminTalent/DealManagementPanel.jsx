@@ -15,6 +15,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { apiFetch } from "../../services/apiClient.js";
 
 /**
  * Professional Deal Management Panel
@@ -91,7 +92,7 @@ export function DealManagementPanel({
   const loadDealData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/deals/${deal.id}`);
+      const response = await apiFetch(`/api/crm-deals/${deal.id}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -103,7 +104,7 @@ export function DealManagementPanel({
       const dealData = await response.json();
 
       setForm({
-        dealName: dealData.dealName || dealData.name || "",
+        dealName: dealData.dealName || dealData.brandName || dealData.name || "",
         brandId: dealData.brandId || "",
         stage: dealData.stage || "",
         dealType: dealData.dealType || "Campaign",
@@ -139,7 +140,7 @@ export function DealManagementPanel({
 
   const loadDocuments = async (dealId) => {
     try {
-      const response = await fetch(`/api/deals/${dealId}/documents`);
+      const response = await apiFetch(`/api/deals/${dealId}/documents`);
       if (response.ok) {
         const data = await response.json();
         setDocuments(Array.isArray(data) ? data : data.documents || []);
@@ -151,7 +152,7 @@ export function DealManagementPanel({
 
   const loadEmails = async (dealId) => {
     try {
-      const response = await fetch(`/api/deals/${dealId}/emails`);
+      const response = await apiFetch(`/api/deals/${dealId}/emails`);
       if (response.ok) {
         const data = await response.json();
         setEmails(Array.isArray(data) ? data : data.emails || []);
@@ -163,7 +164,7 @@ export function DealManagementPanel({
 
   const loadActivityLog = async (dealId) => {
     try {
-      const response = await fetch(`/api/deals/${dealId}/activity`);
+      const response = await apiFetch(`/api/deals/${dealId}/activity`);
       if (response.ok) {
         const data = await response.json();
         setActivityLog(Array.isArray(data) ? data : data.activity || []);
@@ -198,14 +199,14 @@ export function DealManagementPanel({
         notes: form.notes,
       };
 
-      const response = await fetch(`/api/deals/${deal.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const response = await apiFetch(`/api/crm-deals/${deal.id}`, {
+        method: "PATCH",
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save deal");
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.error || "Failed to save deal");
       }
 
       toast.success("Deal updated successfully");
@@ -214,7 +215,7 @@ export function DealManagementPanel({
     } catch (err) {
       console.error("[SAVE] Error:", err);
       setError(err.message || "Failed to save changes");
-      toast.error("Failed to save deal");
+      toast.error("Failed to save deal: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -242,7 +243,7 @@ export function DealManagementPanel({
       formData.append("file", file);
       formData.append("dealId", deal.id);
 
-      const response = await fetch(`/api/deals/${deal.id}/documents`, {
+      const response = await apiFetch(`/api/deals/${deal.id}/documents`, {
         method: "POST",
         body: formData,
       });
@@ -263,7 +264,7 @@ export function DealManagementPanel({
     if (!window.confirm("Delete this document?")) return;
 
     try {
-      const response = await fetch(`/api/deals/${deal.id}/documents/${documentId}`, {
+      const response = await apiFetch(`/api/deals/${deal.id}/documents/${documentId}`, {
         method: "DELETE",
       });
 
@@ -281,9 +282,8 @@ export function DealManagementPanel({
     if (!newNote.trim()) return;
 
     try {
-      const response = await fetch(`/api/deals/${deal.id}/notes`, {
+      const response = await apiFetch(`/api/deals/${deal.id}/notes`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: newNote }),
       });
 
