@@ -11,7 +11,7 @@ import { isFeatureEnabled } from "../config/features.js";
 
 const router = Router();
 
-// Phase 5: Feature flag check middleware
+// Phase 5: Feature flag check - ONLY applied to specific brief routes
 const checkBriefsEnabled = (req: Request, res: Response, next: Function) => {
   const enabled = process.env.BRIEFS_ENABLED === "true";
   if (!enabled) {
@@ -24,13 +24,14 @@ const checkBriefsEnabled = (req: Request, res: Response, next: Function) => {
   next();
 };
 
-router.use(requireAuth, checkBriefsEnabled);
+// Apply requireAuth globally to this router, but NOT the feature check
+router.use(requireAuth);
 
 /**
  * GET /api/briefs
  * List all briefs (admin/brand only)
  */
-router.get("/", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), async (req: Request, res: Response) => {
+router.get("/", checkBriefsEnabled, requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), async (req: Request, res: Response) => {
   try {
     const { brandId, status } = req.query;
     const userId = req.user!.id;
@@ -84,7 +85,7 @@ router.get("/", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), async (req: Reque
  * POST /api/briefs
  * Create a new brief (admin/brand only)
  */
-router.post("/", requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), async (req: Request, res: Response) => {
+router.post("/", checkBriefsEnabled, requireRole(['ADMIN', 'SUPERADMIN', 'BRAND']), async (req: Request, res: Response) => {
   try {
     const {
       brandId,
@@ -269,7 +270,7 @@ router.get("/:id", async (req: Request, res: Response) => {
  * GET /api/briefs/:id/matches
  * Get creator matches for a brief
  */
-router.get("/:id/matches", async (req: Request, res: Response) => {
+router.get("/:id/matches", checkBriefsEnabled, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, minScore } = req.query;
