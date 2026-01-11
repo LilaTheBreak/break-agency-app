@@ -2446,5 +2446,635 @@ router.delete("/:id/managers/:managerId", async (req: Request, res: Response) =>
   }
 });
 
+// ============================================================
+// CONTACT INFORMATION & PERSONAL DETAILS ENDPOINTS
+// ============================================================
+
+/**
+ * Verify admin password for accessing locked sections
+ * POST /api/admin/talent/:id/verify-password
+ */
+router.post("/:id/verify-password", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const { password } = req.body;
+
+    // Temporary password verification (placeholder)
+    // TODO: Replace with proper bcrypt comparison
+    const ADMIN_PASSWORD = process.env.CONTACT_INFO_PASSWORD || "123456";
+    
+    if (password !== ADMIN_PASSWORD) {
+      return sendError(res, "INVALID_PASSWORD", "Invalid password", 401);
+    }
+
+    // Return session token for locked section
+    // In production, this should be a JWT with expiration
+    const token = Buffer.from(`${talentId}:${Date.now()}`).toString("base64");
+    
+    return sendSuccess(res, { token, expiresIn: 3600 }, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error verifying password:", error);
+    return handleApiError(res, error, "Failed to verify password", "PASSWORD_VERIFY_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/personal-details
+ * Fetch talent personal details
+ */
+router.get("/:id/personal-details", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const details = await prisma.talentPersonalDetails.findUnique({
+      where: { talentId },
+    });
+
+    if (!details) {
+      return sendSuccess(res, {
+        talentId,
+        legalFirstName: null,
+        legalLastName: null,
+        // ... other fields initialized to null
+      }, 200);
+    }
+
+    // Mask sensitive fields for non-super-admins
+    if (!isSuperAdmin(req.user!)) {
+      if (details.governmentIdNumber) details.governmentIdNumber = "****";
+      if (details.mobilePhoneNumber) details.mobilePhoneNumber = "****";
+      if (details.whatsappNumber) details.whatsappNumber = "****";
+      if (details.emergencyContactPhone) details.emergencyContactPhone = "****";
+    }
+
+    return sendSuccess(res, details, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error fetching personal details:", error);
+    return handleApiError(res, error, "Failed to fetch personal details", "PERSONAL_DETAILS_FETCH_FAILED");
+  }
+});
+
+/**
+ * PUT /api/admin/talent/:id/personal-details
+ * Update talent personal details
+ */
+router.put("/:id/personal-details", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const data = req.body;
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    const details = await prisma.talentPersonalDetails.upsert({
+      where: { talentId },
+      create: {
+        talentId,
+        ...data,
+        updatedBy: req.user!.id,
+      },
+      update: {
+        ...data,
+        updatedBy: req.user!.id,
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_PERSONAL_DETAILS_UPDATED",
+      metadata: { talentId },
+    });
+
+    return sendSuccess(res, details, 200, "Personal details updated");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error updating personal details:", error);
+    return handleApiError(res, error, "Failed to update personal details", "PERSONAL_DETAILS_UPDATE_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/addresses
+ * Fetch all talent addresses
+ */
+router.get("/:id/addresses", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const addresses = await prisma.talentAddress.findMany({
+      where: { talentId },
+      orderBy: { isPrimary: "desc" },
+    });
+
+    return sendSuccess(res, { addresses }, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error fetching addresses:", error);
+    return handleApiError(res, error, "Failed to fetch addresses", "ADDRESSES_FETCH_FAILED");
+  }
+});
+
+/**
+ * POST /api/admin/talent/:id/addresses
+ * Create a new address
+ */
+router.post("/:id/addresses", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const { label, addressLine1, addressLine2, city, stateCounty, postcode, country, isPrimary, isShippingAddress, notes } = req.body;
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // If this is primary, unset previous primary
+    if (isPrimary) {
+      await prisma.talentAddress.updateMany({
+        where: { talentId, isPrimary: true },
+        data: { isPrimary: false },
+      });
+    }
+
+    const address = await prisma.talentAddress.create({
+      data: {
+        talentId,
+        label,
+        addressLine1,
+        addressLine2,
+        city,
+        stateCounty,
+        postcode,
+        country,
+        isPrimary: isPrimary || false,
+        isShippingAddress: isShippingAddress || false,
+        notes,
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_ADDRESS_CREATED",
+      metadata: { talentId, addressId: address.id },
+    });
+
+    return sendSuccess(res, address, 201, "Address created");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error creating address:", error);
+    return handleApiError(res, error, "Failed to create address", "ADDRESS_CREATE_FAILED");
+  }
+});
+
+/**
+ * PUT /api/admin/talent/:id/addresses/:addressId
+ * Update an address
+ */
+router.put("/:id/addresses/:addressId", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId, addressId } = req.params;
+    const { label, addressLine1, addressLine2, city, stateCounty, postcode, country, isPrimary, isShippingAddress, notes } = req.body;
+
+    const address = await prisma.talentAddress.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!address || address.talentId !== talentId) {
+      return sendError(res, "NOT_FOUND", "Address not found", 404);
+    }
+
+    // If setting as primary, unset previous primary
+    if (isPrimary && !address.isPrimary) {
+      await prisma.talentAddress.updateMany({
+        where: { talentId, isPrimary: true, id: { not: addressId } },
+        data: { isPrimary: false },
+      });
+    }
+
+    const updated = await prisma.talentAddress.update({
+      where: { id: addressId },
+      data: {
+        label,
+        addressLine1,
+        addressLine2,
+        city,
+        stateCounty,
+        postcode,
+        country,
+        isPrimary,
+        isShippingAddress,
+        notes,
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_ADDRESS_UPDATED",
+      metadata: { talentId, addressId },
+    });
+
+    return sendSuccess(res, updated, 200, "Address updated");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error updating address:", error);
+    return handleApiError(res, error, "Failed to update address", "ADDRESS_UPDATE_FAILED");
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/:id/addresses/:addressId
+ * Delete an address
+ */
+router.delete("/:id/addresses/:addressId", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId, addressId } = req.params;
+
+    const address = await prisma.talentAddress.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!address || address.talentId !== talentId) {
+      return sendError(res, "NOT_FOUND", "Address not found", 404);
+    }
+
+    // If deleting primary, ensure another address is set as primary
+    const remainingAddresses = await prisma.talentAddress.findMany({
+      where: { talentId, id: { not: addressId } },
+    });
+
+    if (address.isPrimary && remainingAddresses.length > 0) {
+      // Set first remaining as primary
+      await prisma.talentAddress.update({
+        where: { id: remainingAddresses[0].id },
+        data: { isPrimary: true },
+      });
+    }
+
+    await prisma.talentAddress.delete({
+      where: { id: addressId },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_ADDRESS_DELETED",
+      metadata: { talentId, addressId },
+    });
+
+    return sendSuccess(res, { success: true }, 200, "Address deleted");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error deleting address:", error);
+    return handleApiError(res, error, "Failed to delete address", "ADDRESS_DELETE_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/banking-details
+ * Fetch banking details
+ */
+router.get("/:id/banking-details", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const details = await prisma.talentBankingDetails.findUnique({
+      where: { talentId },
+    });
+
+    if (!details) {
+      return sendSuccess(res, { talentId }, 200);
+    }
+
+    // Mask sensitive fields
+    if (!isSuperAdmin(req.user!)) {
+      if (details.accountNumber) details.accountNumber = "****";
+      if (details.sortCode) details.sortCode = "****";
+      if (details.iban) details.iban = "****";
+      if (details.swiftBic) details.swiftBic = "****";
+    }
+
+    return sendSuccess(res, details, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error fetching banking details:", error);
+    return handleApiError(res, error, "Failed to fetch banking details", "BANKING_DETAILS_FETCH_FAILED");
+  }
+});
+
+/**
+ * PUT /api/admin/talent/:id/banking-details
+ * Update banking details
+ */
+router.put("/:id/banking-details", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const data = req.body;
+
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    const details = await prisma.talentBankingDetails.upsert({
+      where: { talentId },
+      create: {
+        talentId,
+        ...data,
+        updatedBy: req.user!.id,
+      },
+      update: {
+        ...data,
+        updatedBy: req.user!.id,
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_BANKING_DETAILS_UPDATED",
+      metadata: { talentId },
+    });
+
+    return sendSuccess(res, details, 200, "Banking details updated");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error updating banking details:", error);
+    return handleApiError(res, error, "Failed to update banking details", "BANKING_DETAILS_UPDATE_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/tax-compliance
+ * Fetch tax compliance information
+ */
+router.get("/:id/tax-compliance", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const details = await prisma.talentTaxCompliance.findUnique({
+      where: { talentId },
+    });
+
+    if (!details) {
+      return sendSuccess(res, { talentId }, 200);
+    }
+
+    // Mask sensitive fields
+    if (!isSuperAdmin(req.user!)) {
+      if (details.vatNumber) details.vatNumber = "****";
+      if (details.utr) details.utr = "****";
+      if (details.einSsn) details.einSsn = "****";
+    }
+
+    return sendSuccess(res, details, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error fetching tax compliance:", error);
+    return handleApiError(res, error, "Failed to fetch tax compliance", "TAX_COMPLIANCE_FETCH_FAILED");
+  }
+});
+
+/**
+ * PUT /api/admin/talent/:id/tax-compliance
+ * Update tax compliance information
+ */
+router.put("/:id/tax-compliance", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const data = req.body;
+
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    const details = await prisma.talentTaxCompliance.upsert({
+      where: { talentId },
+      create: {
+        talentId,
+        ...data,
+        updatedBy: req.user!.id,
+      },
+      update: {
+        ...data,
+        updatedBy: req.user!.id,
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_TAX_COMPLIANCE_UPDATED",
+      metadata: { talentId },
+    });
+
+    return sendSuccess(res, details, 200, "Tax compliance updated");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error updating tax compliance:", error);
+    return handleApiError(res, error, "Failed to update tax compliance", "TAX_COMPLIANCE_UPDATE_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/travel-info
+ * Fetch travel information
+ */
+router.get("/:id/travel-info", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const details = await prisma.talentTravelInfo.findUnique({
+      where: { talentId },
+    });
+
+    if (!details) {
+      return sendSuccess(res, { talentId }, 200);
+    }
+
+    // Mask sensitive fields
+    if (!isSuperAdmin(req.user!)) {
+      if (details.passportNumber) details.passportNumber = "****";
+    }
+
+    return sendSuccess(res, details, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error fetching travel info:", error);
+    return handleApiError(res, error, "Failed to fetch travel info", "TRAVEL_INFO_FETCH_FAILED");
+  }
+});
+
+/**
+ * PUT /api/admin/talent/:id/travel-info
+ * Update travel information
+ */
+router.put("/:id/travel-info", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const data = req.body;
+
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    const details = await prisma.talentTravelInfo.upsert({
+      where: { talentId },
+      create: {
+        talentId,
+        ...data,
+        updatedBy: req.user!.id,
+      },
+      update: {
+        ...data,
+        updatedBy: req.user!.id,
+      },
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_TRAVEL_INFO_UPDATED",
+      metadata: { talentId },
+    });
+
+    return sendSuccess(res, details, 200, "Travel info updated");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error updating travel info:", error);
+    return handleApiError(res, error, "Failed to update travel info", "TRAVEL_INFO_UPDATE_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/brand-preferences
+ * Fetch brand preferences
+ */
+router.get("/:id/brand-preferences", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const preferences = await prisma.talentBrandPreferences.findUnique({
+      where: { talentId },
+    });
+
+    if (!preferences) {
+      return sendSuccess(res, { talentId }, 200);
+    }
+
+    return sendSuccess(res, preferences, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error fetching brand preferences:", error);
+    return handleApiError(res, error, "Failed to fetch brand preferences", "BRAND_PREFERENCES_FETCH_FAILED");
+  }
+});
+
+/**
+ * PUT /api/admin/talent/:id/brand-preferences
+ * Update brand preferences
+ */
+router.put("/:id/brand-preferences", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const data = req.body;
+
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    const preferences = await prisma.talentBrandPreferences.upsert({
+      where: { talentId },
+      create: {
+        talentId,
+        ...data,
+      },
+      update: data,
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_BRAND_PREFERENCES_UPDATED",
+      metadata: { talentId },
+    });
+
+    return sendSuccess(res, preferences, 200, "Brand preferences updated");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error updating brand preferences:", error);
+    return handleApiError(res, error, "Failed to update brand preferences", "BRAND_PREFERENCES_UPDATE_FAILED");
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/measurements
+ * Fetch measurements
+ */
+router.get("/:id/measurements", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+
+    const measurements = await prisma.talentMeasurements.findUnique({
+      where: { talentId },
+    });
+
+    if (!measurements) {
+      return sendSuccess(res, { talentId }, 200);
+    }
+
+    return sendSuccess(res, measurements, 200);
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error fetching measurements:", error);
+    return handleApiError(res, error, "Failed to fetch measurements", "MEASUREMENTS_FETCH_FAILED");
+  }
+});
+
+/**
+ * PUT /api/admin/talent/:id/measurements
+ * Update measurements
+ */
+router.put("/:id/measurements", async (req: Request, res: Response) => {
+  try {
+    const { id: talentId } = req.params;
+    const data = req.body;
+
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+    });
+
+    if (!talent) {
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    const measurements = await prisma.talentMeasurements.upsert({
+      where: { talentId },
+      create: {
+        talentId,
+        ...data,
+      },
+      update: data,
+    });
+
+    // Log admin activity
+    await logAdminActivity(req, {
+      event: "TALENT_MEASUREMENTS_UPDATED",
+      metadata: { talentId },
+    });
+
+    return sendSuccess(res, measurements, 200, "Measurements updated");
+  } catch (error) {
+    console.error("[CONTACT_INFO] Error updating measurements:", error);
+    return handleApiError(res, error, "Failed to update measurements", "MEASUREMENTS_UPDATE_FAILED");
+  }
+});
+
 export default router;
+
 
