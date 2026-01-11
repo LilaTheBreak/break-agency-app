@@ -186,7 +186,7 @@ export class TalentProfileImageService {
 
           const imageUrl = response.data?.profile_picture_url;
 
-          if (imageUrl && this.isValidImageUrl(imageUrl)) {
+          if (imageUrl && await this.isValidImageUrl(imageUrl)) {
             return imageUrl;
           }
         } catch (apiError) {
@@ -209,7 +209,7 @@ export class TalentProfileImageService {
 
       const profileData = await scrapeInstagramProfile(handle);
       
-      if (profileData?.profileImageUrl && this.isValidImageUrl(profileData.profileImageUrl)) {
+      if (profileData?.profileImageUrl && await this.isValidImageUrl(profileData.profileImageUrl)) {
         return profileData.profileImageUrl;
       }
 
@@ -252,7 +252,7 @@ export class TalentProfileImageService {
 
           const imageUrl = response.data?.data?.user?.avatar_url;
 
-          if (imageUrl && this.isValidImageUrl(imageUrl)) {
+          if (imageUrl && await this.isValidImageUrl(imageUrl)) {
             return imageUrl;
           }
         } catch (apiError) {
@@ -306,7 +306,7 @@ export class TalentProfileImageService {
       }
 
       // Validate URL
-      if (!this.isValidImageUrl(imageUrl)) {
+      if (!await this.isValidImageUrl(imageUrl)) {
         throw new Error('Invalid YouTube profile image URL');
       }
 
@@ -323,8 +323,9 @@ export class TalentProfileImageService {
   /**
    * Validate image URL
    * Ensures URL is valid, accessible, and not a placeholder
+   * Includes HEAD request to verify URL returns image content type
    */
-  isValidImageUrl(url) {
+  async isValidImageUrl(url) {
     if (!url || typeof url !== 'string') return false;
 
     // Check basic URL format
@@ -359,7 +360,40 @@ export class TalentProfileImageService {
       'yt',
       'scontent',
     ];
-    return validDomains.some((d) => lowerUrl.includes(d));
+    
+    if (!validDomains.some((d) => lowerUrl.includes(d))) {
+      return false;
+    }
+
+    // For Instagram/TikTok CDN URLs, verify they're still accessible and return images
+    // This catches expired URLs that Instagram CDN returns as HTML error pages
+    try {
+      const response = await axios.head(url, {
+        timeout: 3000,
+        maxRedirects: 2,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        },
+      });
+
+      // Check if response is actually an image
+      const contentType = response.headers['content-type'] || '';
+      const isImageType = contentType.startsWith('image/');
+      
+      // Also check content-length to detect placeholder responses
+      const contentLength = parseInt(response.headers['content-length'] || '0', 10);
+      const isReasonableSize = contentLength > 1000; // At least 1KB for a real image
+
+      return isImageType && isReasonableSize;
+    } catch (error) {
+      // If HEAD request fails, the URL is not accessible
+      // This includes expired Instagram CDN URLs that return 404 or redirect to login
+      this.logger.warn(
+        `Image URL validation failed for ${url}`,
+        error instanceof Error ? error.message : String(error)
+      );
+      return false;
+    }
   }
 
   /**

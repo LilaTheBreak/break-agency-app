@@ -16,6 +16,7 @@ import { toast } from "react-hot-toast";
 export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = false, onRefreshProfileImage }) {
   const [showActions, setShowActions] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   if (!talent) return null;
 
@@ -85,18 +86,21 @@ export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = fals
           {/* Avatar */}
           <div className="flex-shrink-0">
             {/* Priority: Social profile image > User avatar > Initials */}
-            {talent.profileImageUrl ? (
+            {talent.profileImageUrl && !imageError ? (
               <img
                 src={talent.profileImageUrl}
                 alt={talent.displayName || talent.name}
                 className="h-16 w-16 rounded-full border-2 border-brand-black/10 object-cover"
                 title={`Profile photo from ${talent.profileImageSource}`}
+                onError={() => setImageError(true)}
+                loading="lazy"
               />
             ) : talent.linkedUser?.avatarUrl ? (
               <img
                 src={talent.linkedUser.avatarUrl}
                 alt={talent.displayName || talent.name}
                 className="h-16 w-16 rounded-full border-2 border-brand-black/10 object-cover"
+                loading="lazy"
               />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-brand-black/10 bg-brand-red/10">
