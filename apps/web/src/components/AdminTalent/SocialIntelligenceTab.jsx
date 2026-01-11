@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TrendingUp, Eye, Users, MessageCircle, Share2, Heart, BarChart3, AlertCircle, Zap, MessageSquare, BookmarkIcon, RotateCcw } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { PlatformLogo } from "../PlatformLogo";
 
 /**
  * SocialIntelligenceTab Component
@@ -406,12 +407,7 @@ function SocialOverview({ data, loading, talent }) {
         {talent?.socialAccounts?.map((account) => (
           <div key={account.id} className="flex items-center gap-2 rounded-xl border border-brand-black/10 bg-brand-black/5 px-4 py-2">
             <div className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-xs font-medium text-brand-black">
-              {account.platform === "INSTAGRAM" && "Instagram"}
-              {account.platform === "TIKTOK" && "TikTok"}
-              {account.platform === "YOUTUBE" && "YouTube"}
-              {account.platform === "X" && "X"}
-            </span>
+            <PlatformLogo platform={account.platform} size="sm" showLabel={true} />
             <span className="text-xs text-brand-black/60">@{account.handle}</span>
           </div>
         ))}

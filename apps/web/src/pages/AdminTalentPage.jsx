@@ -5,6 +5,7 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { fetchTalents, deleteTalent } from "../services/crmClient.js";
 import { apiFetch } from "../services/apiClient.js";
 import { Badge } from "../components/Badge.jsx";
+import { PlatformLogo } from "../components/PlatformLogo.jsx";
 import { Plus, User, UserX, Search, Filter, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
@@ -73,16 +74,9 @@ function Avatar({ user, name, size = "w-10 h-10" }) {
 function SocialHandle({ handle, platform }) {
   if (!handle) return null;
   
-  const platformIcon = {
-    INSTAGRAM: "📷",
-    TIKTOK: "🎵",
-    YOUTUBE: "▶️",
-    X: "🐦",
-  }[platform] || "@";
-  
   return (
     <span className="text-xs text-brand-black/60 flex items-center gap-1">
-      <span>{platformIcon}</span>
+      <PlatformLogo platform={platform} size="sm" />
       <span>@{handle}</span>
     </span>
   );

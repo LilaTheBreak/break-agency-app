@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Trash2, ChevronDown, ExternalLink } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { PlatformLogo } from "../PlatformLogo";
 
 /**
  * TalentSocialProfilesAccordion Component
@@ -125,7 +126,7 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
                     className="flex items-center justify-between p-3 rounded-lg bg-brand-white border border-brand-black/5 hover:border-brand-black/10 transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-lg">{getPlatformIcon(social.platform)}</span>
+                      <PlatformLogo platform={social.platform} size="md" />
                       <div className="min-w-0">
                         <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">
                           {getPlatformLabel(social.platform)}
@@ -181,7 +182,21 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
                   <select
                     value={newPlatform}
                     onChange={(e) => setNewPlatform(e.target.value)}
-                    className="w-full rounded-lg border border-brand-black/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red"
+                    className="w-full rounded-lg border border-brand-black/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red appearance-none bg-no-repeat"
+                    style={{
+                      backgroundImage: `url("${
+                        {
+                          INSTAGRAM: "/logos/instagram.jpeg",
+                          TIKTOK: "/logos/tiktok.avif",
+                          YOUTUBE: "/logos/youtube.webp",
+                          X: "🐦",
+                          LINKEDIN: "/logos/linkedin.png",
+                        }[newPlatform] || "📷"
+                      }")`,
+                      backgroundPosition: "right 8px center",
+                      backgroundSize: "20px 20px",
+                      paddingRight: "32px",
+                    }}
                   >
                     {platforms.map((p) => (
                       <option key={p.value} value={p.value}>
