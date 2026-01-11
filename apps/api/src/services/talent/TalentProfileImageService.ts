@@ -161,43 +161,59 @@ export class TalentProfileImageService {
 
   /**
    * Fetch Instagram profile image
-   * Uses Instagram Graph API
+   * Uses Instagram Graph API if access token available, falls back to scraping
    */
   async fetchInstagramProfileImage(connection) {
     try {
-      if (!connection.accessToken) {
-        throw new Error('No Instagram access token');
-      }
-
       // If SocialProfile already has the image, use it
       if (connection.SocialProfile?.profileImageUrl) {
         return connection.SocialProfile.profileImageUrl;
       }
 
-      // Fetch fresh data from Instagram API
-      const response = await axios.get(
-        'https://graph.instagram.com/me',
-        {
-          params: {
-            fields: 'id,username,profile_picture_url,name,biography,followers_count,media_count',
-            access_token: connection.accessToken,
-          },
-          timeout: 5000,
+      // If we have an access token, use Instagram Graph API
+      if (connection.accessToken) {
+        try {
+          const response = await axios.get(
+            'https://graph.instagram.com/me',
+            {
+              params: {
+                fields: 'id,username,profile_picture_url,name,biography,followers_count,media_count',
+                access_token: connection.accessToken,
+              },
+              timeout: 5000,
+            }
+          );
+
+          const imageUrl = response.data?.profile_picture_url;
+
+          if (imageUrl && this.isValidImageUrl(imageUrl)) {
+            return imageUrl;
+          }
+        } catch (apiError) {
+          this.logger.warn(
+            'Instagram Graph API request failed, falling back to public scraper',
+            apiError instanceof Error ? apiError.message : String(apiError)
+          );
         }
+      }
+
+      // Fallback: Use public scraper for public profiles
+      const { scrapeInstagramProfile } = await import(
+        '../socialScrapers/instagram.js'
       );
-
-      const imageUrl = response.data?.profile_picture_url;
-
-      if (!imageUrl) {
-        throw new Error('No profile picture in Instagram response');
+      const handle = connection.handle || connection.profileUrl?.split('/').filter(Boolean).pop();
+      
+      if (!handle) {
+        throw new Error('No Instagram handle available for scraping');
       }
 
-      // Validate URL
-      if (!this.isValidImageUrl(imageUrl)) {
-        throw new Error('Invalid Instagram profile image URL');
+      const profileData = await scrapeInstagramProfile(handle);
+      
+      if (profileData?.profileImageUrl && this.isValidImageUrl(profileData.profileImageUrl)) {
+        return profileData.profileImageUrl;
       }
 
-      return imageUrl;
+      throw new Error('Could not fetch Instagram profile image from API or scraper');
     } catch (error) {
       this.logger.warn(
         'Failed to fetch Instagram profile image',
@@ -209,45 +225,46 @@ export class TalentProfileImageService {
 
   /**
    * Fetch TikTok profile image
-   * Uses TikTok API
+   * Uses TikTok API if available, falls back to SocialProfile data
    */
   async fetchTikTokProfileImage(connection) {
     try {
-      if (!connection.accessToken) {
-        throw new Error('No TikTok access token');
-      }
-
       // If SocialProfile already has the image, use it
       if (connection.SocialProfile?.profileImageUrl) {
         return connection.SocialProfile.profileImageUrl;
       }
 
-      // Fetch fresh data from TikTok API
-      const response = await axios.get(
-        'https://open.tiktokapis.com/v1/user/info',
-        {
-          headers: {
-            'Authorization': `Bearer ${connection.accessToken}`,
-          },
-          params: {
-            fields: 'open_id,display_name,avatar_url',
-          },
-          timeout: 5000,
+      // If we have an access token, use TikTok API
+      if (connection.accessToken) {
+        try {
+          const response = await axios.get(
+            'https://open.tiktokapis.com/v1/user/info',
+            {
+              headers: {
+                'Authorization': `Bearer ${connection.accessToken}`,
+              },
+              params: {
+                fields: 'open_id,display_name,avatar_url',
+              },
+              timeout: 5000,
+            }
+          );
+
+          const imageUrl = response.data?.data?.user?.avatar_url;
+
+          if (imageUrl && this.isValidImageUrl(imageUrl)) {
+            return imageUrl;
+          }
+        } catch (apiError) {
+          this.logger.warn(
+            'TikTok API request failed',
+            apiError instanceof Error ? apiError.message : String(apiError)
+          );
         }
-      );
-
-      const imageUrl = response.data?.data?.user?.avatar_url;
-
-      if (!imageUrl) {
-        throw new Error('No profile picture in TikTok response');
       }
 
-      // Validate URL
-      if (!this.isValidImageUrl(imageUrl)) {
-        throw new Error('Invalid TikTok profile image URL');
-      }
-
-      return imageUrl;
+      // No token and no cached image - cannot fetch
+      throw new Error('No TikTok access token and no cached profile image');
     } catch (error) {
       this.logger.warn(
         'Failed to fetch TikTok profile image',
