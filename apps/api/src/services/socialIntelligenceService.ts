@@ -569,25 +569,56 @@ async function getRealSocialIntelligence(talentId: string, talent: any, platform
     // If no posts found, still calculate overview from available profile data
     const hasPostData = allPosts.length > 0;
 
-    // Format top 8 posts for display (or empty array if no posts)
-    const contentPerformance = hasPostData 
-      ? allPosts.slice(0, 8).map((post, idx) => ({
-          id: post.id,
-          platform: post.platform,
-          caption: post.caption || `Post ${idx + 1}`,
-          format:
-            post.mediaType === "VIDEO"
-              ? "video"
-              : post.mediaType === "CAROUSEL"
-                ? "carousel"
-                : "photo",
-          likes: post.likeCount || 0,
-          comments: post.commentCount || 0,
-          saves: post.saveCount || 0,
-          engagementRate: post.engagementRate || 0,
-          tags: [],
-        }))
-      : [];
+    // Format top 8 posts for display (or create placeholder content performance)
+    let contentPerformance: any[] = [];
+    
+    if (hasPostData) {
+      // Use real post data
+      contentPerformance = allPosts.slice(0, 8).map((post, idx) => ({
+        id: post.id,
+        platform: post.platform,
+        caption: post.caption || `Post ${idx + 1}`,
+        format:
+          post.mediaType === "VIDEO"
+            ? "video"
+            : post.mediaType === "CAROUSEL"
+              ? "carousel"
+              : "photo",
+        likes: post.likeCount || 0,
+        comments: post.commentCount || 0,
+        saves: post.saveCount || 0,
+        engagementRate: post.engagementRate || 0,
+        tags: [],
+      }));
+    } else {
+      // Generate placeholder content performance when no real post data available
+      // This gives users visibility into what posts exist even without full metrics
+      contentPerformance = socialProfilesFound.flatMap((profile) => {
+        const postCount = profile.postCount || 0;
+        if (postCount === 0) return [];
+        
+        // Create synthetic content items showing the profile has posts
+        // but we don't have detailed metrics yet
+        const postsToShow = Math.min(postCount, 8);
+        const items: any[] = [];
+        
+        for (let i = 1; i <= postsToShow; i++) {
+          items.push({
+            id: `synthetic_${profile.id}_${i}`,
+            platform: profile.platform,
+            caption: `Post ${i}`,
+            format: i % 3 === 0 ? "video" : i % 3 === 1 ? "carousel" : "photo",
+            likes: 0,
+            comments: 0,
+            saves: 0,
+            engagementRate: 0, // Will show as — in UI
+            tags: [],
+            isSynthetic: true, // Flag to indicate this is placeholder data
+          });
+        }
+        return items;
+      });
+    }
 
     // Aggregate metrics across all profiles
     const allMetrics = socialProfilesFound.flatMap((p) => p?.metrics || []);
