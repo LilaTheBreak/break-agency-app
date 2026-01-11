@@ -795,10 +795,12 @@ function TalentSocialSection({ talentId }) {
   const loadSocials = async () => {
     setLoading(true);
     try {
-      const response = await apiFetch(`/api/admin/talent/${talentId}/socials`);
+      // Add cache-busting parameter to ensure fresh data
+      const response = await apiFetch(`/api/admin/talent/${talentId}/socials?t=${Date.now()}`);
       if (response.ok) {
         const data = await response.json();
         setSocials(Array.isArray(data) ? data : []);
+        console.log(`[SOCIALS] Loaded ${data?.length || 0} social profiles`);
       }
     } catch (err) {
       console.error("[SOCIALS] Load error:", err);
@@ -870,7 +872,17 @@ function TalentSocialSection({ talentId }) {
 
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Social Profiles</p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Social Profiles</p>
+        <button
+          onClick={loadSocials}
+          disabled={loading}
+          className="text-xs text-brand-black/60 hover:text-brand-black disabled:opacity-50 px-2 py-1"
+          title="Refresh social profiles"
+        >
+          {loading ? '⏳ Refreshing...' : '🔄 Refresh'}
+        </button>
+      </div>
       
       <div className="space-y-2 mb-4">
         <select
