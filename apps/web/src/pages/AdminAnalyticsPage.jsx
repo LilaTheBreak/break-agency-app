@@ -59,112 +59,56 @@ export function AdminAnalyticsPage({ session }) {
       // Build request body based on profile type
       if (profile.type === "talent") {
         body.talentId = profile.id;
-      } else if (profile.type === "connected") {
-        body.talentId = profile.id;
-      } else if (profile.type === "external") {
-        // External profile: send URL
+      } else if (profile.type === "connected" || profile.type === "external") {
+        // Both connected and external profiles are handled via URL
+        // Connected profiles should have a URL from their profile data
         body.url = profile.url || `${profile.platform}/${profile.handle}`;
       }
       
       // DEBUG: Request body built
       console.log("[ANALYTICS_DEBUG] Request body:", body);
       
-      // Use POST /analyze endpoint for talent and external profiles
-      // Only use GET for legacy connected profiles that have a specific profileId
-      if (profile.type === "talent" || profile.type === "external" || !profile.id) {
-        console.log("[ANALYTICS_DEBUG] Using POST /api/admin/analytics/analyze endpoint");
+      // Always use POST /analyze endpoint - it handles all profile types
+      console.log("[ANALYTICS_DEBUG] Using POST /api/admin/analytics/analyze endpoint");
+      
+      const response = await apiFetch("/api/admin/analytics/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
         
-        const response = await apiFetch("/api/admin/analytics/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        
-        console.log("[ANALYTICS_DEBUG] API Response received:", {
+      console.log("[ANALYTICS_DEBUG] API Response received:", {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+      });
+      
+      const data = await response.json();
+      
+      console.log("[ANALYTICS_DEBUG] API Response data:", {
+        keys: Object.keys(data),
+        overview: data?.overview,
+        error: data?.error,
+        details: data?.details,
+        syncStatus: data?.syncStatus,
+      });
+      
+      if (!response.ok) {
+        const errorMsg = data?.details || data?.error || response.statusText || "Failed to fetch analytics";
+        console.error("[ANALYTICS_DEBUG] API Error:", {
+          errorMsg,
           status: response.status,
-          ok: response.ok,
-          statusText: response.statusText,
+          fullError: data,
         });
-        
-        const data = await response.json();
-        
-        console.log("[ANALYTICS_DEBUG] API Response data:", {
-          keys: Object.keys(data),
-          overview: data?.overview,
-          error: data?.error,
-          details: data?.details,
-          syncStatus: data?.syncStatus,
-        });
-        
-        if (!response.ok) {
-          const errorMsg = data?.details || data?.error || response.statusText || "Failed to fetch analytics";
-          console.error("[ANALYTICS_DEBUG] API Error:", {
-            errorMsg,
-            status: response.status,
-            fullError: data,
-          });
-          throw new Error(errorMsg);
-        }
-        
-        setAnalyticsData(data);
-        setDataFreshness(new Date());
-        setSelectedProfile(profile);
-        
-        console.log("[ANALYTICS_DEBUG] Analytics data set successfully");
-        toast.success("Analytics loaded successfully");
-      } else {
-        // Legacy GET endpoint for connected profiles
-        const params = new URLSearchParams();
-        if (profile.type === "talent") {
-          params.append("talentId", profile.id);
-        } else if (profile.type === "connected") {
-          params.append("profileId", profile.id);
-        }
-        
-        if (platformFilter !== "ALL") {
-          params.append("platform", platformFilter);
-        }
-        
-        params.append("dateRange", dateRange);
-        
-        const endpoint = `/api/admin/analytics?${params.toString()}`;
-        console.log("[ANALYTICS_DEBUG] Using GET endpoint:", endpoint);
-        
-        const response = await apiFetch(endpoint);
-        
-        console.log("[ANALYTICS_DEBUG] API Response received:", {
-          status: response.status,
-          ok: response.ok,
-          statusText: response.statusText,
-        });
-        
-        const data = await response.json();
-        
-        console.log("[ANALYTICS_DEBUG] API Response data:", data);
-        
-        if (!response.ok) {
-          // Handle specific error cases
-          if (response.status === 404) {
-            const errorMsg = data?.error || "Profile not found";
-            console.error("[ANALYTICS_DEBUG] Profile not found (404):", errorMsg);
-            throw new Error(errorMsg);
-          }
-          const errorMsg = data?.details || data?.error || response.statusText || "Failed to fetch analytics";
-          console.error("[ANALYTICS_DEBUG] API Error:", {
-            errorMsg,
-            status: response.status,
-            fullError: data,
-          });
-          throw new Error(errorMsg);
-        }
-        
-        setAnalyticsData(data);
-        setDataFreshness(new Date());
-        setSelectedProfile(profile);
-        
-        console.log("[ANALYTICS_DEBUG] Analytics data set successfully");
-        toast.success("Analytics loaded successfully");
+        throw new Error(errorMsg);
       }
+      
+      setAnalyticsData(data);
+      setDataFreshness(new Date());
+      setSelectedProfile(profile);
+      
+      console.log("[ANALYTICS_DEBUG] Analytics data set successfully");
+      toast.success("Analytics loaded successfully");
     } catch (err) {
       console.error("[ANALYTICS_DEBUG] Error fetching analytics:", {
         message: err.message,

@@ -140,12 +140,24 @@ export default function ProfileInputSelector({ onProfileSelect, disabled }) {
    * Handle connected profile selection
    */
   const handleSelectConnected = useCallback((profile) => {
+    // Build a proper URL for the connected profile
+    const platformURLs = {
+      instagram: `https://instagram.com/${profile.handle}`,
+      tiktok: `https://tiktok.com/@${profile.handle}`,
+      youtube: `https://youtube.com/${profile.handle}`,
+      twitter: `https://twitter.com/${profile.handle}`,
+      linkedin: `https://linkedin.com/in/${profile.handle}`,
+    };
+    
+    const url = platformURLs[profile.platform?.toLowerCase()] || `https://${profile.platform}/${profile.handle}`;
+    
     const selectedProfile = {
       type: "connected",
       id: profile.id,
-      name: profile.handle,
+      name: profile.displayName || profile.handle,
       platform: profile.platform,
       handle: profile.handle,
+      url: url,
     };
     
     onProfileSelect(selectedProfile);
