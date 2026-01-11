@@ -25,6 +25,7 @@ import { validateGmailCredentials, requireGmailEnabled } from "./middleware/gmai
 import { registerEmailQueueJob } from "./jobs/emailQueue.js";
 import { registerCronJobs } from "./cron/index.js";
 import { initializeScheduledExports } from "./services/scheduledExportService.js";
+import { safeAsync } from "./utils/safeAsync.js";
 
 // Webhooks
 import { stripeWebhookHandler } from "./routes/webhooks.js";
@@ -286,6 +287,7 @@ if (!gcsValidation.valid) {
 // This prevents platform outage due to credential issues
 validateGmailCredentials();
 
+console.log("[SERVER] Initializing Express app...");
 const app = express();
 
 // ========================================================
@@ -378,6 +380,7 @@ initializeSlowQueryLogging(prisma);
 startMemoryTracking(60000); // Sample every 60 seconds
 console.log("[MONITORING] Performance monitoring initialized");
 
+console.log("[SERVER] Setting up core middleware...");
 // CORS Configuration - MUST be first middleware
 // Use custom origin function with explicit logging
 app.use(cors({
@@ -492,6 +495,7 @@ if (process.env.NODE_ENV !== 'production') {
 // AUTH ROUTES (Google OAuth, session management)
 // Rate limiting already applied in auth.ts routes
 // ------------------------------------------------------
+console.log("[SERVER] Registering auth routes...");
 app.use("/api/auth", authRouter);
 
 // ------------------------------------------------------
@@ -934,8 +938,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 const PORT = process.env.PORT || 5001;
 
+console.log("[SERVER] About to call registerEmailQueueJob()...");
 // Start queue + cron
 registerEmailQueueJob();
+console.log("[SERVER] registerEmailQueueJob() complete");
 
 // Register cron jobs asynchronously to not block server startup
 setTimeout(async () => {
@@ -957,21 +963,9 @@ console.log("[SERVER] About to start listening on port", PORT);
 const server = app.listen(PORT, async () => {
   console.log(`API running on port ${PORT}`);
   
-  // Ensure CMS system pages exist (idempotent, safe to run on every boot)
-  try {
-    await ensureCmsPagesExist();
-  } catch (error) {
-    console.error("[CMS] Failed to seed CMS pages on startup:", error);
-    // Don't crash server - CMS will work once pages are manually seeded
-  }
-
-  // Initialize scheduled export jobs
-  try {
-    await initializeScheduledExports();
-  } catch (error) {
-    console.error("[SCHEDULED_EXPORTS] Failed to initialize on startup:", error);
-    // Don't crash server - exports will still work manually
-  }
+  // Fire-and-forget initializations (non-blocking)
+  safeAsync("CMS Pages", ensureCmsPagesExist);
+  safeAsync("Scheduled Exports", initializeScheduledExports);
 });
 
 // ------------------------------------------------------

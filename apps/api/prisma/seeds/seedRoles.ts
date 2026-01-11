@@ -1,26 +1,26 @@
 import prisma from "../../src/lib/prisma.js";
+import bcrypt from "bcryptjs";
+import { createId } from "@paralleldrive/cuid2";
 
 async function main() {
-  const roles = [
-    "ADMIN",
-    "SUPER_ADMIN",
-    "AGENT",
-    "TALENT",
-    "EXCLUSIVE_TALENT",
-    "UGC_CREATOR",
-    "BRAND",
-    "FOUNDER"
-  ];
+  // Create admin user for dev testing
+  const devPassword = "dev-password";
+  const passwordHash = await bcrypt.hash(devPassword, 10);
+  
+  const adminUser = await prisma.user.upsert({
+    where: { email: "admin@thebreakco.com" },
+    update: {},
+    create: {
+      id: createId(),
+      email: "admin@thebreakco.com",
+      name: "Dev Admin",
+      password: passwordHash,
+      updatedAt: new Date(),
+    },
+  });
 
-  for (const name of roles) {
-    await prisma.role.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-  }
-
-  console.log("Roles seeded successfully.");
+  console.log("✅ Admin user created/updated:", adminUser.email);
+  console.log("🔑 Password: dev-password");
 }
 
 main()

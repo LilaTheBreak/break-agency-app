@@ -16,15 +16,18 @@ if (process.env.NODE_ENV !== 'production') {
   router.post('/login', async (req, res) => {
     try {
       const { email } = req.body;
+      console.log('[DEV-AUTH] Login attempt with email:', email);
 
       if (!email) {
         return res.status(400).json({ error: 'Email is required' });
       }
 
       // Find or create the user
+      console.log('[DEV-AUTH] Looking up user...');
       let user = await prisma.user.findUnique({
         where: { email },
       });
+      console.log('[DEV-AUTH] User found:', user ? 'YES' : 'NO');
 
       if (!user) {
         return res.status(404).json({ 
@@ -34,6 +37,7 @@ if (process.env.NODE_ENV !== 'production') {
       }
 
       // Create auth token
+      console.log('[DEV-AUTH] Creating token...');
       const token = createAuthToken({ id: user.id });
 
       // Set cookie
@@ -56,7 +60,8 @@ if (process.env.NODE_ENV !== 'production') {
         },
       });
     } catch (error) {
-      console.error('[DEV-AUTH] Login error:', error);
+      console.error('[DEV-AUTH] Login error:', error instanceof Error ? error.message : error);
+      console.error('[DEV-AUTH] Error stack:', error instanceof Error ? error.stack : 'N/A');
       return res.status(500).json({ error: 'Login failed' });
     }
   });

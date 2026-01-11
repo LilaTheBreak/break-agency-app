@@ -26,14 +26,20 @@ export async function initializeScheduledExports() {
 
   try {
     // Get all enabled export schedules
-    const schedules = await prisma.exportSchedule.findMany({
-      where: { enabled: true },
-      include: {
-        user: {
-          select: { id: true },
+    let schedules = [];
+    try {
+      schedules = await prisma.exportSchedule.findMany({
+        where: { enabled: true },
+        include: {
+          user: {
+            select: { id: true },
+          },
         },
-      },
-    });
+      });
+    } catch (dbError) {
+      console.warn("[SCHEDULED_EXPORTS] Database error querying schedules:", dbError instanceof Error ? dbError.message : dbError);
+      return; // Gracefully skip if table doesn't exist
+    }
 
     let activeSchedules = 0;
 

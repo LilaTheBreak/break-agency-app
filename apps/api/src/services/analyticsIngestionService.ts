@@ -10,6 +10,9 @@
 
 import prisma from "../lib/prisma.js";
 import { logInfo, logError } from "../lib/logger.js";
+import { fetchYouTubeMetrics } from "./platforms/youtube.js";
+import { fetchInstagramMetrics } from "./platforms/instagram.js";
+import { fetchTikTokMetrics } from "./platforms/tiktok.js";
 
 // ============================================================================
 // NORMALIZATION
@@ -196,18 +199,37 @@ export async function fetchInstagramProfile(
   logInfo("[ANALYTICS] Fetching Instagram profile", { username });
 
   try {
-    // MVP: Try Instagram Basic API (requires token)
-    // For now, return empty with clear message
-    
-    // If no data available, return empty
-    logInfo("[ANALYTICS] No data available for Instagram profile", { username });
-    return {
-      profile: {
-        username,
-        followerCount: 0,
-      },
-      error: "Instagram data fetching not yet configured. See logs for details.",
+    // Call the Instagram platform service
+    const result = await fetchInstagramMetrics(username);
+
+    if (!result.metrics) {
+      logError("[ANALYTICS] Instagram metrics not found", result.error, { username });
+      return {
+        profile: { username, followerCount: 0 },
+        error: result.error || "Failed to fetch Instagram metrics",
+      };
+    }
+
+    // Transform response to match expected profile format
+    const metrics = result.metrics;
+    const profile: InstagramProfile = {
+      username: metrics.username,
+      displayName: metrics.displayName,
+      bio: metrics.biography,
+      followerCount: metrics.followerCount || 0,
+      followingCount: metrics.followingCount,
+      postCount: metrics.postCount,
+      profileImageUrl: metrics.profilePictureUrl,
+      isVerified: metrics.isVerified,
     };
+
+    logInfo("[ANALYTICS] Instagram profile fetched", {
+      username,
+      followers: profile.followerCount,
+      source: result.dataSource || "SCRAPE",
+    });
+
+    return { profile };
   } catch (error) {
     logError("[ANALYTICS] Failed to fetch Instagram profile", error, {
       username,
@@ -254,17 +276,37 @@ export async function fetchTikTokProfile(
   logInfo("[ANALYTICS] Fetching TikTok profile", { username });
 
   try {
-    // MVP: TikTok API requires enterprise access
-    // Return empty with clear message
-    
-    logInfo("[ANALYTICS] No data available for TikTok profile", { username });
-    return {
-      profile: {
-        username,
-        followerCount: 0,
-      },
-      error: "TikTok data fetching not yet configured. See logs for details.",
+    // Call the TikTok platform service
+    const result = await fetchTikTokMetrics(username);
+
+    if (!result.metrics) {
+      logError("[ANALYTICS] TikTok metrics not found", result.error, { username });
+      return {
+        profile: { username, followerCount: 0 },
+        error: result.error || "Failed to fetch TikTok metrics",
+      };
+    }
+
+    // Transform response to match expected profile format
+    const metrics = result.metrics;
+    const profile: TikTokProfile = {
+      username: metrics.username,
+      displayName: metrics.displayName,
+      bio: metrics.bio,
+      followerCount: metrics.followerCount || 0,
+      followingCount: metrics.followingCount,
+      videoCount: metrics.videoCount,
+      heartCount: metrics.likeCount,
+      profileImageUrl: metrics.profilePictureUrl,
+      isVerified: metrics.isVerified,
     };
+
+    logInfo("[ANALYTICS] TikTok profile fetched", {
+      username,
+      followers: profile.followerCount,
+    });
+
+    return { profile };
   } catch (error) {
     logError("[ANALYTICS] Failed to fetch TikTok profile", error, { username });
     return {
