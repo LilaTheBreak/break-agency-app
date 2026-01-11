@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TrendingUp, Eye, Users, MessageCircle, Share2, Heart, BarChart3, AlertCircle, Zap, MessageSquare, BookmarkIcon, RotateCcw } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { PlatformLogo } from "../PlatformLogo";
+import { getErrorMessage } from "../../lib/errorHandler.js";
 
 /**
  * SocialIntelligenceTab Component
@@ -131,7 +132,7 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
 
       toast.success("Agent notes saved");
     } catch (err) {
-      toast.error(err.message || "Failed to save notes");
+      toast.error(getErrorMessage(err, "Failed to save notes"));
     } finally {
       setSavingNotes(false);
     }
@@ -161,7 +162,7 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
       setSocialData(result.data);
       toast.success("Analytics refreshed and recalculated");
     } catch (err) {
-      toast.error(err.message || "Failed to refresh analytics");
+      toast.error(getErrorMessage(err, "Failed to refresh analytics"));
     } finally {
       setRefreshing(false);
     }

@@ -9,6 +9,7 @@ import { TalentAccessSettings } from "../components/TalentAccessSettings.jsx";
 import { ViewAsTalentButton } from "../components/ViewAsTalentButton.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import AdminRevenueManagement from "../components/AdminRevenueManagement.jsx";
+import { getErrorMessage } from "../lib/errorHandler.js";
 import { 
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
@@ -385,9 +386,10 @@ function EditTalentModal({ open, onClose, talent, onSuccess }) {
       onClose();
       await onSuccess();
     } catch (err) {
-      console.error("UPDATE TALENT FAILED", err);
-      setError(err.message || "Failed to update talent");
-      toast.error(err.message || "Failed to update talent");
+      const errorMessage = getErrorMessage(err, "Failed to update talent");
+      console.error("UPDATE TALENT FAILED", errorMessage, err);
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }

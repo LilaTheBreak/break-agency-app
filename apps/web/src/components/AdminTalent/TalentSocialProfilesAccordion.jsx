@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, Trash2, ChevronDown, ExternalLink } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { PlatformLogo } from "../PlatformLogo";
+import { getErrorMessage } from "../../lib/errorHandler.js";
 
 /**
  * TalentSocialProfilesAccordion Component
@@ -60,7 +61,7 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
       setShowAddForm(false);
       onUpdate?.();
     } catch (err) {
-      toast.error(err.message || "Failed to add social profile");
+      toast.error(getErrorMessage(err, "Failed to add social profile"));
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +84,7 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
       toast.success("Social profile removed");
       onUpdate?.();
     } catch (err) {
-      toast.error(err.message || "Failed to remove social profile");
+      toast.error(getErrorMessage(err, "Failed to remove social profile"));
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Plus, X, Mail } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { getErrorMessage } from "../../lib/errorHandler.js";
 
 /**
  * QuickEmailInput Component
@@ -50,7 +51,7 @@ export function QuickEmailInput({ talent, onUpdate }) {
       setIsAddingEmail(false);
       onUpdate?.();
     } catch (err) {
-      toast.error(err.message || "Failed to add email");
+      toast.error(getErrorMessage(err, "Failed to add email"));
     } finally {
       setIsLoading(false);
     }
