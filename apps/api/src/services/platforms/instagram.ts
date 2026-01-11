@@ -256,6 +256,16 @@ async function scrapeInstagramProfile(
     
     const profile = parseInstagramHTML(html, username);
     
+    // 🚨 CRITICAL PROTECTION: If we got 200 but couldn't parse, Instagram changed markup
+    if (!profile && response.status === 200) {
+      logError(
+        "[INSTAGRAM] CRITICAL: HTML_FETCH_OK_BUT_PARSE_FAILED",
+        new Error("HTML fetch succeeded (200) but no data could be extracted. Instagram may have changed their page structure."),
+        { username, htmlSize: html.length }
+      );
+      throw new Error("HTML_FETCH_OK_BUT_PARSE_FAILED");
+    }
+    
     if (profile) {
       logInfo("[INSTAGRAM] Profile parsed from HTML successfully", {
         username,
