@@ -168,22 +168,28 @@ export function SocialIntelligenceTab({ talent, talentId, onRefreshProfileImage 
     }
   };
 
-  if (!talent?.socialAccounts || talent.socialAccounts.length === 0) {
-    // CRITICAL FIX: Check the actual API response (data.connected) instead of stale talent object
-    // The backend returns { connected: true/false } based on SocialAccountConnection records
-    // But we also need to handle the initial loading state
-    if (!socialData || socialData.connected === false) {
-      return (
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
-          <MessageCircle className="h-12 w-12 text-brand-black/30 mx-auto mb-4" />
-          <p className="text-sm uppercase tracking-[0.2em] text-brand-black/60 mb-2">No Connected Socials</p>
-          <p className="text-xs text-brand-black/50 max-w-sm mx-auto">
-            Connect Instagram, TikTok, or YouTube to unlock social intelligence, audience insights, and community analysis.
-          </p>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-brand-black/10 border-t-brand-red rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-sm text-brand-black/60">Loading social intelligence...</p>
         </div>
-      );
-    }
-    // If socialData exists and connected=true, continue to render below
+      </div>
+    );
+  }
+
+  // Check for connected socials - rely on API response data, not stale talent object
+  if (!socialData || !socialData.connected || socialData.connected === false) {
+    return (
+      <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
+        <MessageCircle className="h-12 w-12 text-brand-black/30 mx-auto mb-4" />
+        <p className="text-sm uppercase tracking-[0.2em] text-brand-black/60 mb-2">No Connected Socials</p>
+        <p className="text-xs text-brand-black/50 max-w-sm mx-auto">
+          Connect Instagram, TikTok, or YouTube to unlock social intelligence, audience insights, and community analysis.
+        </p>
+      </div>
+    );
   }
 
   // If we have real social intelligence data, show it
