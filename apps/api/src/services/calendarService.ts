@@ -1,8 +1,9 @@
-import { google } from "googleapis";
+// TODO: Google Calendar integration - optional feature, install 'googleapis' package if needed
+// import { google } from "googleapis";
 import prisma from "../lib/prisma.js";
 import { logInfo, logError } from "../lib/logger.js";
 
-const calendar = google.calendar("v3");
+// const calendar = google.calendar("v3");
 
 interface CalendarMeeting {
   id: string;

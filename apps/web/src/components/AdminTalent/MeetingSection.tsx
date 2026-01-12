@@ -19,6 +19,7 @@ interface Meeting {
   description?: string;
   meetingType: string;
   platform: string;
+  meetingLink?: string;
   startTime: string;
   endTime?: string;
   notes?: string;
