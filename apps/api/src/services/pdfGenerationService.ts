@@ -1,8 +1,16 @@
-import puppeteer from 'puppeteer';
 import { marked } from 'marked';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+
+// Lazy-load puppeteer to avoid ESM/CommonJS issues during server startup
+let puppeteer: any = null;
+async function getPuppeteer() {
+  if (!puppeteer) {
+    puppeteer = await import('puppeteer');
+  }
+  return puppeteer;
+}
 
 /**
  * PDF Generation Service
@@ -197,7 +205,8 @@ export class PDFGenerationService {
       launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     }
 
-    const browser = await puppeteer.launch(launchOptions);
+    const p = await getPuppeteer();
+    const browser = await p.launch(launchOptions);
 
     try {
       const page = await browser.newPage();
@@ -250,7 +259,8 @@ export class PDFGenerationService {
       launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     }
 
-    const browser = await puppeteer.launch(launchOptions);
+    const p = await getPuppeteer();
+    const browser = await p.launch(launchOptions);
 
     try {
       const page = await browser.newPage();
