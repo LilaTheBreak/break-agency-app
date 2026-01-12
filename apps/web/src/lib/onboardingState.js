@@ -131,3 +131,15 @@ export function getActiveOnboardingRole(user, fallbackRole) {
   const stored = loadOnboardingState(user?.email);
   return stored.role || normalizeRole(user?.role) || normalizeRole(fallbackRole);
 }
+
+export function getOnboardingPathForRole(role) {
+  const normalizedRole = normalizeRole(role);
+  
+  // Exclusive talent has a separate onboarding flow
+  if (normalizedRole === Roles.EXCLUSIVE_TALENT) {
+    return "/admin/view/exclusive/goals";
+  }
+  
+  // All other roles use the standard onboarding
+  return "/onboarding";
+}

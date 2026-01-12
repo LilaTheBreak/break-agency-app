@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { getOnboardingPathForRole } from "../lib/onboardingState.js";
 
 export function OnboardingReminderBanner() {
   const { user } = useAuth();
@@ -26,7 +27,8 @@ export function OnboardingReminderBanner() {
   }
 
   const handleComplete = () => {
-    navigate("/onboarding");
+    const onboardingPath = getOnboardingPathForRole(user?.role);
+    navigate(onboardingPath);
   };
 
   const handleDismiss = () => {
