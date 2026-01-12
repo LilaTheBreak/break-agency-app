@@ -22,21 +22,23 @@ export function AdminDashboard({ session }) {
   if (!activeSession) return <Navigate to="/" replace />;
 
   return (
-    <ControlRoomView
-      config={CONTROL_ROOM_PRESETS.admin}
-      session={activeSession}
-      role={activeSession?.role}
-      showStatusSummary
-    >
-      <PendingUsersApproval />
-      <ResourceManager />
+    <>
       <ExclusiveTalentShortcuts />
-      <ExclusiveTalentSnapshot />
-      <AdminActivityFeed />
-      <OpportunitiesCard session={activeSession} role={activeSession?.role} />
-      <AdminCampaignsPanel session={activeSession} />
-      <AdminAuditTable />
-    </ControlRoomView>
+      <ControlRoomView
+        config={CONTROL_ROOM_PRESETS.admin}
+        session={activeSession}
+        role={activeSession?.role}
+        showStatusSummary
+      >
+        <PendingUsersApproval />
+        <ResourceManager />
+        <ExclusiveTalentSnapshot />
+        <AdminActivityFeed />
+        <OpportunitiesCard session={activeSession} role={activeSession?.role} />
+        <AdminCampaignsPanel session={activeSession} />
+        <AdminAuditTable />
+      </ControlRoomView>
+    </>
   );
 }
 
