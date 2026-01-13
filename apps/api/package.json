@@ -19,7 +19,10 @@
     "migrate": "dotenv -e .env -- prisma migrate dev",
     "seed:patricia-deals": "dotenv -e .env -- tsx scripts/seedPatriciaDeals.ts",
     "test:patricia-deals": "dotenv -e .env -- tsx scripts/addPatriciaTestDeals.ts",
-    "ingest:patricia": "dotenv -e .env -- tsx scripts/ingestPatriciaDeals.ts"
+    "ingest:patricia": "dotenv -e .env -- tsx scripts/ingestPatriciaDeals.ts",
+    "db:safe-reset": "NODE_ENV=development tsx scripts/safe-db-reset.ts",
+    "db:reset:staging": "NODE_ENV=staging tsx scripts/safe-db-reset.ts",
+    "db:reset:prod": "NODE_ENV=production FORCE_DB_RESET=true tsx scripts/safe-db-reset.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.940.0",

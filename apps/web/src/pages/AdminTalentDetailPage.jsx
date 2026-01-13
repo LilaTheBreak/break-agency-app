@@ -33,6 +33,11 @@ import { ContactInformationSection } from "../components/AdminTalent/ContactInfo
 import { MeetingSection } from "../components/AdminTalent/MeetingSection.jsx";
 import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
 import DealManagementPanel from "../components/AdminTalent/DealManagementPanel.jsx";
+import EnterpriseValueDashboard from "../components/EnterpriseValueDashboard.tsx";
+import ExitReadinessScorecard from "../components/ExitReadinessScorecard.tsx";
+import OwnedAssetsHub from "../components/OwnedAssetsHub.tsx";
+import RevenueArchitectureVisualizer from "../components/RevenueArchitectureVisualizer.tsx";
+import SOPEngineUI from "../components/SOPEngineUI.tsx";
 
 const REPRESENTATION_TYPES = [
   { value: "EXCLUSIVE", label: "Exclusive", color: "bg-brand-red text-white", description: "Full-service representation" },
@@ -59,6 +64,11 @@ const TABS = [
   { id: "contracts", label: "Contracts", icon: FileText },
   { id: "payments", label: "Payments & Finance", icon: DollarSign },
   { id: "commerce", label: "Commerce", icon: ShoppingCart },
+  { id: "enterprise-value", label: "Enterprise Metrics", icon: TrendingUp },
+  { id: "exit-readiness", label: "Exit Readiness", icon: BarChart3 },
+  { id: "owned-assets", label: "Assets & IP", icon: Archive },
+  { id: "revenue-architecture", label: "Revenue Pipeline", icon: Briefcase },
+  { id: "sop-engine", label: "SOP Engine", icon: CheckSquare },
   { id: "access", label: "Access Control", icon: User },
   { id: "notes", label: "Notes & History", icon: FileEdit },
   { id: "files", label: "Files & Assets", icon: Archive },
@@ -1462,6 +1472,21 @@ export function AdminTalentDetailPage() {
         )}
         {activeTab === "commerce" && (
           <CommerceTab talent={talent} isExclusive={isExclusive} />
+        )}
+        {activeTab === "enterprise-value" && (
+          <EnterpriseValueDashboard talentId={talentId} />
+        )}
+        {activeTab === "exit-readiness" && (
+          <ExitReadinessScorecard talentId={talentId} />
+        )}
+        {activeTab === "owned-assets" && (
+          <OwnedAssetsHub talentId={talentId} />
+        )}
+        {activeTab === "revenue-architecture" && (
+          <RevenueArchitectureVisualizer talentId={talentId} />
+        )}
+        {activeTab === "sop-engine" && (
+          <SOPEngineUI talentId={talentId} />
         )}
         {activeTab === "access" && (
           <AccessControlTab talent={talent} />

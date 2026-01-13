@@ -10,6 +10,7 @@ import { EventChip } from "../components/EventChip.jsx";
 import { ContractChip } from "../components/ContractChip.jsx";
 import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection.jsx";
 import { DealSnapshotSummary } from "../components/DealSnapshotSummary.jsx";
+import DealClassificationModal from "../components/DealClassificationModal.tsx";
 import {
   DEAL_CONFIDENCE,
   DEAL_STATUSES,
@@ -247,6 +248,8 @@ export function AdminDealsPage({ session }) {
   const [loading, setLoading] = useState(true);
   const [migrationData, setMigrationData] = useState(null);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [classificationModalOpen, setClassificationModalOpen] = useState(false);
+  const [classifyingDealId, setClassifyingDealId] = useState(null);
 
   // Load brands from localStorage (they're still there for now)
   useEffect(() => {
@@ -518,6 +521,12 @@ export function AdminDealsPage({ session }) {
     try {
       await updateDeal(selectedDeal.id, patch);
       await loadDeals();
+      
+      // If status changed to won, prompt for classification
+      if (patch.status && isWonStatus(patch.status) && !selectedDeal.revenueCoded) {
+        setClassifyingDealId(selectedDeal.id);
+        setClassificationModalOpen(true);
+      }
     } catch (err) {
       console.error("Failed to update deal:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to update deal";
@@ -897,34 +906,44 @@ export function AdminDealsPage({ session }) {
         onClose={closeDrawer}
         actions={
           selectedDeal ? (
-            <TextButton
-              onClick={async () => {
-                const duplicated = {
-                  ...selectedDeal,
-                  id: `deal-${Date.now()}`,
-                  dealName: `${selectedDeal.dealName} (copy)`,
-                  createdAt: nowIso(),
-                  updatedAt: nowIso(),
-                  lastActivityAt: nowIso(),
-                  linkedTaskIds: [],
-                  linkedOutreachIds: [],
-                  activity: [{ at: nowIso(), label: "Deal created" }]
-                };
-                const verdict = validateDeal(duplicated);
-                if (!verdict.ok) return;
-                try {
-                  const created = await createDeal(duplicated);
-                  await loadDeals();
-                  openDrawer(created.id);
-                } catch (err) {
-                  console.error("Failed to duplicate deal:", err);
-                  alert("Failed to duplicate deal");
-                }
-                openDrawer(duplicated.id);
-              }}
-            >
-              Duplicate
-            </TextButton>
+            <div className="flex gap-2">
+              <TextButton
+                onClick={() => {
+                  setClassifyingDealId(selectedDeal.id);
+                  setClassificationModalOpen(true);
+                }}
+              >
+                Classify
+              </TextButton>
+              <TextButton
+                onClick={async () => {
+                  const duplicated = {
+                    ...selectedDeal,
+                    id: `deal-${Date.now()}`,
+                    dealName: `${selectedDeal.dealName} (copy)`,
+                    createdAt: nowIso(),
+                    updatedAt: nowIso(),
+                    lastActivityAt: nowIso(),
+                    linkedTaskIds: [],
+                    linkedOutreachIds: [],
+                    activity: [{ at: nowIso(), label: "Deal created" }]
+                  };
+                  const verdict = validateDeal(duplicated);
+                  if (!verdict.ok) return;
+                  try {
+                    const created = await createDeal(duplicated);
+                    await loadDeals();
+                    openDrawer(created.id);
+                  } catch (err) {
+                    console.error("Failed to duplicate deal:", err);
+                    alert("Failed to duplicate deal");
+                  }
+                  openDrawer(duplicated.id);
+                }}
+              >
+                Duplicate
+              </TextButton>
+            </div>
           ) : null
         }
       >
@@ -1266,6 +1285,23 @@ export function AdminDealsPage({ session }) {
           </>
         ) : null}
       </Drawer>
+
+      {classificationModalOpen && classifyingDealId && (
+        <DealClassificationModal
+          dealId={classifyingDealId}
+          deal={selectedDeal}
+          isOpen={classificationModalOpen}
+          onClose={() => {
+            setClassificationModalOpen(false);
+            setClassifyingDealId(null);
+          }}
+          onClassified={async (classification) => {
+            await loadDeals();
+            setClassificationModalOpen(false);
+            setClassifyingDealId(null);
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }

@@ -27,6 +27,13 @@ import deckRouter from "./deck.js";
 import queuesRouter from "./queues.js";
 import talentAccessRouter from "./talentAccess.js";
 
+// Enterprise Operating System routes
+import enterpriseValueRouter from "./enterpriseValue.js";
+import revenueClassificationRouter from "./revenueClassification.js";
+import founderDependencyRouter from "./founderDependency.js";
+import ownedAssetsRouter from "./ownedAssets.js";
+import exitReadinessRouter from "./exitReadiness.js";
+
 // User management & onboarding
 // NOTE: authRouter is mounted in server.ts at /api/auth, not here
 import onboardingRouter from "./onboarding.js";
@@ -122,6 +129,13 @@ router.use(documentExtractionRouter);
 router.use(campaignsRouter);
 router.use("/deck", deckRouter);
 router.use("/admin", adminUsersRouter);
+
+// Enterprise Operating System routes
+router.use("/enterprise-value", enterpriseValueRouter);
+router.use("/revenue-classification", revenueClassificationRouter);
+router.use("/founder-dependency", founderDependencyRouter);
+router.use("/owned-assets", ownedAssetsRouter);
+router.use("/exit-readiness", exitReadinessRouter);
 
 // Social media OAuth and analytics
 router.use("/auth/instagram", instagramAuthRouter);

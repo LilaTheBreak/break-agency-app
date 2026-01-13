@@ -187,6 +187,7 @@ model BrandCampaign {
   updatedAt          DateTime
   User               User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   CampaignBrandPivot CampaignBrandPivot[]
+  RevenueStreams     RevenueStream[]
 
   @@index([createdAt])
   @@index([ownerId])
@@ -601,6 +602,9 @@ model Deal {
   Payout                  Payout[]
   Commission              Commission[]
   InboundEmail            InboundEmail[]
+  RevenueClassification   RevenueClassification?
+  SOPInstances            SOPInstance[]
+  RevenueStreams          RevenueStream[] @relation("DealRevenueStreams")
 
   @@index([opportunityId])
 }
@@ -1584,6 +1588,14 @@ model Talent {
   Files                   TalentFile[]
   Meetings                Meeting[]
   MeetingActionItems      MeetingActionItem[]
+  
+  // Enterprise Operating System relations
+  EnterpriseValueMetrics  EnterpriseValueMetrics?
+  RevenueStreams          RevenueStream[]
+  FounderDependencyIndex  FounderDependencyIndex?
+  OwnedAssets             OwnedAsset[]
+  RevenueArchitecture     RevenueArchitecture?
+  ExitReadinessScore      ExitReadinessScore?
 
   @@index([lastProfileImageSyncAt])
   @@index([profileImageSource])
@@ -2818,3 +2830,306 @@ model MeetingActionItem {
   @@index([dueDate])
   @@index([linkedTaskId])
 }
+
+// ============================================================================
+// ENTERPRISE OPERATING SYSTEM MODELS
+// ============================================================================
+
+// Core enterprise value metrics dashboard
+model EnterpriseValueMetrics {
+  id                        String   @id @default(cuid())
+  talentId                  String   @unique
+  
+  // Revenue breakdown (%)
+  recurringRevenuePercent   Decimal  @db.Decimal(5, 2) @default(0)
+  founderDependentPercent   Decimal  @db.Decimal(5, 2) @default(0)
+  creatorOwnedPercent       Decimal  @db.Decimal(5, 2) @default(0)
+  
+  // Risk metrics
+  revenueConcentrationRisk  Decimal  @db.Decimal(5, 2) @default(0) // % from top 3
+  platformDependencyScore   Int      @default(0) // 0-100
+  monthlyRecurringRevenue   Decimal  @db.Decimal(15, 2) @default(0)
+  mrrGrowthRate             Decimal  @db.Decimal(5, 2) @default(0) // %
+  projectedAnnualRevenue    Decimal  @db.Decimal(15, 2) @default(0)
+  
+  // Assets
+  ownedAssetCount           Int      @default(0)
+  revenueGeneratingAssets   Int      @default(0)
+  totalOwnedAssetValue      Decimal  @db.Decimal(15, 2) @default(0)
+  
+  // Metadata
+  lastComputedAt            DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  
+  Talent                    Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Individual revenue streams tied to business
+model RevenueStream {
+  id                    String   @id @default(cuid())
+  talentId              String
+  dealId                String?
+  campaignId            String?
+  
+  // Basic info
+  name                  String
+  description           String?
+  type                  String   // "PRODUCT", "SERVICE", "LICENSING", "SPONSORSHIP", "AFFILIATE", "RETAINER", "COURSE"
+  
+  // Financial metrics
+  monthlyRevenue        Decimal  @db.Decimal(15, 2) @default(0)
+  annualRevenue         Decimal  @db.Decimal(15, 2) @default(0)
+  churnRate             Decimal  @db.Decimal(5, 2) @default(0) // 0-100 %
+  growthRateMonthly     Decimal  @db.Decimal(5, 2) @default(0)
+  
+  // Classification
+  isRecurring           Boolean  @default(false)
+  ownershipStatus       String   @default("OWNED") // "OWNED", "LICENSED", "PLATFORM"
+  scalabilityScore      Int      @default(50) // 0-100
+  founderDependency     Decimal  @db.Decimal(5, 2) @default(0) // % requiring founder
+  
+  // Status
+  isActive              Boolean  @default(true)
+  
+  // Timestamps
+  startDate             DateTime?
+  endDate               DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relations
+  Talent                Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  Deal                  Deal?    @relation("DealRevenueStreams", fields: [dealId], references: [id], onDelete: SetNull)
+  Campaign              BrandCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  
+  @@index([talentId])
+  @@index([dealId])
+  @@index([type])
+  @@index([isRecurring])
+}
+
+// Revenue classification for deals - enforces tagging
+model RevenueClassification {
+  id                    String   @id @default(cuid())
+  dealId                String   @unique
+  
+  // Tags (multi-select)
+  tags                  String[] // ["FOUNDER_DEPENDENT", "RECURRING_REVENUE", "CREATOR_OWNED", "SCALABLE_INVENTORY", "PLATFORM_OWNED"]
+  dealValueType         String   @default("FIXED") // "FIXED", "VARIABLE", "HYBRID"
+  revenueType           String   @default("OTHER") // "CONSULTING", "PRODUCT", "LICENSING", "SPONSORSHIP", "OTHER"
+  
+  // Likelihood assessment
+  renewalLikelihood     String   @default("MEDIUM") // "HIGH", "MEDIUM", "LOW"
+  estimatedMRR          Decimal  @db.Decimal(15, 2) @default(0)
+  estimatedChurnRisk    Decimal  @db.Decimal(5, 2) @default(0) // 0-1 scale
+  
+  // Risk flagging
+  isHighRisk            Boolean  @default(false)
+  risksIdentified       String[] @default([])
+  
+  // Metadata
+  classifiedAt          DateTime @default(now())
+  classifiedBy          String?  // User ID
+  updatedAt             DateTime @updatedAt
+  
+  Deal                  Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  @@index([dealId])
+  @@index([isHighRisk])
+}
+
+// Founder Dependency Index - measures business independence
+model FounderDependencyIndex {
+  id                        String   @id @default(cuid())
+  talentId                  String   @unique
+  
+  // Components
+  founderDependencyPercent  Decimal  @db.Decimal(5, 2) @default(0) // % of revenue
+  soplessProcessCount       Int      @default(0)  // Critical processes without SOP
+  manualOpsHoursPerWeek     Decimal  @db.Decimal(5, 2) @default(0)
+  delegationCoveragePercent Decimal  @db.Decimal(5, 2) @default(0)
+  teamDepthScore            Int      @default(0)  // 0-100
+  
+  // Score
+  riskRating                String   @default("MEDIUM") // "LOW", "MEDIUM", "HIGH"
+  overallScore              Int      @default(50) // 0-100 (higher = more independent)
+  
+  // Valuation impact
+  projectedValuationPenalty Decimal  @db.Decimal(5, 2) @default(0) // % markdown
+  
+  // Recommendations
+  recommendations           String[] @default([]) // JSON strings of recommendations
+  
+  // Metadata
+  lastComputedAt            DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  
+  Talent                    Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([riskRating])
+}
+
+// Owned Assets & IP Registry
+model OwnedAsset {
+  id                        String   @id @default(cuid())
+  talentId                  String
+  
+  // Basic info
+  name                      String
+  type                      String   // "EMAIL_LIST", "COMMUNITY", "COURSE", "SAAS", "DOMAIN", "TRADEMARK", "DATA", "OTHER"
+  description               String?
+  
+  // Ownership & legal
+  ownershipStatus           String   @default("OWNED") // "OWNED", "LICENSED", "LICENSED_OUT"
+  legalStatus               String   @default("UNPROTECTED") // "PROTECTED", "UNPROTECTED", "PENDING"
+  transferableIndependently Boolean  @default(true)
+  
+  // Financial & scalability
+  revenueGeneratedAnnual    Decimal  @db.Decimal(15, 2) @default(0)
+  growthRatePercent         Decimal  @db.Decimal(5, 2) @default(0)
+  scalabilityScore          Int      @default(50) // 0-100
+  estimatedValue            Decimal? @db.Decimal(15, 2)
+  
+  // Metadata
+  notes                     String?
+  createdAt                 DateTime @default(now())
+  lastValuationDate         DateTime?
+  updatedAt                 DateTime @updatedAt
+  
+  Talent                    Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([type])
+  @@index([ownershipStatus])
+}
+
+// Revenue Architecture - maps content to recurring revenue
+model RevenueArchitecture {
+  id                    String   @id @default(cuid())
+  talentId              String   @unique
+  
+  // Track revenue flow components
+  contentChannels       String[] @default([]) // ["YOUTUBE", "TIKTOK", "INSTAGRAM", "BLOG", etc.]
+  leadCaptureMethods    String[] @default([]) // ["EMAIL", "COMMUNITY", "APP", etc.]
+  conversionPoints      String[] @default([]) // ["COURSE", "SPONSORSHIP", "PRODUCT", etc.]
+  recurringRevenueStreams String[] @default([]) // ["SUBSCRIPTION", "RETAINER", "LICENSE", etc.]
+  
+  // Completeness
+  isFullyMapped         Boolean  @default(false)
+  completionPercent     Int      @default(0) // 0-100
+  gapsList              String[] @default([]) // What's missing
+  
+  // Metadata
+  lastReviewedAt        DateTime?
+  updatedAt             DateTime @updatedAt
+  
+  Talent                Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// Exit Readiness Scorecard - FLAGSHIP METRIC
+model ExitReadinessScore {
+  id                    String   @id @default(cuid())
+  talentId              String   @unique
+  
+  // Overall score & category
+  overallScore          Int      @default(0) // 0-100
+  category              String   @default("UNDERDEVELOPED") // "UNDERDEVELOPED", "DEVELOPING", "INVESTMENT_GRADE", "ENTERPRISE_CLASS"
+  
+  // Component scores (0-100 each)
+  revenuePredicability  Int      @default(0)
+  founderIndependence   Int      @default(0)
+  teamDepth             Int      @default(0)
+  ipOwnership           Int      @default(0)
+  grossMargin           Int      @default(0)
+  platformRisk          Int      @default(0)
+  recurringRevenuePercent Int    @default(0)
+  
+  // Recommendations (JSON array)
+  recommendations       Json[]   @default([]) // [{priority, area, action, estimatedImpact, effort, valueMultiplier}]
+  
+  // Metadata
+  lastComputedAt        DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  Talent                Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([overallScore])
+  @@index([category])
+}
+
+// SOP Templates - reusable process documentation
+model SOPTemplate {
+  id                    String   @id @default(cuid())
+  organizationId        String?
+  
+  // Basic info
+  title                 String
+  description           String?
+  category              String   // "DEAL", "CAMPAIGN", "REVENUE", "RENEWAL", "DELEGATION", "OTHER"
+  
+  // Linked to what
+  linkedDealTypes       String[] @default([])
+  linkedCampaignTypes   String[] @default([])
+  linkedRevenueTypes    String[] @default([])
+  
+  // Process definition (JSON)
+  steps                 Json[]   @default([]) // [{order, title, owner, durationHours}]
+  checklistItems        Json[]   @default([]) // [{title, owner, required}]
+  
+  // Instructions
+  delegationInstructions String?
+  failureRecovery       String?
+  
+  // Metadata
+  ownerUserId           String
+  lastReviewDate        DateTime?
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  instances             SOPInstance[]
+  
+  @@index([category])
+  @@index([ownerUserId])
+}
+
+// SOP Instances - active execution tracking
+model SOPInstance {
+  id                    String   @id @default(cuid())
+  templateId            String
+  
+  // Linked to what
+  linkedDealId          String?
+  linkedCampaignId      String?
+  linkedRevenueStreamId String?
+  
+  // Execution status
+  status                String   @default("DRAFT") // "DRAFT", "ACTIVE", "BROKEN", "FOLLOWED"
+  currentStep           Int      @default(0)
+  completedAt           DateTime?
+  
+  // Tracking
+  deviationFlags        String[] @default([])
+  notes                 String?
+  
+  // Metadata
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  SOPTemplate           SOPTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  Deal                  Deal?    @relation(fields: [linkedDealId], references: [id], onDelete: SetNull)
+  
+  @@index([templateId])
+  @@index([status])
+  @@index([linkedDealId])
+}
+
+// ============================================================================
+// END ENTERPRISE OPERATING SYSTEM MODELS
+// ============================================================================
