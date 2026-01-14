@@ -853,6 +853,7 @@ export function AdminBrandsPage({ session }) {
     const result = normalizeApiArray(brands, 'brands');
     if (!Array.isArray(result)) {
       console.error('[CRITICAL] safeBrandsState is not an array:', { result, brands, isArray: Array.isArray(result) });
+      return [];
     }
     return result;
   }, [brands]);
@@ -860,6 +861,7 @@ export function AdminBrandsPage({ session }) {
     const result = normalizeApiArray(campaigns, 'campaigns');
     if (!Array.isArray(result)) {
       console.error('[CRITICAL] safeCampaignsState is not an array:', { result, campaigns, isArray: Array.isArray(result) });
+      return [];
     }
     return result;
   }, [campaigns]);
@@ -867,6 +869,7 @@ export function AdminBrandsPage({ session }) {
     const result = normalizeApiArray(events, 'events');
     if (!Array.isArray(result)) {
       console.error('[CRITICAL] safeEventsState is not an array:', { result, events, isArray: Array.isArray(result) });
+      return [];
     }
     return result;
   }, [events]);
@@ -874,14 +877,25 @@ export function AdminBrandsPage({ session }) {
     const result = normalizeApiArray(deals, 'deals');
     if (!Array.isArray(result)) {
       console.error('[CRITICAL] safeDealsState is not an array:', { result, deals, isArray: Array.isArray(result) });
+      return [];
     }
     return result;
   }, [deals]);
   const safeContractsState = useMemo(() => {
-    return normalizeApiArray(contracts, 'contracts');
+    const result = normalizeApiArray(contracts, 'contracts');
+    if (!Array.isArray(result)) {
+      console.error('[CRITICAL] safeContractsState is not an array:', { result, contracts, isArray: Array.isArray(result) });
+      return [];
+    }
+    return result;
   }, [contracts]);
   const safeContactsState = useMemo(() => {
-    return normalizeApiArray(contacts, 'contacts');
+    const result = normalizeApiArray(contacts, 'contacts');
+    if (!Array.isArray(result)) {
+      console.error('[CRITICAL] safeContactsState is not an array:', { result, contacts, isArray: Array.isArray(result) });
+      return [];
+    }
+    return result;
   }, [contacts]);
 
   const filtered = useMemo(() => {
