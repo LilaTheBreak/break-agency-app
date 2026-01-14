@@ -31,6 +31,20 @@ import { checkForLocalStorageData, migrateLocalStorageToDatabase } from "../lib/
 import { normalizeApiArray, normalizeApiArrayWithGuard } from "../lib/dataNormalization.js";
 import Button, { PrimaryButton, SecondaryButton, DangerButton, TextButton } from "../components/Button.jsx";
 
+// CRITICAL: Safe filter wrapper to catch non-array values and provide detailed error logging
+function safeFilter(value, callback, context = '') {
+  if (!Array.isArray(value)) {
+    console.error(`[BRANDS PAGE] CRITICAL: Attempted to filter non-array in ${context}:`, {
+      type: typeof value,
+      value: value,
+      isArray: Array.isArray(value),
+      stack: new Error().stack
+    });
+    return [];
+  }
+  return value.filter(callback);
+}
+
 const BRAND_STATUSES = ["Prospect", "Active", "Past"];
 const BRAND_INDUSTRIES = [
   "Fashion",
@@ -1449,6 +1463,24 @@ export function AdminBrandsPage({ session }) {
       const eventsArray = normalizeApiArray(safeEventsState);
       const contractsArray = normalizeApiArray(safeContractsState);
       
+      // CRITICAL: Validate each array before calling .filter()
+      if (!Array.isArray(campaignsArray)) {
+        console.error('[BRANDS PAGE] CRITICAL: campaignsArray is not an array:', { type: typeof campaignsArray, value: campaignsArray, safeCampaignsState });
+        return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
+      }
+      if (!Array.isArray(dealsArray)) {
+        console.error('[BRANDS PAGE] CRITICAL: dealsArray is not an array:', { type: typeof dealsArray, value: dealsArray, safeDealsState });
+        return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
+      }
+      if (!Array.isArray(eventsArray)) {
+        console.error('[BRANDS PAGE] CRITICAL: eventsArray is not an array:', { type: typeof eventsArray, value: eventsArray, safeEventsState });
+        return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
+      }
+      if (!Array.isArray(contractsArray)) {
+        console.error('[BRANDS PAGE] CRITICAL: contractsArray is not an array:', { type: typeof contractsArray, value: contractsArray, safeContractsState });
+        return { total: 0, campaigns: 0, deals: 0, events: 0, contracts: 0, outreach: 0 };
+      }
+      
       const campaignCount = campaignsArray.filter(c => c && c.brandId === brand.id).length;
       const dealCount = dealsArray.filter(d => d && d.brandId === brand.id).length;
       const eventCount = eventsArray.filter(e => e && e.brandId === brand.id).length;
@@ -1550,6 +1582,19 @@ export function AdminBrandsPage({ session }) {
   return (
     <DashboardShell title="Brands" subtitle="Track brands as long-lived CRM entities — without login assumptions." role="admin" navLinks={ADMIN_NAV_LINKS}>
       <div className="space-y-6">
+        {(() => {
+          try {
+            // Check all critical state is arrays
+            if (!Array.isArray(filtered)) {
+              console.error('[BRANDS PAGE] CRITICAL: filtered is not an array on render:', { filtered, type: typeof filtered });
+              return <div className="text-red-600 p-4">Error: Invalid data state. Please refresh the page.</div>;
+            }
+            return null; // No error, continue rendering
+          } catch (err) {
+            console.error('[BRANDS PAGE] Error checking state on render:', err);
+            return <div className="text-red-600 p-4">Error: {err.message}</div>;
+          }
+        })()}
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -1604,6 +1649,10 @@ export function AdminBrandsPage({ session }) {
         ) : (
           <section className="space-y-4">
             {filtered.map((brand) => {
+              if (!brand || !brand.id) {
+                console.warn('[BRANDS PAGE] Invalid brand object in filtered map:', { brand });
+                return null;
+              }
               const hints = deriveHint(brand);
               return (
                 <article
