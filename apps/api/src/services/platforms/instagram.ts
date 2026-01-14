@@ -102,14 +102,37 @@ export async function fetchInstagramMetrics(
         return { metrics: publicApiResult, dataSource: "SCRAPE" };
       }
 
+      // Try headless browser as last resort
+      logInfo("[INSTAGRAM] Public API failed, attempting headless browser scrape", { username });
+      const browserResult = await scrapeWithBrowser(normalized);
+      if (browserResult) {
+        logInfo("[INSTAGRAM] Browser scrape successful", { username });
+        return { metrics: browserResult, dataSource: "SCRAPE" };
+      }
+
       logError("[INSTAGRAM] All strategies failed", new Error("All Instagram data fetch strategies exhausted"), {
         username,
         error: "Profile may be private, deleted, blocked, or Instagram anti-bot measures are active",
       });
+      
+      // Return placeholder data so user can still proceed (won't break the UI)
+      // This allows analytics to continue even if we can't get live data
+      logWarn("[INSTAGRAM] Returning placeholder data due to Instagram blocking", { username });
       return {
-        metrics: null,
+        metrics: {
+          username: normalized,
+          displayName: `@${normalized}`,
+          biography: "(Profile data unavailable - Instagram blocking requests)",
+          followerCount: 0,
+          followingCount: 0,
+          postCount: 0,
+          profilePictureUrl: "",
+          isVerified: false,
+          isBusinessAccount: false,
+          dataSource: "SCRAPE",
+        },
         dataSource: "SCRAPE",
-        error: "Failed to fetch Instagram profile. The account may be private, deleted, blocked, or Instagram's anti-bot protections are preventing access. Try again in a few minutes.",
+        error: "Failed to fetch live data. Instagram is blocking automated access. Profile name only.",
       };
     }
 
@@ -231,6 +254,106 @@ async function fetchViaPublicAPI(username: string): Promise<InstagramProfileMetr
     };
   } catch (error) {
     logError("[INSTAGRAM] Public API fallback error", error, { username });
+    return null;
+  }
+}
+
+/**
+ * Scrape Instagram using headless browser (Puppeteer)
+ * Used as last resort when direct scraping and API both fail
+ */
+async function scrapeWithBrowser(username: string): Promise<InstagramProfileMetrics | null> {
+  try {
+    logInfo("[INSTAGRAM] Starting browser scrape", { username });
+    
+    // Dynamically import puppeteer
+    const puppeteer = await import('puppeteer');
+    
+    const browser = await puppeteer.default.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ],
+    });
+
+    const page = await browser.newPage();
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    );
+    
+    // Set viewport and wait for navigation
+    await page.setViewport({ width: 1280, height: 720 });
+    
+    const url = `https://www.instagram.com/${username}/`;
+    logInfo("[INSTAGRAM] Navigating to profile", { username, url });
+    
+    try {
+      await page.goto(url, { 
+        waitUntil: 'networkidle2',
+        timeout: 15000 
+      });
+    } catch (navError) {
+      logWarn("[INSTAGRAM] Navigation timeout, continuing with page content", { username });
+      // Don't fail - sometimes page loads partially
+    }
+
+    // Extract meta tags from rendered page
+    const profileData = await page.evaluate(() => {
+      const getMetaContent = (property: string) => {
+        const meta = document.querySelector(`meta[property="${property}"]`);
+        return meta ? meta.getAttribute('content') : '';
+      };
+
+      return {
+        title: getMetaContent('og:title'),
+        description: getMetaContent('og:description'),
+        image: getMetaContent('og:image'),
+      };
+    });
+
+    await browser.close();
+
+    if (!profileData.title && !profileData.description) {
+      logWarn("[INSTAGRAM] Browser scrape returned no data", { username });
+      return null;
+    }
+
+    // Parse title: "Name's Photos on Instagram"
+    const displayName = profileData.title
+      ?.replace(/'s Photos & Videos on Instagram/, '')
+      .replace(/'s Photos on Instagram/, '')
+      .replace(/'s Reels & Photos on Instagram/, '')
+      .trim() || username;
+
+    // Parse follower count from description
+    const followerMatch = profileData.description?.match(/([0-9,.]+)\s*(?:Followers?)/);
+    const followerCount = followerMatch 
+      ? parseInt(followerMatch[1].replace(/,/g, ''), 10)
+      : 0;
+
+    logInfo("[INSTAGRAM] Browser scrape successful", {
+      username,
+      displayName,
+      followers: followerCount,
+    });
+
+    return {
+      username,
+      displayName,
+      biography: profileData.description || '',
+      followerCount,
+      followingCount: 0,
+      postCount: 0,
+      profilePictureUrl: profileData.image || '',
+      isVerified: false,
+      isBusinessAccount: false,
+      dataSource: "SCRAPE",
+    };
+  } catch (error) {
+    logError("[INSTAGRAM] Browser scrape failed", error, { username });
     return null;
   }
 }
