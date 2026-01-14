@@ -1,4 +1,5 @@
 import { gmail_v1 as gmailV1, google } from "googleapis";
+import { randomUUID } from 'crypto';
 import prisma from '../../lib/prisma.js';
 import { getOAuthClientForUser, GmailNotConnectedError } from './tokens.js';
 import { mapGmailMessageToDb } from './mappings.js';
@@ -253,10 +254,17 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
       let createdEmail: any = null;
       try {
       await prisma.$transaction(async (tx) => {
+        // Generate ID for new InboxMessage (required for @id field)
+        const inboxMessageId = randomUUID();
+        
         const thread = await tx.inboxMessage.upsert({
           where: { threadId: inboxMessageData.threadId },
           update: { ...inboxMessageData, userId }, // CRITICAL: Include userId in update
-          create: { ...inboxMessageData, userId }
+          create: { 
+            id: inboxMessageId, // Required for @id field
+            ...inboxMessageData, 
+            userId 
+          }
         });
         
         // Use upsert to handle race conditions (concurrent syncs)
