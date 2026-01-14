@@ -2,7 +2,7 @@ import { gmail_v1 as gmailV1 } from "googleapis";
 import { Prisma } from "@prisma/client";
 import { cleanEmailBody } from './gmailParser.js';
 
-type InboundEmailCreateInput = Prisma.InboundEmailCreateWithoutInboxMessageInput;
+type InboundEmailCreateInput = Prisma.InboundEmailUncheckedCreateWithoutInboxMessageInput;
 type InboxMessageUpdateInput = Prisma.InboxMessageUpdateInput;
 
 /**
@@ -113,7 +113,7 @@ export function mapGmailMessageToDb(
   
   const inboundEmailData: InboundEmailCreateInput = {
     id: `inbound_${message.id!}`,
-    User: userId ? { connect: { id: userId } } : undefined,
+    userId: userId || undefined, // Set foreign key directly, not via nested relation
     platform: "gmail", // Explicitly set platform
     gmailId: message.id!,
     subject: getHeader(headers, "Subject") || null,
