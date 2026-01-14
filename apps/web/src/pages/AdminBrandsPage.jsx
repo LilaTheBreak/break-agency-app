@@ -591,6 +591,9 @@ function deriveHint(brand) {
 }
 
 export function AdminBrandsPage({ session }) {
+  // VERSION MARKER: 3d85fa9 - Safe state memos return [] if not array
+  console.log('[BRANDS PAGE] Loaded - version with safe state memo fixes (commit 3d85fa9)');
+  
   const navigate = useNavigate();
   const { hasRole } = useAuth();
   const isSuperadmin = hasRole("SUPERADMIN");

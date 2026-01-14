@@ -3,6 +3,8 @@
  * 
  * Shared helpers for normalizing API responses to consistent array formats.
  * Prevents crashes from unexpected API response shapes (empty strings, objects, etc.)
+ * 
+ * VERSION: 3d85fa9 - All safe state memos now validate and return [] if not array
  */
 
 /**
