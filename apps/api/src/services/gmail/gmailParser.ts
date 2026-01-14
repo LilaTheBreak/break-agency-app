@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio";
 
 /**
  * Strips HTML tags, quoted replies, and other clutter from an email body.
@@ -10,18 +10,17 @@ export function cleanEmailBody(bodyHtml: string): string {
     return "";
   }
 
-  // Use JSDOM to parse HTML and extract text content
-  const dom = new JSDOM(bodyHtml);
-  const document = dom.window.document;
+  // Use cheerio to parse HTML and extract text content
+  const $ = cheerio.load(bodyHtml);
 
   // Remove blockquotes, which Gmail uses for quoted replies
-  document.querySelectorAll("blockquote").forEach((el) => el.remove());
+  $("blockquote").remove();
 
   // Remove signature blocks (heuristic)
   // Gmail often wraps signatures in a div with a specific class
-  document.querySelectorAll(".gmail_signature").forEach((el) => el.remove());
+  $(".gmail_signature").remove();
 
-  let cleanText = document.body.textContent || "";
+  let cleanText = $.text();
 
   // Replace multiple newlines/spaces with a single one
   cleanText = cleanText.replace(/(\r\n|\n|\r){2,}/g, "\n").trim();

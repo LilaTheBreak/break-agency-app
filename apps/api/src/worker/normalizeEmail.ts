@@ -1,12 +1,12 @@
-import { JSDOM } from "jsdom";
+import * as cheerio from "cheerio";
 
 /**
  * Extracts plain text from an HTML string.
  */
 export function extractPlainText(html: string): string {
   try {
-    const dom = new JSDOM(html);
-    return dom.window.document.body.textContent || "";
+    const $ = cheerio.load(html);
+    return $.text();
   } catch (error) {
     console.error("Error parsing HTML:", error);
     return "";
