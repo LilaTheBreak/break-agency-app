@@ -531,13 +531,16 @@ app.use("/api/gmail", gmailHealthRouter);
 // Validate Gmail credentials at server startup (before routes are registered)
 validateGmailCredentials();
 
-// Apply Gmail validation middleware to all Gmail routes
-app.use("/api/gmail", requireGmailEnabled);
-
+// Register Gmail auth routes BEFORE applying Gmail validation middleware
+// Users must be able to get auth URL even if credentials are missing (they're about to connect!)
 app.use("/api/gmail/auth", gmailAuthRouter);
+
+// Apply Gmail validation middleware to all OTHER Gmail routes
+// This prevents data access but allows users to START the connection process
 app.use("/api/gmail/analysis", gmailAnalysisRouter);
 app.use("/api/gmail/inbox", gmailInboxRouter);
 app.use("/api/gmail/webhook", gmailWebhookRouter);
+app.use("/api/gmail", requireGmailEnabled);
 app.use("/api/gmail", gmailMessagesRouter);
 app.use("/api/email-opportunities", emailOpportunitiesRouter);
 
