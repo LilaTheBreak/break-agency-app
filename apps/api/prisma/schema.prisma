@@ -466,20 +466,24 @@ model CrmBrand {
 }
 
 model CrmBrandContact {
-  id             String   @id
-  crmBrandId     String
-  firstName      String?
-  lastName       String?
-  email          String?
-  phone          String?
-  title          String?
-  primaryContact Boolean  @default(false)
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime
-  CrmBrand       CrmBrand @relation(fields: [crmBrandId], references: [id], onDelete: Cascade)
+  id                       String   @id
+  crmBrandId               String
+  firstName                String?
+  lastName                 String?
+  email                    String?
+  phone                    String?
+  title                    String?
+  linkedInUrl              String?
+  relationshipStatus       String?  @default("New")
+  preferredContactMethod   String?
+  owner                    String?
+  primaryContact           Boolean  @default(false)
+  notes                    String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime
+  CrmBrand                 CrmBrand @relation(fields: [crmBrandId], references: [id], onDelete: Cascade)
 
-  @@unique([email])
+  @@unique([crmBrandId, email])
   @@index([crmBrandId])
   @@index([email])
 }
@@ -3128,6 +3132,139 @@ model SOPInstance {
   @@index([templateId])
   @@index([status])
   @@index([linkedDealId])
+}
+
+// ============================================================================
+// CONTACT ENRICHMENT & OUTREACH MODELS
+// ============================================================================
+
+model EnrichedContact {
+  id                     String   @id @default(cuid())
+  
+  // Core contact info
+  firstName              String
+  lastName               String
+  jobTitle               String?
+  company                String?
+  linkedInUrl            String?
+  linkedInId             String?
+  
+  // Enrichment metadata
+  confidenceScore        Int      @default(50) // 0-100
+  source                 String   // "linkedin" | "website" | "public_index" | "manual"
+  discoveryMethod        String?  // How we found them (e.g., "linkedin_search", "google_dorks", "cached_profile")
+  
+  // Association
+  linkedBrandId          String?  // Link to CrmBrand if already matched
+  linkedContactId        String?  // Link to CrmBrandContact if created
+  
+  // Email enrichment
+  emails                 ContactEmail[]
+  
+  // Tracking
+  discoveredAt           DateTime @default(now())
+  verifiedAt             DateTime?
+  addedToCrmAt           DateTime?
+  complianceCheckPassed  Boolean  @default(false)
+  lawfulBasis            String?  // GDPR: "b2b_legitimate_interest" | "contact_request" | "manual"
+  
+  // Activity
+  notes                  String?
+  activity               Json[]   @default([])
+  
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  
+  // Relations
+  EnrichmentJob          EnrichmentJob[]
+  
+  @@index([linkedBrandId])
+  @@index([linkedInId])
+  @@index([company])
+  @@index([confidenceScore])
+  @@index([discoveredAt])
+  @@index([complianceCheckPassed])
+}
+
+model ContactEmail {
+  id                     String   @id @default(cuid())
+  
+  // Email address & verification
+  email                  String
+  verificationStatus     String   @default("unknown") // "verified" | "risky" | "unknown" | "invalid"
+  verificationMethod     String?  // "pattern" | "mx_check" | "smtp_ping" | "api" | "manual"
+  verificationScore      Int      @default(50) // 0-100
+  
+  // How we generated it
+  generationMethod       String   // "pattern_detection" | "api_enrichment" | "manual"
+  namePermutations       String[] @default([]) // Attempts like john.doe, j.doe, etc.
+  
+  // Verification details
+  mxCheckPassed          Boolean?
+  smtpCheckPassed        Boolean? // Safe SMTP check without sending
+  apiSource              String?  // "hunter" | "clearbit" | "snov" | "custom_pattern"
+  
+  // Associated contact
+  enrichedContactId      String
+  EnrichedContact        EnrichedContact @relation(fields: [enrichedContactId], references: [id], onDelete: Cascade)
+  
+  // Activity
+  notes                  String?
+  lastCheckedAt          DateTime?
+  
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  
+  @@unique([enrichedContactId, email])
+  @@index([enrichedContactId])
+  @@index([verificationStatus])
+  @@index([email])
+}
+
+model EnrichmentJob {
+  id                     String   @id @default(cuid())
+  
+  // Job context
+  jobType                String   // "brand_contact_discovery" | "email_enrichment" | "verification"
+  status                 String   @default("pending") // "pending" | "processing" | "completed" | "failed" | "queued"
+  
+  // Input
+  brandId                String?
+  brandName              String?
+  brandWebsite           String?
+  linkedInCompanyUrl     String?
+  
+  // Result
+  contactsDiscovered     Int      @default(0)
+  contactsEnriched       Int      @default(0)
+  
+  // Enriched contacts associated
+  contacts               EnrichedContact[]
+  
+  // Error handling
+  errorMessage           String?
+  errorCode              String?
+  retryCount             Int      @default(0)
+  maxRetries             Int      @default(3)
+  
+  // Compliance & limits
+  regionCode             String?  // For geo-based restrictions
+  complianceMode         Boolean  @default(true)
+  volumeLimited          Boolean  @default(false)
+  
+  // Rate limiting
+  rateLimitBucket        String?
+  
+  // Timing
+  startedAt              DateTime?
+  completedAt            DateTime?
+  
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  
+  @@index([brandId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ============================================================================

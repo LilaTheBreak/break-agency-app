@@ -68,11 +68,7 @@ export async function inviteUserHandler(
         (inviteError as Error).message === "User not found. User must sign up first."
       ) {
         res.status(404).json({ error: (inviteError as Error).message });
-      } else if (
-        (inviteError as Error).message ===
-        "User is already a member of this brand"
-      ) {
-        res.status(409).json({ error: (inviteError as Error).message });
+        return;
       } else {
         throw inviteError;
       }
@@ -154,16 +150,27 @@ export async function updateMemberRoleHandler(
 
     const { role } = validation.data;
 
-    const updatedMember = await brandUserService.updateBrandUserRole(
-      brandId,
-      memberId,
-      role
-    );
+    try {
+      const updatedMember = await brandUserService.updateBrandUserRole(
+        brandId,
+        memberId,
+        role
+      );
 
-    res.json({
-      message: "Role updated successfully",
-      member: updatedMember,
-    });
+      res.json({
+        message: "Role updated successfully",
+        member: updatedMember,
+      });
+    } catch (updateError) {
+      if (
+        (updateError as Error).message.includes("Cannot demote the last admin")
+      ) {
+        res.status(400).json({ error: (updateError as Error).message });
+        return;
+      } else {
+        throw updateError;
+      }
+    }
   } catch (error) {
     console.error("[Update Member Role]", error);
     res.status(500).json({ error: "Failed to update member role" });
@@ -199,11 +206,22 @@ export async function removeTeamMemberHandler(
       return;
     }
 
-    await brandUserService.removeUserFromBrand(brandId, memberId);
+    try {
+      await brandUserService.removeUserFromBrand(brandId, memberId);
 
-    res.json({
-      message: "Team member removed successfully",
-    });
+      res.json({
+        message: "Team member removed successfully",
+      });
+    } catch (removeError) {
+      if (
+        (removeError as Error).message.includes("Cannot remove the last admin")
+      ) {
+        res.status(400).json({ error: (removeError as Error).message });
+        return;
+      } else {
+        throw removeError;
+      }
+    }
   } catch (error) {
     console.error("[Remove Team Member]", error);
     res.status(500).json({ error: "Failed to remove team member" });

@@ -273,11 +273,14 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           update: {
             subject: inboundEmailData.subject,
             body: inboundEmailData.body,
+            snippet: inboundEmailData.snippet,
             inboxMessageId: thread.id,
+            threadId: inboundEmailData.threadId,
             isRead: inboundEmailData.isRead, // Update read status from Gmail
             receivedAt: inboundEmailData.receivedAt, // Keep consistent timestamp
             fromEmail: inboundEmailData.fromEmail, // Update sender if it changed
             toEmail: inboundEmailData.toEmail, // Update recipient if it changed
+            metadata: inboundEmailData.metadata, // Update Gmail labels and metadata
           },
           create: { ...inboundEmailData, inboxMessageId: thread.id },
         });

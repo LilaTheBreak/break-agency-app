@@ -211,3 +211,50 @@ export async function syncInbox(req: Request, res: Response, next: NextFunction)
     });
   }
 }
+
+export async function autoDiscoverBrands(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.id;
+    
+    if (!(await checkTokenAndHandleError(userId, res))) return;
+
+    // Import the auto-discovery service
+    const { listAndFetchMessages } = await import('../services/gmail/fetchMessages.js');
+    const { autoDiscoverBrandsFromInbox } = await import('../services/gmail/autoDiscoverBrands.js');
+
+    // Fetch the user's inbox messages
+    const messages = await listAndFetchMessages(userId);
+    if (!messages) {
+      res.status(401).json({
+        error: "gmail_auth_failed",
+        message: "Failed to authenticate with Gmail. Please reconnect your account."
+      });
+      return;
+    }
+
+    if (messages.length === 0) {
+      res.json({
+        success: true,
+        discovered: 0,
+        created: 0,
+        results: [],
+        message: "No messages found in inbox."
+      });
+      return;
+    }
+
+    // Run auto-discovery
+    const result = await autoDiscoverBrandsFromInbox(messages, userId);
+
+    res.json({
+      success: true,
+      discovered: result.discovered,
+      created: result.created,
+      results: result.results,
+      message: `Discovered ${result.discovered} business domains and created ${result.created} new brands.`
+    });
+  } catch (error) {
+    console.error("[AUTO DISCOVER] Unexpected error:", error);
+    next(error);
+  }
+}

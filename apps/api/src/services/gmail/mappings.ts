@@ -81,6 +81,7 @@ export function mapGmailMessageToDb(
 
   const fromHeader = getHeader(headers, "From");
   const toHeader = getHeader(headers, "To");
+  const ccHeader = getHeader(headers, "Cc");
   
   // Data for the thread (InboxMessage)
   const inboxMessageData: InboxMessageUpdateInput = {
@@ -95,7 +96,7 @@ export function mapGmailMessageToDb(
     participants: [
       fromHeader,
       ...(toHeader ? [toHeader] : []),
-      ...(getHeader(headers, "Cc") ? [getHeader(headers, "Cc")] : [])
+      ...(ccHeader ? [ccHeader] : [])
     ].filter(Boolean)
   };
 
@@ -116,16 +117,22 @@ export function mapGmailMessageToDb(
     userId: userId || undefined, // Set foreign key directly, not via nested relation
     platform: "gmail", // Explicitly set platform
     gmailId: message.id!,
+    threadId: message.threadId || undefined, // Store thread ID for relationship queries
     subject: getHeader(headers, "Subject") || null,
     fromEmail: fromEmail || "unknown@unknown.com", // Fallback for required field
     toEmail: toEmail || "", // Can be empty string
     receivedAt: messageDate,
     body: body || null,
-    // Note: InboundEmail schema doesn't have snippet field - snippet is stored in InboxMessage
+    snippet: message.snippet || null, // Store snippet for quick preview without loading full body
     isRead: !(message.labelIds?.includes("UNREAD") ?? false),
     categories: [],
-    // Note: Schema doesn't have separate bodyHtml/bodyText or attachments fields
-    // Attachments would need to be stored in metadata if needed
+    // Store Gmail-specific metadata (labels, raw message ID, etc.)
+    metadata: {
+      gmailLabels: message.labelIds || [],
+      gmailThreadId: message.threadId,
+      importedAt: new Date().toISOString(),
+    } as any,
+    // Note: Other fields (aiCategory, aiUrgency, etc.) are set by separate AI classification job
   };
 
   return { inboxMessageData, inboundEmailData };

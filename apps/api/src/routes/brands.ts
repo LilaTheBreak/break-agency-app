@@ -18,7 +18,7 @@ const router = Router();
 router.post("/onboard", requireAuth, onboardBrandHandler);
 
 // GET /api/brands - List all brands (with pagination)
-router.get("/", listBrandsHandler);
+router.get("/", requireAuth, listBrandsHandler);
 
 // GET /api/brands/my-brands - Get current user's brands
 router.get("/my-brands", requireAuth, getUserBrandsHandler);

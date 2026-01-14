@@ -389,7 +389,7 @@ export function AdminDocumentsPage({ session }) {
   }, [brands]);
 
   const visibleDealsForCreate = useMemo(() => {
-    const list = createForm.brandId ? (deals || []).filter((d) => d.brandId === createForm.brandId) : deals || [];
+    const list = createForm.brandId ? (deals || []).filter((d) => d && typeof d === 'object' && d.brandId === createForm.brandId) : deals || [];
     return [{ value: "", label: createForm.brandId ? "Select a deal…" : "Select a brand first…" }].concat(
       list.map((d) => ({ value: d.id, label: d.dealName }))
     );
@@ -895,7 +895,7 @@ export function AdminDocumentsPage({ session }) {
                   onChange={(v) => handleUpdateContract({ dealId: v })}
                   options={[
                     { value: "", label: "Select a deal…" },
-                    ...(deals || []).filter((d) => d.brandId === selectedContract.brandId).map((d) => ({ value: d.id, label: d.dealName }))
+                    ...(deals || []).filter((d) => d && typeof d === 'object' && d.brandId === selectedContract.brandId).map((d) => ({ value: d.id, label: d.dealName }))
                   ]}
                 />
               </div>

@@ -102,15 +102,21 @@ export async function updateAuditSourceStatus(
   auditSourceId: string,
   input: UpdateAuditSourceInput
 ) {
+  const updateData: Record<string, any> = {
+    status: input.status,
+    error: input.error || null,
+    lastCheckedAt: new Date(),
+  };
+
+  // Only update metadata if provided
+  if (input.metadata !== undefined) {
+    updateData.metadata = input.metadata;
+  }
+
   // @ts-ignore - Model exists in schema but TypeScript cache is stale
   const auditSource = await prisma.auditSource.update({
     where: { id: auditSourceId },
-    data: {
-      status: input.status,
-      error: input.error || null,
-      metadata: input.metadata,
-      lastCheckedAt: new Date(),
-    },
+    data: updateData,
   });
 
   return auditSource;

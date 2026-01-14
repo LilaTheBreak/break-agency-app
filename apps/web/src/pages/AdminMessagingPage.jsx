@@ -21,6 +21,7 @@ export function AdminMessagingPage() {
   } = useMessaging();
   const [activeFilter, setActiveFilter] = useState("All");
   const [selectedThreadId, setSelectedThreadId] = useState(null);
+  const [selectedEmailId, setSelectedEmailId] = useState(null);
   const [composer, setComposer] = useState({ body: "", attachments: [] });
   const [inboxEmails, setInboxEmails] = useState([]);
   const [inboxLoading, setInboxLoading] = useState(false);
@@ -49,6 +50,25 @@ export function AdminMessagingPage() {
     () => threads.find((thread) => thread.id === selectedThreadId) ?? null,
     [threads, selectedThreadId]
   );
+
+  const selectedEmail = useMemo(
+    () => inboxEmails.find((email) => email.id === selectedEmailId) ?? null,
+    [inboxEmails, selectedEmailId]
+  );
+
+  const filteredInboxEmails = useMemo(() => {
+    if (activeFilter === "All") return inboxEmails;
+    const normalized = activeFilter.toLowerCase();
+    const singular = normalized.endsWith("s") ? normalized.slice(0, -1) : normalized;
+    return inboxEmails.filter((email) => {
+      const persona = (email.persona || "").toLowerCase();
+      if (!persona) return false;
+      if (normalized === "talent managers") {
+        return persona.includes("talent");
+      }
+      return persona.includes(singular);
+    });
+  }, [inboxEmails, activeFilter]);
 
   useEffect(() => {
     if (selectedThread && currentUser) {
@@ -165,6 +185,14 @@ export function AdminMessagingPage() {
     setComposer({ body: "", attachments: [] });
   };
 
+  const handleOpenEmail = (emailId) => {
+    setSelectedEmailId(emailId);
+  };
+
+  const handleCloseEmail = () => {
+    setSelectedEmailId(null);
+  };
+
   const handleTemplateInsert = (body) => {
     setComposer((prev) => ({
       ...prev,
@@ -229,7 +257,7 @@ export function AdminMessagingPage() {
       </div>
       <SystemAlerts alerts={alerts} />
       <EmailInboxSection
-        emails={inboxEmails}
+        emails={filteredInboxEmails}
         loading={inboxLoading}
         error={inboxError}
         gmailConnected={gmailConnected}
@@ -238,6 +266,7 @@ export function AdminMessagingPage() {
         lastSyncTime={lastSyncTime}
         onConnect={connectGmail}
         onSync={handleSyncGmail}
+        onEmailOpen={handleOpenEmail}
       />
       <section className="mt-4 space-y-3">
         {filteredThreads.length ? (
@@ -267,6 +296,12 @@ export function AdminMessagingPage() {
           onAttachmentChange={handleAttachmentChange}
           onRemoveAttachment={handleRemoveAttachment}
           onSend={handleSend}
+        />
+      ) : null}
+      {selectedEmail ? (
+        <EmailModal
+          email={selectedEmail}
+          onClose={handleCloseEmail}
         />
       ) : null}
     </DashboardShell>
@@ -445,6 +480,177 @@ function ThreadMessage({ message }) {
   );
 }
 
+function EmailModal({ email, onClose }) {
+  const senderName = email.sender || email.participants?.[0] || "Unknown";
+  const subject = email.subject || "(No subject)";
+  const body = email.body || email.snippet || "(No message content)";
+  const timestamp = email.lastMessageAt || email.receivedAt;
+  const [creatingBrand, setCreatingBrand] = React.useState(false);
+  const [creatingContact, setCreatingContact] = React.useState(false);
+
+  // Extract email from sender if it's in format "Name <email@domain>"
+  const senderEmail = email.senderEmail || 
+    (typeof email.sender === 'string' && email.sender.match(/<([^>]+)>/)?.[1]) || 
+    null;
+
+  const handleAddAsBrand = async () => {
+    if (!senderEmail) {
+      alert('Could not extract email address from sender');
+      return;
+    }
+
+    setCreatingBrand(true);
+    try {
+      // Extract domain from email
+      const domain = senderEmail.split('@')[1];
+      const brandName = domain
+        .replace(/\.com$|\.co\.uk$|\.io$|\.net$/, '')
+        .split('.')
+        .pop()
+        .split(/[-_]/)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+
+      const response = await fetch('/api/crm-brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandName,
+          website: `https://${domain}`,
+          industry: 'Other',
+          status: 'Prospect',
+          owner: null,
+          internalNotes: `Created from email from ${senderName}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create brand');
+      }
+
+      const result = await response.json();
+      alert(`✅ Brand "${brandName}" created successfully!`);
+      onClose();
+    } catch (error) {
+      alert(`❌ Error creating brand: ${error.message}`);
+    } finally {
+      setCreatingBrand(false);
+    }
+  };
+
+  const handleAddAsContact = async () => {
+    if (!senderEmail) {
+      alert('Could not extract email address from sender');
+      return;
+    }
+
+    setCreatingContact(true);
+    try {
+      // Split sender name into first and last name
+      const nameParts = senderName.trim().split(/\s+/);
+      const firstName = nameParts[0] || 'Unknown';
+      const lastName = nameParts.slice(1).join(' ') || 'User';
+
+      const response = await fetch('/api/crm-contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandId: 'select-brand', // Placeholder - user will need to select brand
+          firstName,
+          lastName,
+          email: senderEmail,
+          relationshipStatus: 'New',
+          owner: null,
+        }),
+      });
+
+      if (response.status === 400) {
+        // If no brand selected, open a different flow
+        alert('Please note: You can add contacts directly from the CRM Contacts page by first selecting a brand.');
+        onClose();
+        return;
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create contact');
+      }
+
+      alert(`✅ Contact ${firstName} ${lastName} added!`);
+      onClose();
+    } catch (error) {
+      alert(`❌ To create a contact, please use the CRM Contacts page`);
+    } finally {
+      setCreatingContact(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-brand-black/30 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[36px] border border-brand-black/15 bg-white p-8 text-left text-brand-black shadow-[0_30px_120px_rgba(0,0,0,0.45)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-display text-3xl uppercase">{subject}</h3>
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Email</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em]"
+          >
+            Close
+          </button>
+        </div>
+        <div className="mt-2 space-y-1">
+          <p className="text-sm font-semibold text-brand-black">From: {senderName}</p>
+          {timestamp && (
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">
+              {formatTimestamp(new Date(timestamp).getTime())}
+            </p>
+          )}
+        </div>
+        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-white/80 p-4">
+          <p className="whitespace-pre-line text-sm text-brand-black/80">{body}</p>
+        </div>
+        {email.attachments?.length ? (
+          <div className="mt-4">
+            <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60 mb-2">Attachments</p>
+            <div className="flex flex-wrap gap-2">
+              {email.attachments.map((attachment, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center rounded-full border border-brand-black/15 bg-brand-linen/40 px-3 py-1 text-xs text-brand-black/70"
+                >
+                  📎 {attachment.filename || `Attachment ${idx + 1}`}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <div className="mt-6 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleAddAsBrand}
+            disabled={creatingBrand}
+            className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black hover:text-brand-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {creatingBrand ? "Creating..." : "💼 Add as Brand"}
+          </button>
+          <button
+            type="button"
+            onClick={handleAddAsContact}
+            disabled={creatingContact}
+            className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black hover:text-brand-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {creatingContact ? "Creating..." : "👤 Add as Contact"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SystemAlerts({ alerts }) {
   if (!alerts?.length) return null;
   return (
@@ -463,7 +669,7 @@ function SystemAlerts({ alerts }) {
   );
 }
 
-function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, syncProgress, lastSyncTime, onConnect, onSync }) {
+function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, syncProgress, lastSyncTime, onConnect, onSync, onEmailOpen }) {
   // Helper to format relative time
   const formatRelativeTime = (date) => {
     if (!date) return null;
@@ -579,14 +785,14 @@ function EmailInboxSection({ emails, loading, error, gmailConnected, syncing, sy
             <p className="text-xs text-brand-black/60">Sync your Gmail inbox to see emails here.</p>
           </div>
         ) : (
-          emails.map((email) => <EmailRow key={email.id} email={email} />)
+          emails.map((email) => <EmailRow key={email.id} email={email} onOpen={onEmailOpen} />)
         )}
       </div>
     </section>
   );
 }
 
-function EmailRow({ email }) {
+function EmailRow({ email, onOpen }) {
   // Extract sender name from participants or sender field
   const senderName = email.sender || email.participants?.[0] || "Unknown";
   const subject = email.subject || "(No subject)";
@@ -594,7 +800,10 @@ function EmailRow({ email }) {
   const timestamp = email.lastMessageAt || email.receivedAt || Date.now();
 
   return (
-    <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 hover:bg-brand-linen/60 transition-colors cursor-pointer">
+    <div 
+      onClick={() => onOpen(email.id)}
+      className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 hover:bg-brand-linen/60 transition-colors cursor-pointer"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

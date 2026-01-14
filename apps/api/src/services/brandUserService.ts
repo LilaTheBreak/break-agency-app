@@ -139,25 +139,22 @@ export async function inviteUserToBrand(
     throw new Error("User not found. User must sign up first.");
   }
 
-  // Check if already a member
+  // Use upsert to handle race conditions (concurrent invite attempts)
+  // If user is already a member, this will update the role; if not, it creates the membership
   // @ts-ignore - Model exists in schema but TypeScript cache is stale
-  const existingBrandUser = await prisma.brandUser.findUnique({
+  const brandUser = await prisma.brandUser.upsert({
     where: {
       brandId_userId: {
         brandId,
         userId: existingUser.id,
       },
     },
-  });
-
-  if (existingBrandUser) {
-    throw new Error("User is already a member of this brand");
-  }
-
-  // Create invite
-  // @ts-ignore - Model exists in schema but TypeScript cache is stale
-  const brandUser = await prisma.brandUser.create({
-    data: {
+    update: {
+      role, // Update role if already a member
+      status: "ACTIVE",
+      acceptedAt: new Date(),
+    },
+    create: {
       brandId,
       userId: existingUser.id,
       role,
@@ -249,6 +246,33 @@ export async function updateBrandUserRole(
     throw new Error("Invalid role");
   }
 
+  // Prevent demoting the last admin
+  if (newRole !== "ADMIN") {
+    // @ts-ignore - Model exists in schema but TypeScript cache is stale
+    const adminCount = await prisma.brandUser.count({
+      where: {
+        brandId,
+        role: "ADMIN",
+      },
+    });
+
+    // Check if the user being updated is currently an admin
+    // @ts-ignore - Model exists in schema but TypeScript cache is stale
+    const currentUser = await prisma.brandUser.findUnique({
+      where: {
+        brandId_userId: {
+          brandId,
+          userId,
+        },
+      },
+    });
+
+    // If this is the last admin and they're being demoted, throw error
+    if (currentUser?.role === "ADMIN" && adminCount <= 1) {
+      throw new Error("Cannot demote the last admin. Assign another admin first.");
+    }
+  }
+
   // @ts-ignore - Model exists in schema but TypeScript cache is stale
   const brandUser = await prisma.brandUser.update({
     where: {
@@ -279,6 +303,31 @@ export async function removeUserFromBrand(
   brandId: string,
   userId: string
 ) {
+  // Prevent removing the last admin from a brand
+  // @ts-ignore - Model exists in schema but TypeScript cache is stale
+  const adminCount = await prisma.brandUser.count({
+    where: {
+      brandId,
+      role: "ADMIN",
+    },
+  });
+
+  // Check if the user being removed is an admin
+  // @ts-ignore - Model exists in schema but TypeScript cache is stale
+  const userToRemove = await prisma.brandUser.findUnique({
+    where: {
+      brandId_userId: {
+        brandId,
+        userId,
+      },
+    },
+  });
+
+  // If this is the last admin and they're being removed, throw error
+  if (userToRemove?.role === "ADMIN" && adminCount <= 1) {
+    throw new Error("Cannot remove the last admin from a brand. Assign another admin first.");
+  }
+
   // @ts-ignore - Model exists in schema but TypeScript cache is stale
   await prisma.brandUser.delete({
     where: {

@@ -108,6 +108,27 @@ export const RATE_LIMITS = {
     maxRequests: 30,
     message: 'Too many deal operations. Please slow down.',
   },
+
+  // Enrichment discovery: 10 per minute per user
+  ENRICHMENT_DISCOVERY: {
+    windowMs: 60 * 1000,
+    maxRequests: 10,
+    message: 'Contact discovery limited to 10 requests per minute. Please try again later.',
+  },
+
+  // Enrichment approval: 50 per minute per user
+  ENRICHMENT_APPROVAL: {
+    windowMs: 60 * 1000,
+    maxRequests: 50,
+    message: 'Approval requests limited to 50 per minute. Please try again later.',
+  },
+
+  // Enrichment general: 100 per hour per user
+  ENRICHMENT_GENERAL: {
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 100,
+    message: 'Enrichment requests limited to 100 per hour. Please try again later.',
+  },
 };
 
 /**
@@ -308,6 +329,21 @@ export const rateLimiters = {
 
   dealMutations: createRateLimiter({
     ...RATE_LIMITS.DEAL_MUTATIONS,
+    keyGenerator: userKeyGenerator,
+  }),
+
+  enrichmentDiscovery: createRateLimiter({
+    ...RATE_LIMITS.ENRICHMENT_DISCOVERY,
+    keyGenerator: userKeyGenerator,
+  }),
+
+  enrichmentApproval: createRateLimiter({
+    ...RATE_LIMITS.ENRICHMENT_APPROVAL,
+    keyGenerator: userKeyGenerator,
+  }),
+
+  enrichmentGeneral: createRateLimiter({
+    ...RATE_LIMITS.ENRICHMENT_GENERAL,
     keyGenerator: userKeyGenerator,
   }),
 };

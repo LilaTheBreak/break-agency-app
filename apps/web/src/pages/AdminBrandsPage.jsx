@@ -30,6 +30,7 @@ import {
 import { checkForLocalStorageData, migrateLocalStorageToDatabase } from "../lib/crmMigration.js";
 import { normalizeApiArray, normalizeApiArrayWithGuard } from "../lib/dataNormalization.js";
 import Button, { PrimaryButton, SecondaryButton, DangerButton, TextButton } from "../components/Button.jsx";
+import { EnrichmentDiscoveryModal } from "../components/EnrichmentDiscoveryModal.jsx";
 
 // CRITICAL: Safe filter wrapper to catch non-array values and provide detailed error logging
 function safeFilter(value, callback, context = '') {
@@ -617,6 +618,8 @@ export function AdminBrandsPage({ session }) {
   const [brands, setBrands] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [brandToDelete, setBrandToDelete] = useState(null);
+  const [enrichmentModalOpen, setEnrichmentModalOpen] = useState(false);
+  const [enrichmentBrand, setEnrichmentBrand] = useState(null);
   const [enriching, setEnriching] = useState(false);
   const [enrichmentSuggestion, setEnrichmentSuggestion] = useState(null);
   const [contacts, setContacts] = useState([]);
@@ -684,6 +687,7 @@ export function AdminBrandsPage({ session }) {
   
   const [loading, setLoading] = useState(true);
   const [migrationNeeded, setMigrationNeeded] = useState(false);
+  const [autoDiscoveringBrands, setAutoDiscoveringBrands] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [drawerBrandId, setDrawerBrandId] = useState("");
@@ -970,7 +974,7 @@ export function AdminBrandsPage({ session }) {
         return [];
       }
       return campaigns
-        .filter((c) => c && c.brandId === selectedBrand.id)
+        .filter((c) => c && typeof c === 'object' && c.brandId === selectedBrand.id)
         .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
     } catch (error) {
       console.error('[BRANDS PAGE] Error in brandCampaigns useMemo:', error, { safeCampaignsState, selectedBrand });
@@ -993,7 +997,7 @@ export function AdminBrandsPage({ session }) {
         return [];
       }
       return events
-        .filter((e) => e && e.brandId === selectedBrand.id)
+        .filter((e) => e && typeof e === 'object' && e.brandId === selectedBrand.id)
         .sort((a, b) => String(b.startDateTime || "").localeCompare(String(a.startDateTime || "")));
     } catch (error) {
       console.error('[BRANDS PAGE] Error in brandEvents useMemo:', error, { safeEventsState, selectedBrand });
@@ -1016,7 +1020,7 @@ export function AdminBrandsPage({ session }) {
         return [];
       }
       return deals
-        .filter((d) => d && d.brandId === selectedBrand.id)
+        .filter((d) => d && typeof d === 'object' && d.brandId === selectedBrand.id)
         .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
     } catch (error) {
       console.error('[BRANDS PAGE] Error in brandDeals useMemo:', error, { safeDealsState, selectedBrand });
@@ -1039,7 +1043,7 @@ export function AdminBrandsPage({ session }) {
         return [];
       }
       return contracts
-        .filter((c) => c && c.brandId === selectedBrand.id)
+        .filter((c) => c && typeof c === 'object' && c.brandId === selectedBrand.id)
         .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
     } catch (error) {
       console.error('[BRANDS PAGE] Error in brandContracts useMemo:', error, { safeContractsState, selectedBrand });
@@ -1075,7 +1079,7 @@ export function AdminBrandsPage({ session }) {
       }
       
       return contacts
-        .filter((c) => c && c.brandId === selectedBrand.id)
+        .filter((c) => c && typeof c === 'object' && c.brandId === selectedBrand.id)
         .sort((a, b) => {
           if (Boolean(b.primaryContact) !== Boolean(a.primaryContact)) return b.primaryContact ? 1 : -1;
           return `${a.lastName || ""} ${a.firstName || ""}`.localeCompare(`${b.lastName || ""} ${b.firstName || ""}`);
@@ -1205,6 +1209,41 @@ export function AdminBrandsPage({ session }) {
       resetCopied();
     } catch {
       // ignore
+    }
+  };
+
+  const autoDiscoverBrandsFromGmail = async () => {
+    setAutoDiscoveringBrands(true);
+    try {
+      const response = await fetch('/api/gmail/inbox/auto-discover-brands', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        alert(`Failed to discover brands: ${error.message || 'Unknown error'}`);
+        return;
+      }
+      
+      const result = await response.json();
+      
+      if (result.created > 0) {
+        alert(`✅ Discovered ${result.discovered} domains and created ${result.created} new brands!`);
+        // Refresh the brands list
+        await refreshData();
+      } else if (result.discovered > 0) {
+        alert(`Found ${result.discovered} existing brands (no new ones created)`);
+      } else {
+        alert('No business domains found in your inbox');
+      }
+    } catch (error) {
+      console.error('[AUTO DISCOVER] Error:', error);
+      alert('Failed to auto-discover brands. Make sure Gmail is connected.');
+    } finally {
+      setAutoDiscoveringBrands(false);
     }
   };
 
@@ -1604,7 +1643,12 @@ export function AdminBrandsPage({ session }) {
                 Track every brand relationship — past, present, and future. Link brands to deals, campaigns, and contacts for complete visibility.
               </p>
             </div>
-            <PrimaryButton onClick={openCreate}>Add brand</PrimaryButton>
+            <div className="flex flex-wrap gap-2 items-center">
+              <SecondaryButton onClick={autoDiscoverBrandsFromGmail} loading={autoDiscoveringBrands}>
+                🔍 Discover from Gmail
+              </SecondaryButton>
+              <PrimaryButton onClick={openCreate}>Add brand</PrimaryButton>
+            </div>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-linen/40 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black/70 focus-within:border-brand-red/30 focus-within:ring-2 focus-within:ring-brand-red/10 transition-colors">
@@ -1696,6 +1740,15 @@ export function AdminBrandsPage({ session }) {
                     </div>
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <TextButton onClick={() => openDrawer(brand.id)}>Open</TextButton>
+                      <SecondaryButton 
+                        onClick={() => {
+                          setEnrichmentBrand(brand);
+                          setEnrichmentModalOpen(true);
+                        }}
+                        className="text-xs"
+                      >
+                        🔍 Discover
+                      </SecondaryButton>
                       <ActionsMenu
                         onOpen={() => openDrawer(brand.id)}
                         onEdit={() => {
@@ -2691,6 +2744,22 @@ export function AdminBrandsPage({ session }) {
         hasLinkedObjects={getLinkedObjectsSummary(brandToDelete).total > 0}
         linkedObjectsSummary={getLinkedObjectsSummary(brandToDelete)}
       />
+
+      {enrichmentBrand && enrichmentModalOpen && (
+        <EnrichmentDiscoveryModal
+          brand={enrichmentBrand}
+          onClose={() => {
+            setEnrichmentModalOpen(false);
+            setEnrichmentBrand(null);
+          }}
+          onApprove={(result) => {
+            console.log('[BRANDS PAGE] Enrichment approved:', result);
+            refreshData();
+            setEnrichmentModalOpen(false);
+            setEnrichmentBrand(null);
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }

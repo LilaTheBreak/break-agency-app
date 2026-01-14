@@ -91,33 +91,42 @@ export async function onboardBrandHandler(
       return;
     }
 
-    // Create brand
-    const brand = await brandUserService.createBrand({
-      name: brandName || domain,
-      websiteUrl: normalizedUrl,
-      domain,
-    });
+    try {
+      // Create brand
+      const brand = await brandUserService.createBrand({
+        name: brandName || domain,
+        websiteUrl: normalizedUrl,
+        domain,
+      });
 
-    // Create first admin user
-    await brandUserService.createBrandAdminUser(brand.id, user.id, "ADMIN");
+      // Create first admin user
+      await brandUserService.createBrandAdminUser(brand.id, user.id, "ADMIN");
 
-    // Initialize audit sources
-    await auditSourceService.initializeBrandAuditSources(
-      brand.id,
-      normalizedUrl
-    );
+      // Initialize audit sources
+      await auditSourceService.initializeBrandAuditSources(
+        brand.id,
+        normalizedUrl
+      );
 
-    res.status(201).json({
-      message: "Brand created successfully",
-      brand: {
-        id: brand.id,
-        name: brand.name,
-        // @ts-ignore - Properties exist on brand but TypeScript cache is stale
-        domain: brand.domain,
-        // @ts-ignore - Properties exist on brand but TypeScript cache is stale
-        websiteUrl: brand.websiteUrl,
-      },
-    });
+      res.status(201).json({
+        message: "Brand created successfully",
+        brand: {
+          id: brand.id,
+          name: brand.name,
+          // @ts-ignore - Properties exist on brand but TypeScript cache is stale
+          domain: brand.domain,
+          // @ts-ignore - Properties exist on brand but TypeScript cache is stale
+          websiteUrl: brand.websiteUrl,
+        },
+      });
+    } catch (createError: any) {
+      // Handle unique constraint violation (P2002) - race condition where another request created the brand
+      if (createError.code === 'P2002' && createError.meta?.target?.includes('domain')) {
+        res.status(409).json({ error: "Brand with this domain already exists" });
+        return;
+      }
+      throw createError;
+    }
   } catch (error) {
     console.error("[Brand Onboarding]", error);
     res.status(500).json({ error: "Failed to onboard brand" });

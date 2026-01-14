@@ -6,7 +6,7 @@ import { fetchTalents, deleteTalent } from "../services/crmClient.js";
 import { apiFetch } from "../services/apiClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { PlatformLogo } from "../components/PlatformLogo.jsx";
-import { Plus, User, UserX, Search, Filter, Trash2, RefreshCw } from "lucide-react";
+import { Plus, User, Search, Filter, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { normalizeApiArray } from "../lib/dataNormalization.js";
 
@@ -424,61 +424,66 @@ export function AdminTalentPage() {
 
   const [syncing, setSyncing] = useState(false);
 
-  const handleSyncProfileImages = async () => {
-    if (syncing || talents.length === 0) return;
+  // Automatically sync profile images whenever talents load
+  useEffect(() => {
+    if (!talents.length || syncing) return;
 
-    try {
-      setSyncing(true);
-      let successCount = 0;
-      let errorCount = 0;
-      const errors = [];
+    const syncProfileImages = async () => {
+      try {
+        setSyncing(true);
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
 
-      // Sync profile images for all talents that have social accounts
-      for (const talent of talents) {
-        if (!talent.primarySocialHandle) continue; // Skip talents without social handles
+        // Sync profile images for all talents that have social accounts
+        for (const talent of talents) {
+          if (!talent.primarySocialHandle) continue; // Skip talents without social handles
 
-        try {
-          const response = await apiFetch(`/api/admin/talent/${talent.id}/profile-image/sync`, {
-            method: 'POST',
-          });
+          try {
+            const response = await apiFetch(`/api/admin/talent/${talent.id}/profile-image/sync`, {
+              method: 'POST',
+            });
 
-          if (response.ok) {
-            successCount++;
-          } else {
+            if (response.ok) {
+              successCount++;
+            } else {
+              errorCount++;
+              errors.push({
+                talentName: talent.displayName,
+                message: response.message || 'Unknown error'
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to sync profile image for ${talent.displayName}:`, err);
             errorCount++;
             errors.push({
               talentName: talent.displayName,
-              message: response.message || 'Unknown error'
+              message: err instanceof Error ? err.message : 'Network error'
             });
           }
-        } catch (err) {
-          console.error(`Failed to sync profile image for ${talent.displayName}:`, err);
-          errorCount++;
-          errors.push({
-            talentName: talent.displayName,
-            message: err instanceof Error ? err.message : 'Network error'
-          });
         }
-      }
 
-      // Show result
-      if (successCount > 0) {
-        toast.success(`✅ Synced ${successCount} profile image${successCount !== 1 ? 's' : ''}`);
+        // Log results (no toast notifications for automatic syncing)
+        if (successCount > 0) {
+          console.log(`✅ Auto-synced ${successCount} profile image${successCount !== 1 ? 's' : ''}`);
+        }
+        if (errorCount > 0) {
+          console.warn(`⚠️ Failed to sync ${errorCount} profile image${errorCount !== 1 ? 's' : ''}`, errors);
+        }
+      } catch (err) {
+        console.error('Auto-sync error:', err);
+      } finally {
+        setSyncing(false);
       }
-      if (errorCount > 0) {
-        console.warn(`⚠️ Failed to sync ${errorCount} profile image${errorCount !== 1 ? 's' : ''}`, errors);
-        toast.error(`Failed to sync ${errorCount} profile image${errorCount !== 1 ? 's' : ''}. Check console for details.`);;
-      }
+    };
 
-      // Reload talents to show updated profile images
-      await loadTalents();
-    } catch (err) {
-      console.error('Bulk sync error:', err);
-      toast.error('Failed to sync profile images. Try again later.');
-    } finally {
-      setSyncing(false);
-    }
-  };
+    // Debounce sync to avoid excessive API calls
+    const timer = setTimeout(() => {
+      syncProfileImages();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [talents.length]); // Only re-run when talents list changes
 
   return (
     <DashboardShell
@@ -496,16 +501,6 @@ export function AdminTalentPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSyncProfileImages}
-              disabled={syncing || talents.length === 0}
-              className="flex items-center gap-2 rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Sync profile images from social media for all talents"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync Images'}
-            </button>
             <button
               type="button"
               onClick={() => setAddModalOpen(true)}
@@ -610,9 +605,6 @@ export function AdminTalentPage() {
                     Status
                   </th>
                   <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
-                    Linked User
-                  </th>
-                  <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
                     Metrics
                   </th>
                   <th className="px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red font-semibold">
@@ -647,19 +639,6 @@ export function AdminTalentPage() {
                     </td>
                     <td className="px-4 py-4">
                       <StatusBadge status={talent.status || "ACTIVE"} />
-                    </td>
-                    <td className="px-4 py-4">
-                      {talent.linkedUser ? (
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-brand-black/40" />
-                          <span className="text-sm truncate max-w-[200px]">{talent.linkedUser.email}</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-brand-black/40">
-                          <UserX className="h-4 w-4" />
-                          <span className="text-xs italic">Not linked</span>
-                        </div>
-                      )}
                     </td>
                     <td className="px-4 py-4">
                       <div className="text-xs text-brand-black/60 space-y-1">

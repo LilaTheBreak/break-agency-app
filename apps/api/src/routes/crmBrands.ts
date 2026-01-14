@@ -149,6 +149,20 @@ router.post("/", async (req: Request, res: Response) => {
     const now = new Date().toISOString();
     const websiteUrl = website?.trim() || null;
     
+    // Validate primaryContactId if provided
+    if (primaryContactId?.trim()) {
+      const contact = await prisma.crmBrandContact.findUnique({
+        where: { id: primaryContactId.trim() },
+      });
+      
+      if (!contact) {
+        return res.status(400).json({ error: "Primary contact not found" });
+      }
+      
+      // Note: We don't validate brandId ownership here because the brand doesn't exist yet
+      // The contact should belong to this brand, but we let the DB handle that constraint
+    }
+    
     // Create brand first (don't wait for enrichment)
     const brand = await prisma.crmBrand.create({
       data: {
@@ -267,6 +281,22 @@ router.patch("/:id", async (req: Request, res: Response) => {
     const existing = await prisma.crmBrand.findUnique({ where: { id } });
     if (!existing) {
       return res.status(404).json({ error: "Brand not found" });
+    }
+
+    // Validate primaryContactId if provided
+    if (primaryContactId !== undefined && primaryContactId?.trim()) {
+      const contact = await prisma.crmBrandContact.findUnique({
+        where: { id: primaryContactId.trim() },
+      });
+      
+      if (!contact) {
+        return res.status(400).json({ error: "Primary contact not found" });
+      }
+      
+      // Check that contact belongs to this brand
+      if (contact.crmBrandId !== id) {
+        return res.status(400).json({ error: "Primary contact must belong to this brand" });
+      }
     }
 
     const now = new Date().toISOString();
@@ -428,6 +458,13 @@ router.delete("/:id", async (req: Request, res: Response) => {
 // POST /api/crm-brands/batch-import - Import brands from localStorage
 router.post("/batch-import", async (req: Request, res: Response) => {
   try {
+    const user = (req as any).user;
+
+    // Superadmin-only check: batch imports can create/overwrite many records
+    if (user?.role !== "SUPERADMIN") {
+      return res.status(403).json({ error: "Only superadmins can import brand data in bulk" });
+    }
+
     const { brands, contacts, outreach } = req.body;
 
     const imported = {
@@ -479,7 +516,11 @@ router.post("/batch-import", async (req: Request, res: Response) => {
               lastName: contact.lastName || null,
               email: contact.email || null,
               phone: contact.phone || null,
-              title: contact.title || null,
+              title: contact.title || contact.role || null,
+              linkedInUrl: contact.linkedInUrl || null,
+              relationshipStatus: contact.relationshipStatus || "New",
+              preferredContactMethod: contact.preferredContactMethod || null,
+              owner: contact.owner || null,
               primaryContact: contact.primaryContact || false,
               notes: contact.notes || null,
               createdAt: contact.createdAt || new Date(),

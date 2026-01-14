@@ -33,4 +33,7 @@ router.get(
 // POST /api/gmail/inbox/sync - Manually trigger a sync with the user's Gmail account
 router.post("/sync", requireAuth, inboxSyncLimiter, gmailInboxController.syncInbox);
 
+// POST /api/gmail/inbox/auto-discover-brands - Automatically discover and create brands from inbox
+router.post("/auto-discover-brands", requireAuth, inboxSyncLimiter, gmailInboxController.autoDiscoverBrands);
+
 export default router;
