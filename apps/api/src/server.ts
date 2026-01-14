@@ -184,7 +184,8 @@ import crmEventsRouter from './routes/crmEvents.js';
 import crmDealsRouter from './routes/crmDeals.js';
 import crmContractsRouter from './routes/crmContracts.js';
 import crmTasksRouter from './routes/crmTasks.js';
-import enrichmentRouter from './routes/enrichment.js';
+// DISABLED: Enrichment feature not production-ready (see ENRICHMENT_AUDIT_START_HERE.md)
+// import enrichmentRouter from './routes/enrichment.js';
 
 // Bundles
 import bundlesRouter from './routes/bundles.js';
@@ -723,7 +724,8 @@ app.use("/api/crm-events", crmEventsRouter);
 app.use("/api/crm-deals", crmDealsRouter);
 app.use("/api/crm-contracts", crmContractsRouter);
 app.use("/api/crm-tasks", crmTasksRouter);
-app.use("/api/enrichment", enrichmentRouter);
+// DISABLED: Enrichment feature not production-ready (see ENRICHMENT_AUDIT_START_HERE.md)
+// app.use("/api/enrichment", enrichmentRouter);
 app.use("/api/notifications", notificationsRouter);
 
 // CMS: Block-Based Content Management

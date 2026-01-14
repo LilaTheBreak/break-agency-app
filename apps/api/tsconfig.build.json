@@ -16,5 +16,5 @@
     "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/worker/**/*.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/worker/**/*.ts", "src/routes/enrichment.ts", "src/services/enrichment/**/*.ts"]
 }
