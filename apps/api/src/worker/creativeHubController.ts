@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { asyncHandler } from '../middleware/asyncHandler.js';
-import { searchCreativeAssets, rankSearchResults } from '../services/creativeHubService.js';
+import { asyncHandler } from '../middleware/asyncHandler';
+import { searchCreativeAssets, rankSearchResults } from '../services/creativeHubService';
 
 // @desc    Search for creative assets
 // @route   GET /api/creative-hub/search

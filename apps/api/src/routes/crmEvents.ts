@@ -1,11 +1,11 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma.js";
-import { logAdminActivity } from "../lib/adminActivityLogger.js";
-import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
-import { logError } from "../lib/logger.js";
-import { sendList, sendEmptyList, handleApiError } from "../utils/apiResponse.js";
-import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
+import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma';
+import { logAdminActivity } from '../lib/adminActivityLogger';
+import { logDestructiveAction, logAuditEvent } from '../lib/auditLogger';
+import { logError } from '../lib/logger';
+import { sendList, sendEmptyList, handleApiError } from '../utils/apiResponse';
+import { isAdmin, isSuperAdmin } from '../lib/roleHelpers';
 
 const router = Router();
 

@@ -1,4 +1,4 @@
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 import { DealStage } from "@prisma/client";
 
 /**

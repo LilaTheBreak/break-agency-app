@@ -1,8 +1,8 @@
-import prisma from "../../lib/prisma.js";
-import { generateOutreachMessage } from "./outreachComposer.js";
-import { logInteraction } from "./aiContextService.js";
-import { sendTemplatedEmail } from "../email/emailClient.js";
-import { updateBrandIntel } from "./brandIntelService.js";
+import prisma from '../../lib/prisma';
+import { generateOutreachMessage } from './outreachComposer';
+import { logInteraction } from './aiContextService';
+import { sendTemplatedEmail } from '../email/emailClient';
+import { updateBrandIntel } from './brandIntelService';
 
 export async function performOutreachTask(task: { userId: string; outreachPlanId: string; dryRun?: boolean }) {
   const { userId, outreachPlanId, dryRun } = task;

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { protect } from '../middleware/authMiddleware.js';
-import { requireRole } from '../middleware/requireRole.js';
-import { searchHub, rankHubResults } from '../controllers/creativeHubController.js';
+import { protect } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/requireRole';
+import { searchHub, rankHubResults } from '../controllers/creativeHubController';
 
 const router = Router();
 

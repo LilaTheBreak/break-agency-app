@@ -1,6 +1,6 @@
 // services/conflictChecker.ts
 
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 export interface ConflictResult {
   hasConflict: boolean;

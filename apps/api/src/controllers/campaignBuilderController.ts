@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as campaignBuilderService from "../services/campaignBuilderService.js";
+import * as campaignBuilderService from '../services/campaignBuilderService';
 
 const GenerateCampaignSchema = z.object({
   dealId: z.string().cuid(),

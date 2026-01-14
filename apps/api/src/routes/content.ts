@@ -1,12 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma.js";
-import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
-import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma';
+import { isAdmin, isSuperAdmin } from '../lib/roleHelpers';
+import { logAdminActivity } from '../lib/adminActivityLogger';
 import { z } from "zod";
-import { ensureCmsPagesExist } from "../lib/cmsSeeder.js";
-import { hydrateAllCmsPages, hydrateCmsPage } from "../lib/cmsHydration.js";
-import { CMS_PUBLIC_PAGES, getEditableSlugs, isEditableCmsPage } from "../lib/cmsPageRegistry.js";
+import { ensureCmsPagesExist } from '../lib/cmsSeeder';
+import { hydrateAllCmsPages, hydrateCmsPage } from '../lib/cmsHydration';
+import { CMS_PUBLIC_PAGES, getEditableSlugs, isEditableCmsPage } from '../lib/cmsPageRegistry';
 
 /**
  * System-defined CMS pages that cannot be deleted or modified (slug/roleScope)

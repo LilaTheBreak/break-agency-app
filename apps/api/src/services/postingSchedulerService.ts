@@ -1,4 +1,4 @@
-import { runCampaignLLM } from "./ai/campaignLLM.js";
+import { runCampaignLLM } from './ai/campaignLLM';
 
 /**
  * Generates a full publishing calendar for a campaign.

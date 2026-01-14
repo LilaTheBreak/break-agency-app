@@ -1,4 +1,4 @@
-import { runCampaignLLM } from "./ai/campaignLLM.js";
+import { runCampaignLLM } from './ai/campaignLLM';
 
 /**
  * Generates a storyboard (shot guide + scripts) for a campaign.

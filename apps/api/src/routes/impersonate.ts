@@ -1,11 +1,11 @@
 import { Router, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { prisma } from "../db/client.js";
-import { isSuperAdmin } from "../lib/roleHelpers.js";
-import { requireAuth } from "../middleware/auth.js";
-import { requireAdmin } from "../middleware/requireAdmin.js";
-import { logAuditEvent } from "../lib/auditLogger.js";
-import { setAuthCookie, SESSION_COOKIE_NAME } from "../lib/jwt.js";
+import { prisma } from '../db/client';
+import { isSuperAdmin } from '../lib/roleHelpers';
+import { requireAuth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/requireAdmin';
+import { logAuditEvent } from '../lib/auditLogger';
+import { setAuthCookie, SESSION_COOKIE_NAME } from '../lib/jwt';
 
 const router = Router();
 

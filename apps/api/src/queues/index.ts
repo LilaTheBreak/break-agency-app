@@ -1,5 +1,5 @@
 import { Queue } from "bullmq";
-import { safeEnv } from "../utils/safeEnv.js";
+import { safeEnv } from '../utils/safeEnv';
 
 const redisHost = safeEnv("REDIS_HOST", "");
 const redisPort = Number(safeEnv("REDIS_PORT", "6379"));

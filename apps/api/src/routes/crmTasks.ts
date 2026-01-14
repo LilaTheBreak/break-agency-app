@@ -1,8 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import { createId as cuid } from "@paralleldrive/cuid2";
-import prisma from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
-import { createTaskNotifications, canViewTask, buildTaskVisibilityWhere } from "../services/taskNotifications.js";
+import prisma from '../lib/prisma';
+import { requireAuth } from '../middleware/auth';
+import { createTaskNotifications, canViewTask, buildTaskVisibilityWhere } from '../services/taskNotifications';
 
 const router = Router();
 

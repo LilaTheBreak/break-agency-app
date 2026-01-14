@@ -1,4 +1,4 @@
-import type { EmailTemplate } from "./types.js";
+import type { EmailTemplate } from './types';
 
 export const creatorApplicationTemplate: EmailTemplate = {
   subject: () => "We received your creator application",

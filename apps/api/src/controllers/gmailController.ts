@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { buildAuthUrl, exchangeCodeForTokens, persistToken } from "../services/gmail/oauthService.js";
-import { ingestGmailForUser } from "../services/gmail/gmailService.js";
-import { sendSlackAlert } from "../integrations/slack/slackClient.js";
+import { buildAuthUrl, exchangeCodeForTokens, persistToken } from '../services/gmail/oauthService';
+import { ingestGmailForUser } from '../services/gmail/gmailService';
+import { sendSlackAlert } from '../integrations/slack/slackClient';
 
 export async function getAuthUrl(_req: Request, res: Response, next: NextFunction) {
   try {

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 
 const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {

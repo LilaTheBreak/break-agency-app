@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-// import { agentQueue } from "../worker/queues.js";
+// import { agentQueue } from '../worker/queues';
 
 const AgentTaskSchema = z.object({
   taskName: z.string(),

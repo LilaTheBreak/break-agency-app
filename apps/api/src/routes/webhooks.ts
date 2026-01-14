@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
-import { stripeClient, stripeWebhookSecret, handleStripeEvent } from "../services/stripeService.js";
-import prisma from "../lib/prisma.js";
-import { logError } from "../lib/logger.js";
+import { stripeClient, stripeWebhookSecret, handleStripeEvent } from '../services/stripeService';
+import prisma from '../lib/prisma';
+import { logError } from '../lib/logger';
 
 export async function stripeWebhookHandler(req: Request, res: Response) {
   if (!stripeClient || !stripeWebhookSecret) {

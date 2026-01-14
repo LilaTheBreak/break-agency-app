@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { DealStage } from "@prisma/client";
-import * as dealService from "../services/deals/dealService.js";
-import * as dealWorkflowService from "../services/deals/dealWorkflowService.js";
-import { getEffectiveUserId, blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
+import * as dealService from '../services/deals/dealService';
+import * as dealWorkflowService from '../services/deals/dealWorkflowService';
+import { getEffectiveUserId, blockAdminActionsWhileImpersonating } from '../lib/dataScopingHelpers';
 
 const DealCreateSchema = z.object({
   talentId: z.string().cuid(),

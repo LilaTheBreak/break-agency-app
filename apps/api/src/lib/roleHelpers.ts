@@ -5,7 +5,7 @@
  * especially for SUPERADMIN which must bypass ALL permission checks.
  */
 
-import type { SessionUser } from "./session.js";
+import type { SessionUser } from './session';
 
 /**
  * Normalize role string to handle variations in casing and underscores

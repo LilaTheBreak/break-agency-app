@@ -1,15 +1,15 @@
 import { Router, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import prisma from "../lib/prisma.js";
-import { clearAuthCookie, setAuthCookie, createAuthToken, SESSION_COOKIE_NAME } from "../lib/jwt.js";
-import { buildSessionUser, type SessionUser } from "../lib/session.js";
-import { SignupSchema, LoginSchema } from "./authEmailSchemas.js";
-import { googleOAuthConfig } from "../config/google.js";
-import { requireAuth } from "../middleware/auth.js";
-import { authRateLimiter, sensitiveOperationLimiter } from "../middleware/rateLimiter.js";
-import { logAuthEvent, logSuperAdminAction } from "../lib/auditLogger.js";
-import { sendEmail } from "../services/emailService.js";
+import prisma from '../lib/prisma';
+import { clearAuthCookie, setAuthCookie, createAuthToken, SESSION_COOKIE_NAME } from '../lib/jwt';
+import { buildSessionUser, type SessionUser } from '../lib/session';
+import { SignupSchema, LoginSchema } from './authEmailSchemas';
+import { googleOAuthConfig } from '../config/google';
+import { requireAuth } from '../middleware/auth';
+import { authRateLimiter, sensitiveOperationLimiter } from '../middleware/rateLimiter';
+import { logAuthEvent, logSuperAdminAction } from '../lib/auditLogger';
+import { sendEmail } from '../services/emailService';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.events"
 ];
 
-import { getFrontendUrl } from "../config/frontendUrl.js";
+import { getFrontendUrl } from '../config/frontendUrl';
 
 // Support comma-separated origins for CORS, but use canonical URL for redirects
 const FRONTEND_ORIGIN_RAW =

@@ -11,8 +11,8 @@
  * - GOOGLE_YOUTUBE_API_KEY: Required for API access
  */
 
-import { logInfo, logError, logWarn } from "../../lib/logger.js";
-import prisma from "../../lib/prisma.js";
+import { logInfo, logError, logWarn } from '../../lib/logger';
+import prisma from '../../lib/prisma';
 
 export interface YouTubeChannelMetrics {
   channelId: string;

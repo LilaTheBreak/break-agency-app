@@ -1,59 +1,59 @@
 import { Prisma, type User } from "@prisma/client";
 import { Router, Request, Response } from "express";
-import prisma from "../lib/prisma.js";
+import prisma from "../lib/prisma";
 
 // Feature routers
-import socialRouter from "./social.js";
-import emailRouter from "./email.js";
-import systemRouter from "./system.js";
-import auditRouter from "./audit.js";
-import adminActivityRouter from "./adminActivity.js";
-import payoutsRouter from "./payouts.js";
-import dashboardRouter from "./dashboard.js";
-import dashboardRevenueRouter from "./dashboardRevenue.js";
-import dashboardCampaignPacingRouter from "./dashboardCampaignPacing.js";
-import dashboardExclusiveTalentRouter from "./dashboardExclusiveTalent.js";
-import messagesRouter from "./messages.js";
-import filesRouter from "./files.js";
-import contractsRouter from "./contracts.js";
-import briefsRouter from "./briefs.js";
-import aiRouter from "./ai.js";
-import aiFileInsightsRouter from "./aiFileInsights.js";
-import aiSocialInsightsRouter from "./aiSocialInsights.js";
-import aiDealExtractorRouter from "./aiDealExtractor.js";
-import documentExtractionRouter from "./documentExtraction.js";
-import campaignsRouter from "./campaigns.js";
-import deckRouter from "./deck.js";
-import queuesRouter from "./queues.js";
-import talentAccessRouter from "./talentAccess.js";
+import socialRouter from "./social";
+import emailRouter from "./email";
+import systemRouter from "./system";
+import auditRouter from "./audit";
+import adminActivityRouter from "./adminActivity";
+import payoutsRouter from "./payouts";
+import dashboardRouter from "./dashboard";
+import dashboardRevenueRouter from "./dashboardRevenue";
+import dashboardCampaignPacingRouter from "./dashboardCampaignPacing";
+import dashboardExclusiveTalentRouter from "./dashboardExclusiveTalent";
+import messagesRouter from "./messages";
+import filesRouter from "./files";
+import contractsRouter from "./contracts";
+import briefsRouter from "./briefs";
+import aiRouter from "./ai";
+import aiFileInsightsRouter from "./aiFileInsights";
+import aiSocialInsightsRouter from "./aiSocialInsights";
+import aiDealExtractorRouter from "./aiDealExtractor";
+import documentExtractionRouter from "./documentExtraction";
+import campaignsRouter from "./campaigns";
+import deckRouter from "./deck";
+import queuesRouter from "./queues";
+import talentAccessRouter from "./talentAccess";
 
 // Enterprise Operating System routes
-import enterpriseValueRouter from "./enterpriseValue.js";
-import revenueClassificationRouter from "./revenueClassification.js";
-import founderDependencyRouter from "./founderDependency.js";
-import ownedAssetsRouter from "./ownedAssets.js";
-import exitReadinessRouter from "./exitReadiness.js";
+import enterpriseValueRouter from "./enterpriseValue";
+import revenueClassificationRouter from "./revenueClassification";
+import founderDependencyRouter from "./founderDependency";
+import ownedAssetsRouter from "./ownedAssets";
+import exitReadinessRouter from "./exitReadiness";
 
 // User management & onboarding
 // NOTE: authRouter is mounted in server.ts at /api/auth, not here
-import onboardingRouter from "./onboarding.js";
-import adminUsersRouter from "./adminUsers.js";
+import onboardingRouter from './onboarding';
+import adminUsersRouter from './adminUsers';
 
 // Social OAuth routes
-import instagramAuthRouter from "./auth/instagram.js";
-import tiktokAuthRouter from "./auth/tiktok.js";
+import instagramAuthRouter from './auth/instagram';
+import tiktokAuthRouter from './auth/tiktok';
 // TODO: Convert youtube auth to ES6 module
 // const youtubeAuthRouter = require("./auth/youtube");
-import socialAnalyticsRouter from "./analytics/socials.js";
+import socialAnalyticsRouter from './analytics/socials';
 
 // ❗ You referenced these in your router but did not import them
-// import agentRouter from "./agent.js";
-// import brandCRMRouter from "./brandCRM.js";
+// import agentRouter from './agent';
+// import brandCRMRouter from './brandCRM';
 
-import { logAuditEvent } from "../lib/auditLogger.js";
-import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import { logAuditEvent } from '../lib/auditLogger';
+import { logAdminActivity } from '../lib/adminActivityLogger';
 
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth } from '../middleware/auth';
 // import {
 //   requireRole,
 //   requireSuperAdmin,
@@ -61,7 +61,7 @@ import { requireAuth } from "../middleware/auth.js";
 //   requireAgent,
 //   requireBrand,
 //   requireTalent,
-// } from "../middleware/requireRole.js";
+// } from '../middleware/requireRole';
 
 const router = Router();
 

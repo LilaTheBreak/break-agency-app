@@ -1,7 +1,7 @@
 import { Router } from "express";
-import prisma from "../lib/prisma.js";
-import { extractDealFromEmail } from "../services/dealExtractionService.js";
-import { dealExtractionQueue } from "../worker/queues.js";
+import prisma from '../lib/prisma';
+import { extractDealFromEmail } from '../services/dealExtractionService';
+import { dealExtractionQueue } from '../worker/queues';
 
 const router = Router();
 

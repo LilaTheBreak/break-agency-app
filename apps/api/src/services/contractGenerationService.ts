@@ -1,6 +1,6 @@
-import prisma from "../lib/prisma.js";
-import { buildContractFromTerms } from "./contractBuilder.js";
-import { uploadBufferToS3 } from "./s3Upload.js";
+import prisma from '../lib/prisma';
+import { buildContractFromTerms } from './contractBuilder';
+import { uploadBufferToS3 } from './s3Upload';
 
 export async function generateContract(userId: string, dealId: string | null, threadId: string | null, terms: any) {
   let html = "";

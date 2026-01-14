@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express';
-import prisma from '../lib/prisma.js';
-import { requireAuth } from '../middleware/auth.js';
-import { getRevenueMetrics } from '../services/revenueCalculationService.js';
-import socialsRouter from './analytics/socials.js';
-import topPostsRouter from './analytics/topPosts.js';
+import prisma from '../lib/prisma';
+import { requireAuth } from '../middleware/auth';
+import { getRevenueMetrics } from '../services/revenueCalculationService';
+import socialsRouter from './analytics/socials';
+import topPostsRouter from './analytics/topPosts';
 
 const router = Router();
 

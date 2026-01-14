@@ -1,4 +1,4 @@
-import { aiClient } from "../ai/aiClient.js";
+import { aiClient } from '../ai/aiClient';
 
 export type EmailClassification = {
   category: "deal" | "invite" | "gifting" | "spam" | "other";

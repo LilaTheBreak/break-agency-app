@@ -1,4 +1,4 @@
-import { runCampaignLLM } from "./ai/campaignLLM.js";
+import { runCampaignLLM } from './ai/campaignLLM';
 
 /**
  * Generates creative direction for a campaign.

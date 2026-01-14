@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { protect } from '../middleware/authMiddleware.js';
-import { requireRole } from '../middleware/requireRole.js';
+import { protect } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/requireRole';
 
 // Report functions stubbed
 const getLatestWeeklyReport = async () => ({ data: [] });

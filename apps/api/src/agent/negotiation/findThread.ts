@@ -1,4 +1,4 @@
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 
 // Note: negotiationThread model doesn't exist in schema
 // Stubbing out to prevent errors - this feature is not fully implemented

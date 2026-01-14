@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma.js";
-import { syncGmailForUser } from "../services/gmail/syncGmail.js";
-import { getOAuthClientForUser } from "../services/gmail/tokens.js";
-import { createRateLimiter, userKeyGenerator } from "../middleware/rateLimit.js";
+import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma';
+import { syncGmailForUser } from '../services/gmail/syncGmail';
+import { getOAuthClientForUser } from '../services/gmail/tokens';
+import { createRateLimiter, userKeyGenerator } from '../middleware/rateLimit';
 
 const router = Router();
 

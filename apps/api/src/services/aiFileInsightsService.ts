@@ -1,4 +1,4 @@
-import { cleanText, splitIntoChunks } from "../lib/fileExtract.js";
+import { cleanText, splitIntoChunks } from '../lib/fileExtract';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";

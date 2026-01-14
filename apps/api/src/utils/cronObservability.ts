@@ -4,7 +4,7 @@
  * Design: Wrap cron functions with execution tracking
  */
 
-import { sanitizeErrorForLogging } from "../utils/errorNormalizer.js";
+import { sanitizeErrorForLogging } from '../utils/errorNormalizer';
 
 /**
  * Initialize global cron tracking

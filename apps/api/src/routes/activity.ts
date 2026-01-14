@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { requireRole } from "../middleware/requireRole.js";
-import prisma from "../lib/prisma.js";
-import { logError } from "../lib/logger.js";
-import { sendList, sendEmptyList } from "../utils/apiResponse.js";
+import { requireAuth } from '../middleware/auth';
+import { requireRole } from '../middleware/requireRole';
+import prisma from '../lib/prisma';
+import { logError } from '../lib/logger';
+import { sendList, sendEmptyList } from '../utils/apiResponse';
 import * as Sentry from "@sentry/node";
 
 const router = Router();

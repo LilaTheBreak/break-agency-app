@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as campaignPlanningEngine from "../services/ai/campaignPlanningEngine.js";
-import * as creatorFitEngine from "../services/ai/creatorFitEngine.js";
+import * as campaignPlanningEngine from '../services/ai/campaignPlanningEngine';
+import * as creatorFitEngine from '../services/ai/creatorFitEngine';
 
 const CampaignPlanSchema = z.object({
   brandName: z.string(),

@@ -1,4 +1,4 @@
-import { sendSlackNotification } from "../../services/integrations/slackService.js";
+import { sendSlackNotification } from '../../services/integrations/slackService';
 
 export async function sendSlackMessage(text: string) {
   // Legacy function - now uses integration service

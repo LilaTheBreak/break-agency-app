@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { requireAdmin } from "../middleware/adminAuth.js";
-import { calculateOutreachMetrics, calculatePipelineData } from "../services/outreach/metricsService.js";
+import { requireAuth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/adminAuth';
+import { calculateOutreachMetrics, calculatePipelineData } from '../services/outreach/metricsService';
 
 const router = Router();
 

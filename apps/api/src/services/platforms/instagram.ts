@@ -12,8 +12,8 @@
  * - INSTAGRAM_BUSINESS_ACCOUNT_ID: Optional, for API
  */
 
-import { logInfo, logError, logWarn } from "../../lib/logger.js";
-import prisma from "../../lib/prisma.js";
+import { logInfo, logError, logWarn } from '../../lib/logger';
+import prisma from '../../lib/prisma';
 
 export interface InstagramProfileMetrics {
   username: string;

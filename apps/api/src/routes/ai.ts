@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { rateLimiters } from "../middleware/rateLimit.js";
-import * as aiController from "../controllers/aiController.js";
-import { inboxAiReply } from "../controllers/inboxAiReplyController.js";
-import * as dealExtractorController from "../controllers/dealExtractorController.js";
+import { requireAuth } from '../middleware/auth';
+import { rateLimiters } from '../middleware/rateLimit';
+import * as aiController from '../controllers/aiController';
+import { inboxAiReply } from '../controllers/inboxAiReplyController';
+import * as dealExtractorController from '../controllers/dealExtractorController';
 
 const router = Router();
 

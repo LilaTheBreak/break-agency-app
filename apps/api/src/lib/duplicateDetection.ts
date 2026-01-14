@@ -10,7 +10,7 @@
  * - Deals: Same brand+talent, overlapping dates, similar values
  */
 
-import prisma from "./prisma.js";
+import prisma from './prisma';
 
 export type DuplicateConfidence = "HIGH" | "MEDIUM" | "LOW";
 

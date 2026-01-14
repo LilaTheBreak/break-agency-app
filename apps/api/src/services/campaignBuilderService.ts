@@ -1,10 +1,10 @@
 // services/campaignBuilderService.ts
-import prisma from "../lib/prisma.js";
-import { generateBundleForDeal, type BundleResult } from "./bundleGeneratorService.js";
-import { calculateFinalScore } from "./suitabilityScoringService.js";
-import { checkCompliance } from "./categoryComplianceService.js";
-import { computeOverlap } from "./audienceOverlapService.js";
-import { checkForConflicts } from "./conflictChecker.js";
+import prisma from '../lib/prisma';
+import { generateBundleForDeal, type BundleResult } from './bundleGeneratorService';
+import { calculateFinalScore } from './suitabilityScoringService';
+import { checkCompliance } from './categoryComplianceService';
+import { computeOverlap } from './audienceOverlapService';
+import { checkForConflicts } from './conflictChecker';
 
 export interface CampaignPlan {
   dealId: string;

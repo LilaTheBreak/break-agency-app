@@ -1,4 +1,4 @@
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 export async function detectTalentForEmail(email: any) {
   const matches: string[] = [];

@@ -1,6 +1,6 @@
-import prisma from "../../lib/prisma.js";
-import { syncInboxForUser } from "./syncInbox.js";
-import { GmailNotConnectedError } from "./tokens.js";
+import prisma from '../../lib/prisma';
+import { syncInboxForUser } from './syncInbox';
+import { GmailNotConnectedError } from './tokens';
 
 interface SyncResult {
   userId: string;

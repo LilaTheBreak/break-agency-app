@@ -1,4 +1,4 @@
-import { updateBrandScores } from "../../services/crm/brandRelationshipService.js";
+import { updateBrandScores } from '../../services/crm/brandRelationshipService';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function brandProcessor(job: any) {

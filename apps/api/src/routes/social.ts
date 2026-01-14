@@ -6,8 +6,8 @@ import {
   getAccounts,
   metrics,
   refresh
-} from "../controllers/socialController.js";
-import { requireAuth } from "../middleware/auth.js";
+} from '../controllers/socialController';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 

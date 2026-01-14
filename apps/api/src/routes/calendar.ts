@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma.js";
+import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma';
 import { z } from "zod";
-import { getGoogleCalendarClient, syncGoogleCalendarEvents } from "../lib/google.js";
-import { checkEventConflicts, checkAvailability } from "../services/calendarConflictService.js";
+import { getGoogleCalendarClient, syncGoogleCalendarEvents } from '../lib/google';
+import { checkEventConflicts, checkAvailability } from '../services/calendarConflictService';
 
 const router = Router();
 

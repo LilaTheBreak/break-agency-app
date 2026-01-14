@@ -1,4 +1,4 @@
-import { sendTemplatedEmail } from "./emailClient.js";
+import { sendTemplatedEmail } from './emailClient';
 
 export async function notifyBriefSubmitted({ creatorEmail, brandEmail, briefName, dueDate }) {
   if (creatorEmail) {

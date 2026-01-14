@@ -1,6 +1,6 @@
-import prisma from "../../lib/prisma.js";
-import { generateOutreachSequence } from "../ai/outreachAIService.js";
-import { outreachEngineQueue } from "../../worker/queues.js";
+import prisma from '../../lib/prisma';
+import { generateOutreachSequence } from '../ai/outreachAIService';
+import { outreachEngineQueue } from '../../worker/queues';
 
 export async function createOutreachForLead(lead: any, user: any) {
   const seq = await prisma.outreachSequence.create({

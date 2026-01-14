@@ -1,9 +1,9 @@
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 import {
   buildObjectKey,
   getSignedUrl as getGCSignedUrl,
   uploadFile as uploadFileToGCS
-} from "./storage/googleCloudStorage.js";
+} from './storage/googleCloudStorage';
 
 export async function requestUploadUrl(userId: string, filename: string, contentType: string) {
   const key = buildObjectKey(userId, filename);

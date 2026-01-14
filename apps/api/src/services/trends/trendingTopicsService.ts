@@ -6,9 +6,9 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { getGoogleTrends } from "./googleTrends.js";
-import { getTikTokTrends } from "./tiktokTrends.js";
-import { getYouTubeTrends } from "./youtubeTrends.js";
+import { getGoogleTrends } from './googleTrends';
+import { getTikTokTrends } from './tiktokTrends';
+import { getYouTubeTrends } from './youtubeTrends';
 
 const prisma = new PrismaClient();
 

@@ -1,6 +1,6 @@
-import prisma from "../lib/prisma.js";
-import { sendSlackAlert } from "../integrations/slack/slackClient.js";
-import { runOfferExtractionForEmail } from "./inboundEmail.service.js";
+import prisma from '../lib/prisma';
+import { sendSlackAlert } from '../integrations/slack/slackClient';
+import { runOfferExtractionForEmail } from './inboundEmail.service';
 
 export async function extractDealFromEmail(emailId: string) {
   const email = await prisma.inboundEmail.findUnique({

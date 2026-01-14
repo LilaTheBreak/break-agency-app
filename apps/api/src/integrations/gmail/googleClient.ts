@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { getOAuthClientForUser } from "../../services/gmail/tokens.js";
+import { getOAuthClientForUser } from '../../services/gmail/tokens';
 
 function decodeBase64Url(input?: string) {
   if (!input) return "";

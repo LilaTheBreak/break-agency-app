@@ -1,7 +1,7 @@
-import prisma from "../../lib/prisma.js";
-import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
-import { sendTemplatedEmail } from "../email/emailClient.js";
-import { gmailQueue } from "../../worker/queues.js";
+import prisma from '../../lib/prisma';
+import { sendSlackAlert } from '../../integrations/slack/slackClient';
+import { sendTemplatedEmail } from '../email/emailClient';
+import { gmailQueue } from '../../worker/queues';
 
 const DRY_RUN = process.env.AI_AGENT_DRY_RUN !== "false";
 

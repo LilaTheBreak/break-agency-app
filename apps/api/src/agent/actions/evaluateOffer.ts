@@ -1,4 +1,4 @@
-import { generateNegotiationStrategy } from "../engines/negotiationStrategyEngine.js";
+import { generateNegotiationStrategy } from '../engines/negotiationStrategyEngine';
 
 export default {
   name: "evaluateOffer",

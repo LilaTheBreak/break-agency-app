@@ -1,5 +1,5 @@
-import prisma from "../../lib/prisma.js";
-import { negotiationSessionQueue } from "../../worker/queues.js";
+import prisma from '../../lib/prisma';
+import { negotiationSessionQueue } from '../../worker/queues';
 
 // Note: negotiationSession model doesn't exist in schema
 // Use DealNegotiation model instead for production implementation

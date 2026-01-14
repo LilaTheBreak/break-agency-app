@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as bundleGenerator from "../services/bundleGeneratorService.js";
-import * as bundleService from "../services/bundleService.js"; // For basic CRUD
+import * as bundleGenerator from '../services/bundleGeneratorService';
+import * as bundleService from '../services/bundleService'; // For basic CRUD
 
 export async function listBundles(req: Request, res: Response, next: NextFunction) {
   try {

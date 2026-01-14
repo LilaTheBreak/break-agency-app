@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { createRateLimiter } from "../middleware/rateLimit.js";
-import { logError } from "../lib/logger.js";
+import { requireAuth } from '../middleware/auth';
+import { createRateLimiter } from '../middleware/rateLimit';
+import { logError } from '../lib/logger';
 
 const router = Router();
 

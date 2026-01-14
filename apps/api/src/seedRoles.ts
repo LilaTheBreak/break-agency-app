@@ -1,4 +1,4 @@
-import prisma from "./lib/prisma.js";
+import prisma from './lib/prisma';
 
 async function main() {
   // Roles are stored as string values on User.role, not as a separate table

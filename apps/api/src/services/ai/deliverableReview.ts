@@ -1,4 +1,4 @@
-import { aiClient } from "./aiClient.js";
+import { aiClient } from './aiClient';
 
 export async function reviewDeliverable({ deliverable, content, brief }: any) {
   const prompt = `

@@ -1,14 +1,14 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { prisma } from "../utils/prismaClient.js";
+import { requireAuth } from '../middleware/auth';
+import { prisma } from '../utils/prismaClient';
 import { z } from "zod";
-import { requireCreator, attachCreatorProfile } from "../middleware/creatorAuth.js";
-import { createGoalVersion, computeCreatorIntentProfile } from "../utils/goalUtils.js";
+import { requireCreator, attachCreatorProfile } from '../middleware/creatorAuth';
+import { createGoalVersion, computeCreatorIntentProfile } from '../utils/goalUtils';
 import {
   getCreatorAnalyticsSnapshot,
   getCreatorContentInsights,
   getCreatorAudienceInsights,
-} from "../services/creatorAnalyticsAdapter.js";
+} from '../services/creatorAnalyticsAdapter';
 
 const router = Router();
 

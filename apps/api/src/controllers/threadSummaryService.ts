@@ -1,8 +1,8 @@
 // @ts-nocheck
 import OpenAI from "openai";
-import prisma from "../db/client.js";
-import { getMessagesForThread } from "./threadService.js";
-import { cleanEmailBody } from "../gmail/gmailParser.js";
+import prisma from '../db/client';
+import { getMessagesForThread } from './threadService';
+import { cleanEmailBody } from '../gmail/gmailParser';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const AI_MODEL = "gpt-4o";

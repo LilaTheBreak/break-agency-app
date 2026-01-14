@@ -7,8 +7,8 @@
  */
 
 import { Router } from "express";
-import { getGmailValidationStatus, isGmailEnabled } from "../middleware/gmailValidation.js";
-import { googleConfig } from "../config/env.js";
+import { getGmailValidationStatus, isGmailEnabled } from '../middleware/gmailValidation';
+import { googleConfig } from '../config/env';
 
 const router = Router();
 

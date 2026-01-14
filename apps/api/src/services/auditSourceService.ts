@@ -5,7 +5,7 @@
  * Extensible foundation for future AI insights
  */
 
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 export type AuditSourceType = "website" | "social" | "community" | "product" | "campaign";
 export type AuditStatus = "connected" | "pending" | "error";

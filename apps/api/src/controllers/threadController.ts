@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import * as threadService from "../services/threads/threadService.js";
-import * as summaryService from "../services/threads/threadSummaryService.js";
+import * as threadService from '../services/threads/threadService';
+import * as summaryService from '../services/threads/threadSummaryService';
 
 export async function listThreads(
   req: Request,

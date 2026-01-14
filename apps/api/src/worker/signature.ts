@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { protect } from '../../middleware/authMiddleware.js';
+import { protect } from '../../middleware/authMiddleware';
 import {
   createSignatureRequest,
   getSignatureRequest,
   submitSignature,
   downloadSignedDocument,
-} from '../../controllers/contracts/signatureController.js';
+} from '../../controllers/contracts/signatureController';
 
 const router = Router();
 

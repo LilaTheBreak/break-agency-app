@@ -1,4 +1,4 @@
-import { processContractReview } from "../../services/aiAgent/contractRunner.js";
+import { processContractReview } from '../../services/aiAgent/contractRunner';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function contractProcessor(job: any) {

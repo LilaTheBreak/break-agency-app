@@ -1,6 +1,6 @@
 import axios from "axios";
-import prisma from "../../lib/prisma.js";
-import { generateId } from "../../lib/utils.js";
+import prisma from '../../lib/prisma';
+import { generateId } from '../../lib/utils';
 
 const DOCUSIGN_CLIENT_ID = process.env.DOCUSIGN_CLIENT_ID;
 const DOCUSIGN_CLIENT_SECRET = process.env.DOCUSIGN_CLIENT_SECRET;

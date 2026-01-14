@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { requestUploadUrl, confirmUpload, listUserFiles, getDownloadUrl } from "../services/fileService.js";
-import { sendSlackAlert } from "../integrations/slack/slackClient.js";
-import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
+import { requestUploadUrl, confirmUpload, listUserFiles, getDownloadUrl } from '../services/fileService';
+import { sendSlackAlert } from '../integrations/slack/slackClient';
+import { isAdmin as checkIsAdmin } from '../lib/roleHelpers';
 
 const uploadUrlSchema = z.object({
   filename: z.string().min(1),

@@ -1,4 +1,4 @@
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 export async function detectBrand(email: any) {
   const from = email?.raw?.from || email?.from;

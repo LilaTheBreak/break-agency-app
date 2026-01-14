@@ -1,5 +1,5 @@
 import type { Job } from 'bullmq';
-import { reconstructDealDraft } from '../../services/ai/dealReconstruction.js';
+import { reconstructDealDraft } from '../../services/ai/dealReconstruction';
 
 interface DealExtractionJobData {
   emailId: string;

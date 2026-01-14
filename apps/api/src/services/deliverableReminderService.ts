@@ -1,6 +1,6 @@
 import cron from "node-cron";
 // @ts-ignore - Module resolution issue
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 // This is a placeholder for a real reminder service.
 // In a production app, you would use a proper job queue.

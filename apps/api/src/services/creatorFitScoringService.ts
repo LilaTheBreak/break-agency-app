@@ -13,7 +13,7 @@
  * NO AI, NO BLACK BOX - Every number is derived from database records with clear logic.
  */
 
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 interface FitScoreResult {
   totalScore: number; // 0-100

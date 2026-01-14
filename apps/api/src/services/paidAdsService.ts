@@ -8,7 +8,7 @@
  * Uses OAuth tokens stored in SocialAccountConnection table
  */
 
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 interface AdCampaign {
   id: string;

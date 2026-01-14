@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { safeEnv } from "../utils/safeEnv.js";
+import { safeEnv } from '../utils/safeEnv';
 
 export function buildOAuthState(userId: string) {
   return Buffer.from(

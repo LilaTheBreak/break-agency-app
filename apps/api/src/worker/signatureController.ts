@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { asyncHandler } from '../../middleware/asyncHandler.js';
-import { signDocument } from '../../services/signature/signatureEngine.js';
-import { logSignatureAuditEvent } from '../../services/signature/auditLogger.js';
+import { asyncHandler } from '../../middleware/asyncHandler';
+import { signDocument } from '../../services/signature/signatureEngine';
+import { logSignatureAuditEvent } from '../../services/signature/auditLogger';
 
 const prisma = new PrismaClient();
 

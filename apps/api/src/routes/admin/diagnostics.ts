@@ -6,10 +6,10 @@
  */
 
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../../middleware/auth.js";
-import { requireRole } from "../../middleware/requireRole.js";
-import prisma from "../../lib/prisma.js";
-import { logError } from "../../lib/logger.js";
+import { requireAuth } from '../../middleware/auth';
+import { requireRole } from '../../middleware/requireRole';
+import prisma from '../../lib/prisma';
+import { logError } from '../../lib/logger';
 
 const router = Router();
 

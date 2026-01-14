@@ -8,7 +8,7 @@
  * - Handle role-based defaults
  */
 
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 import {
   DashboardType,
   RoleType,
@@ -17,8 +17,8 @@ import {
   getSnapshot,
   getSnapshotsForRole,
   validateSnapshot,
-} from "./snapshotRegistry.js";
-import { logError } from "../lib/logger.js";
+} from './snapshotRegistry';
+import { logError } from '../lib/logger';
 
 const prismaClient = prisma as any;
 

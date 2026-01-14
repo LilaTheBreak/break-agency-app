@@ -1,4 +1,4 @@
-import { safeEnv } from "../../utils/safeEnv.js";
+import { safeEnv } from '../../utils/safeEnv';
 
 const OPENAI_API_KEY = safeEnv("OPENAI_API_KEY", "dev-openai-key");
 const OPENAI_MODEL = safeEnv("OPENAI_MODEL", "gpt-4o-mini");

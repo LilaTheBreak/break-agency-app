@@ -1,4 +1,4 @@
-import { processAIAgentTask } from "../../services/ai/aiAgentService.js";
+import { processAIAgentTask } from '../../services/ai/aiAgentService';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function aiAgentProcessor(job: any) {

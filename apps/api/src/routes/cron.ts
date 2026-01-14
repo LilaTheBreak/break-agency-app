@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { syncAllUsers } from "../services/gmail/backgroundSync.js";
-import { renewExpiringWebhooks } from "../services/gmail/webhookService.js";
+import { syncAllUsers } from '../services/gmail/backgroundSync';
+import { renewExpiringWebhooks } from '../services/gmail/webhookService';
 
 const router = Router();
 

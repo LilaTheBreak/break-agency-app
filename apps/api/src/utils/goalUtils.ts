@@ -1,4 +1,4 @@
-import { prisma } from "./prismaClient.js";
+import { prisma } from './prismaClient';
 
 /**
  * Goal versioning utilities — track changes for agent context and AI learning

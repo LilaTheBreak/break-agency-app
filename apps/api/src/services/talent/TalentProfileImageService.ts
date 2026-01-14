@@ -14,7 +14,7 @@
  */
 
 import axios from 'axios';
-import prisma from '../../lib/prisma.js';
+import prisma from '../../lib/prisma';
 
 interface SyncOptions {
   limit?: number;

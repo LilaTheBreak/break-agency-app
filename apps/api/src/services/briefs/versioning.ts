@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 
 type VersionPayload = Record<string, unknown>;
 

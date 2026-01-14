@@ -17,9 +17,9 @@
  */
 
 import { Request } from "express";
-import prisma from "./prisma.js";
-import { isSuperAdmin, isAdmin } from "./roleHelpers.js";
-import { logError } from "./logger.js";
+import prisma from './prisma';
+import { isSuperAdmin, isAdmin } from './roleHelpers';
+import { logError } from './logger';
 
 export type AccessLevel = "NONE" | "VIEW" | "MANAGE";
 

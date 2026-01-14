@@ -1,5 +1,5 @@
-import prisma from "../lib/prisma.js";
-import { extractOfferV2, OfferExtractionResult } from "./ai/extractOfferV2.js";
+import prisma from '../lib/prisma';
+import { extractOfferV2, OfferExtractionResult } from './ai/extractOfferV2';
 import type { InboundEmail } from "@prisma/client";
 
 export async function runOfferExtractionForEmail(email: InboundEmail): Promise<{

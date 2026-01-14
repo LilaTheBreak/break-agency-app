@@ -1,4 +1,4 @@
-import { generateNegotiationInsight } from "../../services/negotiationInsightsService.js";
+import { generateNegotiationInsight } from '../../services/negotiationInsightsService';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function negotiationProcessor(job: any) {

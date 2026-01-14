@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { SESSION_COOKIE_NAME, verifyAuthToken } from "../lib/jwt.js";
-import prisma from "../lib/prisma.js";
-import { buildSessionUser } from "../lib/session.js";
+import { SESSION_COOKIE_NAME, verifyAuthToken } from '../lib/jwt';
+import prisma from '../lib/prisma';
+import { buildSessionUser } from '../lib/session';
 
 export async function attachUserFromSession(req: Request, _res: Response, next: NextFunction) {
   // Try cookie first

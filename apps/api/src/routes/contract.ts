@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { processContract } from "../services/contractReader.js";
-import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma.js";
-import { enqueueContractProcessing } from "../services/aiAgent/contractRunner.js";
-import { contractFinalisationQueue } from "../worker/queues.js";
-import { initiateSignature } from "../services/signature/orchestrator.js";
+import { processContract } from '../services/contractReader';
+import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma';
+import { enqueueContractProcessing } from '../services/aiAgent/contractRunner';
+import { contractFinalisationQueue } from '../worker/queues';
+import { initiateSignature } from '../services/signature/orchestrator';
 
 const router = Router();
 

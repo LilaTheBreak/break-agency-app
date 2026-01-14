@@ -1,5 +1,5 @@
-import prisma from "../../lib/prisma.js";
-import { aiClient } from "./aiClient.js";
+import prisma from '../../lib/prisma';
+import { aiClient } from './aiClient';
 
 const insightPrompt = (context: any) => `
 You are a world-class talent agent's AI assistant. Your task is to analyze a reconstructed deal draft and generate a comprehensive negotiation strategy.

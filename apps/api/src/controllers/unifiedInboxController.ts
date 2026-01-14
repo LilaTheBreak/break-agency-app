@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { fetchUnifiedInbox } from "../services/unifiedInboxService.js";
+import { fetchUnifiedInbox } from '../services/unifiedInboxService';
 
 export async function getUnifiedInbox(req: Request, res: Response, next: NextFunction) {
   try {

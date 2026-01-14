@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { whatsappInboxProvider } from "../services/whatsapp/whatsappInboxProvider.js";
+import { requireAuth } from '../middleware/auth';
+import { whatsappInboxProvider } from '../services/whatsapp/whatsappInboxProvider';
 
 const router = Router();
 

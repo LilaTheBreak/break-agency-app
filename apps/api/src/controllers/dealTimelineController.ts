@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as dealTimelineService from "../services/dealTimelineService.js";
+import * as dealTimelineService from '../services/dealTimelineService';
 
 const AddEventSchema = z.object({
   type: z.string(),

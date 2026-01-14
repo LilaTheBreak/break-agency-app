@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { getInstagramInboxAuthUrl, exchangeInstagramInboxCode } from "../services/instagram/instagramInboxAuth.js";
-import { syncInstagramInboxForUser } from "../services/instagram/instagramInboxSync.js";
-import prisma from "../lib/prisma.js";
-import { getFrontendUrl } from "../config/frontendUrl.js";
+import { requireAuth } from '../middleware/auth';
+import { getInstagramInboxAuthUrl, exchangeInstagramInboxCode } from '../services/instagram/instagramInboxAuth';
+import { syncInstagramInboxForUser } from '../services/instagram/instagramInboxSync';
+import prisma from '../lib/prisma';
+import { getFrontendUrl } from '../config/frontendUrl';
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as suitabilityService from "../services/suitabilityService.js";
+import * as suitabilityService from '../services/suitabilityService';
 
 const EvaluateSuitabilitySchema = z.object({
   creatorId: z.string().cuid(),

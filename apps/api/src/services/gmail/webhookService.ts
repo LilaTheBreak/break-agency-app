@@ -1,6 +1,6 @@
 import { google } from "googleapis";
-import prisma from "../../lib/prisma.js";
-import { getOAuthClientForUser } from "./tokens.js";
+import prisma from '../../lib/prisma';
+import { getOAuthClientForUser } from './tokens';
 import crypto from "crypto";
 
 const WEBHOOK_TOPIC = "projects/YOUR_GCP_PROJECT_ID/topics/gmail-notifications";

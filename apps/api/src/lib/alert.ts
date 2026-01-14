@@ -1,5 +1,5 @@
-import { sendSlackAlert } from "../integrations/slack/slackClient.js";
-import { logError } from "./logger.js";
+import { sendSlackAlert } from '../integrations/slack/slackClient';
+import { logError } from './logger';
 
 export async function alertError(
   message: string,

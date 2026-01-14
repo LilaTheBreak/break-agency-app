@@ -1,5 +1,5 @@
-import prisma from "../lib/prisma.js";
-import { enqueueAIAgentTask } from "../worker/enqueueAIAgentTask.js";
+import prisma from '../lib/prisma';
+import { enqueueAIAgentTask } from '../worker/enqueueAIAgentTask';
 
 export async function runOutreachRotation() {
   // TODO: Implement outreach rotation once aiSettings and outboundTemplates are added to Talent model

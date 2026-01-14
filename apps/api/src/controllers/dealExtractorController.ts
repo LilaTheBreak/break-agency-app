@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import prisma from "../lib/prisma.js";
-import { extractDealFromEmail } from "../services/ai/dealExtractor.js";
-import { logAIInteraction } from "../lib/aiHistoryLogger.js";
+import prisma from '../lib/prisma';
+import { extractDealFromEmail } from '../services/ai/dealExtractor';
+import { logAIInteraction } from '../lib/aiHistoryLogger';
 
 const ExtractDealSchema = z.object({
   emailId: z.string().cuid()

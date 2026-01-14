@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import * as deckController from "../controllers/deckController.js";
+import { requireAuth } from '../middleware/auth';
+import * as deckController from '../controllers/deckController';
 
 const router = Router();
 

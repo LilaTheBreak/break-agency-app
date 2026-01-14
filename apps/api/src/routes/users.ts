@@ -1,12 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma.js";
+import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma';
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { sendEmail } from "../services/emailService.js";
-import { isSuperAdmin, isAdmin } from "../lib/roleHelpers.js";
+import { sendEmail } from '../services/emailService';
+import { isSuperAdmin, isAdmin } from '../lib/roleHelpers';
 
 const router = Router();
 

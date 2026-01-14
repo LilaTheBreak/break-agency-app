@@ -1,8 +1,8 @@
 /**
  * Phase 5: Bundle service - Full implementation with database
  */
-import prisma from "../lib/prisma.js";
-import { generateId } from "../lib/utils.js";
+import prisma from '../lib/prisma';
+import { generateId } from '../lib/utils';
 
 export async function listAll() {
   return prisma.bundle.findMany({

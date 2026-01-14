@@ -1,13 +1,13 @@
 import { Router } from "express";
-import prisma from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
-import { requireAdmin } from "../middleware/adminAuth.js";
+import prisma from '../lib/prisma';
+import { requireAuth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/adminAuth';
 import {
   logOpportunityClose,
   logDealConversion,
   logOutreachAudit,
   OutreachAuditAction
-} from "../services/outreach/auditLogger.js";
+} from '../services/outreach/auditLogger';
 
 const router = Router();
 

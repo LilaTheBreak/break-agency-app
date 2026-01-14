@@ -1,4 +1,4 @@
-import { aiClient } from "./aiClient.js";
+import { aiClient } from './aiClient';
 
 export async function scoreBrandAffinity(events: any, brand: any, user: any) {
   const prompt = `

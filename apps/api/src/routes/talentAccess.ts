@@ -1,19 +1,19 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth";
 // @ts-ignore - Module resolution issue
-import prisma from "../lib/prisma.js";
+import prisma from "../lib/prisma";
 // @ts-ignore - Module resolution issue
-import { logAdminActivity } from "../lib/adminActivityLogger.js";
+import { logAdminActivity } from "../lib/adminActivityLogger";
 // @ts-ignore - Module resolution issue
-import { logError } from "../lib/logger.js";
+import { logError } from "../lib/logger";
 // @ts-ignore - Module resolution issue
-import { isSuperAdmin } from "../lib/roleHelpers.js";
+import { isSuperAdmin } from "../lib/roleHelpers";
 import {
   ensureTalentAccess,
   setTalentAccess,
   getTalentAccessList,
-} from "../lib/talentAccessControl.js";
-import { blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
+} from '../lib/talentAccessControl';
+import { blockAdminActionsWhileImpersonating } from '../lib/dataScopingHelpers';
 
 const router = Router();
 

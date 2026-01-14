@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import { getUnifiedInbox } from "../controllers/unifiedInboxController.js";
+import { requireAuth } from '../middleware/auth';
+import { getUnifiedInbox } from '../controllers/unifiedInboxController';
 
 const router = Router();
 

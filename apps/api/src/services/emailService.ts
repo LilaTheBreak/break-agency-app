@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { Resend } from "resend";
-import prisma from "../lib/prisma.js";
-import { logError, logInfo } from "../lib/logger.js";
-import { templates, type EmailTemplateName, type EmailTemplateContext } from "../emails/templates/index.js";
+import prisma from '../lib/prisma';
+import { logError, logInfo } from '../lib/logger';
+import { templates, type EmailTemplateName, type EmailTemplateContext } from '../emails/templates/index';
 
 type EmailJob = {
   logId: string;

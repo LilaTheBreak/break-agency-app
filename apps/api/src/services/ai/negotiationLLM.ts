@@ -1,5 +1,5 @@
-import { trackAITokens } from "../tokenTracker.js";
-import { buildNegotiationPrompt } from "../../prompts/negotiationPrompt.js";
+import { trackAITokens } from '../tokenTracker';
+import { buildNegotiationPrompt } from '../../prompts/negotiationPrompt';
 
 interface NegotiationSuggestion {
   suggestion: string;

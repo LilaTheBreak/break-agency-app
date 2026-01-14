@@ -1,9 +1,9 @@
 import type { Job } from "bullmq";
-import prisma from "../../lib/prisma.js";
-import { classifyEmail } from "../../services/inbox/classifyEmail.js";
-import { createDealDraft } from "../../services/inbox/createDealDraft.js";
-import { calculatePriorityScore } from "../../services/inbox/priorityScore.js";
-import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
+import prisma from '../../lib/prisma';
+import { classifyEmail } from '../../services/inbox/classifyEmail';
+import { createDealDraft } from '../../services/inbox/createDealDraft';
+import { calculatePriorityScore } from '../../services/inbox/priorityScore';
+import { sendSlackAlert } from '../../integrations/slack/slackClient';
 
 type InboxJobData = {
   emailId: string;

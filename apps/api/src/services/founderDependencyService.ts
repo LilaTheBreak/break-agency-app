@@ -9,7 +9,7 @@
  * - Team depth
  */
 
-import prisma from '../lib/prisma.js';
+import prisma from '../lib/prisma';
 
 export interface FounderDependencyInput {
   talentId: string;

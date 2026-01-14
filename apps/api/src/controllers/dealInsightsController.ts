@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import * as dealInsightsService from "../services/dealInsightsService.js";
+import * as dealInsightsService from '../services/dealInsightsService';
 
 export async function getDealSummary(req: Request, res: Response, next: NextFunction) {
   try {

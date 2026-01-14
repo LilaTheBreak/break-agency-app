@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { getUserMessages } from "../integrations/gmail/googleClient.js";
-import prisma from "../lib/prisma.js";
-import { inboxQueue } from "../queues/index.js";
-import { cleanEmailBody, extractPlainText } from "../services/inbox/normalizeEmail.js";
-import { classifyEmail } from "../services/inbox/classifyEmail.js";
+import { getUserMessages } from '../integrations/gmail/googleClient';
+import prisma from '../lib/prisma';
+import { inboxQueue } from '../queues/index';
+import { cleanEmailBody, extractPlainText } from '../services/inbox/normalizeEmail';
+import { classifyEmail } from '../services/inbox/classifyEmail';
 
 const router = Router();
 

@@ -1,4 +1,4 @@
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 export async function loadAgentPolicy(userId: string) {
   let policy = await prisma.agentPolicy.findUnique({ where: { userId } });

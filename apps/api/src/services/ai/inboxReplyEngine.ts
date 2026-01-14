@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { buildInboxReplyPrompt } from "../../prompts/inboxReplyPrompt.js";
-import { trackAITokens } from "./tokenTracker.js";
+import { buildInboxReplyPrompt } from '../../prompts/inboxReplyPrompt';
+import { trackAITokens } from './tokenTracker';
 
 const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {

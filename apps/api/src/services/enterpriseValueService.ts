@@ -9,7 +9,7 @@
  */
 
 import { Prisma } from '@prisma/client';
-import prisma from '../lib/prisma.js';
+import prisma from '../lib/prisma';
 
 export interface EnterpriseValueMetricsInput {
   talentId: string;

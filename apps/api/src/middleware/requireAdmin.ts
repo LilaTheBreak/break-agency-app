@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { isSuperAdmin, isAdmin } from "../lib/roleHelpers.js";
+import { isSuperAdmin, isAdmin } from '../lib/roleHelpers';
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {

@@ -1,8 +1,8 @@
 import OpenAI from "openai";
-import prisma from "../lib/prisma.js";
-import { sendSlackAlert } from "../integrations/slack/slackClient.js";
-import { detectFileType, extractText, cleanText } from "../lib/fileExtract.js";
-import { safeEnv } from "../utils/safeEnv.js";
+import prisma from '../lib/prisma';
+import { sendSlackAlert } from '../integrations/slack/slackClient';
+import { detectFileType, extractText, cleanText } from '../lib/fileExtract';
+import { safeEnv } from '../utils/safeEnv';
 
 const OPENAI_API_KEY = safeEnv("OPENAI_API_KEY", "dev-openai-key");
 const OPENAI_MODEL = safeEnv("OPENAI_MODEL", "gpt-4o-mini");

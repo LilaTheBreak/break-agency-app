@@ -10,10 +10,10 @@
  */
 
 import { Router, Request, Response } from "express";
-import prisma from "../lib/prisma.js";
-import { requireAuth } from "../middleware/auth.js";
-import { isAdminRequest } from "../lib/auditLogger.js";
-import { logError } from "../lib/logger.js";
+import prisma from '../lib/prisma';
+import { requireAuth } from '../middleware/auth';
+import { isAdminRequest } from '../lib/auditLogger';
+import { logError } from '../lib/logger';
 
 const router = Router();
 

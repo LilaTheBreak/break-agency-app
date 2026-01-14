@@ -1,5 +1,5 @@
-import prisma from "../lib/prisma.js";
-import { logError } from "../lib/logger.js";
+import prisma from '../lib/prisma';
+import { logError } from '../lib/logger';
 import type { RevenueSource, RevenueEvent } from "@prisma/client";
 
 const prismaClient = prisma;

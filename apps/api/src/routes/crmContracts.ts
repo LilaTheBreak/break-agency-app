@@ -1,12 +1,12 @@
 import express from "express";
-import { requireAuth } from "../middleware/auth.js";
-import prisma from "../lib/prisma.js";
-import { logAdminActivity } from "../lib/adminActivityLogger.js";
-import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger.js";
-import { logError } from "../lib/logger.js";
-import { sendSuccess, sendList, sendEmptyList, handleApiError } from "../utils/apiResponse.js";
-import { isAdmin, isSuperAdmin } from "../lib/roleHelpers.js";
-import { blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers.js";
+import { requireAuth } from "../middleware/auth";
+import prisma from "../lib/prisma";
+import { logAdminActivity } from "../lib/adminActivityLogger";
+import { logDestructiveAction, logAuditEvent } from "../lib/auditLogger";
+import { logError } from "../lib/logger";
+import { sendSuccess, sendList, sendEmptyList, handleApiError } from "../utils/apiResponse";
+import { isAdmin, isSuperAdmin } from "../lib/roleHelpers";
+import { blockAdminActionsWhileImpersonating } from "../lib/dataScopingHelpers";
 
 const router = express.Router();
 

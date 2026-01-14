@@ -1,9 +1,9 @@
 import { gmail_v1 as gmailV1, google } from "googleapis";
-import prisma from "../../lib/prisma.js";
-import { getOAuthClientForUser, GmailNotConnectedError } from "./tokens.js";
-import { mapGmailMessageToDb } from "./mappings.js";
-import { linkEmailToCrm } from "./linkEmailToCrm.js";
-// import { logAuditEvent } from "../../lib/auditLogger.js"; // No req context in service
+import prisma from '../../lib/prisma';
+import { getOAuthClientForUser, GmailNotConnectedError } from './tokens';
+import { mapGmailMessageToDb } from './mappings';
+import { linkEmailToCrm } from './linkEmailToCrm';
+// import { logAuditEvent } from '../../lib/auditLogger'; // No req context in service
 
 interface SyncStats {
   imported: number;

@@ -6,9 +6,9 @@
  */
 
 import { Router } from 'express';
-import { requireAdmin } from '../../middleware/requireAdmin.js';
-import { analyzeErrorLogs, analyzeSlowQueries, analyzeEndpointUsage, analyzeMemoryUsage, generateHardeningRecommendations } from '../../utils/errorAnalysis.js';
-import { getSlowQueryStats, getSuggestedOptimizations } from '../../utils/slowQueryDetection.js';
+import { requireAdmin } from '../../middleware/requireAdmin';
+import { analyzeErrorLogs, analyzeSlowQueries, analyzeEndpointUsage, analyzeMemoryUsage, generateHardeningRecommendations } from '../../utils/errorAnalysis';
+import { getSlowQueryStats, getSuggestedOptimizations } from '../../utils/slowQueryDetection';
 
 const router = Router();
 

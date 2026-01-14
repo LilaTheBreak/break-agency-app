@@ -1,5 +1,5 @@
-import { CronJobDefinition } from "./types.js";
-import { logError } from "../lib/logger.js";
+import { CronJobDefinition } from './types';
+import { logError } from '../lib/logger';
 
 // Phase 3: dealDraft model removed from schema - job disabled
 export const dealCleanupJob: CronJobDefinition = {

@@ -11,8 +11,8 @@
  * This is essentially a favorites/bookmark system for brands to track creators they're interested in.
  */
 
-import prisma from "../lib/prisma.js";
-import { generateId } from "../lib/utils.js";
+import prisma from '../lib/prisma';
+import { generateId } from '../lib/utils';
 
 export interface RosterEntry {
   id: string;

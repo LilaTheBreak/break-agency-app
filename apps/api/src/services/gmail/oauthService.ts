@@ -1,8 +1,8 @@
 import { google } from "googleapis";
-import prisma from "../../lib/prisma.js";
-import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
-import { googleConfig } from "../../config/env.js";
-// import { logAuditEvent } from "../../lib/auditLogger.js"; // No req context in service
+import prisma from '../../lib/prisma';
+import { sendSlackAlert } from '../../integrations/slack/slackClient';
+import { googleConfig } from '../../config/env';
+// import { logAuditEvent } from '../../lib/auditLogger'; // No req context in service
 
 const clientId = googleConfig.clientId;
 const clientSecret = googleConfig.clientSecret;

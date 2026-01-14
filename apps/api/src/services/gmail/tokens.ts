@@ -1,6 +1,6 @@
 import { google } from "googleapis";
-import prisma from "../../lib/prisma.js";
-import { googleConfig } from "../../config/env.js";
+import prisma from '../../lib/prisma';
+import { googleConfig } from '../../config/env';
 
 export class GmailNotConnectedError extends Error {
   constructor() {

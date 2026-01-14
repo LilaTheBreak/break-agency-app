@@ -1,5 +1,5 @@
-import prisma from "../../lib/prisma.js";
-import { generateFollowUpMessage } from "../../services/ai/outreachAIService.js";
+import prisma from '../../lib/prisma';
+import { generateFollowUpMessage } from '../../services/ai/outreachAIService';
 
 async function sendEmailViaGmail({ to, subject, text }: { to: string; subject: string; text: string }) {
   // Stub: replace with real Gmail send

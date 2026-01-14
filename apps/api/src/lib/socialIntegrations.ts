@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { SocialPlatform } from "../types/socialPlatform.js";
+import type { SocialPlatform } from '../types/socialPlatform';
 
 type TokenResponse = {
   accessToken: string;

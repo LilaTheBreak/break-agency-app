@@ -18,7 +18,7 @@
  * - Does NOT block operations if creation fails
  */
 
-import prisma from "./prisma.js";
+import prisma from './prisma';
 import type { Prisma } from "@prisma/client";
 
 // ============================================================================

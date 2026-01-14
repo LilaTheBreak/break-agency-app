@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as campaignAutoPlanService from "../services/campaignAutoPlanService.js";
+import * as campaignAutoPlanService from '../services/campaignAutoPlanService';
 
 const AutoPlanSchema = z.object({
   dealId: z.string().cuid().optional(),

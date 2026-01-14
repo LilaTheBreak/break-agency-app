@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
-import * as contractController from "../controllers/contractController.js";
-import prisma from "../lib/prisma.js";
+import { requireAuth } from '../middleware/auth';
+import * as contractController from '../controllers/contractController';
+import prisma from '../lib/prisma';
 
 const router = Router();
 

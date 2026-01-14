@@ -1,6 +1,6 @@
 import { gmail_v1 as gmailV1 } from "googleapis";
 import { Prisma } from "@prisma/client";
-import { cleanEmailBody } from "./gmailParser.js";
+import { cleanEmailBody } from './gmailParser';
 
 type InboundEmailCreateInput = Prisma.InboundEmailCreateWithoutInboxMessageInput;
 type InboxMessageUpdateInput = Prisma.InboxMessageUpdateInput;

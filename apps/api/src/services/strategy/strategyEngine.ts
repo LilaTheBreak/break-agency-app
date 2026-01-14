@@ -1,7 +1,7 @@
-import prisma from "../../lib/prisma.js";
-import { getSignalsForBrand } from "./signalService.js";
-import { predictBrandCampaign } from "../ai/campaignPredictionService.js";
-import { creatorFitQueue } from "../../worker/queues.js";
+import prisma from '../../lib/prisma';
+import { getSignalsForBrand } from './signalService';
+import { predictBrandCampaign } from '../ai/campaignPredictionService';
+import { creatorFitQueue } from '../../worker/queues';
 
 // Note: brandRelationship and brandCampaignPrediction models don't exist
 // Stubbing out to prevent errors - this feature is not fully implemented

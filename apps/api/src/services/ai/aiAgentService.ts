@@ -1,12 +1,12 @@
-import prisma from "../../lib/prisma.js";
-import { sendSlackAlert } from "../../integrations/slack/slackClient.js";
-import { AIAgentTaskStatus } from "../../constants/aiAgentTaskStatus.js";
-import { trackAITokens } from "./tokenTracker.js";
-import * as insightLLM from "./insightLLM.js";
-import * as dealExtractor from "./dealExtractor.js";
-import * as negotiationLLM from "./negotiationLLM.js";
-import * as inboxReplyEngine from "./inboxReplyEngine.js";
-import * as suitabilityLLM from "./suitabilityLLM.js";
+import prisma from '../../lib/prisma';
+import { sendSlackAlert } from '../../integrations/slack/slackClient';
+import { AIAgentTaskStatus } from '../../constants/aiAgentTaskStatus';
+import { trackAITokens } from './tokenTracker';
+import * as insightLLM from './insightLLM';
+import * as dealExtractor from './dealExtractor';
+import * as negotiationLLM from './negotiationLLM';
+import * as inboxReplyEngine from './inboxReplyEngine';
+import * as suitabilityLLM from './suitabilityLLM';
 
 export async function processAIAgentTask(taskId: string) {
   const start = Date.now();

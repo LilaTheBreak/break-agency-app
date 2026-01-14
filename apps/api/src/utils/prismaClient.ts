@@ -5,6 +5,6 @@
  * Re-exports the Prisma client from the centralized location.
  */
 
-import prismaInstance from "../db/client.js";
+import prismaInstance from '../db/client';
 
 export const prisma = prismaInstance;

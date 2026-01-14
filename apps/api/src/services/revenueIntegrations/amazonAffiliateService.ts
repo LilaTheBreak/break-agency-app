@@ -9,7 +9,7 @@
  * - Payout reconciliation
  */
 
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 
 // Type alias for revenue event (generated from Prisma after migration)
 type RevenueEvent = any;

@@ -8,15 +8,15 @@
  */
 
 import express, { Request, Response } from "express";
-import { requireAuth } from "../../middleware/auth.js";
-import { isSuperAdmin } from "../../lib/roleHelpers.js";
-import { sendSuccess, sendError } from "../../utils/apiResponse.js";
+import { requireAuth } from '../../middleware/auth';
+import { isSuperAdmin } from '../../lib/roleHelpers';
+import { sendSuccess, sendError } from '../../utils/apiResponse';
 import {
   detectTalentDuplicates,
   detectBrandDuplicates,
   detectDealDuplicates,
-} from "../../lib/duplicateDetection.js";
-import { performMerge, MergeRequest } from "../../lib/mergeService.js";
+} from '../../lib/duplicateDetection';
+import { performMerge, MergeRequest } from '../../lib/mergeService';
 
 const router = express.Router();
 

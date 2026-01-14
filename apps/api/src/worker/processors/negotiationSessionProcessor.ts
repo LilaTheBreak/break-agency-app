@@ -1,4 +1,4 @@
-import { performNegotiationTask } from "../../services/aiAgent/negotiationRunner.js";
+import { performNegotiationTask } from '../../services/aiAgent/negotiationRunner';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function negotiationSessionProcessor(job: any) {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";

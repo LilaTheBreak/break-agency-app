@@ -1,5 +1,5 @@
-import prisma from "../lib/prisma.js";
-import { scoreEmail } from "./priorityEngine.js";
+import prisma from '../lib/prisma';
+import { scoreEmail } from './priorityEngine';
 
 const PRIORITY_CATEGORIES = ["deal", "negotiation", "brief", "invite", "gifting"];
 

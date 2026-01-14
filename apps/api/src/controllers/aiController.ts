@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as insightLLM from "../services/ai/insightLLM.js";
-import * as dealExtractor from "../services/ai/dealExtractor.js";
-import { getAssistantResponse } from "../services/ai/aiAssistant.js";
-import prisma from "../lib/prisma.js";
-import { logAIInteraction } from "../lib/aiHistoryLogger.js";
+import * as insightLLM from '../services/ai/insightLLM';
+import * as dealExtractor from '../services/ai/dealExtractor';
+import { getAssistantResponse } from '../services/ai/aiAssistant';
+import prisma from '../lib/prisma';
+import { logAIInteraction } from '../lib/aiHistoryLogger';
 
 export async function generateBusinessSummary(req: Request, res: Response, next: NextFunction) {
   try {

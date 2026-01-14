@@ -1,5 +1,5 @@
-import prisma from "../lib/prisma.js";
-import { classifyMessage } from "./ai/messageClassifier.js";
+import prisma from '../lib/prisma';
+import { classifyMessage } from './ai/messageClassifier';
 
 const FOLLOW_UP_PATTERNS = [
   /just emailed you/i,

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import type { SessionUser } from "../lib/session.js";
+import type { SessionUser } from '../lib/session';
 
 declare global {
   namespace Express {

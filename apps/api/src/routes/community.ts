@@ -5,7 +5,7 @@
  */
 
 import { Router } from "express";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth } from '../middleware/auth';
 import {
   connectAccountHandler,
   getConnectionsHandler,
@@ -13,7 +13,7 @@ import {
   updateMetricHandler,
   disconnectAccountHandler,
   markConnectedHandler,
-} from "../controllers/communityController.js";
+} from '../controllers/communityController';
 
 const router = Router();
 

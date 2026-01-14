@@ -1,6 +1,6 @@
 import cron from "node-cron";
-import { processEmailQueue } from "../services/emailService.js";
-import { logInfo } from "../lib/logger.js";
+import { processEmailQueue } from '../services/emailService';
+import { logInfo } from '../lib/logger';
 
 export function registerEmailQueueJob() {
   cron.schedule(

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "../utils/prismaClient.js";
-import { isSuperAdmin, isCreator } from "../lib/roleHelpers.js";
+import { prisma } from '../utils/prismaClient';
+import { isSuperAdmin, isCreator } from '../lib/roleHelpers';
 
 /**
  * Middleware to ensure user is authenticated and has creator role

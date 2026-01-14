@@ -1,4 +1,4 @@
-import { ingestGmailForUser } from "../../services/gmail/gmailService.js";
+import { ingestGmailForUser } from '../../services/gmail/gmailService';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function gmailIngestProcessor(job: any) {

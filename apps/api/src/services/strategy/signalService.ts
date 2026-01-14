@@ -1,4 +1,4 @@
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 
 // Note: brandSignal model doesn't exist in schema
 export async function recordBrandSignal({

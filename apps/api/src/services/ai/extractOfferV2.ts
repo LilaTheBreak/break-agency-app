@@ -1,5 +1,5 @@
 import { InboundEmail } from "@prisma/client";
-import { aiClient } from "./aiClient.js";
+import { aiClient } from './aiClient';
 
 type LaunchWindow = { start?: string | null; end?: string | null };
 

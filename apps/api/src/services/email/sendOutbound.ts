@@ -1,7 +1,7 @@
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 import { encode as base64Encode } from "js-base64";
 import { google } from "googleapis";
-import { getOAuthClientForUser } from "../gmail/tokens.js";
+import { getOAuthClientForUser } from '../gmail/tokens';
 
 let BASE_URL = process.env.API_URL;
 

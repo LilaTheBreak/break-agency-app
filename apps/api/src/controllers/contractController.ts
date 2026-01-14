@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as contractService from "../services/contractService.js";
-import prisma from "../lib/prisma.js";
+import * as contractService from '../services/contractService';
+import prisma from '../lib/prisma';
 
 const ContractCreateSchema = z.object({
   dealId: z.string().cuid().optional(),

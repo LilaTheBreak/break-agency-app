@@ -1,4 +1,4 @@
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 
 export async function buildOutreachPlan(userId: string) {
   const brands = await prisma.brandIntelligence.findMany({

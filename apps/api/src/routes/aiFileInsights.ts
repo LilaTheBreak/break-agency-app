@@ -1,11 +1,11 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { requireAuth } from "../middleware/auth.js";
-import { getDownloadUrl } from "../services/fileService.js";
-import { cleanText, detectFileType, extractText, splitIntoChunks } from "../lib/fileExtract.js";
-import { generateFileInsights, InvalidAiResponseError } from "../services/aiFileInsightsService.js";
-import { isAdmin as checkIsAdmin } from "../lib/roleHelpers.js";
-import { logAIInteraction } from "../lib/aiHistoryLogger.js";
+import { requireAuth } from '../middleware/auth';
+import { getDownloadUrl } from '../services/fileService';
+import { cleanText, detectFileType, extractText, splitIntoChunks } from '../lib/fileExtract';
+import { generateFileInsights, InvalidAiResponseError } from '../services/aiFileInsightsService';
+import { isAdmin as checkIsAdmin } from '../lib/roleHelpers';
+import { logAIInteraction } from '../lib/aiHistoryLogger';
 
 const router = Router();
 

@@ -8,8 +8,8 @@ import {
   getTeamMembersHandler,
   updateMemberRoleHandler,
   removeTeamMemberHandler,
-} from "../controllers/brandTeamController.js";
-import { requireAuth } from "../middleware/auth.js";
+} from '../controllers/brandTeamController';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 // services/ai/tokenTracker.ts
 
-import prisma from "../../lib/prisma.js";
+import prisma from '../../lib/prisma';
 
 export interface TokenTrackingInput {
   model?: string; // Optional - defaults to gpt-4.1

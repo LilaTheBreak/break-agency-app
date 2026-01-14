@@ -9,8 +9,8 @@ import {
   getUserBrandsHandler,
   updateBrandHandler,
   listBrandsHandler,
-} from "../controllers/brandController.js";
-import { requireAuth } from "../middleware/auth.js";
+} from '../controllers/brandController';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 

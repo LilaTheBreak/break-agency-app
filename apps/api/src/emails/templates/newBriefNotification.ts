@@ -1,4 +1,4 @@
-import type { EmailTemplate } from "./types.js";
+import type { EmailTemplate } from './types';
 
 export const newBriefNotificationTemplate: EmailTemplate = {
   subject: (data) => `New brief: ${data.briefName ?? "Unnamed"}`,

@@ -1,6 +1,6 @@
-import prisma from "../lib/prisma.js";
-import { CronJobDefinition, parseCommaList } from "./types.js";
-import { sendTemplatedEmail } from "../services/email/emailClient.js";
+import prisma from '../lib/prisma';
+import { CronJobDefinition, parseCommaList } from './types';
+import { sendTemplatedEmail } from '../services/email/emailClient';
 
 const DIGEST_RECIPIENTS = parseCommaList(process.env.BRIEF_DIGEST_RECIPIENTS || process.env.FOUNDERS_EMAILS);
 

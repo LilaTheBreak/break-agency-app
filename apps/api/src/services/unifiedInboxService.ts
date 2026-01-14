@@ -1,7 +1,7 @@
 // apps/api/src/services/unifiedInboxService.ts
 
-import prisma from "../lib/prisma.js";
-import { computePrioritySignals } from "./priorityEngine.js";
+import prisma from '../lib/prisma';
+import { computePrioritySignals } from './priorityEngine';
 
 type Priority = "high" | "medium" | "low";
 

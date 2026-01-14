@@ -6,8 +6,8 @@
 
 import { Request, Response } from "express";
 import { z } from "zod";
-import * as auditSourceService from "../services/auditSourceService.js";
-import * as brandUserService from "../services/brandUserService.js";
+import * as auditSourceService from '../services/auditSourceService';
+import * as brandUserService from '../services/brandUserService';
 
 // Validation schemas
 const createAuditSourceSchema = z.object({

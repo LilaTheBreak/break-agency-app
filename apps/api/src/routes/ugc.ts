@@ -1,8 +1,8 @@
 import { Router } from 'express';
 // @ts-ignore - Module resolution issue
-import { protect } from '../middleware/authMiddleware.js';
+import { protect } from '../middleware/authMiddleware';
 // @ts-ignore - Module resolution issue
-import { requireRole } from '../middleware/requireRole.js';
+import { requireRole } from '../middleware/requireRole';
 // @ts-ignore - Module resolution issue
 import {
   submitUgcApplication,
@@ -10,7 +10,7 @@ import {
   listUgcApplications,
   approveUgcApplication,
   rejectUgcApplication,
-} from '../controllers/ugc/applicationController.js';
+} from '../controllers/ugc/applicationController';
 
 const router = Router();
 

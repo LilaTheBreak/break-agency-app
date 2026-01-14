@@ -1,6 +1,6 @@
-import prisma from "../../lib/prisma.js";
-import { docusignProvider } from "./providers/docusignProvider.js";
-import { nativeProvider } from "./providers/nativeProvider.js";
+import prisma from '../../lib/prisma';
+import { docusignProvider } from './providers/docusignProvider';
+import { nativeProvider } from './providers/nativeProvider';
 
 function providerFromEnv() {
   return process.env.SIGN_PROVIDER === "docusign" ? docusignProvider : nativeProvider;

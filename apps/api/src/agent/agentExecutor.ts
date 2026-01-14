@@ -1,9 +1,9 @@
-import * as actions from "./actions/index.js";
-import prisma from "../lib/prisma.js";
-import { loadAgentPolicy } from "./agentPolicy.js";
-import { findOrCreateThread } from "./negotiation/findThread.js";
-import { recordThreadMessage } from "./negotiation/recordMessage.js";
-import { getActiveThreadState } from "./negotiation/getActiveThreadState.js";
+import * as actions from './actions/index';
+import prisma from '../lib/prisma';
+import { loadAgentPolicy } from './agentPolicy';
+import { findOrCreateThread } from './negotiation/findThread';
+import { recordThreadMessage } from './negotiation/recordMessage';
+import { getActiveThreadState } from './negotiation/getActiveThreadState';
 
 export async function executeAgentTask(taskId: string) {
   const task = await prisma.aIAgentTask.findUnique({ where: { id: taskId } });

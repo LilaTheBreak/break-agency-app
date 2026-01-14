@@ -4,7 +4,7 @@
  * Design: Minimal, reliable, with throttling to prevent spam
  */
 
-import { sanitizeErrorForLogging, shouldAlert, formatAlertMessage } from "./errorNormalizer.js";
+import { sanitizeErrorForLogging, shouldAlert, formatAlertMessage } from './errorNormalizer';
 
 // Alert throttling: Don't send same error type more than once per hour
 const alertThrottle = new Map<string, number>();

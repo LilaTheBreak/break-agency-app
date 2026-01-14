@@ -1,7 +1,7 @@
-import prisma from "../lib/prisma.js";
+import prisma from '../lib/prisma';
 import { InboundEmail } from "@prisma/client";
 import createHttpError from "http-errors";
-import { sendEmailWithGmail } from "./email/sendOutbound.js"; // Ensure this is implemented!
+import { sendEmailWithGmail } from './email/sendOutbound'; // Ensure this is implemented!
 
 
 

@@ -10,9 +10,9 @@
 
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import * as revenueClassificationService from '../../services/revenueClassificationService.js';
-import { requireAuth } from '../../middleware/auth.js';
-import { checkDealAccess, checkTalentAccess } from '../../middleware/talentAccess.js';
+import * as revenueClassificationService from '../../services/revenueClassificationService';
+import { requireAuth } from '../../middleware/auth';
+import { checkDealAccess, checkTalentAccess } from '../../middleware/talentAccess';
 
 const router = Router();
 const prisma = new PrismaClient();

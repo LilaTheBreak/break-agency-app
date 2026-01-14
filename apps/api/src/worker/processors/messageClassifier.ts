@@ -1,4 +1,4 @@
-import { classifyMessage } from "../../services/ai/messageClassifier.js";
+import { classifyMessage } from '../../services/ai/messageClassifier';
 
 export default async function messageClassifier(job: any) {
   const data = job?.data ?? {};

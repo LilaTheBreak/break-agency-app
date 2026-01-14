@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma.js';
-import { generateId } from '../lib/utils.js';
+import prisma from '../lib/prisma';
+import { generateId } from '../lib/utils';
 
 interface ContractTemplate {
   id: string;

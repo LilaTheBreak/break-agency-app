@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { cleanEmailBody } from "../gmail/gmailParser.js";
+import { cleanEmailBody } from '../gmail/gmailParser';
 
 const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {

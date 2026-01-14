@@ -1,5 +1,5 @@
-import { emailQueue } from "../../worker/queues.js";
-import { recordThreadMessage } from "../negotiation/recordMessage.js";
+import { emailQueue } from '../../worker/queues';
+import { recordThreadMessage } from '../negotiation/recordMessage';
 
 export default {
   name: "sendCounterOffer",

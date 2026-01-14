@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { googleConfig } from "../../config/env.js";
+import { googleConfig } from '../../config/env';
 
 const clientId = googleConfig.clientId;
 const clientSecret = googleConfig.clientSecret;
