@@ -94,10 +94,22 @@ export async function fetchInstagramMetrics(
         return { metrics: scrapeResult, dataSource: "SCRAPE" };
       }
 
+      // Try public API fallback (RapidAPI Instagram API or similar)
+      logInfo("[INSTAGRAM] Scrape failed, attempting public API fallback", { username });
+      const publicApiResult = await fetchViaPublicAPI(normalized);
+      if (publicApiResult) {
+        logInfo("[INSTAGRAM] Public API fallback successful", { username });
+        return { metrics: publicApiResult, dataSource: "SCRAPE" };
+      }
+
+      logError("[INSTAGRAM] All strategies failed", new Error("All Instagram data fetch strategies exhausted"), {
+        username,
+        error: "Profile may be private, deleted, blocked, or Instagram anti-bot measures are active",
+      });
       return {
         metrics: null,
         dataSource: "SCRAPE",
-        error: "Failed to fetch Instagram profile. Profile may be private or blocked.",
+        error: "Failed to fetch Instagram profile. The account may be private, deleted, blocked, or Instagram's anti-bot protections are preventing access. Try again in a few minutes.",
       };
     }
 
@@ -173,9 +185,58 @@ async function fetchViaAPI(
 }
 
 /**
- * Scrape Instagram public profile page (cheerio/jsdom-based)
- *
- * Note: This scrapes public data only and respects Instagram's robots.txt
+ * Fetch via public Instagram API (fallback strategy)
+ * Uses public API services if available
+ */
+async function fetchViaPublicAPI(username: string): Promise<InstagramProfileMetrics | null> {
+  try {
+    // Strategy: Try Instagram's public JSON endpoint which sometimes works
+    const url = `https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`;
+    
+    logInfo("[INSTAGRAM] Attempting public API endpoint", { username });
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      logWarn("[INSTAGRAM] Public API failed", {
+        username,
+        status: response.status,
+      });
+      return null;
+    }
+
+    const data: any = await response.json();
+    const user = data?.data?.user;
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      username: user.username || username,
+      displayName: user.full_name || "",
+      biography: user.biography || "",
+      followerCount: user.follower_count || 0,
+      followingCount: user.following_count || 0,
+      postCount: user.media_count || 0,
+      profilePictureUrl: user.profile_pic_url || user.profile_pic_url_hd || "",
+      isVerified: user.is_verified || false,
+      isBusinessAccount: user.is_business_account || false,
+      dataSource: "SCRAPE",
+    };
+  } catch (error) {
+    logError("[INSTAGRAM] Public API fallback error", error, { username });
+    return null;
+  }
+}
+
+/**
+ * Scrape Instagram public profile page (HTML meta tags)
  */
 async function scrapeInstagramProfile(
   username: string
@@ -243,9 +304,23 @@ async function scrapeInstagramProfile(
     }
 
     const html = await response.text();
+    
+    // Log the actual content for debugging
+    if (!response.ok) {
+      const sampleContent = html.substring(0, 300);
+      logWarn("[INSTAGRAM] HTML content sample (first 300 chars)", {
+        username,
+        status: response.status,
+        sample: sampleContent,
+      });
+    }
+    
     logInfo("[INSTAGRAM] HTML body received", {
       username,
       size: html.length,
+      hasScriptTags: (html.match(/<script/g) || []).length,
+      hasMetaTags: (html.match(/<meta/g) || []).length,
+      firstChars: html.substring(0, 200),
     });
 
     // Try to extract data from the HTML
@@ -261,7 +336,13 @@ async function scrapeInstagramProfile(
       logError(
         "[INSTAGRAM] CRITICAL: HTML_FETCH_OK_BUT_PARSE_FAILED",
         new Error("HTML fetch succeeded (200) but no data could be extracted. Instagram may have changed their page structure."),
-        { username, htmlSize: html.length }
+        { 
+          username, 
+          htmlSize: html.length,
+          htmlStart: html.substring(0, 500),
+          hasMeta: html.includes('<meta'),
+          hasOgImage: html.includes('og:image'),
+        }
       );
       throw new Error("HTML_FETCH_OK_BUT_PARSE_FAILED");
     }
@@ -297,17 +378,40 @@ async function scrapeInstagramProfile(
  */
 function parseInstagramHTML(html: string, username: string): InstagramProfileMetrics | null {
   try {
+    // Log what we found in the HTML for debugging
+    logInfo("[INSTAGRAM] Parsing HTML", {
+      username,
+      htmlSize: html.length,
+      has_og_image: html.includes('property="og:image"'),
+      has_og_title: html.includes('property="og:title"'),
+      has_og_description: html.includes('property="og:description"'),
+    });
+
     // Try to extract from meta tags first (most reliable)
-    const ogImageMatch = html.match(/<meta property="og:image" content="([^"]+)"/);
-    const ogTitleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
-    const ogDescriptionMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+    // Instagram returns meta tags in format: <meta property="og:image" content="URL" />
+    const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
+    const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i);
+    const ogDescriptionMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i);
+
+    logInfo("[INSTAGRAM] Meta tag extraction results", {
+      username,
+      hasImage: !!ogImageMatch,
+      hasTitle: !!ogTitleMatch,
+      hasDescription: !!ogDescriptionMatch,
+      titleMatch: ogTitleMatch ? ogTitleMatch[1].substring(0, 50) : null,
+    });
 
     if (ogImageMatch && ogTitleMatch) {
       logInfo("[INSTAGRAM] Extracted data from meta tags", { username });
       
-      // Extract name from "Name's Photos & Videos on Instagram"
+      // Extract name from "Name's Photos & Videos on Instagram" or "Name's Reels & Photos on Instagram"
       const titleText = ogTitleMatch[1];
-      const displayName = titleText.replace(/'s Photos & Videos on Instagram/, "").replace(/'s Reels & Photos on Instagram/, "");
+      const displayName = titleText
+        .replace(/'s Photos & Videos on Instagram/, "")
+        .replace(/'s Reels & Photos on Instagram/, "")
+        .replace(/'s Photos on Instagram/, "")
+        .replace(/'s Reels on Instagram/, "")
+        .trim();
       
       // Parse follower count from description if available
       const description = ogDescriptionMatch?.[1] || "";
