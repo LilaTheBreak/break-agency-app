@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install && pnpm --filter @breakagency/api exec prisma generate && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/web build && pnpm --filter @breakagency/api build && echo 'Build completed successfully'"
   },
   "deploy": {
-    "startCommand": "cd apps/api && NODE_ENV=production sh -c 'npx prisma migrate deploy --schema=./prisma/schema.prisma 2>&1 | grep -q \"P3005\" || true' && node dist/server.js",
+    "startCommand": "cd apps/api && NODE_OPTIONS='--no-warnings' NODE_ENV=production sh -c 'npx prisma migrate deploy --schema=./prisma/schema.prisma 2>&1 | grep -q \"P3005\" || true' && node dist/server.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
