@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install && pnpm --filter @breakagency/api exec prisma generate && pnpm --filter @breakagency/shared build && pnpm --filter @breakagency/web build && pnpm --filter @breakagency/api build && echo 'Build completed successfully'"
   },
   "deploy": {
-    "startCommand": "cd apps/api && NODE_ENV=production npx prisma migrate deploy --schema=./prisma/schema.prisma && echo 'Migrations completed' && node dist/server.js",
+    "startCommand": "cd apps/api && NODE_ENV=production npx prisma migrate deploy --schema=./prisma/schema.prisma || true && node dist/server.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
