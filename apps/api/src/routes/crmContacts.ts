@@ -20,8 +20,6 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const { brandId } = req.query;
 
-    const where = brandId ? { brandId: String(brandId) } : {};
-
     const contacts = await prisma.crmBrandContact.findMany({
       where: brandId ? { crmBrandId: String(brandId) } : {},
       include: {
