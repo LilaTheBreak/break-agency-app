@@ -612,11 +612,21 @@ export function AdminBrandsPage({ session }) {
   // Use normalizeApiArray to handle all edge cases (empty strings, null, undefined, wrapped objects)
   const safeSetBrands = (value) => {
     const safe = normalizeApiArray(value, 'brands');
-    setBrands(safe);
+    if (!Array.isArray(safe)) {
+      console.error('[CRITICAL] safeSetBrands: normalizeApiArray did not return array:', { value, safe, type: typeof safe });
+      setBrands([]);
+    } else {
+      setBrands(safe);
+    }
   };
   const safeSetContacts = (value) => {
     const safe = normalizeApiArray(value, 'contacts');
-    setContacts(safe);
+    if (!Array.isArray(safe)) {
+      console.error('[CRITICAL] safeSetContacts: normalizeApiArray did not return array:', { value, safe, type: typeof safe });
+      setContacts([]);
+    } else {
+      setContacts(safe);
+    }
   };
   const safeSetCampaigns = (value) => {
     const safe = normalizeApiArray(value, 'campaigns');
