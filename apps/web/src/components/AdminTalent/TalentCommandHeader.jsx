@@ -31,11 +31,12 @@ export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = fals
         headers: { 'Content-Type': 'application/json' },
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error(`Sync failed: ${response.statusText}`);
+        throw new Error(data.message || `Sync failed: ${response.statusText}`);
       }
       
-      const data = await response.json();
       toast.success(`Profile photo updated from ${data.data.source || 'social media'}`);
       
       // Call parent callback to refresh talent data
@@ -44,7 +45,8 @@ export function TalentCommandHeader({ talent, onEdit, onViewAs, isLoading = fals
       }
     } catch (error) {
       console.error('Profile image sync error:', error);
-      toast.error('Could not refresh profile photo. Try again later.');
+      const errorMessage = error instanceof Error ? error.message : 'Could not refresh profile photo. Try again later.';
+      toast.error(errorMessage);
     } finally {
       setIsRefreshing(false);
     }

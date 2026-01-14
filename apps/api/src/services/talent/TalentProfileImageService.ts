@@ -80,26 +80,40 @@ export class TalentProfileImageService {
 
           if (imageUrl) {
             // Update talent with the profile image
-            const updated = await prisma.talent.update({
-              where: { id: talentId },
-              data: {
-                profileImageUrl: imageUrl,
-                profileImageSource: platform,
-                lastProfileImageSyncAt: new Date(),
-              },
-            });
+            try {
+              const updated = await prisma.talent.update({
+                where: { id: talentId },
+                data: {
+                  profileImageUrl: imageUrl,
+                  profileImageSource: platform,
+                  lastProfileImageSyncAt: new Date(),
+                },
+              });
 
-            this.logger.info(
-              `✅ Updated profile image for ${talent.name} from ${platform}`,
-              { imageUrl: imageUrl.substring(0, 50) + '...' }
-            );
+              this.logger.info(
+                `✅ Updated profile image for ${talent.name} from ${platform}`,
+                { imageUrl: imageUrl.substring(0, 50) + '...' }
+              );
 
-            return {
-              success: true,
-              source: platform,
-              imageUrl,
-              talent: updated,
-            };
+              return {
+                success: true,
+                source: platform,
+                imageUrl,
+                talent: updated,
+              };
+            } catch (updateError) {
+              this.logger.warn(
+                `Failed to save ${platform} profile image to database`,
+                updateError instanceof Error ? updateError.message : String(updateError)
+              );
+              // Return success anyway since we got the image
+              return {
+                success: true,
+                source: platform,
+                imageUrl,
+                error: 'Fetched but failed to save to database'
+              };
+            }
           }
         } catch (error) {
           this.logger.warn(
@@ -112,25 +126,39 @@ export class TalentProfileImageService {
       }
 
       // If all platforms fail, revert to initials
-      const updated = await prisma.talent.update({
-        where: { id: talentId },
-        data: {
-          profileImageUrl: null,
-          profileImageSource: 'initials',
-          lastProfileImageSyncAt: new Date(),
-        },
-      });
+      try {
+        const updated = await prisma.talent.update({
+          where: { id: talentId },
+          data: {
+            profileImageUrl: null,
+            profileImageSource: 'initials',
+            lastProfileImageSyncAt: new Date(),
+          },
+        });
 
-      this.logger.info(
-        `No valid social image found for ${talent.name}, reverted to initials`
-      );
+        this.logger.info(
+          `No valid social image found for ${talent.name}, reverted to initials`
+        );
 
-      return {
-        success: true,
-        source: 'initials',
-        imageUrl: null,
-        talent: updated,
-      };
+        return {
+          success: true,
+          source: 'initials',
+          imageUrl: null,
+          talent: updated,
+        };
+      } catch (updateError) {
+        this.logger.error(
+          `Failed to update talent with initials fallback for ${talentId}`,
+          updateError instanceof Error ? updateError.message : String(updateError)
+        );
+        // Still return success but without update
+        return {
+          success: true,
+          source: 'initials',
+          imageUrl: null,
+          error: updateError instanceof Error ? updateError.message : 'Failed to save fallback'
+        };
+      }
     } catch (error) {
       this.logger.error(
         `Error syncing profile image for talent ${talentId}`,

@@ -431,6 +431,7 @@ export function AdminTalentPage() {
       setSyncing(true);
       let successCount = 0;
       let errorCount = 0;
+      const errors = [];
 
       // Sync profile images for all talents that have social accounts
       for (const talent of talents) {
@@ -445,10 +446,18 @@ export function AdminTalentPage() {
             successCount++;
           } else {
             errorCount++;
+            errors.push({
+              talentName: talent.displayName,
+              message: response.message || 'Unknown error'
+            });
           }
         } catch (err) {
           console.error(`Failed to sync profile image for ${talent.displayName}:`, err);
           errorCount++;
+          errors.push({
+            talentName: talent.displayName,
+            message: err instanceof Error ? err.message : 'Network error'
+          });
         }
       }
 
@@ -457,7 +466,8 @@ export function AdminTalentPage() {
         toast.success(`✅ Synced ${successCount} profile image${successCount !== 1 ? 's' : ''}`);
       }
       if (errorCount > 0) {
-        console.warn(`⚠️ Failed to sync ${errorCount} profile image${errorCount !== 1 ? 's' : ''}`);
+        console.warn(`⚠️ Failed to sync ${errorCount} profile image${errorCount !== 1 ? 's' : ''}`, errors);
+        toast.error(`Failed to sync ${errorCount} profile image${errorCount !== 1 ? 's' : ''}. Check console for details.`);;
       }
 
       // Reload talents to show updated profile images
