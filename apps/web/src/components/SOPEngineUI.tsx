@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import SkeletonLoader from './SkeletonLoader';
-import ErrorBoundary from './ErrorBoundary';
+import { ErrorBoundary } from './ErrorBoundary';
 
 interface SOPTemplate {
   id: string;

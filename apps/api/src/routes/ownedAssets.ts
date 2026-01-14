@@ -9,12 +9,11 @@
  */
 
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '../../middleware/auth';
-import { checkTalentAccess } from '../../middleware/talentAccess';
+import prisma from '../lib/prisma.js';
+import { requireAuth } from '../../middleware/auth.js';
+import { checkTalentAccess } from '../../middleware/talentAccess.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * List all owned assets for a talent

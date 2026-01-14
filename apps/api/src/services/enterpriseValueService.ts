@@ -8,9 +8,8 @@
  * - IP and owned asset inventory
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Prisma } from '@prisma/client';
+import prisma from '../lib/prisma.js';
 
 export interface EnterpriseValueMetricsInput {
   talentId: string;
@@ -114,8 +113,8 @@ export async function computeEnterpriseValueMetrics(talentId: string) {
       if (stream.isRecurring) {
         recurringMRR += Number(stream.monthlyRevenue);
       }
-      if (stream.founderDependency > 0) {
-        founderDependentMRR += Number(stream.monthlyRevenue) * (stream.founderDependency / 100);
+      if (Number(stream.founderDependency) > 0) {
+        founderDependentMRR += Number(stream.monthlyRevenue) * (Number(stream.founderDependency) / 100);
       }
       if (stream.ownershipStatus === 'OWNED') {
         creatorOwnedMRR += Number(stream.monthlyRevenue);
@@ -230,7 +229,7 @@ export async function getEnterpriseValueHistory(talentId: string, months: number
       history.push({
         date,
         ...current,
-        monthlyRecurringRevenue: current.monthlyRecurringRevenue * (1 - i * 0.02), // Mock 2% decline per month
+        monthlyRecurringRevenue: Number(current.monthlyRecurringRevenue) * (1 - i * 0.02), // Mock 2% decline per month
       });
     }
 

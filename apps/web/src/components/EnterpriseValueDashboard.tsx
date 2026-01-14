@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Legend as ChartLegend, Tooltip as ChartTooltip } from 'recharts';
 import SkeletonLoader from './SkeletonLoader';
-import ErrorBoundary from './ErrorBoundary';
+import { ErrorBoundary } from './ErrorBoundary';
 
 interface EnterpriseValueMetrics {
   id: string;

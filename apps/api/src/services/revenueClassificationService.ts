@@ -8,9 +8,7 @@
  * - High-risk deal flagging and validation
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 export enum RevenueTag {
   FOUNDER_DEPENDENT = 'FOUNDER_DEPENDENT',

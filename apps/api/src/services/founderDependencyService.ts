@@ -9,9 +9,7 @@
  * - Team depth
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 export interface FounderDependencyInput {
   talentId: string;
@@ -76,7 +74,7 @@ export async function computeFounderDependencyIndex(talentId: string) {
     for (const stream of revenueStreams) {
       const revenue = Number(stream.monthlyRevenue) * 12;
       totalRevenue += revenue;
-      founderDependentRevenue += revenue * (stream.founderDependency / 100);
+      founderDependentRevenue += revenue * (Number(stream.founderDependency) / 100);
     }
 
     const founderDepPercent = totalRevenue > 0 ? (founderDependentRevenue / totalRevenue) * 100 : 0;
@@ -88,6 +86,7 @@ export async function computeFounderDependencyIndex(talentId: string) {
 
     // Score calculation
     const score = calculateFounderDependencyScore({
+      talentId,
       founderDependencyPercent: founderDepPercent,
       soplessProcessCount: dealsWithoutSOPs,
       manualOpsHoursPerWeek: 0, // Would need to track from tasks
@@ -96,7 +95,7 @@ export async function computeFounderDependencyIndex(talentId: string) {
     });
 
     const riskRating = scoreToRiskRating(score);
-    const valuation Penalty = calculateValuationPenalty(score, founderDepPercent);
+    const valuationPenalty = calculateValuationPenalty(score, founderDepPercent);
 
     const recommendations = generateRecommendations({
       founderDependencyPercent: founderDepPercent,
@@ -233,9 +232,9 @@ export async function updateFounderDependencyIndex(
 
     const score = calculateFounderDependencyScore(updated as FounderDependencyInput);
     const riskRating = scoreToRiskRating(score);
-    const valuationPenalty = calculateValuationPenalty(score, updated.founderDependencyPercent);
+    const valuationPenalty = calculateValuationPenalty(score, Number(updated.founderDependencyPercent));
     const recommendations = generateRecommendations({
-      founderDependencyPercent: updated.founderDependencyPercent,
+      founderDependencyPercent: Number(updated.founderDependencyPercent),
       soplessProcessCount: updated.soplessProcessCount,
       score,
     });

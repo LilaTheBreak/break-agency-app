@@ -14,9 +14,7 @@
  * - Recurring Revenue % (10%)
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 export enum ExitReadinessCategory {
   UNDERDEVELOPED = 'UNDERDEVELOPED', // 0-35
