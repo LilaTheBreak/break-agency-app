@@ -1466,32 +1466,34 @@ export function AdminBrandsPage({ session }) {
     setEnrichmentSuggestion(null);
   };
 
-  // Final safety check before render - ensure all state is valid
-  if (!Array.isArray(brands) || !Array.isArray(contacts) || !Array.isArray(campaigns) || !Array.isArray(events) || !Array.isArray(deals) || !Array.isArray(contracts)) {
-    console.error('[BRANDS PAGE] Invalid state detected before render:', {
-      brands: Array.isArray(brands),
-      contacts: Array.isArray(contacts),
-      campaigns: Array.isArray(campaigns),
-      events: Array.isArray(events),
-      deals: Array.isArray(deals),
-      contracts: Array.isArray(contracts)
-    });
-    // Force reset all state to arrays
-    if (!Array.isArray(brands)) safeSetBrands([]);
-    if (!Array.isArray(contacts)) safeSetContacts([]);
-    if (!Array.isArray(campaigns)) safeSetCampaigns([]);
-    if (!Array.isArray(events)) safeSetEvents([]);
-    if (!Array.isArray(deals)) safeSetDeals([]);
-    if (!Array.isArray(contracts)) safeSetContracts([]);
-    // Return loading state while we fix the state
-    return (
-      <DashboardShell title="Brands" subtitle="Track brands as long-lived CRM entities — without login assumptions." role="admin" navLinks={ADMIN_NAV_LINKS}>
-        <div className="flex items-center justify-center p-12">
-          <p className="text-sm text-brand-black/60">Loading brands...</p>
-        </div>
-      </DashboardShell>
-    );
-  }
+  // Use effect to validate state - NEVER call setState during render!
+  useEffect(() => {
+    // Check if any state is not an array and fix it
+    if (!Array.isArray(brands)) {
+      console.error('[BRANDS PAGE] brands is not an array, resetting:', { brands, type: typeof brands });
+      safeSetBrands([]);
+    }
+    if (!Array.isArray(contacts)) {
+      console.error('[BRANDS PAGE] contacts is not an array, resetting:', { contacts, type: typeof contacts });
+      safeSetContacts([]);
+    }
+    if (!Array.isArray(campaigns)) {
+      console.error('[BRANDS PAGE] campaigns is not an array, resetting:', { campaigns, type: typeof campaigns });
+      safeSetCampaigns([]);
+    }
+    if (!Array.isArray(events)) {
+      console.error('[BRANDS PAGE] events is not an array, resetting:', { events, type: typeof events });
+      safeSetEvents([]);
+    }
+    if (!Array.isArray(deals)) {
+      console.error('[BRANDS PAGE] deals is not an array, resetting:', { deals, type: typeof deals });
+      safeSetDeals([]);
+    }
+    if (!Array.isArray(contracts)) {
+      console.error('[BRANDS PAGE] contracts is not an array, resetting:', { contracts, type: typeof contracts });
+      safeSetContracts([]);
+    }
+  }, [brands, contacts, campaigns, events, deals, contracts]);
 
   return (
     <DashboardShell title="Brands" subtitle="Track brands as long-lived CRM entities — without login assumptions." role="admin" navLinks={ADMIN_NAV_LINKS}>
