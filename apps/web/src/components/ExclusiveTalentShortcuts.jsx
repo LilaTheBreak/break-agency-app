@@ -125,14 +125,14 @@ export function ExclusiveTalentShortcuts() {
   // Loading state
   if (loading) {
     return (
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex items-center gap-2 mb-4">
           <Users className="h-4 w-4 text-brand-black/40" />
           <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
             Exclusive Talent
           </h3>
         </div>
-        <div className="flex items-center justify-center rounded-2xl border border-brand-black/5 bg-brand-linen/20 p-8">
+        <div className="flex items-center justify-center py-6">
           <Loader className="h-5 w-5 animate-spin text-brand-black/40" />
           <p className="ml-3 text-sm text-brand-black/50">Loading talents…</p>
         </div>
@@ -143,14 +143,14 @@ export function ExclusiveTalentShortcuts() {
   // Error state
   if (error) {
     return (
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex items-center gap-2 mb-4">
           <Users className="h-4 w-4 text-brand-black/40" />
           <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
             Exclusive Talent
           </h3>
         </div>
-        <div className="rounded-2xl border border-brand-black/5 bg-brand-linen/20 p-6 text-center">
+        <div className="text-center py-4">
           <p className="text-sm text-brand-red/70">{error}</p>
         </div>
       </section>
@@ -160,8 +160,8 @@ export function ExclusiveTalentShortcuts() {
   // Empty state
   if (talents.length === 0) {
     return (
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex items-center gap-2 mb-4">
           <Users className="h-4 w-4 text-brand-black/40" />
           <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
             Exclusive Talent
@@ -170,7 +170,7 @@ export function ExclusiveTalentShortcuts() {
             Quick access to managed profiles
           </p>
         </div>
-        <div className="rounded-2xl border border-brand-black/5 bg-brand-linen/20 p-8 text-center">
+        <div className="text-center py-6">
           <p className="text-sm text-brand-black/60 mb-3">
             No exclusive talent assigned yet
           </p>
@@ -187,8 +187,8 @@ export function ExclusiveTalentShortcuts() {
 
   // Render talents
   return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-2">
+    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="flex items-center gap-2 mb-4">
         <Users className="h-4 w-4 text-brand-black/40" />
         <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
           Exclusive Talent
@@ -200,7 +200,7 @@ export function ExclusiveTalentShortcuts() {
 
       {/* Horizontal scrollable avatar row */}
       <div className="overflow-x-auto pb-2 scrollbar-hide">
-        <div className="flex gap-4 pb-4">
+        <div className="flex gap-4 pb-2">
           {talents.map((talent) => (
             <AvatarItem key={talent.id} talent={talent} />
           ))}
