@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Modal from './Modal';
+import { Modal } from './Modal';
 import SkeletonLoader from './SkeletonLoader';
 import ErrorBoundary from './ErrorBoundary';
 
