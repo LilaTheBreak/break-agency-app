@@ -65,7 +65,7 @@ const RevenueArchitectureVisualizer: React.FC<Props> = ({ talentId, onLoadingCha
   }, [talentId, onLoadingChange]);
 
   if (loading) {
-    return <SkeletonLoader count={3} />;
+    return <SkeletonLoader.Metrics count={3} />;
   }
 
   if (error) {

@@ -210,7 +210,7 @@ const OwnedAssetsHub: React.FC<Props> = ({ talentId, onLoadingChange }) => {
     ASSET_TYPES.find((t) => t.value === type) || ASSET_TYPES[ASSET_TYPES.length - 1];
 
   if (loading) {
-    return <SkeletonLoader count={3} />;
+    return <SkeletonLoader.Metrics count={3} />;
   }
 
   if (error) {

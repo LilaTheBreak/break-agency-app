@@ -88,7 +88,7 @@ const ExitReadinessScorecard: React.FC<Props> = ({ talentId, onLoadingChange }) 
   }, [talentId, onLoadingChange]);
 
   if (loading) {
-    return <SkeletonLoader count={3} />;
+    return <SkeletonLoader.Metrics count={3} />;
   }
 
   if (error) {

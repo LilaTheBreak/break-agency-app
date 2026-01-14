@@ -85,7 +85,7 @@ const EnterpriseValueDashboard: React.FC<Props> = ({ talentId, onLoadingChange }
   }, [talentId, onLoadingChange]);
 
   if (loading) {
-    return <SkeletonLoader count={3} />;
+    return <SkeletonLoader.Metrics count={3} />;
   }
 
   if (error) {
@@ -200,7 +200,7 @@ const EnterpriseValueDashboard: React.FC<Props> = ({ talentId, onLoadingChange }
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"

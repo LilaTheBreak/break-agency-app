@@ -8,10 +8,10 @@
  */
 
 import { Router } from 'express';
-import * as exitReadinessService from '../../services/exitReadinessService';
-import { requireAuth } from '../../middleware/auth';
-import { checkTalentAccess } from '../../middleware/talentAccess';
-import prisma from '../../lib/prisma';
+import * as exitReadinessService from '../../services/exitReadinessService.js';
+import { requireAuth } from '../../middleware/auth.js';
+import { checkTalentAccess } from '../../middleware/talentAccess.js';
+import prisma from '../../lib/prisma.js';
 
 const router = Router();
 
