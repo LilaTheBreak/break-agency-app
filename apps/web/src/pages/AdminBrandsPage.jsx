@@ -945,6 +945,16 @@ export function AdminBrandsPage({ session }) {
     try {
       // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
       const campaigns = normalizeApiArray(safeCampaignsState);
+      // CRITICAL: Ensure campaigns is an array before calling .filter()
+      if (!Array.isArray(campaigns)) {
+        console.error('[BRANDS PAGE] CRITICAL: normalizeApiArray did not return array in brandCampaigns:', { 
+          input: safeCampaignsState,
+          output: campaigns,
+          outputType: typeof campaigns,
+          selectedBrandId: selectedBrand?.id
+        });
+        return [];
+      }
       return campaigns
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
@@ -958,6 +968,16 @@ export function AdminBrandsPage({ session }) {
     try {
       // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
       const events = normalizeApiArray(safeEventsState);
+      // CRITICAL: Ensure events is an array before calling .filter()
+      if (!Array.isArray(events)) {
+        console.error('[BRANDS PAGE] CRITICAL: normalizeApiArray did not return array in brandEvents:', { 
+          input: safeEventsState,
+          output: events,
+          outputType: typeof events,
+          selectedBrandId: selectedBrand?.id
+        });
+        return [];
+      }
       return events
         .filter((e) => e && e.brandId === selectedBrand.id)
         .sort((a, b) => String(b.startDateTime || "").localeCompare(String(a.startDateTime || "")));
@@ -971,6 +991,16 @@ export function AdminBrandsPage({ session }) {
     try {
       // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
       const deals = normalizeApiArray(safeDealsState);
+      // CRITICAL: Ensure deals is an array before calling .filter()
+      if (!Array.isArray(deals)) {
+        console.error('[BRANDS PAGE] CRITICAL: normalizeApiArray did not return array in brandDeals:', { 
+          input: safeDealsState,
+          output: deals,
+          outputType: typeof deals,
+          selectedBrandId: selectedBrand?.id
+        });
+        return [];
+      }
       return deals
         .filter((d) => d && d.brandId === selectedBrand.id)
         .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
@@ -984,6 +1014,16 @@ export function AdminBrandsPage({ session }) {
     try {
       // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
       const contracts = normalizeApiArray(safeContractsState);
+      // CRITICAL: Ensure contracts is an array before calling .filter()
+      if (!Array.isArray(contracts)) {
+        console.error('[BRANDS PAGE] CRITICAL: normalizeApiArray did not return array in brandContracts:', { 
+          input: safeContractsState,
+          output: contracts,
+          outputType: typeof contracts,
+          selectedBrandId: selectedBrand?.id
+        });
+        return [];
+      }
       return contracts
         .filter((c) => c && c.brandId === selectedBrand.id)
         .sort((a, b) => String(b.lastUpdatedAt || b.createdAt || "").localeCompare(String(a.lastUpdatedAt || a.createdAt || "")));
@@ -997,6 +1037,18 @@ export function AdminBrandsPage({ session }) {
     try {
       // CRITICAL: Double-normalize to handle any edge cases (defense in depth)
       const contacts = normalizeApiArray(safeContactsState);
+      
+      // CRITICAL: Ensure contacts is an array before calling .filter()
+      if (!Array.isArray(contacts)) {
+        console.error('[BRANDS CRM] CRITICAL: normalizeApiArray did not return array in brandContacts:', { 
+          input: safeContactsState,
+          output: contacts,
+          outputType: typeof contacts,
+          isArray: Array.isArray(contacts),
+          selectedBrandId: selectedBrand?.id
+        });
+        return [];
+      }
       
       // Runtime guard: Warn if safeContactsState is not an array
       if (!Array.isArray(safeContactsState)) {
