@@ -255,7 +255,7 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
       await prisma.$transaction(async (tx) => {
         const thread = await tx.inboxMessage.upsert({
           where: { threadId: inboxMessageData.threadId },
-          update: inboxMessageData,
+          update: { ...inboxMessageData, userId }, // CRITICAL: Include userId in update
           create: { ...inboxMessageData, userId }
         });
         
