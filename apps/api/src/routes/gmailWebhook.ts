@@ -1,12 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../middleware/auth';
-import { syncUser, syncAllUsers } from '../services/gmail/backgroundSync';
+import { requireAuth } from '../middleware/auth.js';
+import { syncUser, syncAllUsers } from '../services/gmail/backgroundSync.js';
 import { 
   registerWebhook, 
   stopWebhook, 
   renewWebhook,
   processWebhookNotification 
-} from '../services/gmail/webhookService';
+} from '../services/gmail/webhookService.js';
 
 const router = Router();
 

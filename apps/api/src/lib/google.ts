@@ -1,6 +1,6 @@
 import { google } from "googleapis";
-import prisma from './prisma';
-import { googleConfig } from '../config/env';
+import prisma from './prisma.js';
+import { googleConfig } from '../config/env.js';
 
 /**
  * Creates an authenticated Google OAuth2 client for a user.

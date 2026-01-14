@@ -1,8 +1,8 @@
 import pdfParse from "pdf-parse";
 import textract from "textract";
-import { sendSlackAlert } from '../integrations/slack/slackClient';
-import { getDownloadUrl } from './fileService';
-import { extractImageText } from './ocrService';
+import { sendSlackAlert } from '../integrations/slack/slackClient.js';
+import { getDownloadUrl } from './fileService.js';
+import { extractImageText } from './ocrService.js';
 
 export async function extractDocumentText({
   fileId,

@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { requireAuth } from '../middleware/auth';
-import { createRateLimiter, RATE_LIMITS } from '../middleware/rateLimit';
-import * as gmailInboxController from '../controllers/gmailInboxController';
+import { requireAuth } from '../middleware/auth.js';
+import { createRateLimiter, RATE_LIMITS } from '../middleware/rateLimit.js';
+import * as gmailInboxController from '../controllers/gmailInboxController.js';
 
 const router = Router();
 

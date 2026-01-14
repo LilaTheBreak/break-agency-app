@@ -1,5 +1,5 @@
-import prisma from '../../lib/prisma';
-import { scoreBrandAffinity } from '../ai/brandAIScoringService';
+import prisma from '../../lib/prisma.js';
+import { scoreBrandAffinity } from '../ai/brandAIScoringService.js';
 
 // Note: brandRelationship, brandEvent, brandAffinitySnapshot models don't exist
 // Stubbing out to prevent errors - this feature is not fully implemented

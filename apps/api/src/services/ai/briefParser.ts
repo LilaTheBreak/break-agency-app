@@ -1,4 +1,4 @@
-import { aiClient } from './aiClient';
+import { aiClient } from './aiClient.js';
 
 export async function parseBrandBrief(raw: string) {
   const prompt = `

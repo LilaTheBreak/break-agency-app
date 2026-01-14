@@ -9,7 +9,7 @@
  * - Payout tracking
  */
 
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 import type { RevenueEvent } from "@prisma/client";
 
 const prismaClient = prisma;

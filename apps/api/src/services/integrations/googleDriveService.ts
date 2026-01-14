@@ -1,5 +1,5 @@
-import prisma from '../../lib/prisma';
-import { logError } from '../../lib/logger';
+import prisma from '../../lib/prisma.js';
+import { logError } from '../../lib/logger.js';
 import { google } from "googleapis";
 
 // Google OAuth2 configuration

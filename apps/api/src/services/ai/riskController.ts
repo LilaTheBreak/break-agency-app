@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as riskService from '../riskService';
+import * as riskService from '../riskService.js';
 
 const AnalyzeTextSchema = z.object({
   text: z.string().min(10),

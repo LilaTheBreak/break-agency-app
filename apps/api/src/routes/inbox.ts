@@ -1,7 +1,7 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import { createRateLimiter, RATE_LIMITS } from '../middleware/rateLimit';
+import prisma from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
+import { createRateLimiter, RATE_LIMITS } from '../middleware/rateLimit.js';
 
 // Stub implementations for missing services
 const classifyMessage = async (message: any) => ({ category: "general" });

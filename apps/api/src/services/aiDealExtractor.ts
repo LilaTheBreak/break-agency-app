@@ -1,6 +1,6 @@
-import { dealExtractionSchema } from '../ai/schemas/dealExtractionSchema';
-import { safeModel } from './ai/aiClient';
-import { sendSlackAlert } from '../integrations/slack/slackClient';
+import { dealExtractionSchema } from '../ai/schemas/dealExtractionSchema.js';
+import { safeModel } from './ai/aiClient.js';
+import { sendSlackAlert } from '../integrations/slack/slackClient.js';
 
 export async function extractDealTerms({ text }: { text: string }) {
   try {

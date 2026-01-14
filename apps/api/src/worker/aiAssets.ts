@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { protect } from '../middleware/authMiddleware';
-import { generateDeliverableAssets } from '../controllers/ai/assetController';
+import { protect } from '../middleware/authMiddleware.js';
+import { generateDeliverableAssets } from '../controllers/ai/assetController.js';
 
 const router = Router();
 

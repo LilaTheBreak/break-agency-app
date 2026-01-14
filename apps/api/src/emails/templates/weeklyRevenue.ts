@@ -1,4 +1,4 @@
-import type { EmailTemplate } from './types';
+import type { EmailTemplate } from './types.js';
 
 export const weeklyRevenueTemplate: EmailTemplate = {
   subject: () => "The Break Co. weekly revenue report",

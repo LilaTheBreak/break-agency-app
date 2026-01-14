@@ -1,6 +1,6 @@
 import axios from "axios";
-import prisma from '../../lib/prisma';
-import { generateId } from '../../lib/utils';
+import prisma from '../../lib/prisma.js';
+import { generateId } from '../../lib/utils.js';
 
 const XERO_CLIENT_ID = process.env.XERO_CLIENT_ID;
 const XERO_CLIENT_SECRET = process.env.XERO_CLIENT_SECRET;

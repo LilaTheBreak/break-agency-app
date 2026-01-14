@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth } from '../../middleware/auth';
-import { oauthCallbackLimiter } from '../../middleware/rateLimiter';
-import prisma from '../../lib/prisma';
+import { requireAuth } from '../../middleware/auth.js';
+import { oauthCallbackLimiter } from '../../middleware/rateLimiter.js';
+import prisma from '../../lib/prisma.js';
 import axios from 'axios';
 
 const router = Router();

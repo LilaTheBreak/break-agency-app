@@ -13,9 +13,9 @@
  * 7. Rollback on any error
  */
 
-import prisma from './prisma';
-import { logAdminActivity } from './adminActivityLogger';
-import { logError } from './logger';
+import prisma from './prisma.js';
+import { logAdminActivity } from './adminActivityLogger.js';
+import { logError } from './logger.js';
 
 export interface MergeRequest {
   entityType: "talent" | "brands" | "deals";

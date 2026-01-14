@@ -1,23 +1,23 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 import {
   uploadFile as uploadFileToGCS,
   getSignedUrl as getGCSignedUrl,
   deleteFile as deleteFileFromGCS,
   buildObjectKey
-} from '../services/storage/googleCloudStorage';
+} from '../services/storage/googleCloudStorage.js';
 import {
   requestUploadUrl,
   confirmUpload,
   listUserFiles,
   getDownloadUrl
-} from '../services/fileService';
-import { isAdmin as checkIsAdmin } from '../lib/roleHelpers';
-import { requireAuth } from '../middleware/auth';
-import { logAuditEvent, logDestructiveAction } from '../lib/auditLogger';
-import { logError } from '../lib/logger';
-import { getEffectiveUserId, enforceDataScoping } from '../lib/dataScopingHelpers';
-// import slackClient from '../integrations/slack/slackClient';
+} from '../services/fileService.js';
+import { isAdmin as checkIsAdmin } from '../lib/roleHelpers.js';
+import { requireAuth } from '../middleware/auth.js';
+import { logAuditEvent, logDestructiveAction } from '../lib/auditLogger.js';
+import { logError } from '../lib/logger.js';
+import { getEffectiveUserId, enforceDataScoping } from '../lib/dataScopingHelpers.js';
+// import slackClient from '../integrations/slack/slackClient.js';
 
 const router = Router();
 

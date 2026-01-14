@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { asyncHandler } from '../middleware/asyncHandler';
-import { tagAsset } from '../services/ai/creativeTaggingService';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { tagAsset } from '../services/ai/creativeTaggingService.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

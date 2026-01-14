@@ -1,7 +1,7 @@
 import axios from "axios";
-import prisma from '../../lib/prisma';
-import { getInstagramInboxToken } from './instagramInboxAuth';
-import { generateId } from '../../lib/utils';
+import prisma from '../../lib/prisma.js';
+import { getInstagramInboxToken } from './instagramInboxAuth.js';
+import { generateId } from '../../lib/utils.js';
 
 interface SyncStats {
   imported: number;

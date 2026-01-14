@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import { createPdfFromHtml } from './pdfService';
+import prisma from '../lib/prisma.js';
+import { createPdfFromHtml } from './pdfService.js';
 
 // Note: contractTemplate model doesn't exist in schema
 export async function buildContractFromTerms(terms: any, templateType = "brand_deal") {

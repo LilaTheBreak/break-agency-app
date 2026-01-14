@@ -1,4 +1,4 @@
-import { executeAgentTask } from '../../agent/agentExecutor';
+import { executeAgentTask } from '../../agent/agentExecutor.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function agentProcessor(job: any) {

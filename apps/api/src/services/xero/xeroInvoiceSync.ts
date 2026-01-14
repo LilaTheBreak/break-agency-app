@@ -1,6 +1,6 @@
-import prisma from '../../lib/prisma';
-import { createXeroInvoice } from './xeroService';
-import { logError } from '../../lib/logger';
+import prisma from '../../lib/prisma.js';
+import { createXeroInvoice } from './xeroService.js';
+import { logError } from '../../lib/logger.js';
 
 /**
  * Pushes an invoice to Xero when it's created or updated

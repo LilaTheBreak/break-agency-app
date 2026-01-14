@@ -1,11 +1,11 @@
 import express from 'express';
 import { DealStage } from '@prisma/client';
-import { requireAuth } from '../middleware/auth';
-import { requireRole } from '../middleware/requireRole';
-import { logError } from '../lib/logger';
-import prisma from '../lib/prisma';
-import { sendList, sendEmptyList, sendSuccess, sendError, handleApiError } from '../utils/apiResponse';
-import { validateRequestSafe, OpportunityCreateSchema, OpportunityUpdateSchema } from '../utils/validationSchemas';
+import { requireAuth } from '../middleware/auth.js';
+import { requireRole } from '../middleware/requireRole.js';
+import { logError } from '../lib/logger.js';
+import prisma from '../lib/prisma.js';
+import { sendList, sendEmptyList, sendSuccess, sendError, handleApiError } from '../utils/apiResponse.js';
+import { validateRequestSafe, OpportunityCreateSchema, OpportunityUpdateSchema } from '../utils/validationSchemas.js';
 import * as Sentry from '@sentry/node';
 
 const router = express.Router();

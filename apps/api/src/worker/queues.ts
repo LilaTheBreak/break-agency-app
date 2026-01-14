@@ -1,4 +1,4 @@
-import { createSafeQueue } from '../queues/index';
+import { createSafeQueue } from '../queues/index.js';
 
 export const gmailQueue = createSafeQueue("gmail-ingest");
 export const socialQueue = createSafeQueue("social-refresh");

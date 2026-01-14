@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import { CronJobDefinition } from './types';
+import prisma from '../lib/prisma.js';
+import { CronJobDefinition } from './types.js';
 
 export const flushStaleApprovalsJob: CronJobDefinition = {
   name: "flush-stale-approvals",

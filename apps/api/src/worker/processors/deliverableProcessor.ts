@@ -1,5 +1,5 @@
-import prisma from '../../lib/prisma';
-import { sendSlackAlert } from '../../integrations/slack/slackClient';
+import prisma from '../../lib/prisma.js';
+import { sendSlackAlert } from '../../integrations/slack/slackClient.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function deliverableProcessor(job: any) {

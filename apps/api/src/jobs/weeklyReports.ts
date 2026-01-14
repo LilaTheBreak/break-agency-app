@@ -1,6 +1,6 @@
-import prisma from '../lib/prisma';
-import { generateCreatorInsights } from '../services/insightService';
-import { sendTemplatedEmail } from '../services/email/emailClient';
+import prisma from '../lib/prisma.js';
+import { generateCreatorInsights } from '../services/insightService.js';
+import { sendTemplatedEmail } from '../services/email/emailClient.js';
 
 export async function generateWeeklyReports() {
   // TODO: CreatorWeeklyReport model not yet implemented in schema

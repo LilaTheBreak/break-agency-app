@@ -4,8 +4,8 @@
  */
 
 import { Router } from 'express';
-import prisma from '../lib/prisma';
-import { createAuthToken, SESSION_COOKIE_NAME } from '../lib/jwt';
+import prisma from '../lib/prisma.js';
+import { createAuthToken, SESSION_COOKIE_NAME } from '../lib/jwt.js';
 
 const router = Router();
 

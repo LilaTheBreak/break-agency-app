@@ -1,4 +1,4 @@
-import { runCreatorFit } from '../../services/strategy/creatorFitService';
+import { runCreatorFit } from '../../services/strategy/creatorFitService.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function creatorFitProcessor(job: any) {

@@ -11,7 +11,7 @@
  */
 
 import { Request, Response, NextFunction } from "express";
-import { googleConfig, validateProductionCredentials } from '../config/env';
+import { googleConfig, validateProductionCredentials } from '../config/env.js';
 
 interface GmailValidationStatus {
   enabled: boolean;

@@ -1,4 +1,4 @@
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 
 // Note: brandCampaignPrediction and opportunityCluster models don't exist in schema
 export async function buildOpportunityClusters(userId: string) {

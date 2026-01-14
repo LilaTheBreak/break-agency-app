@@ -1,9 +1,9 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { docusignProvider } from '../services/signature/providers/docusignProvider';
-import { nativeProvider } from '../services/signature/providers/nativeProvider';
-import { uploadFile } from '../services/storage/googleCloudStorage';
-import { logError } from '../lib/logger';
+import prisma from '../lib/prisma.js';
+import { docusignProvider } from '../services/signature/providers/docusignProvider.js';
+import { nativeProvider } from '../services/signature/providers/nativeProvider.js';
+import { uploadFile } from '../services/storage/googleCloudStorage.js';
+import { logError } from '../lib/logger.js';
 
 const router = Router();
 

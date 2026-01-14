@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { SignatureProvider } from '../signatureProvider';
+import { SignatureProvider } from '../signatureProvider.js';
 
 export const nativeProvider: SignatureProvider = {
   async sendSignatureRequest() {

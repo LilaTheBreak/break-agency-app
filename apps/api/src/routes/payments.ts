@@ -3,12 +3,12 @@ import express, { Router, type Request, type Response } from "express";
 import Stripe from "stripe";
 import crypto from "node:crypto";
 import { z } from "zod";
-import prisma from '../lib/prisma';
-import { stripeClient, handleStripeEvent } from '../services/stripeService';
-import { sendTemplatedEmail } from '../services/email/emailClient';
-import { logError } from '../lib/logger';
-import { requireAuth } from '../middleware/auth';
-import { requireRole } from '../middleware/requireRole';
+import prisma from '../lib/prisma.js';
+import { stripeClient, handleStripeEvent } from '../services/stripeService.js';
+import { sendTemplatedEmail } from '../services/email/emailClient.js';
+import { logError } from '../lib/logger.js';
+import { requireAuth } from '../middleware/auth.js';
+import { requireRole } from '../middleware/requireRole.js';
 
 const router = Router();
 

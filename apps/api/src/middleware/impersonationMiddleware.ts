@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { verifyAuthToken } from '../lib/jwt';
+import { verifyAuthToken } from '../lib/jwt.js';
 
 /**
  * IMPERSONATION MIDDLEWARE

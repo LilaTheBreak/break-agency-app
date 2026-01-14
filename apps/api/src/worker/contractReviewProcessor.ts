@@ -1,7 +1,7 @@
 import { Job } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
-import { runContractReviewEngine } from '../../services/ai/contracts/contractReviewEngine';
-// import { fileService } from '../../services/fileService'; // Assume a service to get files from S3
+import { runContractReviewEngine } from '../../services/ai/contracts/contractReviewEngine.js';
+// import { fileService } from '../../services/fileService.js'; // Assume a service to get files from S3
 
 const prisma = new PrismaClient();
 

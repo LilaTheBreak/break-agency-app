@@ -4,8 +4,8 @@
  */
 
 import { Router } from "express";
-import { requireAuth } from '../middleware/auth';
-import * as rosterController from '../controllers/rosterController';
+import { requireAuth } from '../middleware/auth.js';
+import * as rosterController from '../controllers/rosterController.js';
 
 const router = Router();
 

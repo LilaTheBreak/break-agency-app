@@ -1,4 +1,4 @@
-import type { EmailTemplate } from './types';
+import type { EmailTemplate } from './types.js';
 
 export const accountSetupTemplate: EmailTemplate = {
   subject: (data) => `Welcome to Break - Complete Your Account Setup`,

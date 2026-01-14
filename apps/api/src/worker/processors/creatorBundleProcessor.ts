@@ -1,4 +1,4 @@
-import { generateCreatorBundle } from '../../services/creatorBundleService';
+import { generateCreatorBundle } from '../../services/creatorBundleService.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function creatorBundleProcessor(job: any) {

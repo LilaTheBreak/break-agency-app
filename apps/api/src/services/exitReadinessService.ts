@@ -14,7 +14,7 @@
  * - Recurring Revenue % (10%)
  */
 
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 
 export enum ExitReadinessCategory {
   UNDERDEVELOPED = 'UNDERDEVELOPED', // 0-35

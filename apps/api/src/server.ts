@@ -10,224 +10,224 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import * as Sentry from "@sentry/node";
 
-import routes from './routes/index';
-import activityRouter from './routes/activity';
-import auditRouter from './routes/audit';
+import routes from './routes/index.js';
+import activityRouter from './routes/activity.js';
+import auditRouter from './routes/audit.js';
 
 // Middleware
-import { requestContextMiddleware } from './middleware/requestContext';
-import { auditMiddleware } from './middleware/audit';
-import { attachUserFromSession } from './middleware/auth';
-import { impersonationMiddleware } from './middleware/impersonationMiddleware';
-import { validateGmailCredentials, requireGmailEnabled } from './middleware/gmailValidation';
+import { requestContextMiddleware } from './middleware/requestContext.js';
+import { auditMiddleware } from './middleware/audit.js';
+import { attachUserFromSession } from './middleware/auth.js';
+import { impersonationMiddleware } from './middleware/impersonationMiddleware.js';
+import { validateGmailCredentials, requireGmailEnabled } from './middleware/gmailValidation.js';
 
 // Jobs / Cron
-import { registerEmailQueueJob } from './jobs/emailQueue';
-import { registerCronJobs } from './cron/index';
-import { initializeScheduledExports } from './services/scheduledExportService';
-import { safeAsync } from './utils/safeAsync';
+import { registerEmailQueueJob } from './jobs/emailQueue.js';
+import { registerCronJobs } from './cron/index.js';
+import { initializeScheduledExports } from './services/scheduledExportService.js';
+import { safeAsync } from './utils/safeAsync.js';
 
 // Webhooks
-import { stripeWebhookHandler } from './routes/webhooks';
-import signatureWebhookRouter from './routes/signatureWebhooks';
-import { metaWebhookVerificationHandler } from './routes/metaWebhook';
+import { stripeWebhookHandler } from './routes/webhooks.js';
+import signatureWebhookRouter from './routes/signatureWebhooks.js';
+import { metaWebhookVerificationHandler } from './routes/metaWebhook.js';
 
 // Core Routers
-import paymentsRouter from './routes/payments';
-import filesRouter from './routes/files';
+import paymentsRouter from './routes/payments.js';
+import filesRouter from './routes/files.js';
 
 // Gmail & Inbox
-import gmailAuthRouter from './routes/gmailAuth';
-import gmailAnalysisRouter from './routes/gmailAnalysis';
-import gmailInboxRouter from './routes/gmailInbox';
-import gmailMessagesRouter from './routes/gmailMessages';
-import gmailWebhookRouter from './routes/gmailWebhook';
-import gmailHealthRouter from './routes/gmailHealth';
-import cronRouter from './routes/cron';
-import inboxAwaitingRouter from './routes/inboxAwaitingReply';
-import inboxPriorityRouter from './routes/inboxPriority';
-import inboxTrackingRouter from './routes/inboxTracking';
-import inboxClickTrackingRouter from './routes/inboxClickTracking';
-import inboxAnalyticsRouter from './routes/inboxAnalytics';
-import inboxPriorityFeedRouter from './routes/inboxPriorityFeed';
-import inboxCountersRouter from './routes/inboxCounters';
-import inboxThreadRouter from './routes/inboxThread';
-import inboxRescanRouter from './routes/inboxRescan';
-import inboxCategoriesRouter from './routes/inboxCategories';
-import unifiedInboxRouter from './routes/unifiedInbox';
-import emailOpportunitiesRouter from './routes/emailOpportunities';
+import gmailAuthRouter from './routes/gmailAuth.js';
+import gmailAnalysisRouter from './routes/gmailAnalysis.js';
+import gmailInboxRouter from './routes/gmailInbox.js';
+import gmailMessagesRouter from './routes/gmailMessages.js';
+import gmailWebhookRouter from './routes/gmailWebhook.js';
+import gmailHealthRouter from './routes/gmailHealth.js';
+import cronRouter from './routes/cron.js';
+import inboxAwaitingRouter from './routes/inboxAwaitingReply.js';
+import inboxPriorityRouter from './routes/inboxPriority.js';
+import inboxTrackingRouter from './routes/inboxTracking.js';
+import inboxClickTrackingRouter from './routes/inboxClickTracking.js';
+import inboxAnalyticsRouter from './routes/inboxAnalytics.js';
+import inboxPriorityFeedRouter from './routes/inboxPriorityFeed.js';
+import inboxCountersRouter from './routes/inboxCounters.js';
+import inboxThreadRouter from './routes/inboxThread.js';
+import inboxRescanRouter from './routes/inboxRescan.js';
+import inboxCategoriesRouter from './routes/inboxCategories.js';
+import unifiedInboxRouter from './routes/unifiedInbox.js';
+import emailOpportunitiesRouter from './routes/emailOpportunities.js';
 
 // Platform Inboxes (V1.1)
-import instagramInboxRouter from './routes/instagramInbox';
-import tiktokInboxRouter from './routes/tiktokInbox';
-import whatsappInboxRouter from './routes/whatsappInbox';
+import instagramInboxRouter from './routes/instagramInbox.js';
+import tiktokInboxRouter from './routes/tiktokInbox.js';
+import whatsappInboxRouter from './routes/whatsappInbox.js';
 
 // AI
-import aiRouter from './routes/ai';
+import aiRouter from './routes/ai.js';
 
 // Brand Campaigns
-import campaignsRouter from './routes/campaigns';
+import campaignsRouter from './routes/campaigns.js';
 
 // Authenticity / Risk / Suitability
-import authenticityRouter from './routes/authenticity';
-import opportunitiesRouter from './routes/opportunities';
-import submissionsRouter from './routes/submissions';
-import resourcesRouter from './routes/resources';
-import riskRouter from './routes/risk';
-import suitabilityRouter from './routes/suitability';
+import authenticityRouter from './routes/authenticity.js';
+import opportunitiesRouter from './routes/opportunities.js';
+import submissionsRouter from './routes/submissions.js';
+import resourcesRouter from './routes/resources.js';
+import riskRouter from './routes/risk.js';
+import suitabilityRouter from './routes/suitability.js';
 
 // Auth
-import authRouter from './routes/auth';
+import authRouter from './routes/auth.js';
 
 // Dev Auth (development only)
-import devAuthRouter from './routes/devAuth';
+import devAuthRouter from './routes/devAuth.js';
 
 // User Approvals
-import userApprovalsRouter from './routes/userApprovals';
-import approvalsRouter from './routes/approvals';
+import userApprovalsRouter from './routes/userApprovals.js';
+import approvalsRouter from './routes/approvals.js';
 
 // Queues
-import queuesRouter from './routes/queues';
+import queuesRouter from './routes/queues.js';
 
 // Users Management
-import usersRouter from './routes/users';
-import setupRouter from './routes/setup';
-import impersonateRouter from './routes/impersonate';
+import usersRouter from './routes/users.js';
+import setupRouter from './routes/setup.js';
+import impersonateRouter from './routes/impersonate.js';
 
 // Exclusive Talent
-import exclusiveRouter from './routes/exclusive';
-import dashboardExclusiveTalentRouter from './routes/dashboardExclusiveTalent';
+import exclusiveRouter from './routes/exclusive.js';
+import dashboardExclusiveTalentRouter from './routes/dashboardExclusiveTalent.js';
 
 // Creator Onboarding
-import creatorRouter from './routes/creator';
+import creatorRouter from './routes/creator.js';
 
 // Analytics
-import analyticsRouter from './routes/analytics';
+import analyticsRouter from './routes/analytics.js';
 
 // Revenue
-import revenueRouter from './routes/revenue';
+import revenueRouter from './routes/revenue.js';
 
 // Dashboard Customization
-import dashboardCustomizationRouter from './routes/dashboardCustomization';
+import dashboardCustomizationRouter from './routes/dashboardCustomization.js';
 
 // Brands (V1.0 - First-class user type)
-import brandsRouter from './routes/brands';
-import brandTeamRouter from './routes/brandTeam';
-import brandAuditRouter from './routes/brandAudit';
+import brandsRouter from './routes/brands.js';
+import brandTeamRouter from './routes/brandTeam.js';
+import brandAuditRouter from './routes/brandAudit.js';
 
 // Community Management (Talent)
-import communityRouter from './routes/community';
+import communityRouter from './routes/community.js';
 
 // Admin Finance
-import adminFinanceRouter from './routes/admin/finance';
+import adminFinanceRouter from './routes/admin/finance.js';
 
 // Admin Talent
-import adminTalentRouter from './routes/admin/talent';
-import adminTalentSettingsRouter from './routes/admin/talentSettings';
-import talentAccessRouter from './routes/talentAccess';
-import meetingsRouter from './routes/admin/meetings';
+import adminTalentRouter from './routes/admin/talent.js';
+import adminTalentSettingsRouter from './routes/admin/talentSettings.js';
+import talentAccessRouter from './routes/talentAccess.js';
+import meetingsRouter from './routes/admin/meetings.js';
 
 // Admin Deals
-import adminDealsRouter from './routes/admin/deals';
+import adminDealsRouter from './routes/admin/deals.js';
 
 // Admin Duplicates
-import adminDuplicatesRouter from './routes/admin/duplicates';
+import adminDuplicatesRouter from './routes/admin/duplicates.js';
 
 // Admin Diagnostics
-import adminDiagnosticsRouter from './routes/admin/diagnostics';
+import adminDiagnosticsRouter from './routes/admin/diagnostics.js';
 
 // Admin Analytics (Global analytics command centre)
-import adminAnalyticsRouter from './routes/admin/analytics';
+import adminAnalyticsRouter from './routes/admin/analytics.js';
 
 // CMS: Block-Based Content Management
-import contentRouter from './routes/content';
-import { ensureCmsPagesExist } from './lib/cmsSeeder';
+import contentRouter from './routes/content.js';
+import { ensureCmsPagesExist } from './lib/cmsSeeder.js';
 
 // Admin Users
-import adminUsersRouter from './routes/adminUsers';
+import adminUsersRouter from './routes/adminUsers.js';
 
 // Creator Goals & Wellness
-import creatorGoalsRouter from './routes/creatorGoals';
-import wellnessCheckinsRouter from './routes/wellnessCheckins';
+import creatorGoalsRouter from './routes/creatorGoals.js';
+import wellnessCheckinsRouter from './routes/wellnessCheckins.js';
 
 // Deals
-import dealsRouter from './routes/deals';
-import dealTimelineRouter from './routes/dealTimeline';
-import dealInsightsRouter from './routes/dealInsights';
-import dealIntelligenceRouter from './routes/dealIntelligence';
-import dealManagementRouter from './routes/dealManagement';
+import dealsRouter from './routes/deals.js';
+import dealTimelineRouter from './routes/dealTimeline.js';
+import dealInsightsRouter from './routes/dealInsights.js';
+import dealIntelligenceRouter from './routes/dealIntelligence.js';
+import dealManagementRouter from './routes/dealManagement.js';
 // dealPackagesRouter removed - deal packages schema models were removed
 
 // Deliverables / Contracts
-import deliverablesRouter from './routes/deliverables';
-import contractRouter from './routes/contracts';
+import deliverablesRouter from './routes/deliverables.js';
+import contractRouter from './routes/contracts.js';
 
 // Campaigns
-import campaignBuilderRouter from './routes/campaignBuilder';
-import campaignAutoRouter from './routes/campaignAuto';
-import campaignAutoDebugRouter from './routes/campaignAutoDebug';
-import campaignAutoPreviewRouter from './routes/campaignAutoPreview';
-import briefsRouter from './routes/briefs';
+import campaignBuilderRouter from './routes/campaignBuilder.js';
+import campaignAutoRouter from './routes/campaignAuto.js';
+import campaignAutoDebugRouter from './routes/campaignAutoDebug.js';
+import campaignAutoPreviewRouter from './routes/campaignAutoPreview.js';
+import briefsRouter from './routes/briefs.js';
 
 // Brand CRM / Strategy
-import brandCRMRouter from './routes/brandCRM';
-import strategyRouter from './routes/strategy';
-import creatorFitRouter from './routes/creatorFit';
-import rosterRouter from './routes/roster';
+import brandCRMRouter from './routes/brandCRM.js';
+import strategyRouter from './routes/strategy.js';
+import creatorFitRouter from './routes/creatorFit.js';
+import rosterRouter from './routes/roster.js';
 
 // CRM: Brands, Contacts, Outreach, Campaigns, Events & Deals
-import crmBrandsRouter from './routes/crmBrands';
-import crmContactsRouter from './routes/crmContacts';
-import outreachRecordsRouter from './routes/outreachRecords';
-import crmCampaignsRouter from './routes/crmCampaigns';
-import crmEventsRouter from './routes/crmEvents';
-import crmDealsRouter from './routes/crmDeals';
-import crmContractsRouter from './routes/crmContracts';
-import crmTasksRouter from './routes/crmTasks';
+import crmBrandsRouter from './routes/crmBrands.js';
+import crmContactsRouter from './routes/crmContacts.js';
+import outreachRecordsRouter from './routes/outreachRecords.js';
+import crmCampaignsRouter from './routes/crmCampaigns.js';
+import crmEventsRouter from './routes/crmEvents.js';
+import crmDealsRouter from './routes/crmDeals.js';
+import crmContractsRouter from './routes/crmContracts.js';
+import crmTasksRouter from './routes/crmTasks.js';
 
 // Bundles
-import bundlesRouter from './routes/bundles';
+import bundlesRouter from './routes/bundles.js';
 
 // Notifications
-import notificationsRouter from './routes/notifications';
+import notificationsRouter from './routes/notifications.js';
 
 // Calendar Intelligence
-import calendarIntelligenceRouter from './routes/calendarIntelligence';
-import calendarRouter from './routes/calendar';
+import calendarIntelligenceRouter from './routes/calendarIntelligence.js';
+import calendarRouter from './routes/calendar.js';
 
 // Integrations (V1.1)
-import integrationsRouter from './routes/integrations';
+import integrationsRouter from './routes/integrations.js';
 
 // Outreach System
-import outreachRouter from './routes/outreach';
-import outreachLeadsRouter from './routes/outreachLeads';
-import outreachSequencesRouter from './routes/outreachSequences';
-import outreachTemplatesRouter from './routes/outreachTemplates';
-import outreachMetricsRouter from './routes/outreachMetrics';
-import salesOpportunitiesRouter from './routes/salesOpportunities';
+import outreachRouter from './routes/outreach.js';
+import outreachLeadsRouter from './routes/outreachLeads.js';
+import outreachSequencesRouter from './routes/outreachSequences.js';
+import outreachTemplatesRouter from './routes/outreachTemplates.js';
+import outreachMetricsRouter from './routes/outreachMetrics.js';
+import salesOpportunitiesRouter from './routes/salesOpportunities.js';
 
 // Agent
-import agentRouter from './routes/agent';
+import agentRouter from './routes/agent.js';
 
 // Threads
-import threadRouter from './routes/threads';
+import threadRouter from './routes/threads.js';
 
 // Insights
-import insightsRouter from './routes/insights';
+import insightsRouter from './routes/insights.js';
 
 // Health
-import { healthCheck, detailedHealthCheck, cronStatusCheck } from './routes/health';
+import { healthCheck, detailedHealthCheck, cronStatusCheck } from './routes/health.js';
 
 // Monitoring utilities
-import { normalizeError } from './utils/errorNormalizer';
-import { sendAlert, logErrorForSummary } from './utils/alerting';
+import { normalizeError } from './utils/errorNormalizer.js';
+import { sendAlert, logErrorForSummary } from './utils/alerting.js';
 
 // Performance monitoring
-import { initializeSlowQueryLogging, requestDurationMiddleware, startMemoryTracking } from './utils/slowQueryDetection';
-import prisma from './db/client';
+import { initializeSlowQueryLogging, requestDurationMiddleware, startMemoryTracking } from './utils/slowQueryDetection.js';
+import prisma from './db/client.js';
 
 // Performance dashboard
-import performanceRouter from './routes/admin/performance';
+import performanceRouter from './routes/admin/performance.js';
 
 // Load .env only in non-production environments (development/staging)
 if (process.env.NODE_ENV !== 'production') {
@@ -254,7 +254,7 @@ console.log(">>> GOOGLE_APPLICATION_CREDENTIALS_JSON =", process.env.GOOGLE_APPL
 // ------------------------------------------------------
 // VALIDATE PRODUCTION CREDENTIALS
 // ------------------------------------------------------
-import { validateProductionCredentials } from './lib/env';
+import { validateProductionCredentials } from './lib/env.js';
 
 // ------------------------------------------------------
 // VALIDATE META WEBHOOK VERIFY TOKEN
@@ -270,7 +270,7 @@ if (!process.env.WEBHOOK_VERIFY_TOKEN) {
 // ------------------------------------------------------
 // VALIDATE GOOGLE CLOUD STORAGE CONFIGURATION
 // ------------------------------------------------------
-import { validateGCSConfig } from './services/storage/googleCloudStorage';
+import { validateGCSConfig } from './services/storage/googleCloudStorage.js';
 
 const gcsValidation = validateGCSConfig();
 if (!gcsValidation.valid) {
@@ -456,7 +456,7 @@ app.use(impersonationMiddleware);
 // These middleware provide production safety for impersonation:
 // 1. Write blocking - only GET/HEAD/OPTIONS allowed while impersonating
 // 2. Audit logging - log all impersonation requests
-import { impersonationWriteBlocker, impersonationAuditLog } from './middleware/impersonationGuards';
+import { impersonationWriteBlocker, impersonationAuditLog } from './middleware/impersonationGuards.js';
 app.use(impersonationWriteBlocker);
 app.use(impersonationAuditLog);
 
@@ -682,10 +682,10 @@ app.use("/api/contracts", contractRouter);
 app.use("/api/deliverables", deliverablesRouter);
 
 // New contract and deliverable workflow (manual-first, with templates and file upload)
-import deliverablesV2Router from './routes/deliverables-v2';
+import deliverablesV2Router from './routes/deliverables-v2.js';
 
 // Phase 5: Global Search
-import searchRouter from './routes/search';
+import searchRouter from './routes/search.js';
 app.use("/api/deliverables-v2", deliverablesV2Router);
 app.use("/api/search", searchRouter);
 

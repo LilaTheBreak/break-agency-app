@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../middleware/auth';
-import prisma from '../lib/prisma';
-import { isAdmin } from '../lib/roleHelpers';
-import { sendSuccess, sendError } from '../utils/apiResponse';
-import { logAdminActivity } from '../lib/adminActivityLogger';
+import { requireAuth } from '../middleware/auth.js';
+import prisma from '../lib/prisma.js';
+import { isAdmin } from '../lib/roleHelpers.js';
+import { sendSuccess, sendError } from '../utils/apiResponse.js';
+import { logAdminActivity } from '../lib/adminActivityLogger.js';
 import multer from "multer";
 import crypto from "crypto";
 import fs from "fs";

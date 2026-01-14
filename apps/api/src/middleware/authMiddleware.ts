@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
-import type { SessionUser } from '../lib/session';
-import { buildSessionUser } from '../lib/session';
+import type { SessionUser } from '../lib/session.js';
+import { buildSessionUser } from '../lib/session.js';
 // Assume you have a way to verify a session token, e.g., using Clerk, JWT, etc.
 // import { clerkClient } from '@clerk/clerk-sdk-node';
 

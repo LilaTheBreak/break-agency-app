@@ -9,7 +9,7 @@
  * - Flexible commission structures
  */
 
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 
 // Type alias for revenue event (generated from Prisma after migration)
 type RevenueEvent = any;

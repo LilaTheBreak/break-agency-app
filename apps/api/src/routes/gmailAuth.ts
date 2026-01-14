@@ -1,12 +1,12 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { getGmailAuthUrl, exchangeCodeForTokens } from '../integrations/gmail/googleAuth';
+import prisma from '../lib/prisma.js';
+import { getGmailAuthUrl, exchangeCodeForTokens } from '../integrations/gmail/googleAuth.js';
 import { google } from "googleapis";
-import { googleConfig } from '../config/env';
-import { refreshAccessToken } from '../integrations/gmail/googleAuth';
-import { requireAuth } from '../middleware/auth';
-import { oauthCallbackLimiter } from '../middleware/rateLimiter';
-import { getFrontendUrl } from '../config/frontendUrl';
+import { googleConfig } from '../config/env.js';
+import { refreshAccessToken } from '../integrations/gmail/googleAuth.js';
+import { requireAuth } from '../middleware/auth.js';
+import { oauthCallbackLimiter } from '../middleware/rateLimiter.js';
+import { getFrontendUrl } from '../config/frontendUrl.js';
 
 const router = Router();
 

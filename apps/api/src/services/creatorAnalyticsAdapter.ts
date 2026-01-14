@@ -1,5 +1,5 @@
-import { prisma } from '../utils/prismaClient';
-import { fetchAnalyticsSnapshot, fetchSocialPosts } from '../lib/socialIntegrations';
+import { prisma } from '../utils/prismaClient.js';
+import { fetchAnalyticsSnapshot, fetchSocialPosts } from '../lib/socialIntegrations.js';
 
 /**
  * Creator Analytics Adapter — Transformation layer for safe analytics exposure

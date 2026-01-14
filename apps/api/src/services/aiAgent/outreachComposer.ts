@@ -1,5 +1,5 @@
-import { loadAIContext } from './aiContextService';
-import prisma from '../../lib/prisma';
+import { loadAIContext } from './aiContextService.js';
+import prisma from '../../lib/prisma.js';
 
 export async function generateOutreachMessage(userId: string, brandName: string) {
   const context = await loadAIContext(userId);

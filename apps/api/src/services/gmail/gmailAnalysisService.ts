@@ -1,8 +1,8 @@
 import { InboundEmail, Prisma } from "@prisma/client";
 import OpenAI from "openai";
-import prisma from '../../lib/prisma';
-import { cleanEmailBody } from './gmailParser';
-import { classifyWithRules } from './gmailCategoryEngine';
+import prisma from '../../lib/prisma.js';
+import { cleanEmailBody } from './gmailParser.js';
+import { classifyWithRules } from './gmailCategoryEngine.js';
 
 // Mock queue for deal extraction pipeline
 const dealExtractorQueue = {

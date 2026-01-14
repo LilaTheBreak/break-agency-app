@@ -1,8 +1,8 @@
 import { Router, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { requireAuth } from '../middleware/auth';
-import { classifyEmailOpportunity } from '../services/emailClassifier';
-import { fetchGmailMessages } from '../services/gmailService';
+import { requireAuth } from '../middleware/auth.js';
+import { classifyEmailOpportunity } from '../services/emailClassifier.js';
+import { fetchGmailMessages } from '../services/gmailService.js';
 
 const router = Router();
 const prisma = new PrismaClient();

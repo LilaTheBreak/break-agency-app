@@ -4,7 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import * as fitScoringService from '../services/creatorFitScoringService';
+import * as fitScoringService from '../services/creatorFitScoringService.js';
 
 /**
  * POST /api/creator-fit/calculate

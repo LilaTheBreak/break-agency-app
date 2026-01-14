@@ -1,6 +1,6 @@
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 import { randomUUID } from "crypto";
-// import { logAuditEvent } from '../../lib/auditLogger'; // No req context in service
+// import { logAuditEvent } from '../../lib/auditLogger.js'; // No req context in service
 
 /**
  * Free email providers that should NOT be treated as brands

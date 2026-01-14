@@ -1,8 +1,8 @@
-import prisma from "../lib/prisma.js";
-import { InstagramAuthService } from '../services/instagram/InstagramAuthService.js';
-import { InstagramSyncService } from '../services/instagram/InstagramSyncService.js';
-import { TikTokAuthService } from '../services/tiktok/TikTokAuthService.js';
-import { TikTokSyncService } from '../services/tiktok/TikTokSyncService.js';
+import prisma from '../lib/prisma.js.js';
+import { InstagramAuthService } from '../services/instagram/InstagramAuthService.js.js';
+import { InstagramSyncService } from '../services/instagram/InstagramSyncService.js.js';
+import { TikTokAuthService } from '../services/tiktok/TikTokAuthService.js.js';
+import { TikTokSyncService } from '../services/tiktok/TikTokSyncService.js.js';
 const YouTubeAuthService = require('../services/youtube/YouTubeAuthService');
 const YouTubeSyncService = require('../services/youtube/YouTubeSyncService');
 

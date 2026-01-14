@@ -1,4 +1,4 @@
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 
 export async function loadAIContext(userId: string) {
   // creatorPersonaProfile, aIAgentMemory, interactionHistory models don't exist

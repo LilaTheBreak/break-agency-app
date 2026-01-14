@@ -1,11 +1,11 @@
 import { Router, type Request, type Response } from "express";
 import { randomUUID } from "crypto";
-import { requireAuth } from '../middleware/auth';
-import prisma from '../lib/prisma';
-import { logDestructiveAction, logAuditEvent } from '../lib/auditLogger';
-import { enrichBrandFromUrl } from '../services/brandEnrichment';
-import { logError } from '../lib/logger';
-import { isAdmin, isSuperAdmin } from '../lib/roleHelpers';
+import { requireAuth } from '../middleware/auth.js';
+import prisma from '../lib/prisma.js';
+import { logDestructiveAction, logAuditEvent } from '../lib/auditLogger.js';
+import { enrichBrandFromUrl } from '../services/brandEnrichment.js';
+import { logError } from '../lib/logger.js';
+import { isAdmin, isSuperAdmin } from '../lib/roleHelpers.js';
 
 const router = Router();
 

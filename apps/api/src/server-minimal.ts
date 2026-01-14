@@ -16,9 +16,9 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
 
-import { attachUserFromSession } from './middleware/auth';
-import devAuthRouter from './routes/devAuth';
-import adminAnalyticsRouter from './routes/admin/analytics';
+import { attachUserFromSession } from './middleware/auth.js';
+import devAuthRouter from './routes/devAuth.js';
+import adminAnalyticsRouter from './routes/admin/analytics.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;

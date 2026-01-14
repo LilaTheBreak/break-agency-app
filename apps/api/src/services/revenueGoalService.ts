@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import * as revenueSourceService from './revenueSourceService';
+import prisma from '../lib/prisma.js';
+import * as revenueSourceService from './revenueSourceService.js';
 
 // Type alias for revenue goal object (generated from Prisma after migration)
 type RevenueGoal = any;

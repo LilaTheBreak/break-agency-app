@@ -1,0 +1,98 @@
+// @ts-nocheck
+import { Router, type Request, type Response } from "express";
+import prisma from '../lib/prisma';
+import { requireAuth } from '../middleware/auth';
+import { generateWellnessAI, calculateWorkload } from '../services/wellnessAI';
+
+const router = Router();
+
+router.use("/api/wellness", requireAuth);
+
+/**
+ * POST /api/wellness/check-in
+ * Creates a new wellness check-in, generates an AI summary, and calculates a burnout risk score.
+ */
+router.post("/api/wellness/check-in", async (req: Request, res: Response) => {
+  try {
+    const { mood, stress, energy, journal } = req.body;
+    if (!mood || !stress || !energy) {
+      return res.status(400).json({ success: false, error: "Mood, stress, and energy are required." });
+    }
+
+    const workload = await (calculateWorkload as any)() as any;
+
+    const ai = await generateWellnessAI({
+      mood,
+      stress,
+      energy,
+      workload,
+      journal: journal ?? "",
+    });
+
+    const check = await prisma.wellnessCheckin.create({
+      data: {
+        id: `wellness_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        creatorId: req.user!.id,
+        energyLevel: parseInt(energy),
+        workload,
+        notes: journal || null,
+      },
+    });
+
+    return res.json({ success: true, data: { check } });
+  } catch (e) {
+    console.error("Wellness check-in failed:", e);
+    return res.status(500).json({ success: false, error: "Failed to process wellness check-in." });
+  }
+});
+
+/**
+ * GET /api/wellness/history?days=30
+ * Fetches the wellness check-in history for the logged-in user.
+ */
+router.get("/api/wellness/history", async (req: Request, res: Response) => {
+  try {
+    const days = parseInt(req.query.days as string) || 30;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const checks = await prisma.wellnessCheckin.findMany({
+      where: { creatorId: req.user!.id, createdAt: { gte: since } },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return res.json({ success: true, data: { checks } });
+  } catch (e) {
+    console.error("Failed to fetch wellness history:", e);
+    return res.status(500).json({ success: false, error: "Failed to fetch wellness history." });
+  }
+});
+
+/**
+ * GET /api/wellness/insights
+ * Fetches the aggregated wellness insights for the logged-in user.
+ */
+router.get("/api/wellness/insights", async (req: Request, res: Response) => {
+  try {
+    // Get the talent associated with this user
+    const talent = await prisma.talent.findUnique({
+      where: { userId: req.user!.id },
+      select: { id: true }
+    });
+
+    if (!talent) {
+      return res.json({ success: true, data: { insight: null } });
+    }
+
+    const insight = await prisma.wellnessCheckin.findFirst({
+      where: { creatorId: talent.id },
+      orderBy: { createdAt: "desc" }
+    });
+
+    return res.json({ success: true, data: { insight } });
+  } catch (e) {
+    console.error("Failed to fetch wellness insights:", e);
+    return res.status(500).json({ success: false, error: "Failed to fetch wellness insights." });
+  }
+});
+
+export default router;

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { trackAITokens } from './tokenTracker';
+import { trackAITokens } from './tokenTracker.js';
 
 const apiKey = process.env.OPENAI_API_KEY;
 if (!apiKey) {

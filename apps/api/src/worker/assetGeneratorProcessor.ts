@@ -1,6 +1,6 @@
 import { Job } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
-import { generateAssets } from '../../services/ai/assetGenerator';
+import { generateAssets } from '../../services/ai/assetGenerator.js';
 
 const prisma = new PrismaClient();
 

@@ -1,4 +1,4 @@
-import { processAIAgentTask } from '../../services/ai/aiAgentService';
+import { processAIAgentTask } from '../../services/ai/aiAgentService.js';
 
 // Phase 3: This processor is replaced by dealExtractionWorker (which has proper error handling)
 // Keeping for reference but it should not be used

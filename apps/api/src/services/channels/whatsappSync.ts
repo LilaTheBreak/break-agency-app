@@ -1,6 +1,6 @@
-import prisma from '../../lib/prisma';
-import { fetchWhatsAppMessages } from '../../integrations/whatsapp/whatsappClient';
-import { ingestDM } from '../inboundMessage.service';
+import prisma from '../../lib/prisma.js';
+import { fetchWhatsAppMessages } from '../../integrations/whatsapp/whatsappClient.js';
+import { ingestDM } from '../inboundMessage.service.js';
 
 const WHATSAPP_BUSINESS_ID = process.env.WHATSAPP_BUSINESS_ID;
 const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;

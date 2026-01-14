@@ -1,4 +1,4 @@
-import type { EmailTemplate } from './types';
+import type { EmailTemplate } from './types.js';
 
 export const campaignAssignedTemplate: EmailTemplate = {
   subject: (data) => `New campaign: ${data.campaignName ?? "Break activation"}`,

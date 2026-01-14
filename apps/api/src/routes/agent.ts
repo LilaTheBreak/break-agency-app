@@ -1,9 +1,9 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { agentQueue } from '../worker/queues';
-import { generateAgentPlan } from '../agent/agentPlan';
-import { loadAgentPolicy } from '../agent/agentPolicy';
-import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma.js';
+import { agentQueue } from '../worker/queues.js';
+import { generateAgentPlan } from '../agent/agentPlan.js';
+import { loadAgentPolicy } from '../agent/agentPolicy.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 

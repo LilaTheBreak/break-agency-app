@@ -9,8 +9,8 @@ import {
   getAuditSummaryHandler,
   updateAuditSourceHandler,
   deleteAuditSourceHandler,
-} from '../controllers/auditController';
-import { requireAuth } from '../middleware/auth';
+} from '../controllers/auditController.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 

@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import { reviewDeliverable } from './ai/deliverableReview';
+import prisma from '../lib/prisma.js';
+import { reviewDeliverable } from './ai/deliverableReview.js';
 
 // Note: deliverableReview model doesn't exist in schema
 export async function runDeliverableReview({

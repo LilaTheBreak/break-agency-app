@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { SubscriptionStatus } from '../types/custom';
-import { isSuperAdmin } from '../lib/roleHelpers';
+import { SubscriptionStatus } from '../types/custom.js';
+import { isSuperAdmin } from '../lib/roleHelpers.js';
 
 /**
  * Middleware to require a specific subscription status.

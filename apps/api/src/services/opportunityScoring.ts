@@ -1,4 +1,4 @@
-import type { ParsedEmail } from './emailParser';
+import type { ParsedEmail } from './emailParser.js';
 
 const KEYWORDS: Array<{ terms: string[]; score: number; label: string }> = [
   { terms: ["gift", "gifting", "seed"], score: 20, label: "gifting" },

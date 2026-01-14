@@ -1,8 +1,8 @@
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 import OpenAI from "openai";
-import { sendSlackAlert } from '../integrations/slack/slackClient';
-import { syncCalendarEvent } from './calendarSyncService';
-import { safeEnv } from '../utils/safeEnv';
+import { sendSlackAlert } from '../integrations/slack/slackClient.js';
+import { syncCalendarEvent } from './calendarSyncService.js';
+import { safeEnv } from '../utils/safeEnv.js';
 
 const OPENAI_API_KEY = safeEnv("OPENAI_API_KEY", "");
 const OPENAI_MODEL = safeEnv("OPENAI_MODEL", "gpt-4o-mini");

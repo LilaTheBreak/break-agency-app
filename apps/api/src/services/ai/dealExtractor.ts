@@ -1,5 +1,5 @@
-import { trackAITokens } from './tokenTracker';
-import { buildDealExtractionPrompt } from '../../prompts/dealExtractionPrompt';
+import { trackAITokens } from './tokenTracker.js';
+import { buildDealExtractionPrompt } from '../../prompts/dealExtractionPrompt.js';
 
 interface DealExtractionResult {
   dealValue: number | null;

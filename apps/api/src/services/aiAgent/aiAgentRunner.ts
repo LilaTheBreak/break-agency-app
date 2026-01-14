@@ -1,6 +1,6 @@
-import { sendSlackAlert } from '../../integrations/slack/slackClient';
-import { performInboxReply, performDealNegotiation, performOutreach } from './aiAgentActions';
-import { loadAIContext } from './aiContextService';
+import { sendSlackAlert } from '../../integrations/slack/slackClient.js';
+import { performInboxReply, performDealNegotiation, performOutreach } from './aiAgentActions.js';
+import { loadAIContext } from './aiContextService.js';
 
 export async function runAIAgentTask(task: {
   type: string;

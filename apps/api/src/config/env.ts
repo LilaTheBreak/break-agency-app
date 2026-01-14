@@ -1,3 +1,3 @@
 // apps/api/src/config/env.ts
 
-export { googleConfig, validateProductionCredentials } from '../lib/env';
+export { googleConfig, validateProductionCredentials } from '../lib/env.js';

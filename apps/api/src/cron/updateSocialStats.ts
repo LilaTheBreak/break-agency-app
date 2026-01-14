@@ -1,6 +1,6 @@
-import { CronJobDefinition } from './types';
-import prisma from '../lib/prisma';
-import { socialQueue } from '../worker/queues';
+import { CronJobDefinition } from './types.js';
+import prisma from '../lib/prisma.js';
+import { socialQueue } from '../worker/queues.js';
 
 // Phase 5: Enabled social stats update - schema exists and sync services are available
 export const updateSocialStatsJob: CronJobDefinition = {

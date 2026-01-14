@@ -1,18 +1,18 @@
-import type { EmailTemplateName, EmailTemplate } from './types';
-import { welcomeTemplate } from './welcome';
-import { passwordResetTemplate } from './passwordReset';
-import { creatorApplicationTemplate } from './creatorApplication';
-import { adminApprovalTemplate } from './adminApproval';
-import { campaignAssignedTemplate } from './campaignAssigned';
-import { submissionAcceptedTemplate } from './submissionAccepted';
-import { payoutSentTemplate } from './payoutSent';
-import { weeklyRevenueTemplate } from './weeklyRevenue';
-import { onboardingEmailTemplate } from './onboardingEmail';
-import { newBriefNotificationTemplate } from './newBriefNotification';
-import { payoutReminderTemplate } from './payoutReminder';
-import { invoiceOverdueTemplate } from './invoiceOverdue';
-import { systemAlertTemplate } from './systemAlert';
-import { accountSetupTemplate } from './accountSetup';
+import type { EmailTemplateName, EmailTemplate } from './types.js';
+import { welcomeTemplate } from './welcome.js';
+import { passwordResetTemplate } from './passwordReset.js';
+import { creatorApplicationTemplate } from './creatorApplication.js';
+import { adminApprovalTemplate } from './adminApproval.js';
+import { campaignAssignedTemplate } from './campaignAssigned.js';
+import { submissionAcceptedTemplate } from './submissionAccepted.js';
+import { payoutSentTemplate } from './payoutSent.js';
+import { weeklyRevenueTemplate } from './weeklyRevenue.js';
+import { onboardingEmailTemplate } from './onboardingEmail.js';
+import { newBriefNotificationTemplate } from './newBriefNotification.js';
+import { payoutReminderTemplate } from './payoutReminder.js';
+import { invoiceOverdueTemplate } from './invoiceOverdue.js';
+import { systemAlertTemplate } from './systemAlert.js';
+import { accountSetupTemplate } from './accountSetup.js';
 
 // Default template for new AI-generated templates
 const defaultTemplate: EmailTemplate = {
@@ -46,4 +46,4 @@ const templateMap: Record<EmailTemplateName, EmailTemplate> = {
 export const templates = templateMap;
 export const EMAIL_TEMPLATE_NAMES = Object.keys(templateMap) as EmailTemplateName[];
 
-export * from './types';
+export * from './types.js';

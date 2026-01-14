@@ -1,8 +1,8 @@
 // Phase 5: Enabled social refresh - schema exists and sync services are available
-import prisma from '../../lib/prisma';
-import { InstagramSyncService } from '../../services/instagram/InstagramSyncService';
-import { TikTokSyncService } from '../../services/tiktok/TikTokSyncService';
-import { YouTubeSyncService } from '../../services/youtube/YouTubeSyncService';
+import prisma from '../../lib/prisma.js';
+import { InstagramSyncService } from '../../services/instagram/InstagramSyncService.js';
+import { TikTokSyncService } from '../../services/tiktok/TikTokSyncService.js';
+import { YouTubeSyncService } from '../../services/youtube/YouTubeSyncService.js';
 
 const instagramSync = new InstagramSyncService();
 const tiktokSync = new TikTokSyncService();

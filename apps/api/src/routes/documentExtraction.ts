@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { requireAuth } from '../middleware/auth';
-import { extractDocumentText } from '../services/documentExtraction';
-import { isAdmin as checkIsAdmin } from '../lib/roleHelpers';
+import { requireAuth } from '../middleware/auth.js';
+import { extractDocumentText } from '../services/documentExtraction.js';
+import { isAdmin as checkIsAdmin } from '../lib/roleHelpers.js';
 
 const router = Router();
 

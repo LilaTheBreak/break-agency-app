@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { Request, Response, NextFunction } from "express";
-import { logAuditEvent } from '../lib/auditLogger';
+import { logAuditEvent } from '../lib/auditLogger.js';
 
 const ROUTE_ACTIONS = [
   { match: /\/auth\/login/i, action: "auth.login", entityType: "auth" },

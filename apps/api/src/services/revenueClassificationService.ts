@@ -8,7 +8,7 @@
  * - High-risk deal flagging and validation
  */
 
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 
 export enum RevenueTag {
   FOUNDER_DEPENDENT = 'FOUNDER_DEPENDENT',

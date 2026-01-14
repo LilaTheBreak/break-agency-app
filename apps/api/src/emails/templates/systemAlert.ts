@@ -1,4 +1,4 @@
-import type { EmailTemplate } from './types';
+import type { EmailTemplate } from './types.js';
 
 export const systemAlertTemplate: EmailTemplate = {
   subject: (data) => String(data.subject || "System alert"),

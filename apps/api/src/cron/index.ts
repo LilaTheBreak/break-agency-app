@@ -1,25 +1,25 @@
-import { CronJobDefinition, runCronJob, TIMEZONE } from './types';
-import { checkOverdueInvoicesJob } from './checkOverdueInvoices';
-import { sendDailyBriefDigestJob } from './sendDailyBriefDigest';
-import { updateSocialStatsJob } from './updateSocialStats';
-import { flushStaleApprovalsJob } from './flushStaleApprovals';
-import { dealAutomationJob } from './dealAutomationJob';
-import { dealCleanupJob } from './dealCleanupJob';
-import { generateWeeklyReports } from '../jobs/weeklyReports';
-import { recoverAIAgentTasks } from './aiAgentRecovery';
-import { runOutreachRotation } from './outreachRotation';
-import { logInfo } from '../lib/logger';
-import { aiAgentQueue } from '../worker/queues';
-import prisma from '../lib/prisma';
-import { enqueueAIAgentTask } from '../services/aiAgent/aiAgentQueue';
-import { buildOutreachPlan } from '../services/aiAgent/outreachPrioritiser';
-import { outreachQueue, deliverableQueue } from '../worker/queues';
+import { CronJobDefinition, runCronJob, TIMEZONE } from './types.js';
+import { checkOverdueInvoicesJob } from './checkOverdueInvoices.js';
+import { sendDailyBriefDigestJob } from './sendDailyBriefDigest.js';
+import { updateSocialStatsJob } from './updateSocialStats.js';
+import { flushStaleApprovalsJob } from './flushStaleApprovals.js';
+import { dealAutomationJob } from './dealAutomationJob.js';
+import { dealCleanupJob } from './dealCleanupJob.js';
+import { generateWeeklyReports } from '../jobs/weeklyReports.js';
+import { recoverAIAgentTasks } from './aiAgentRecovery.js';
+import { runOutreachRotation } from './outreachRotation.js';
+import { logInfo } from '../lib/logger.js';
+import { aiAgentQueue } from '../worker/queues.js';
+import prisma from '../lib/prisma.js';
+import { enqueueAIAgentTask } from '../services/aiAgent/aiAgentQueue.js';
+import { buildOutreachPlan } from '../services/aiAgent/outreachPrioritiser.js';
+import { outreachQueue, deliverableQueue } from '../worker/queues.js';
 import cron from "node-cron";
-import { generateFollowUps } from './outreachFollowUps';
-import { recalcBrandCRM } from './brandRescoreDaily';
-import { strategyQueue } from '../worker/queues';
-import { syncInstagram } from '../services/channels/instagramSync';
-import { syncWhatsApp } from '../services/channels/whatsappSync';
+import { generateFollowUps } from './outreachFollowUps.js';
+import { recalcBrandCRM } from './brandRescoreDaily.js';
+import { strategyQueue } from '../worker/queues.js';
+import { syncInstagram } from '../services/channels/instagramSync.js';
+import { syncWhatsApp } from '../services/channels/whatsappSync.js';
 
 export const CRON_JOBS: CronJobDefinition[] = [
   checkOverdueInvoicesJob,

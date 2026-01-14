@@ -6,7 +6,7 @@
 
 import { Request, Response } from "express";
 import { z } from "zod";
-import * as communityService from '../services/communityService';
+import * as communityService from '../services/communityService.js';
 
 // Validation schemas
 const createConnectionSchema = z.object({

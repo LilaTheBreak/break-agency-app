@@ -1,15 +1,15 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../../middleware/auth';
-import prisma from '../../lib/prisma';
-import { isSuperAdmin } from '../../lib/roleHelpers';
-import { logAdminActivity } from '../../lib/adminActivityLogger';
-import { logDestructiveAction } from '../../lib/auditLogger';
-import { logError } from '../../lib/logger';
-import { sendSuccess, sendError } from '../../utils/apiResponse';
+import { requireAuth } from '../../middleware/auth.js';
+import prisma from '../../lib/prisma.js';
+import { isSuperAdmin } from '../../lib/roleHelpers.js';
+import { logAdminActivity } from '../../lib/adminActivityLogger.js';
+import { logDestructiveAction } from '../../lib/auditLogger.js';
+import { logError } from '../../lib/logger.js';
+import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 import { 
   updateScheduledExport, 
   getScheduleForTalent 
-} from '../../services/scheduledExportService';
+} from '../../services/scheduledExportService.js';
 
 const router = Router();
 

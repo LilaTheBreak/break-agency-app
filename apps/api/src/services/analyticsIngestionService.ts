@@ -8,11 +8,11 @@
  * - Sync management with caching
  */
 
-import prisma from '../lib/prisma';
-import { logInfo, logError } from '../lib/logger';
-import { fetchYouTubeMetrics } from './platforms/youtube';
-import { fetchInstagramMetrics } from './platforms/instagram';
-import { fetchTikTokMetrics } from './platforms/tiktok';
+import prisma from '../lib/prisma.js';
+import { logInfo, logError } from '../lib/logger.js';
+import { fetchYouTubeMetrics } from './platforms/youtube.js';
+import { fetchInstagramMetrics } from './platforms/instagram.js';
+import { fetchTikTokMetrics } from './platforms/tiktok.js';
 
 // ============================================================================
 // NORMALIZATION

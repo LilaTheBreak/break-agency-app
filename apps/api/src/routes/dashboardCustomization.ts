@@ -7,8 +7,8 @@ import {
   reorderSnapshotsHandler,
   toggleSnapshotHandler,
   getAvailableSnapshotsHandler,
-} from '../controllers/dashboardCustomizationController';
-import { requireAuth } from '../middleware/auth';
+} from '../controllers/dashboardCustomizationController.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 

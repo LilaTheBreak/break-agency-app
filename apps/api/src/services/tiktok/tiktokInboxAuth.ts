@@ -1,5 +1,5 @@
 import axios from "axios";
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 
 const TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY;
 const TIKTOK_CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET;

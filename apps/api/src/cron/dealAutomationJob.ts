@@ -1,5 +1,5 @@
-import { CronJobDefinition } from './types';
-import { runDealAutomation } from '../services/dealAutomation';
+import { CronJobDefinition } from './types.js';
+import { runDealAutomation } from '../services/dealAutomation.js';
 
 export const dealAutomationJob: CronJobDefinition = {
   name: "deal-automation",

@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
-import { requireAuth } from '../../middleware/auth';
-import { logInfo, logError } from '../../lib/logger';
-import prisma from '../../lib/prisma';
+import { requireAuth } from '../../middleware/auth.js';
+import { logInfo, logError } from '../../lib/logger.js';
+import prisma from '../../lib/prisma.js';
 // TODO: calendarService needs to be properly exported
-// import { syncMeetingToCalendar, updateCalendarEvent, deleteCalendarEvent } from '../../services/calendarService';
+// import { syncMeetingToCalendar, updateCalendarEvent, deleteCalendarEvent } from '../../services/calendarService.js';
 
 const router = Router();
 

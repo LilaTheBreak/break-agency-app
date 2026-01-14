@@ -10,8 +10,8 @@
 
 import { Request, Response } from "express";
 import { z } from "zod";
-import { requireAuth } from '../middleware/auth';
-import { logError } from '../lib/logger';
+import { requireAuth } from '../middleware/auth.js';
+import { logError } from '../lib/logger.js';
 import {
   getDashboardConfig,
   updateDashboardConfig,
@@ -20,15 +20,15 @@ import {
   toggleSnapshot,
   getEnabledSnapshots,
   SnapshotConfig,
-} from '../services/dashboardConfigService';
+} from '../services/dashboardConfigService.js';
 import {
   getSnapshotsForRole,
   DashboardType,
   RoleType,
-} from '../services/snapshotRegistry';
+} from '../services/snapshotRegistry.js';
 import {
   resolveSnapshotsData,
-} from '../services/snapshotResolver';
+} from '../services/snapshotResolver.js';
 
 /**
  * GET /api/dashboard/config

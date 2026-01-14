@@ -1,21 +1,21 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../../middleware/auth';
-import { requireRole } from '../../middleware/requireRole';
-import upload from '../../middleware/multer';
-import prisma from '../../lib/prisma';
-import redis from '../../lib/redis';
+import { requireAuth } from '../../middleware/auth.js';
+import { requireRole } from '../../middleware/requireRole.js';
+import upload from '../../middleware/multer.js';
+import prisma from '../../lib/prisma.js';
+import redis from '../../lib/redis.js';
 import { TaskStatus, SocialPlatform } from "@prisma/client";
 import { z } from "zod";
-import { isAdmin, isSuperAdmin } from '../../lib/roleHelpers';
-import { logAdminActivity } from '../../lib/adminActivityLogger';
-import { logAuditEvent, logDestructiveAction } from '../../lib/auditLogger';
-import { logError } from '../../lib/logger';
-import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from '../../utils/apiResponse';
-import { validateRequestSafe, TalentCreateSchema, TalentUpdateSchema, TalentLinkUserSchema } from '../../utils/validationSchemas';
+import { isAdmin, isSuperAdmin } from '../../lib/roleHelpers.js';
+import { logAdminActivity } from '../../lib/adminActivityLogger.js';
+import { logAuditEvent, logDestructiveAction } from '../../lib/auditLogger.js';
+import { logError } from '../../lib/logger.js';
+import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from '../../utils/apiResponse.js';
+import { validateRequestSafe, TalentCreateSchema, TalentUpdateSchema, TalentLinkUserSchema } from '../../utils/validationSchemas.js';
 import * as Sentry from "@sentry/node";
-import { scrapeInstagramProfile } from '../../services/socialScrapers/instagram';
-import { normalizeInstagramHandle } from '../../services/socialScrapers/instagramUtils';
-import * as storage from '../../services/storage';
+import { scrapeInstagramProfile } from '../../services/socialScrapers/instagram.js';
+import { normalizeInstagramHandle } from '../../services/socialScrapers/instagramUtils.js';
+import * as storage from '../../services/storage.js';
 
 const router = Router();
 

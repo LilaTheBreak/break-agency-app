@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { protect } from '../../middleware/authMiddleware';
-import { requireFeature } from '../../middleware/requireFeature';
+import { protect } from '../../middleware/authMiddleware.js';
+import { requireFeature } from '../../middleware/requireFeature.js';
 import {
   uploadContractForReview,
   getContractReview,
   regenerateReview,
-} from '../../controllers/contracts/reviewController';
+} from '../../controllers/contracts/reviewController.js';
 
 const router = Router();
 

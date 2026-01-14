@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { requireAuth } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth.js';
 import multer from "multer";
-import { saveUploadedFile } from '../services/fileService';
-import { isSuperAdmin, isAdmin } from '../lib/roleHelpers';
+import { saveUploadedFile } from '../services/fileService.js';
+import { isSuperAdmin, isAdmin } from '../lib/roleHelpers.js';
 
 const router = Router();
 const prisma = new PrismaClient();

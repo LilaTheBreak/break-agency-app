@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { generateNegotiationInsight } from '../services/negotiationInsightsService';
-import prisma from '../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import { negotiationSessionQueue } from '../worker/queues';
+import { generateNegotiationInsight } from '../services/negotiationInsightsService.js';
+import prisma from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
+import { negotiationSessionQueue } from '../worker/queues.js';
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as messageService from '../services/messageService';
-import * as threadService from '../services/threads/threadService'; // Corrected path
+import * as messageService from '../services/messageService.js';
+import * as threadService from '../services/threads/threadService.js'; // Corrected path
 
 export async function listMessages(req: Request, res: Response, next: NextFunction) {
   try {

@@ -1,4 +1,4 @@
-import { aiClient } from './aiClient';
+import { aiClient } from './aiClient.js';
 
 export async function classifyMessage({ text, platform }: { text: string; platform: string }) {
   const prompt = `

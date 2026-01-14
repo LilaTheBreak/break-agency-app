@@ -1,6 +1,6 @@
-import prisma from '../lib/prisma';
-import { aiAgentQueue } from './queues';
-import { AIAgentTaskStatus } from '../constants/aiAgentTaskStatus';
+import prisma from '../lib/prisma.js';
+import { aiAgentQueue } from './queues.js';
+import { AIAgentTaskStatus } from '../constants/aiAgentTaskStatus.js';
 
 export async function enqueueAIAgentTask(data: {
   type: string;

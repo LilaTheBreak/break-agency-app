@@ -1,4 +1,4 @@
-import { runCampaignPrediction } from '../../services/strategy/strategyEngine';
+import { runCampaignPrediction } from '../../services/strategy/strategyEngine.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function strategyProcessor(job: any) {

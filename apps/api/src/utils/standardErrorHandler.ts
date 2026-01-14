@@ -16,7 +16,7 @@
  */
 
 import { Response, Request } from "express";
-import { logError } from '../lib/logger';
+import { logError } from '../lib/logger.js';
 import * as Sentry from "@sentry/node";
 
 export interface StandardErrorResponse {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { isAdmin as checkIsAdmin } from '../lib/roleHelpers';
+import { isAdmin as checkIsAdmin } from '../lib/roleHelpers.js';
 
 /**
  * Middleware to check if a user's onboarding has been approved.

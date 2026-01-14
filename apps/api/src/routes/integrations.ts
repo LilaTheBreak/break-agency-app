@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
-import { requireAuth } from '../middleware/auth';
-import prisma from '../lib/prisma';
-import { logError } from '../lib/logger';
-import { sendSlackNotification, notifyDealUpdate, notifyInvoiceCreated, notifyApprovalRequired } from '../services/integrations/slackService';
-import { syncBrandToNotion, syncDealToNotion } from '../services/integrations/notionService';
-import { linkDriveFileToRecord, listDriveFiles } from '../services/integrations/googleDriveService';
+import { requireAuth } from '../middleware/auth.js';
+import prisma from '../lib/prisma.js';
+import { logError } from '../lib/logger.js';
+import { sendSlackNotification, notifyDealUpdate, notifyInvoiceCreated, notifyApprovalRequired } from '../services/integrations/slackService.js';
+import { syncBrandToNotion, syncDealToNotion } from '../services/integrations/notionService.js';
+import { linkDriveFileToRecord, listDriveFiles } from '../services/integrations/googleDriveService.js';
 
 const router = Router();
 

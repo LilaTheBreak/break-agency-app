@@ -1,4 +1,4 @@
-import { runDeliverableReview } from '../../services/deliverableReviewService';
+import { runDeliverableReview } from '../../services/deliverableReviewService.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function deliverableReviewProcessor(job: any) {

@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import { outreachEngineQueue } from '../worker/queues';
+import prisma from '../lib/prisma.js';
+import { outreachEngineQueue } from '../worker/queues.js';
 
 export async function generateFollowUps() {
   const sequences = await prisma.outreachSequence.findMany({

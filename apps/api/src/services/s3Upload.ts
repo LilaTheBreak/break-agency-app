@@ -1,4 +1,4 @@
-import { uploadFile } from './storage/googleCloudStorage';
+import { uploadFile } from './storage/googleCloudStorage.js';
 
 /**
  * Upload buffer to Google Cloud Storage

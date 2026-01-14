@@ -1,4 +1,4 @@
-import { sendSlackAlert } from '../integrations/slack/slackClient';
+import { sendSlackAlert } from '../integrations/slack/slackClient.js';
 
 export function logInfo(message: string, meta: Record<string, unknown> = {}) {
   console.log("[INFO]", message, meta);

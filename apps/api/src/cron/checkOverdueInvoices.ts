@@ -1,6 +1,6 @@
-import prisma from '../lib/prisma';
-import { CronJobDefinition, parseCommaList } from './types';
-import { notifyInvoiceOverdue } from '../services/email/notifications';
+import prisma from '../lib/prisma.js';
+import { CronJobDefinition, parseCommaList } from './types.js';
+import { notifyInvoiceOverdue } from '../services/email/notifications.js';
 
 const FINANCE_EMAILS = parseCommaList(process.env.FINANCE_ALERT_EMAILS);
 

@@ -8,9 +8,9 @@
 
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import * as founderDependencyService from '../../services/founderDependencyService';
-import { requireAuth } from '../../middleware/auth';
-import { checkTalentAccess } from '../../middleware/talentAccess';
+import * as founderDependencyService from '../services/founderDependencyService.js';
+import { requireAuth } from '../middleware/auth.js';
+import { checkTalentAccess } from '../middleware/talentAccess.js';
 
 const router = Router();
 const prisma = new PrismaClient();

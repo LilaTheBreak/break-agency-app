@@ -1,11 +1,11 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../../middleware/auth';
-import prisma from '../../lib/prisma';
+import { requireAuth } from '../../middleware/auth.js';
+import prisma from '../../lib/prisma.js';
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { generateId } from '../../lib/utils';
-import { logError } from '../../lib/logger';
-import { logAuditEvent } from '../../lib/auditLogger';
+import { generateId } from '../../lib/utils.js';
+import { logError } from '../../lib/logger.js';
+import { logAuditEvent } from '../../lib/auditLogger.js';
 
 const router = Router();
 

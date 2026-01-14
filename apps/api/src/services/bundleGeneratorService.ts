@@ -1,5 +1,5 @@
 // services/bundleGeneratorService.ts
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 
 export interface BundleResult {
   dealId?: string;

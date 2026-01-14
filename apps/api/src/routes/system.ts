@@ -1,7 +1,7 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { CRON_JOBS } from '../cron/index';
-import { requireRole } from '../middleware/requireRole';
+import prisma from '../lib/prisma.js';
+import { CRON_JOBS } from '../cron/index.js';
+import { requireRole } from '../middleware/requireRole.js';
 
 const router = Router();
 

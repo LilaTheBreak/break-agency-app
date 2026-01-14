@@ -1,4 +1,4 @@
-import { scoreEmail } from './opportunityScoring';
+import { scoreEmail } from './opportunityScoring.js';
 
 export type ParsedMessage = {
   id: string;

@@ -6,13 +6,13 @@
 
 import { Request, Response } from "express";
 import { z } from "zod";
-import * as brandUserService from '../services/brandUserService';
-import * as auditSourceService from '../services/auditSourceService';
+import * as brandUserService from '../services/brandUserService.js';
+import * as auditSourceService from '../services/auditSourceService.js';
 import {
   validateBrandOnboarding,
   normalizeUrl,
   extractDomain,
-} from '../utils/domainValidator';
+} from '../utils/domainValidator.js';
 
 // Validation schemas
 const brandOnboardingSchema = z.object({

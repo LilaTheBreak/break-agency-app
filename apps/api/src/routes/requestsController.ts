@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { asyncHandler } from '../middleware/asyncHandler';
-import { isAdmin as checkIsAdmin, isSuperAdmin } from '../lib/roleHelpers';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { isAdmin as checkIsAdmin, isSuperAdmin } from '../lib/roleHelpers.js';
 
 const prisma = new PrismaClient();
 

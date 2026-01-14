@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../middleware/auth';
-import { requireRole } from '../middleware/requireRole';
-import prisma from '../lib/prisma';
-import { isAdmin, isSuperAdmin } from '../lib/roleHelpers';
-import { logError } from '../lib/logger';
+import { requireAuth } from '../middleware/auth.js';
+import { requireRole } from '../middleware/requireRole.js';
+import prisma from '../lib/prisma.js';
+import { isAdmin, isSuperAdmin } from '../lib/roleHelpers.js';
+import { logError } from '../lib/logger.js';
 
 const router = Router();
 

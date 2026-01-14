@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { Request } from "express";
-import prisma from './prisma';
-import { isSuperAdmin, isAdmin } from './roleHelpers';
+import prisma from './prisma.js';
+import { isSuperAdmin, isAdmin } from './roleHelpers.js';
 
 type AuditPayload = {
   action: string;

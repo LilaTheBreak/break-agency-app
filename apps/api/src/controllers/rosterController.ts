@@ -4,7 +4,7 @@
  */
 
 import type { Request, Response, NextFunction } from "express";
-import * as rosterService from '../services/creatorRosterService';
+import * as rosterService from '../services/creatorRosterService.js';
 
 /**
  * POST /api/roster

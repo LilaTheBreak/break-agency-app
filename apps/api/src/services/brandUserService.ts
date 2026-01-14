@@ -4,8 +4,8 @@
  * Handles brand user management, team invites, and workspace creation
  */
 
-import prisma from '../lib/prisma';
-import { BrandRole, isValidBrandRole } from '../utils/permissionHelper';
+import prisma from '../lib/prisma.js';
+import { BrandRole, isValidBrandRole } from '../utils/permissionHelper.js';
 
 export interface CreateBrandInput {
   name: string;

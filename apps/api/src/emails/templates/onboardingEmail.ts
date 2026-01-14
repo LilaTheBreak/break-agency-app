@@ -1,4 +1,4 @@
-import type { EmailTemplate } from './types';
+import type { EmailTemplate } from './types.js';
 
 export const onboardingEmailTemplate: EmailTemplate = {
   subject: (data) => `Welcome to Break, ${data.firstName ?? "there"}`,

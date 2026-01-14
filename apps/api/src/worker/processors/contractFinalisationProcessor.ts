@@ -1,4 +1,4 @@
-import { generateContract } from '../../services/contractGenerationService';
+import { generateContract } from '../../services/contractGenerationService.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function contractFinalisationProcessor(job: any) {

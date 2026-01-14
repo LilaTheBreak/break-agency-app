@@ -1,7 +1,7 @@
-import prisma from '../../lib/prisma';
-import { extractTextFromFile } from './fileExtractors';
-import { analyzeContractAI } from './contractAnalyzer';
-import { contractQueue } from '../../worker/queues';
+import prisma from '../../lib/prisma.js';
+import { extractTextFromFile } from './fileExtractors.js';
+import { analyzeContractAI } from './contractAnalyzer.js';
+import { contractQueue } from '../../worker/queues.js';
 
 export async function processContractReview({ userId, contractId }: { userId: string; contractId: string }) {
   const contract = await prisma.contractReview.findUnique({

@@ -4,8 +4,8 @@ import {
   getSuitabilityHistory,
   getSuitabilityResult,
   explainSuitability
-} from '../controllers/suitabilityController';
-import { requireAuth } from '../middleware/auth';
+} from '../controllers/suitabilityController.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 

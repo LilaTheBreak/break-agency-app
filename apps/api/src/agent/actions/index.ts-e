@@ -1,0 +1,15 @@
+export { default as extractDeal } from './extractDeal';
+export { default as triageEmail } from './triageEmail';
+export { default as negotiateDeal } from './negotiateDeal';
+export { default as outreach } from './outreach';
+export { default as followUp } from './followUp';
+export { default as updateCRM } from './updateCRM';
+export { default as evaluateOffer } from './evaluateOffer';
+export { default as generateCounterOffer } from './generateCounterOffer';
+export { default as validateCounterOffer } from './validateCounterOffer';
+export { default as sendCounterOffer } from './sendCounterOffer';
+export { default as logNegotiation } from './logNegotiation';
+export { default as evaluateOfferAgainstHistory } from './evaluateOfferAgainstHistory';
+export { default as checkIfReadyToClose } from '../steps/checkIfReadyToClose';
+export { default as generateContractTerms } from '../steps/generateContractTerms';
+export { default as generateClosingEmail } from '../steps/generateClosingEmail';

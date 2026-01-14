@@ -1,5 +1,5 @@
 import type { Job } from 'bullmq';
-import { generateNegotiationInsights } from '../../services/ai/negotiationEngine';
+import { generateNegotiationInsights } from '../../services/ai/negotiationEngine.js';
 
 interface NegotiationInsightJobData {
   draftId: string;

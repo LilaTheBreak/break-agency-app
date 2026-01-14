@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { Resend } from "resend";
-import prisma from '../lib/prisma';
-import { logError, logInfo } from '../lib/logger';
+import prisma from '../lib/prisma.js';
+import { logError, logInfo } from '../lib/logger.js';
 
 const resendApiKey = process.env.RESEND_API_KEY || "";
 const emailFrom = process.env.EMAIL_FROM || "console@thebreak.co";

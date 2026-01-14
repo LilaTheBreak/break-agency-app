@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { Request } from "express";
-import prisma from './prisma';
-import { logError } from './logger';
+import prisma from './prisma.js';
+import { logError } from './logger.js';
 
 type AdminActivityPayload = {
   event?: string;

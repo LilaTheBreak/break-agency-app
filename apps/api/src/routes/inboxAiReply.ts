@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
-import prisma from '../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import { openai, generateChatCompletion } from '../lib/openai';
-import { sendEmailWithGmail } from '../services/email/sendOutbound';
-import { logAIInteraction } from '../lib/aiHistoryLogger';
+import prisma from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
+import { openai, generateChatCompletion } from '../lib/openai.js';
+import { sendEmailWithGmail } from '../services/email/sendOutbound.js';
+import { logAIInteraction } from '../lib/aiHistoryLogger.js';
 
 const router = Router();
 

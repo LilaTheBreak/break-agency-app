@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
-import { requireAuth } from '../middleware/auth';
-import { getTikTokInboxAuthUrl, exchangeTikTokInboxCode } from '../services/tiktok/tiktokInboxAuth';
-import { syncTikTokInboxForUser } from '../services/tiktok/tiktokInboxSync';
-import prisma from '../lib/prisma';
-import { getFrontendUrl } from '../config/frontendUrl';
+import { requireAuth } from '../middleware/auth.js';
+import { getTikTokInboxAuthUrl, exchangeTikTokInboxCode } from '../services/tiktok/tiktokInboxAuth.js';
+import { syncTikTokInboxForUser } from '../services/tiktok/tiktokInboxSync.js';
+import prisma from '../lib/prisma.js';
+import { getFrontendUrl } from '../config/frontendUrl.js';
 
 const router = Router();
 

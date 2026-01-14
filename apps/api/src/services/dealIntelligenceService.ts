@@ -1,6 +1,6 @@
-import prisma from '../lib/prisma';
-import { aiClient } from './ai/aiClient';
-import { logError } from '../lib/logger';
+import prisma from '../lib/prisma.js';
+import { aiClient } from './ai/aiClient.js';
+import { logError } from '../lib/logger.js';
 
 interface DealIntelligenceResult {
   suggestedValueRange: {

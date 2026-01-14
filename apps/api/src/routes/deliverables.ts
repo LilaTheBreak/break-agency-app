@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth.js';
 import {
   createDeliverable,
   updateDeliverable,
@@ -8,9 +8,9 @@ import {
   createDeliverablesFromContract,
   updateDeliverableStatus,
   listDeliverablesForUser
-} from '../services/deliverableService';
-import prisma from '../lib/prisma';
-import { deliverableReviewQueue } from '../worker/queues';
+} from '../services/deliverableService.js';
+import prisma from '../lib/prisma.js';
+import { deliverableReviewQueue } from '../worker/queues.js';
 
 const router = Router();
 

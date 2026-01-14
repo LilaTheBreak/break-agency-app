@@ -1,9 +1,9 @@
-import prisma from '../../lib/prisma';
-import { loadAIContext } from './aiContextService';
-import { sendTemplatedEmail } from '../email/emailClient';
-import { updateBrandIntel } from './brandIntelService';
-import { buildNegotiationDraft } from './negotiationComposer';
-import { negotiationSessionQueue } from '../../worker/queues';
+import prisma from '../../lib/prisma.js';
+import { loadAIContext } from './aiContextService.js';
+import { sendTemplatedEmail } from '../email/emailClient.js';
+import { updateBrandIntel } from './brandIntelService.js';
+import { buildNegotiationDraft } from './negotiationComposer.js';
+import { negotiationSessionQueue } from '../../worker/queues.js';
 
 // Note: negotiationSession and negotiationMessage models don't exist in schema
 // Use DealNegotiation model instead for production implementation

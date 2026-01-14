@@ -1,4 +1,4 @@
-import { prisma } from '../db/client';
+import { prisma } from '../db/client.js';
 
 export interface AuditEvent {
   eventType: "IMPERSONATION_STARTED" | "IMPERSONATION_ENDED" | string;

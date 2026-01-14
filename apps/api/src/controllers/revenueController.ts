@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import * as revenueSourceService from '../services/revenueSourceService';
-import * as revenueGoalService from '../services/revenueGoalService';
-import { logError } from '../lib/logger';
-import { sendSuccess, sendError, sendList } from '../utils/apiResponse';
+import * as revenueSourceService from '../services/revenueSourceService.js';
+import * as revenueGoalService from '../services/revenueGoalService.js';
+import { logError } from '../lib/logger.js';
+import { sendSuccess, sendError, sendList } from '../utils/apiResponse.js';
 
 /**
  * Revenue Source Controller

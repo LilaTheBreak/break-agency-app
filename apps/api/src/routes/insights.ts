@@ -1,8 +1,8 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { generateCreatorInsights } from '../services/insightService';
-import { requireAuth } from '../middleware/auth';
-import { logError } from '../lib/logger';
+import prisma from '../lib/prisma.js';
+import { generateCreatorInsights } from '../services/insightService.js';
+import { requireAuth } from '../middleware/auth.js';
+import { logError } from '../lib/logger.js';
 
 const router = Router();
 

@@ -1,9 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { requireAuth } from '../middleware/auth';
-import { generateSocialInsights, InvalidSocialAiResponseError } from '../services/aiSocialInsightsService';
-import { isAdmin as checkIsAdmin } from '../lib/roleHelpers';
-import { logAIInteraction } from '../lib/aiHistoryLogger';
+import { requireAuth } from '../middleware/auth.js';
+import { generateSocialInsights, InvalidSocialAiResponseError } from '../services/aiSocialInsightsService.js';
+import { isAdmin as checkIsAdmin } from '../lib/roleHelpers.js';
+import { logAIInteraction } from '../lib/aiHistoryLogger.js';
 
 const router = Router();
 

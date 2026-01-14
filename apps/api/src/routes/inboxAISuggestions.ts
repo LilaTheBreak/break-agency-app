@@ -1,8 +1,8 @@
 import { Router, type Request, type Response } from "express";
-import prisma from '../lib/prisma';
-import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
 import OpenAI from "openai";
-import { logAIInteraction } from '../lib/aiHistoryLogger';
+import { logAIInteraction } from '../lib/aiHistoryLogger.js';
 
 const router = Router();
 const client = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;

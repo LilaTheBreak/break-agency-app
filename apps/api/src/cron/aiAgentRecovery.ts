@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import { aiAgentQueue } from '../worker/queues';
+import prisma from '../lib/prisma.js';
+import { aiAgentQueue } from '../worker/queues.js';
 
 export async function recoverAIAgentTasks() {
   const tasks = await prisma.aIAgentTask.findMany({

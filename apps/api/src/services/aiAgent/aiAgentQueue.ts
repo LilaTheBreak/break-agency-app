@@ -1,4 +1,4 @@
-import { aiAgentQueue } from '../../worker/queues';
+import { aiAgentQueue } from '../../worker/queues.js';
 
 export async function enqueueAIAgentTask(task: {
   type: "INBOX_REPLY" | "NEGOTIATE_DEAL" | "OUTREACH";

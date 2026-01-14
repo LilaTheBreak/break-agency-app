@@ -61,7 +61,7 @@ import { requireAuth } from '../middleware/auth.js';
 //   requireAgent,
 //   requireBrand,
 //   requireTalent,
-// } from '../middleware/requireRole';
+// } from '../middleware/requireRole.js';
 
 const router = Router();
 

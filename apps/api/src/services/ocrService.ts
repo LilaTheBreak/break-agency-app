@@ -1,4 +1,4 @@
-import { sendSlackAlert } from '../integrations/slack/slackClient';
+import { sendSlackAlert } from '../integrations/slack/slackClient.js';
 
 type OcrWorker = {
   recognize: (image: Buffer) => Promise<{ data?: { text?: string } }>;

@@ -1,7 +1,7 @@
 import { Storage, Bucket } from "@google-cloud/storage";
 import { randomUUID } from "crypto";
-import { safeEnv } from '../../utils/safeEnv';
-import { logError } from '../../lib/logger';
+import { safeEnv } from '../../utils/safeEnv.js';
+import { logError } from '../../lib/logger.js';
 
 /**
  * Google Cloud Storage Service

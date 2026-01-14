@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { Feature, hasPermission } from '../config/permissions';
-import { logPermissionDenial } from '../services/logging/permissionLog';
-import { isSuperAdmin } from '../lib/roleHelpers';
+import { Feature, hasPermission } from '../config/permissions.js';
+import { logPermissionDenial } from '../services/logging/permissionLog.js';
+import { isSuperAdmin } from '../lib/roleHelpers.js';
 
 /**
  * Middleware to check if the authenticated user has access to a specific feature.

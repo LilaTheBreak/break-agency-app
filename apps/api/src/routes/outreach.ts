@@ -1,15 +1,15 @@
 import { Router } from "express";
-import { outreachQueue } from '../worker/queues';
-import prisma from '../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import { requireAdmin } from '../middleware/adminAuth';
-import { generateLeadProspects } from '../services/ai/outreachAIService';
-import { createOutreachForLead } from '../services/outreach/outreachService';
+import { outreachQueue } from '../worker/queues.js';
+import prisma from '../lib/prisma.js';
+import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/adminAuth.js';
+import { generateLeadProspects } from '../services/ai/outreachAIService.js';
+import { createOutreachForLead } from '../services/outreach/outreachService.js';
 import { 
   logStageChange, 
   logOutreachAudit, 
   OutreachAuditAction 
-} from '../services/outreach/auditLogger';
+} from '../services/outreach/auditLogger.js';
 
 const router = Router();
 

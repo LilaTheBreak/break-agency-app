@@ -1,6 +1,6 @@
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 import { DealStage } from "@prisma/client";
-import { logError } from '../../lib/logger';
+import { logError } from '../../lib/logger.js';
 
 /**
  * Handles deal workflow actions (status updates, advancing stages, etc.)

@@ -21,31 +21,31 @@ import {
   creatorBundleQueue,
   deliverableReviewQueue,
   inboxQueue
-} from './queues';
-import gmailIngestProcessor from './processors/gmailIngestProcessor';
-import socialRefreshProcessor from './processors/socialRefreshProcessor';
-import emailProcessor from './processors/emailProcessor';
-import triageProcessor from './processors/triageProcessor';
+} from './queues.js';
+import gmailIngestProcessor from './processors/gmailIngestProcessor.js';
+import socialRefreshProcessor from './processors/socialRefreshProcessor.js';
+import emailProcessor from './processors/emailProcessor.js';
+import triageProcessor from './processors/triageProcessor.js';
 // Phase 3: Removed dealExtractionProcessor - using dealExtractionWorker instead (has proper error handling)
-import negotiationProcessor from './processors/negotiationProcessor';
-import campaignProcessor from './processors/campaignProcessor';
-import aiAgentProcessor from './processors/aiAgentProcessor';
-import outreachProcessor from './processors/outreachProcessor';
-import negotiationSessionProcessor from './processors/negotiationSessionProcessor';
-import contractProcessor from './processors/contractProcessor';
-import deliverableProcessor from './processors/deliverableProcessor';
-import agentProcessor from './processors/agentProcessor';
-import contractFinalisationProcessor from './processors/contractFinalisationProcessor';
-import outreachEngineProcessor from './processors/outreachEngineProcessor';
-import brandProcessor from './processors/brandProcessor';
-import strategyProcessor from './processors/strategyProcessor';
-import creatorFitProcessor from './processors/creatorFitProcessor';
+import negotiationProcessor from './processors/negotiationProcessor.js';
+import campaignProcessor from './processors/campaignProcessor.js';
+import aiAgentProcessor from './processors/aiAgentProcessor.js';
+import outreachProcessor from './processors/outreachProcessor.js';
+import negotiationSessionProcessor from './processors/negotiationSessionProcessor.js';
+import contractProcessor from './processors/contractProcessor.js';
+import deliverableProcessor from './processors/deliverableProcessor.js';
+import agentProcessor from './processors/agentProcessor.js';
+import contractFinalisationProcessor from './processors/contractFinalisationProcessor.js';
+import outreachEngineProcessor from './processors/outreachEngineProcessor.js';
+import brandProcessor from './processors/brandProcessor.js';
+import strategyProcessor from './processors/strategyProcessor.js';
+import creatorFitProcessor from './processors/creatorFitProcessor.js';
 // Phase 3: Removed dealPackageProcessor - deal packages schema removed
-import creatorBundleProcessor from './processors/creatorBundleProcessor';
-import deliverableReviewProcessor from './processors/deliverableReviewProcessor';
-import inboxProcessor from './inboxProcessor';
-import dealExtractionWorker from './processors/dealExtractionWorker';
-import { createSafeQueue } from '../queues/index';
+import creatorBundleProcessor from './processors/creatorBundleProcessor.js';
+import deliverableReviewProcessor from './processors/deliverableReviewProcessor.js';
+import inboxProcessor from './inboxProcessor.js';
+import dealExtractionWorker from './processors/dealExtractionWorker.js';
+import { createSafeQueue } from '../queues/index.js';
 async function main() {
   // Phase 3: Updated attach function to fail loudly - errors are thrown so BullMQ can retry
   const attach = (queue: any, name: string, processor: any) => {

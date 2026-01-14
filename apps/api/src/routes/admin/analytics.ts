@@ -1,11 +1,11 @@
 import { Router, Request, Response } from "express";
-import prisma from '../../lib/prisma';
-import { getTalentSocialIntelligence } from '../../services/socialIntelligenceService';
+import prisma from '../../lib/prisma.js';
+import { getTalentSocialIntelligence } from '../../services/socialIntelligenceService.js';
 import {
   normalizeSocialInput,
   syncExternalProfile,
-} from '../../services/analyticsIngestionService';
-import { logError, logInfo } from '../../lib/logger';
+} from '../../services/analyticsIngestionService.js';
+import { logError, logInfo } from '../../lib/logger.js';
 
 const router = Router();
 

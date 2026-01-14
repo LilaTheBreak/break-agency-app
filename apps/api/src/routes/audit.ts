@@ -1,6 +1,6 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { isAdminRequest, logAuditEvent } from '../lib/auditLogger';
+import prisma from '../lib/prisma.js';
+import { isAdminRequest, logAuditEvent } from '../lib/auditLogger.js';
 
 const router = Router();
 

@@ -1,12 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth.js';
 import {
   getRevenueMetrics,
   getRevenueByBrand,
   getCreatorEarnings,
   getRevenueTimeSeries,
   getBrandFinancialSummary
-} from '../services/revenueCalculationService';
+} from '../services/revenueCalculationService.js';
 
 const router = Router();
 
@@ -247,7 +247,7 @@ router.get("/brand/:brandId/deals", requireBrand, async (req: Request, res: Resp
 // MULTI-PLATFORM REVENUE SOURCES (for EXCLUSIVE talent)
 // ============================================================================
 
-import * as revenueController from '../controllers/revenueController';
+import * as revenueController from '../controllers/revenueController.js';
 
 /**
  * POST /api/revenue/sources

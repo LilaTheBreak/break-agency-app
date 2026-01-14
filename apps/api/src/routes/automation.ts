@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { runDealAutomation } from '../services/dealAutomation';
-import { requireAdmin } from '../middleware/requireAdmin';
+import { runDealAutomation } from '../services/dealAutomation.js';
+import { requireAdmin } from '../middleware/requireAdmin.js';
 
 const router = Router();
 

@@ -2,8 +2,8 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
-import { sendSlackAlert } from '../integrations/slack/slackClient';
-import { safeEnv } from '../utils/safeEnv';
+import { sendSlackAlert } from '../integrations/slack/slackClient.js';
+import { safeEnv } from '../utils/safeEnv.js';
 
 const bucket = safeEnv("S3_BUCKET", "local-bucket");
 const region = safeEnv("S3_REGION", "us-east-1");

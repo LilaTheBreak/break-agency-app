@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ingest, getAuthUrl, handleCallback } from '../controllers/gmailController';
+import { ingest, getAuthUrl, handleCallback } from '../controllers/gmailController.js';
 
 const router = Router();
 

@@ -8,7 +8,7 @@
  * Never overwrites existing content.
  */
 
-import prisma from './prisma';
+import prisma from './prisma.js';
 import { PageRoleScope } from "@prisma/client";
 
 /**

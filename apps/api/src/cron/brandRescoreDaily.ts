@@ -1,5 +1,5 @@
-import prisma from '../lib/prisma';
-import { brandQueue } from '../worker/queues';
+import prisma from '../lib/prisma.js';
+import { brandQueue } from '../worker/queues.js';
 
 // Note: brandRelationship model doesn't exist - stubbing out
 export async function recalcBrandCRM() {

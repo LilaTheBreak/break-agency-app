@@ -1,4 +1,4 @@
-import { performOutreachTask } from '../../services/aiAgent/outreachRunner';
+import { performOutreachTask } from '../../services/aiAgent/outreachRunner.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function outreachProcessor(job: any) {

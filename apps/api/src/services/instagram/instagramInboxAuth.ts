@@ -1,5 +1,5 @@
 import axios from "axios";
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 
 const INSTAGRAM_CLIENT_ID = process.env.INSTAGRAM_CLIENT_ID;
 const INSTAGRAM_CLIENT_SECRET = process.env.INSTAGRAM_CLIENT_SECRET;

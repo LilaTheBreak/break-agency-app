@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
-import prisma from '../../lib/prisma';
-import { logError } from '../../lib/logger';
-import { isAdmin, isSuperAdmin } from '../../lib/roleHelpers';
+import prisma from '../../lib/prisma.js';
+import { logError } from '../../lib/logger.js';
+import { isAdmin, isSuperAdmin } from '../../lib/roleHelpers.js';
 
 const router = Router({ mergeParams: true });
 

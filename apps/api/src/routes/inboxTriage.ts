@@ -1,8 +1,8 @@
 import { Router } from "express";
-import prisma from '../lib/prisma';
-import { runEmailTriage } from '../services/aiTriageService';
-import { triageQueue } from '../worker/queues';
-import { requireAuth } from '../middleware/auth';
+import prisma from '../lib/prisma.js';
+import { runEmailTriage } from '../services/aiTriageService.js';
+import { triageQueue } from '../worker/queues.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 

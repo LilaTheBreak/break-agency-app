@@ -6,8 +6,8 @@
 
 import { Request, Response } from "express";
 import { z } from "zod";
-import * as brandUserService from '../services/brandUserService';
-import { isValidBrandRole } from '../utils/permissionHelper';
+import * as brandUserService from '../services/brandUserService.js';
+import { isValidBrandRole } from '../utils/permissionHelper.js';
 
 // Validation schemas
 const inviteUserSchema = z.object({

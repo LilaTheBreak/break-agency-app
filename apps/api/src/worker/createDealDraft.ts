@@ -1,5 +1,5 @@
-import prisma from '../../lib/prisma';
-import type { EmailClassification } from './classifyEmail';
+import prisma from '../../lib/prisma.js';
+import type { EmailClassification } from './classifyEmail.js';
 
 /**
  * Creates a DealDraft in the database from an email classification.

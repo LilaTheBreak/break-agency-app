@@ -1,4 +1,4 @@
-import { processEmailQueue } from '../../services/emailService';
+import { processEmailQueue } from '../../services/emailService.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function emailProcessor(job: any) {

@@ -1,10 +1,10 @@
-import prisma from '../lib/prisma';
-import { computeOverlap } from './audienceOverlapService';
-import { checkCompliance } from './categoryComplianceService';
-import { checkConflicts } from './conflictChecker';
-import { calculateFinalScore } from './suitabilityScoringService';
-import { analyzeQualitativeSuitability } from './ai/suitabilityLLM';
-import { generateSuitabilityExplanation } from './ai/suitabilityExplainer';
+import prisma from '../lib/prisma.js';
+import { computeOverlap } from './audienceOverlapService.js';
+import { checkCompliance } from './categoryComplianceService.js';
+import { checkConflicts } from './conflictChecker.js';
+import { calculateFinalScore } from './suitabilityScoringService.js';
+import { analyzeQualitativeSuitability } from './ai/suitabilityLLM.js';
+import { generateSuitabilityExplanation } from './ai/suitabilityExplainer.js';
 
 interface EvaluateSuitabilityArgs {
   creatorId: string;

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import Stripe from "stripe";
-import prisma from '../lib/prisma';
-import { logError } from '../lib/logger';
+import prisma from '../lib/prisma.js';
+import { logError } from '../lib/logger.js';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY || "";
 export const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";

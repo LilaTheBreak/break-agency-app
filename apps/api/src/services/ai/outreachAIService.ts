@@ -1,4 +1,4 @@
-import { trackAITokens } from './tokenTracker';
+import { trackAITokens } from './tokenTracker.js';
 
 function envelope(data: any, tokens: number, latency: number, ok = true) {
   return {

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { UserRoleType } from '../types/custom';
-import { isSuperAdmin, hasRole } from '../lib/roleHelpers';
+import { UserRoleType } from '../types/custom.js';
+import { isSuperAdmin, hasRole } from '../lib/roleHelpers.js';
 
 export function requireRole(roles: UserRoleType[]) {
   return function roleGuard(req: Request, res: Response, next: NextFunction) {

@@ -11,8 +11,8 @@
  * No official API credentials required (public data only)
  */
 
-import { logInfo, logError, logWarn } from '../../lib/logger';
-import prisma from '../../lib/prisma';
+import { logInfo, logError, logWarn } from '../../lib/logger.js';
+import prisma from '../../lib/prisma.js';
 
 export interface TikTokProfileMetrics {
   username: string;

@@ -1,6 +1,6 @@
 // services/deals/dealTimelineService.ts
 
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 
 export interface DealTimelineEvent {
   label: string;

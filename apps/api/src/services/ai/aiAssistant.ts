@@ -1,5 +1,5 @@
-import prisma from '../../lib/prisma';
-import { safeEnv } from '../../utils/safeEnv';
+import prisma from '../../lib/prisma.js';
+import { safeEnv } from '../../utils/safeEnv.js';
 
 const OPENAI_API_KEY = safeEnv("OPENAI_API_KEY", "dev-openai-key");
 const OPENAI_MODEL = safeEnv("OPENAI_MODEL", "gpt-4o-mini");

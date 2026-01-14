@@ -1,4 +1,4 @@
-import { buildCampaignFromDeal } from '../../services/campaignBuilderService';
+import { buildCampaignFromDeal } from '../../services/campaignBuilderService.js';
 
 // Phase 3: Fail loudly - throw errors so BullMQ can retry
 export default async function campaignProcessor(job: any) {

@@ -1,8 +1,8 @@
 import { google } from "googleapis";
-import prisma from '../../lib/prisma';
-import { sendSlackAlert } from '../../integrations/slack/slackClient';
-import { getOAuthClientForUser } from './tokens';
-import { linkEmailToCrm } from './linkEmailToCrm';
+import prisma from '../../lib/prisma.js';
+import { sendSlackAlert } from '../../integrations/slack/slackClient.js';
+import { getOAuthClientForUser } from './tokens.js';
+import { linkEmailToCrm } from './linkEmailToCrm.js';
 
 function flattenParts(payload: any) {
   const results: Array<{ mimeType: string; body: string; attachmentId?: string; filename?: string }> = [];

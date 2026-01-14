@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import type { SessionUser } from '../lib/session';
-import { isSuperAdmin, isAdmin as checkIsAdmin } from '../lib/roleHelpers';
+import type { SessionUser } from '../lib/session.js';
+import { isSuperAdmin, isAdmin as checkIsAdmin } from '../lib/roleHelpers.js';
 
 declare global {
   namespace Express {

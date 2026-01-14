@@ -1,4 +1,4 @@
-import type { EmailClassification } from './classifyEmail';
+import type { EmailClassification } from './classifyEmail.js';
 
 type PriorityResult = {
   score: number;

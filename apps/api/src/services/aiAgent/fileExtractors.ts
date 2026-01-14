@@ -1,7 +1,7 @@
 import { Storage } from "@google-cloud/storage";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
-import { safeEnv } from '../../utils/safeEnv';
+import { safeEnv } from '../../utils/safeEnv.js';
 
 const GCS_PROJECT_ID = process.env.GCS_PROJECT_ID || "break-agency-storage";
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME || "break-agency-app-storage";

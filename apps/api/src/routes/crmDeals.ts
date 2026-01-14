@@ -1,14 +1,14 @@
 import express from "express";
-import { requireAuth } from '../middleware/auth';
-import prisma from '../lib/prisma';
-import { logAdminActivity } from '../lib/adminActivityLogger';
-import { logDestructiveAction, logAuditEvent } from '../lib/auditLogger';
-import { logError } from '../lib/logger';
+import { requireAuth } from '../middleware/auth.js';
+import prisma from '../lib/prisma.js';
+import { logAdminActivity } from '../lib/adminActivityLogger.js';
+import { logDestructiveAction, logAuditEvent } from '../lib/auditLogger.js';
+import { logError } from '../lib/logger.js';
 import { DealStage } from "@prisma/client";
-import { isAdmin, isSuperAdmin } from '../lib/roleHelpers';
-import * as dealWorkflowService from '../services/deals/dealWorkflowService';
-import { enrichDealBrand } from '../lib/brandAutoCreation';
-import { getEffectiveUserId, enforceDataScoping, blockAdminActionsWhileImpersonating } from '../lib/dataScopingHelpers';
+import { isAdmin, isSuperAdmin } from '../lib/roleHelpers.js';
+import * as dealWorkflowService from '../services/deals/dealWorkflowService.js';
+import { enrichDealBrand } from '../lib/brandAutoCreation.js';
+import { getEffectiveUserId, enforceDataScoping, blockAdminActionsWhileImpersonating } from '../lib/dataScopingHelpers.js';
 
 const router = express.Router();
 

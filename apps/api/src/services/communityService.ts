@@ -5,7 +5,7 @@
  * Foundation for future AI insights on audience health and sentiment
  */
 
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 
 export type Platform = "instagram" | "tiktok" | "twitter" | "youtube" | "linkedin" | "discord" | "threads";
 export type ConnectionStatus = "connected" | "pending" | "error" | "inactive";

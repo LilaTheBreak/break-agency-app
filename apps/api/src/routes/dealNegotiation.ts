@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireAuth } from '../middleware/auth';
-import { suggestReply } from '../services/dealNegotiationService';
+import { requireAuth } from '../middleware/auth.js';
+import { suggestReply } from '../services/dealNegotiationService.js';
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { requireAuth } from '../middleware/auth';
-import { fetchPriorityFeed } from '../services/inboxPriorityService';
+import { requireAuth } from '../middleware/auth.js';
+import { fetchPriorityFeed } from '../services/inboxPriorityService.js';
 
 const router = Router();
 

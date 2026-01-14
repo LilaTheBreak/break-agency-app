@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { requireAuth } from '../middleware/auth';
-import * as creatorFitController from '../controllers/creatorFitController';
+import { requireAuth } from '../middleware/auth.js';
+import * as creatorFitController from '../controllers/creatorFitController.js';
 
 const router = Router();
 

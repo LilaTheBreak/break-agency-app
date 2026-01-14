@@ -1,7 +1,7 @@
 import axios from "axios";
-import prisma from '../../lib/prisma';
-import { getTikTokInboxToken } from './tiktokInboxAuth';
-import { generateId } from '../../lib/utils';
+import prisma from '../../lib/prisma.js';
+import { getTikTokInboxToken } from './tiktokInboxAuth.js';
+import { generateId } from '../../lib/utils.js';
 
 interface SyncStats {
   imported: number;

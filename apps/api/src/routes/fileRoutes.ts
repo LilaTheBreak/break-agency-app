@@ -4,8 +4,8 @@ import {
   handleConfirmUpload,
   handleListFiles,
   handleDownloadUrl
-} from '../controllers/fileController';
-import { requireAuth } from '../middleware/auth';
+} from '../controllers/fileController.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 

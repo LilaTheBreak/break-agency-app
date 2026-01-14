@@ -2,13 +2,13 @@ import { Prisma } from "@prisma/client";
 import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { EMAIL_TEMPLATE_NAMES, type EmailTemplateName } from '../emails/templates/index';
-import { logAuditEvent } from '../lib/auditLogger';
-import { logAdminActivity } from '../lib/adminActivityLogger';
-import { sendTemplatedEmail, listEmailLogs } from '../services/email/emailClient';
-import { sendTestEmail } from '../services/emailService';
-import { requireAuth } from '../middleware/auth';
-import { requireAdmin } from '../middleware/adminAuth';
+import { EMAIL_TEMPLATE_NAMES, type EmailTemplateName } from '../emails/templates/index.js';
+import { logAuditEvent } from '../lib/auditLogger.js';
+import { logAdminActivity } from '../lib/adminActivityLogger.js';
+import { sendTemplatedEmail, listEmailLogs } from '../services/email/emailClient.js';
+import { sendTestEmail } from '../services/emailService.js';
+import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = Router();
 

@@ -1,4 +1,4 @@
-import prisma from '../../lib/prisma';
+import prisma from '../../lib/prisma.js';
 import { randomUUID } from "crypto";
 
 // In case your AI module isn't ready yet, use a safe fallback.

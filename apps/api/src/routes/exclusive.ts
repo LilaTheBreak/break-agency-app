@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prisma } from '../utils/prismaClient';
+import { prisma } from '../utils/prismaClient.js';
 import {
   requireCreator,
   attachCreatorProfile,
@@ -7,8 +7,8 @@ import {
   sanitizeDealForCreator,
   sanitizeTaskForCreator,
   sanitizeEventForCreator,
-} from '../middleware/creatorAuth';
-import { createGoalVersion } from '../utils/goalUtils';
+} from '../middleware/creatorAuth.js';
+import { createGoalVersion } from '../utils/goalUtils.js';
 
 const router = Router();
 

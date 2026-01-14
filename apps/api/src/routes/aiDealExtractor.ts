@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { extractDealTerms } from '../services/aiDealExtractor';
-import { requireAuth } from '../middleware/auth';
+import { extractDealTerms } from '../services/aiDealExtractor.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 

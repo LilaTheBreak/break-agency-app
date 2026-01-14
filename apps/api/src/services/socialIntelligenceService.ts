@@ -1,8 +1,8 @@
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 // TODO: Sentiment analysis - optional feature, install 'sentiment' package if needed
 // import Sentiment from "sentiment";
-import redis from '../lib/redis';
-import { getPaidCampaignsFromAPIs } from './paidAdsService';
+import redis from '../lib/redis.js';
+import { getPaidCampaignsFromAPIs } from './paidAdsService.js';
 // TODO: Import Talent type once Prisma client is properly configured
 // import type { Talent } from "@prisma/client";
 

@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-import { SignatureProvider } from '../signatureProvider';
-import { getDocuSignToken } from '../docusignAuth';
+import { SignatureProvider } from '../signatureProvider.js';
+import { getDocuSignToken } from '../docusignAuth.js';
 
 /**
  * DocuSign Signature Provider

@@ -9,9 +9,9 @@
  * - Supports caching for frequently accessed data
  */
 
-import prisma from '../lib/prisma';
-import { SnapshotDefinition } from './snapshotRegistry';
-import { logError } from '../lib/logger';
+import prisma from '../lib/prisma.js';
+import { SnapshotDefinition } from './snapshotRegistry.js';
+import { logError } from '../lib/logger.js';
 
 const prismaClient = prisma;
 

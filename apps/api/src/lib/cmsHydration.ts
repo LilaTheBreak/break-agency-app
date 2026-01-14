@@ -8,7 +8,7 @@
  * Only inserts blocks if the page has zero blocks.
  */
 
-import prisma from './prisma';
+import prisma from './prisma.js';
 import { BlockType } from "@prisma/client";
 
 /**

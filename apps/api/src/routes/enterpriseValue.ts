@@ -9,9 +9,9 @@
 
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import * as enterpriseValueService from '../../services/enterpriseValueService';
-import { requireAuth } from '../../middleware/auth';
-import { checkTalentAccess } from '../../middleware/talentAccess';
+import * as enterpriseValueService from '../services/enterpriseValueService.js';
+import { requireAuth } from '../middleware/auth.js';
+import { checkTalentAccess } from '../middleware/talentAccess.js';
 
 const router = Router();
 const prisma = new PrismaClient();

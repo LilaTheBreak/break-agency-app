@@ -1,6 +1,6 @@
-import prisma from '../lib/prisma';
-import { parseBrandBrief } from './ai/briefParser';
-import { matchCreatorsToBrief } from './ai/briefMatcher';
+import prisma from '../lib/prisma.js';
+import { parseBrandBrief } from './ai/briefParser.js';
+import { matchCreatorsToBrief } from './ai/briefMatcher.js';
 
 export async function ingestBrief({
   rawText,

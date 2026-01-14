@@ -1,12 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { Router, Request, Response, NextFunction } from "express";
-import prisma from '../lib/prisma';
-import { SessionUser } from '../lib/session'; // Import SessionUser type
+import prisma from '../lib/prisma.js';
+import { SessionUser } from '../lib/session.js'; // Import SessionUser type
 import { z } from "zod";
-import { isSuperAdmin, isAdmin, isManager } from '../lib/roleHelpers';
-import { logError } from '../lib/logger';
-import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from '../utils/apiResponse';
-import { validateRequestSafe, CampaignCreateSchema } from '../utils/validationSchemas';
+import { isSuperAdmin, isAdmin, isManager } from '../lib/roleHelpers.js';
+import { logError } from '../lib/logger.js';
+import { sendSuccess, sendList, sendEmptyList, sendError, handleApiError } from '../utils/apiResponse.js';
+import { validateRequestSafe, CampaignCreateSchema } from '../utils/validationSchemas.js';
 import * as Sentry from "@sentry/node";
 
 const router = Router();

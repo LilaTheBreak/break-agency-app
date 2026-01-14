@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-import prisma from '../../lib/prisma';
-import { getXeroToken } from './xeroAuth';
+import prisma from '../../lib/prisma.js';
+import { getXeroToken } from './xeroAuth.js';
 
 /**
  * Xero API Service
