@@ -567,20 +567,28 @@ function EmailModal({ email, onClose }) {
 
       if (response.status === 400) {
         // If no brand selected, open a different flow
-        alert('Please note: You can add contacts directly from the CRM Contacts page by first selecting a brand.');
+        alert('ℹ️ To add contacts, please visit the CRM Contacts page where you can select a brand and add new contacts directly.');
         onClose();
         return;
       }
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create contact');
+        let errorMsg = 'Failed to create contact';
+        try {
+          const error = await response.json();
+          errorMsg = error.error || errorMsg;
+        } catch (e) {
+          // Could not parse error response
+        }
+        throw new Error(errorMsg);
       }
 
-      alert(`✅ Contact ${firstName} ${lastName} added!`);
+      const result = await response.json();
+      alert(`✅ Contact ${firstName} ${lastName} added successfully!`);
       onClose();
     } catch (error) {
-      alert(`❌ To create a contact, please use the CRM Contacts page`);
+      const errorMsg = error.message || 'Failed to create contact';
+      alert(`❌ ${errorMsg}\n\nTip: Visit the CRM Contacts page to add this contact with a selected brand.`);
     } finally {
       setCreatingContact(false);
     }
