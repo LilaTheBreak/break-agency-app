@@ -55,10 +55,21 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to discover contacts');
+        let errorMessage = 'Failed to discover contacts';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response format: expected JSON');
+      }
+      
       const data = await response.json();
       setDiscoveredContacts(data.job?.contacts || []);
       
@@ -123,10 +134,21 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to approve contacts');
+        let errorMessage = 'Failed to approve contacts';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Invalid response format: expected JSON');
+      }
+      
       const data = await response.json();
       
       // Callback to parent
@@ -153,7 +175,7 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
     return (
       <button
         onClick={openModal}
-        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        className="flex items-center gap-2 px-4 py-2 bg-brand-red text-white rounded-2xl font-semibold text-xs uppercase tracking-[0.2em] hover:bg-brand-red/90 transition"
         title="Discover contacts from external sources"
       >
         🔍 Discover Contacts
@@ -162,12 +184,12 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-black/50 backdrop-blur-sm">
+      <div className="bg-brand-white rounded-3xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 border-b">
-          <h2 className="text-2xl font-bold">🔍 Discover Brand Contacts</h2>
-          <p className="text-blue-100 text-sm mt-1">
+        <div className="sticky top-0 bg-brand-red text-white p-6 border-b border-brand-black/10">
+          <h2 className="font-title text-2xl font-bold uppercase tracking-[0.2em]">🔍 Discover Brand Contacts</h2>
+          <p className="text-brand-red/90 text-xs mt-2 tracking-[0.1em]">
             Finding decision-makers and marketing contacts for {brand.name}
           </p>
         </div>
@@ -177,23 +199,23 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
           {/* Discovery Section */}
           {discoveredContacts.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">
+              <p className="text-brand-black/70 mb-4 text-sm">
                 Click "Discover" to find contacts from public sources
               </p>
-              <PrimaryButton
+              <button
                 onClick={handleDiscoverContacts}
                 disabled={isLoading}
-                className="px-6 py-3"
+                className="px-6 py-3 bg-brand-red text-white font-semibold text-xs uppercase tracking-[0.2em] rounded-2xl hover:bg-brand-red/90 disabled:opacity-50 transition"
               >
                 {isLoading ? '⏳ Discovering...' : '🔍 Start Discovery'}
-              </PrimaryButton>
+              </button>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded p-4 text-red-800">
-              ⚠️ {error}
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-red-700">
+              <p className="text-sm font-semibold">⚠️ {error}</p>
             </div>
           )}
 
@@ -208,13 +230,13 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
                   <div className="flex gap-2">
                     <button
                       onClick={selectAll}
-                      className="text-sm px-3 py-1 hover:bg-gray-100 rounded"
+                      className="text-xs px-3 py-1 hover:bg-brand-black/5 rounded-lg font-semibold text-brand-black/80 transition"
                     >
                       Select All
                     </button>
                     <button
                       onClick={deselectAll}
-                      className="text-sm px-3 py-1 hover:bg-gray-100 rounded"
+                      className="text-xs px-3 py-1 hover:bg-brand-black/5 rounded-lg font-semibold text-brand-black/80 transition"
                     >
                       Clear
                     </button>
@@ -222,11 +244,11 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
                 </div>
 
                 {/* Contacts List */}
-                <div className="space-y-2 max-h-96 overflow-y-auto border rounded">
+                <div className="space-y-2 max-h-96 overflow-y-auto border border-brand-black/10 rounded-2xl">
                   {discoveredContacts.map((contact) => (
                     <div
                       key={contact.id}
-                      className="p-3 hover:bg-gray-50 border-b last:border-b-0 flex items-start gap-3"
+                      className="p-4 hover:bg-brand-black/2 border-b border-brand-black/10 last:border-b-0 flex items-start gap-3 transition"
                     >
                       {/* Checkbox */}
                       <input
@@ -238,10 +260,10 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
 
                       {/* Contact Info */}
                       <div className="flex-1">
-                        <p className="font-medium">
+                        <p className="font-semibold text-brand-black">
                           {contact.firstName} {contact.lastName}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs text-brand-black/70 mt-0.5">
                           {contact.jobTitle} at {contact.company}
                         </p>
                         {contact.linkedInUrl && (
@@ -249,7 +271,7 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
                             href={contact.linkedInUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline"
+                            className="text-xs text-brand-red hover:text-brand-red/80 font-semibold mt-1 inline-block"
                           >
                             LinkedIn Profile →
                           </a>
@@ -272,19 +294,19 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
               </div>
 
               {/* Selection Summary */}
-              <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                <p className="text-sm font-medium text-blue-900">
+              <div className="bg-brand-red/5 border border-brand-red/20 rounded-2xl p-4">
+                <p className="text-sm font-semibold text-brand-red">
                   ✓ {selectedContactIds.size} of {discoveredContacts.length} contacts selected
                 </p>
               </div>
 
               {/* Compliance Disclaimer */}
-              <div className="bg-amber-50 border border-amber-200 rounded p-4 space-y-3">
-                <p className="text-sm font-medium text-amber-900">⚠️ Compliance Notice</p>
-                <p className="text-xs text-amber-800">
+              <div className="bg-brand-red/5 border border-brand-red/20 rounded-2xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-brand-red">⚠️ Compliance Notice</p>
+                <p className="text-xs text-brand-black/70">
                   Contact data is inferred from public sources. You must:
                 </p>
-                <ul className="text-xs text-amber-800 space-y-1 ml-4 list-disc">
+                <ul className="text-xs text-brand-black/70 space-y-1 ml-4 list-disc">
                   <li>Verify contact accuracy before outreach</li>
                   <li>Comply with applicable data protection laws (GDPR, CCPA, etc.)</li>
                   <li>Include your company information in outreach messages</li>
@@ -296,9 +318,9 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
                     type="checkbox"
                     checked={complianceChecked}
                     onChange={(e) => setComplianceChecked(e.target.checked)}
-                    className="w-4 h-4 rounded"
+                    className="w-4 h-4 rounded border-brand-black/20"
                   />
-                  <span className="text-xs text-amber-900">
+                  <span className="text-xs text-brand-black/70">
                     I understand and accept these compliance requirements
                   </span>
                 </label>
@@ -308,15 +330,18 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t p-4 flex justify-end gap-3">
-          <SecondaryButton onClick={closeModal}>Cancel</SecondaryButton>
+        <div className="sticky bottom-0 bg-brand-linen/30 border-t border-brand-black/10 p-4 flex justify-end gap-3">
+          <button onClick={closeModal} className="px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/70 hover:text-brand-black hover:bg-brand-black/5 rounded-2xl transition">
+            Cancel
+          </button>
           {discoveredContacts.length > 0 && (
-            <PrimaryButton
+            <button
               onClick={handleApproveContacts}
               disabled={selectedContactIds.size === 0 || !complianceChecked}
+              className="px-4 py-2 bg-brand-red text-white text-xs font-semibold uppercase tracking-[0.2em] rounded-2xl hover:bg-brand-red/90 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               ✓ Approve {selectedContactIds.size > 0 ? selectedContactIds.size : 'Selected'} Contacts
-            </PrimaryButton>
+            </button>
           )}
         </div>
       </div>
