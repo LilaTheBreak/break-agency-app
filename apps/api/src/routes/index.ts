@@ -26,6 +26,8 @@ import campaignsRouter from "./campaigns.js";
 import deckRouter from "./deck.js";
 import queuesRouter from "./queues.js";
 import talentAccessRouter from "./talentAccess.js";
+import opportunitiesRouter from "./opportunities.js";
+import preferencesRouter from "./preferences.js";
 
 // Enterprise Operating System routes
 import enterpriseValueRouter from "./enterpriseValue.js";
@@ -45,6 +47,10 @@ import tiktokAuthRouter from './auth/tiktok.js';
 // TODO: Convert youtube auth to ES6 module
 // const youtubeAuthRouter = require("./auth/youtube");
 import socialAnalyticsRouter from './analytics/socials.js';
+
+// Meetings & calendar
+import meetingsRouter from './admin/meetings.js';
+import { router as outreachRouter } from './admin/outreach.js';
 
 // ❗ You referenced these in your router but did not import them
 // import agentRouter from './agent.js';
@@ -128,6 +134,8 @@ router.use("/ai", aiDealExtractorRouter);
 router.use(documentExtractionRouter);
 router.use(campaignsRouter);
 router.use("/deck", deckRouter);
+router.use("/opportunities", opportunitiesRouter);
+router.use("/preferences", preferencesRouter);
 router.use("/admin", adminUsersRouter);
 
 // Enterprise Operating System routes
@@ -143,6 +151,12 @@ router.use("/auth/tiktok", tiktokAuthRouter);
 // TODO: Restore YouTube auth when converted to ES6
 // router.use("/auth/youtube", youtubeAuthRouter);
 router.use("/analytics/socials", socialAnalyticsRouter);
+
+// Meetings & calendar
+router.use("/meetings", meetingsRouter);
+router.use(meetingsRouter); // Also mount without prefix for /api/talent/:talentId/meetings
+router.use("/outreach", outreachRouter);
+router.use(outreachRouter); // Also mount without prefix for convenience
 
 /* -------------------------------------------------------
    PROFILE ROUTES (authenticated)
