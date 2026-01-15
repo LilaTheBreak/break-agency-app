@@ -1279,6 +1279,7 @@ export function AdminTalentDetailPage() {
         };
       }
       
+      console.log("[TALENT] Setting talent state, deals array:", sanitizedTalent.deals);
       setTalent(sanitizedTalent);
     } catch (err) {
       console.error("[TALENT] Error fetching talent:", {
@@ -1842,6 +1843,7 @@ function DealsTab({ talent, onDealCreated }) {
   const isSuperAdmin = user?.role === "SUPERADMIN";
   
   const deals = talent.deals || [];
+  console.log("[DEALS_TAB] Received deals:", deals, "talent.deals:", talent.deals);
   const [dealView, setDealView] = useState("deals"); // "deals" or "opportunities"
   const [stageFilter, setStageFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
@@ -2250,12 +2252,14 @@ function DealsTab({ talent, onDealCreated }) {
 
   const filteredDeals = useMemo(() => {
     let filtered = deals;
+    console.log("[FILTER] Starting with deals:", filtered.length, "dealView:", dealView);
     
     // Split into Opportunities (no stage) vs Deals (has stage but not closed) vs Closed
     if (dealView === "opportunities") {
       filtered = filtered.filter(d => !d.stage);
     } else if (dealView === "deals") {
       filtered = filtered.filter(d => d.stage && !["COMPLETED", "LOST"].includes(d.stage));
+      console.log("[FILTER] After stage filtering for deals view:", filtered.length);
     } else if (dealView === "closed") {
       // For closed view, we'll use the API data, but filter local copy for safety
       filtered = filtered.filter(d => ["COMPLETED", "LOST"].includes(d.stage || ""));
