@@ -4,6 +4,7 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { useMessaging } from "../context/messaging.js";
 import { getRecentInbox, getGmailStatus, syncGmailInbox } from "../services/inboxClient.js";
 import { useGmailAuth } from "../hooks/useGmailAuth.js";
+import { useEmailClassifier, ClassificationBadge, UncertainClassificationAlert } from "../hooks/useEmailClassifier.jsx";
 import toast from "react-hot-toast";
 
 const FILTERS = ["All", "Brands", "Creators", "External", "Talent Managers"]; // Alphabetized, "All" kept first
@@ -491,11 +492,38 @@ function EmailModal({ email, onClose }) {
   const [selectedBrandId, setSelectedBrandId] = React.useState("");
   const [loadingBrands, setLoadingBrands] = React.useState(false);
   const [showBrandSelector, setShowBrandSelector] = React.useState(false);
+  const [classification, setClassification] = React.useState(null);
+  const [classificationLoading, setClassificationLoading] = React.useState(true);
+  const { classify } = useEmailClassifier();
 
   // Extract email from sender if it's in format "Name <email@domain>"
   const senderEmail = email.senderEmail || 
     (typeof email.sender === 'string' && email.sender.match(/<([^>]+)>/)?.[1]) || 
     null;
+
+  // Classify email on mount
+  React.useEffect(() => {
+    const classifyEmail = async () => {
+      setClassificationLoading(true);
+      try {
+        const result = await classify({
+          subject,
+          body,
+          sender: senderName,
+          senderEmail,
+          attachments: email.attachments || [],
+          participants: email.participants || []
+        });
+        setClassification(result.classification);
+      } catch (err) {
+        console.error("Failed to classify email:", err);
+      } finally {
+        setClassificationLoading(false);
+      }
+    };
+    
+    classifyEmail();
+  }, [email.id, subject, body, senderName, senderEmail, email.attachments, email.participants, classify]);
 
   // Fetch brands on mount
   React.useEffect(() => {
@@ -631,6 +659,26 @@ function EmailModal({ email, onClose }) {
             Close
           </button>
         </div>
+        
+        {/* Email Classification Badge */}
+        {!classificationLoading && classification && (
+          <div className="mt-4">
+            <ClassificationBadge
+              type={classification.primary.type}
+              confidence={classification.primary.confidence}
+              reason={classification.primary.reason}
+            />
+            {classification.primary.confidence < 0.7 && (
+              <UncertainClassificationAlert
+                classification={classification}
+                onReview={() => {
+                  // TODO: Open classification review modal
+                  console.log("Review classification");
+                }}
+              />
+            )}
+          </div>
+        )}
         <div className="mt-2 space-y-1">
           <p className="text-sm font-semibold text-brand-black">From: {senderName}</p>
           {timestamp && (
@@ -855,6 +903,39 @@ function EmailRow({ email, onOpen }) {
   const senderName = email.sender || email.participants?.[0] || "Unknown";
   const subject = email.subject || "(No subject)";
   const snippet = email.snippet || "";
+  const [classification, setClassification] = React.useState(email.classification || null);
+  const [classifyError, setClassifyError] = React.useState(null);
+  const { classify, getBadgeDetails } = useEmailClassifier();
+
+  // Classify on mount if not already classified
+  React.useEffect(() => {
+    if (classification) return; // Already classified
+
+    const classifyEmail = async () => {
+      try {
+        const senderEmail = email.senderEmail || 
+          (typeof email.sender === 'string' && email.sender.match(/<([^>]+)>/)?.[1]) || 
+          null;
+          
+        const result = await classify({
+          subject,
+          body: email.body || snippet,
+          sender: senderName,
+          senderEmail,
+          attachments: email.attachments || [],
+          participants: email.participants || []
+        });
+        
+        if (result.success && result.classification) {
+          setClassification(result.classification);
+        }
+      } catch (err) {
+        setClassifyError(err.message);
+      }
+    };
+
+    classifyEmail();
+  }, [email.id, subject, email.body, snippet, senderName, classify, classification]);
   const timestamp = email.lastMessageAt || email.receivedAt || Date.now();
 
   return (
@@ -868,6 +949,14 @@ function EmailRow({ email, onOpen }) {
             <p className="font-semibold text-sm text-brand-black truncate">{senderName}</p>
             {!email.isRead && (
               <span className="flex-shrink-0 h-2 w-2 rounded-full bg-brand-red" title="Unread" />
+            )}
+            {classification && (
+              <div className="flex-shrink-0">
+                <ClassificationBadge
+                  type={classification.primary.type}
+                  compact={true}
+                />
+              </div>
             )}
           </div>
           <p className="mt-1 text-sm text-brand-black/80 font-medium line-clamp-1">{subject}</p>
