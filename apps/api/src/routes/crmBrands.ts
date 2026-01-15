@@ -186,9 +186,12 @@ router.post("/", async (req: Request, res: Response) => {
 
     // Trigger enrichment asynchronously (don't block response)
     if (websiteUrl) {
+      // Fire and forget with proper error handling
       enrichBrandFromUrl(websiteUrl, brandName.trim())
         .then(async (enrichment) => {
-          if (enrichment.success) {
+          console.log(`[BRAND ENRICHMENT] Result for ${brand.id}:`, { success: enrichment.success, error: enrichment.error });
+          
+          if (enrichment.success && (enrichment.logoUrl || enrichment.about || enrichment.socialLinks || enrichment.industry)) {
             const updateData: any = {
               enrichedAt: new Date().toISOString(),
               enrichmentSource: enrichment.source,
@@ -198,15 +201,19 @@ router.post("/", async (req: Request, res: Response) => {
             // Only update fields that were enriched (don't overwrite manual entries)
             if (enrichment.logoUrl && !logo) {
               updateData.logoUrl = enrichment.logoUrl;
+              console.log(`[BRAND ENRICHMENT] Updating logoUrl for ${brand.id}: ${enrichment.logoUrl}`);
             }
             if (enrichment.about) {
               updateData.about = enrichment.about;
+              console.log(`[BRAND ENRICHMENT] Updating about for ${brand.id}`);
             }
             if (enrichment.industry && industry === "Other") {
               updateData.industry = enrichment.industry;
+              console.log(`[BRAND ENRICHMENT] Updating industry for ${brand.id}: ${enrichment.industry}`);
             }
             if (enrichment.socialLinks) {
               updateData.socialLinks = enrichment.socialLinks;
+              console.log(`[BRAND ENRICHMENT] Updating socialLinks for ${brand.id}:`, Object.keys(enrichment.socialLinks));
             }
             
             // Add activity log
@@ -229,12 +236,17 @@ router.post("/", async (req: Request, res: Response) => {
             });
             
             console.log(`[BRAND ENRICHMENT] Successfully enriched brand ${brand.id} from ${websiteUrl}`);
-          } else {
+          } else if (!enrichment.success) {
             console.warn(`[BRAND ENRICHMENT] Failed to enrich brand ${brand.id}: ${enrichment.error}`);
+            logError("Brand enrichment failed", new Error(enrichment.error), { brandId: brand.id, websiteUrl });
+          } else {
+            console.log(`[BRAND ENRICHMENT] No data extracted from ${websiteUrl} for brand ${brand.id}`);
           }
         })
         .catch((error) => {
-          console.error(`[BRAND ENRICHMENT] Error enriching brand ${brand.id}:`, error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error(`[BRAND ENRICHMENT] Caught error enriching brand ${brand.id}:`, errorMsg);
+          logError("Brand enrichment error", error, { brandId: brand.id, websiteUrl });
           // Don't fail the request - enrichment is best-effort
         });
     }
@@ -588,6 +600,90 @@ router.post("/batch-import", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("[CRM BRANDS] Error in batch import:", error);
     res.status(500).json({ error: "Failed to import data" });
+  }
+});
+
+// POST /api/crm-brands/:id/enrich - Trigger brand enrichment immediately
+router.post("/:id/enrich", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({ error: "Invalid brand ID" });
+    }
+    
+    const brand = await prisma.crmBrand.findUnique({
+      where: { id },
+      select: { id: true, website: true, brandName: true },
+    });
+    
+    if (!brand) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+    
+    if (!brand.website) {
+      return res.status(400).json({ error: "Brand has no website URL" });
+    }
+    
+    console.log(`[BRAND ENRICHMENT] Manual enrichment requested for ${brand.id}`);
+    
+    // Trigger enrichment immediately and wait for result
+    const enrichment = await enrichBrandFromUrl(brand.website, brand.brandName);
+    
+    if (enrichment.success && (enrichment.logoUrl || enrichment.about || enrichment.socialLinks || enrichment.industry)) {
+      const updateData: any = {
+        enrichedAt: new Date().toISOString(),
+        enrichmentSource: enrichment.source,
+        updatedAt: new Date().toISOString(),
+      };
+      
+      if (enrichment.logoUrl) updateData.logoUrl = enrichment.logoUrl;
+      if (enrichment.about) updateData.about = enrichment.about;
+      if (enrichment.industry) updateData.industry = enrichment.industry;
+      if (enrichment.socialLinks) updateData.socialLinks = enrichment.socialLinks;
+      
+      const existing = await prisma.crmBrand.findUnique({
+        where: { id },
+        select: { activity: true, logo: true },
+      });
+      
+      const activity = [
+        { at: new Date().toISOString(), label: "Brand manually enriched from website" },
+        ...(Array.isArray(existing?.activity) ? existing.activity : []),
+      ];
+      updateData.activity = activity;
+      updateData.lastActivityAt = new Date().toISOString();
+      updateData.lastActivityLabel = "Brand manually enriched from website";
+      
+      const updated = await prisma.crmBrand.update({
+        where: { id },
+        data: updateData,
+      });
+      
+      return res.json({
+        success: true,
+        message: "Brand enriched successfully",
+        enrichment: {
+          logoUrl: enrichment.logoUrl,
+          about: enrichment.about,
+          industry: enrichment.industry,
+          socialLinks: enrichment.socialLinks,
+        },
+        brand: updated,
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: enrichment.error || "No data could be extracted from the website",
+        error: enrichment.error,
+      });
+    }
+  } catch (error) {
+    console.error("[BRAND ENRICHMENT] Error in manual enrichment:", error instanceof Error ? error.message : String(error));
+    return res.status(500).json({
+      error: "Failed to enrich brand",
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
