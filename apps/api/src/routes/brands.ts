@@ -9,10 +9,14 @@ import {
   getUserBrandsHandler,
   updateBrandHandler,
   listBrandsHandler,
+  createQuickBrandHandler,
 } from '../controllers/brandController.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+// POST /api/brands - Quick create brand (for inline deal/contact creation)
+router.post("/", requireAuth, createQuickBrandHandler);
 
 // POST /api/brands/onboard - Onboard new brand
 router.post("/onboard", requireAuth, onboardBrandHandler);

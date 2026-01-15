@@ -272,3 +272,95 @@ export async function listBrandsHandler(
     res.status(500).json({ error: "Failed to list brands" });
   }
 }
+
+/**
+ * Create brand quickly (inline for deals/contacts)
+ * 
+ * Used when user types a new brand name in deal/contact form
+ * Returns the created brand immediately
+ * Prevents duplicate brands (case-insensitive)
+ */
+export async function createQuickBrandHandler(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    // Validate request
+    const { name } = req.body;
+    
+    if (!name || typeof name !== "string") {
+      res.status(400).json({ error: "Brand name is required" });
+      return;
+    }
+
+    const brandName = name.trim();
+    
+    if (brandName.length === 0) {
+      res.status(400).json({ error: "Brand name cannot be empty" });
+      return;
+    }
+
+    if (brandName.length > 255) {
+      res.status(400).json({ error: "Brand name too long (max 255 characters)" });
+      return;
+    }
+
+    // Check if brand already exists (case-insensitive)
+    const existingBrands = await brandUserService.listBrands(1000, 0);
+    const duplicate = existingBrands.brands?.find(
+      b => b.name.toLowerCase() === brandName.toLowerCase()
+    );
+
+    if (duplicate) {
+      // Brand already exists, return it
+      res.status(200).json({
+        id: duplicate.id,
+        name: duplicate.name,
+        message: "Brand already exists"
+      });
+      return;
+    }
+
+    // Create new brand
+    try {
+      const newBrand = await brandUserService.createBrand({
+        name: brandName,
+        // Don't require websiteUrl for quick creation
+        websiteUrl: `https://${brandName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.example.com`,
+      });
+
+      res.status(201).json({
+        id: newBrand.id,
+        name: newBrand.name,
+        message: "Brand created successfully"
+      });
+    } catch (createError: any) {
+      // Handle race condition where another request created same brand
+      if (createError.code === 'P2002' && createError.meta?.target?.includes('name')) {
+        // Retry lookup
+        const retryBrands = await brandUserService.listBrands(1000, 0);
+        const newlyCreated = retryBrands.brands?.find(
+          b => b.name.toLowerCase() === brandName.toLowerCase()
+        );
+        if (newlyCreated) {
+          res.status(200).json({
+            id: newlyCreated.id,
+            name: newlyCreated.name,
+            message: "Brand already exists (created by another request)"
+          });
+          return;
+        }
+      }
+      throw createError;
+    }
+  } catch (error) {
+    console.error("[Create Quick Brand]", error);
+    res.status(500).json({ error: "Failed to create brand" });
+  }
+}

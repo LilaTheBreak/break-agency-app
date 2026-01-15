@@ -4,6 +4,8 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
 import { fetchTalent, createDeal, fetchBrands, updateDeal } from "../services/crmClient.js";
+import { BrandSelect } from "../components/BrandSelect.jsx";
+import { createBrand } from "../services/brandClient.js";
 import { Badge } from "../components/Badge.jsx";
 import { TalentAccessSettings } from "../components/TalentAccessSettings.jsx";
 import { ViewAsTalentButton } from "../components/ViewAsTalentButton.jsx";
@@ -2626,19 +2628,15 @@ function DealsTab({ talent, onDealCreated }) {
                 <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
                   Brand *
                 </label>
-                <select
+                <BrandSelect
+                  brands={brands}
                   value={createForm.brandId}
-                  onChange={(e) => setCreateForm({...createForm, brandId: e.target.value})}
-                  disabled={brandsLoading}
-                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none disabled:opacity-50"
-                >
-                  <option value="">{brandsLoading ? "Loading brands..." : "Select a brand"}</option>
-                  {brands.map((brand) => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(brandId) => setCreateForm({...createForm, brandId})}
+                  isLoading={brandsLoading}
+                  disabled={false}
+                  onCreateBrand={createBrand}
+                  error={createError}
+                />
               </div>
 
               {/* Status */}
