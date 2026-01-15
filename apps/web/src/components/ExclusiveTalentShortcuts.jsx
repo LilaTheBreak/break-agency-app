@@ -89,13 +89,13 @@ export function ExclusiveTalentShortcuts() {
       className="group relative flex-shrink-0 cursor-pointer transition-transform duration-200 hover:scale-110"
       title={talent.name}
     >
-      {/* Avatar Circle */}
+      {/* Avatar Circle - Compact */}
       <div
         className={`
-          h-16 w-16 rounded-full border-2 border-brand-black/10 
-          flex items-center justify-center text-sm font-semibold 
+          h-12 w-12 rounded-full border border-brand-black/10 
+          flex items-center justify-center text-xs font-semibold 
           text-white transition-all duration-200
-          group-hover:border-brand-black/30 group-hover:shadow-lg
+          group-hover:border-brand-black/30 group-hover:shadow-md
           ${
             talent.profileImageUrl
               ? "bg-cover bg-center"
@@ -111,12 +111,12 @@ export function ExclusiveTalentShortcuts() {
         }
       >
         {!talent.profileImageUrl && (
-          <span className="text-xs font-bold">{getInitials(talent.name)}</span>
+          <span className="text-[10px] font-bold">{getInitials(talent.name)}</span>
         )}
       </div>
 
       {/* Tooltip on Hover */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-black px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none">
+      <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-brand-black px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none z-10">
         {talent.name}
       </div>
     </div>
@@ -125,16 +125,15 @@ export function ExclusiveTalentShortcuts() {
   // Loading state
   if (loading) {
     return (
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="h-4 w-4 text-brand-black/40" />
-          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
-            Exclusive Talent
+      <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 text-brand-black/40" />
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-black/50">
+            Quick Switch
           </h3>
         </div>
-        <div className="flex items-center justify-center py-6">
-          <Loader className="h-5 w-5 animate-spin text-brand-black/40" />
-          <p className="ml-3 text-sm text-brand-black/50">Loading talents…</p>
+        <div className="flex items-center justify-center py-3">
+          <Loader className="h-4 w-4 animate-spin text-brand-black/40" />
         </div>
       </section>
     );
@@ -143,16 +142,14 @@ export function ExclusiveTalentShortcuts() {
   // Error state
   if (error) {
     return (
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="h-4 w-4 text-brand-black/40" />
-          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
-            Exclusive Talent
+      <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 text-brand-black/40" />
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-black/50">
+            Quick Switch
           </h3>
         </div>
-        <div className="text-center py-4">
-          <p className="text-sm text-brand-red/70">{error}</p>
-        </div>
+        <p className="text-xs text-brand-black/50 mt-2">{error}</p>
       </section>
     );
   }
@@ -160,47 +157,31 @@ export function ExclusiveTalentShortcuts() {
   // Empty state
   if (talents.length === 0) {
     return (
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="h-4 w-4 text-brand-black/40" />
-          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
-            Exclusive Talent
+      <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 text-brand-black/40" />
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-black/50">
+            Quick Switch
           </h3>
-          <p className="text-xs text-brand-black/40 font-normal">
-            Quick access to managed profiles
-          </p>
         </div>
-        <div className="text-center py-6">
-          <p className="text-sm text-brand-black/60 mb-3">
-            No exclusive talent assigned yet
-          </p>
-          <button
-            onClick={() => navigate("/admin/talent")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-brand-black/20 text-xs font-semibold uppercase tracking-[0.1em] text-brand-black hover:bg-brand-black/5 transition-colors"
-          >
-            Manage Talent
-          </button>
-        </div>
+        <p className="text-xs text-brand-black/50 mt-1">No exclusive talents yet</p>
       </section>
     );
   }
 
   // Render talents
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Users className="h-4 w-4 text-brand-black/40" />
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60">
-          Exclusive Talent
+    <section className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Users className="h-3.5 w-3.5 text-brand-black/40" />
+        <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-black/50">
+          Quick Switch
         </h3>
-        <p className="text-xs text-brand-black/40 font-normal">
-          Quick access to managed profiles
-        </p>
       </div>
 
       {/* Horizontal scrollable avatar row */}
-      <div className="overflow-x-auto pb-2 scrollbar-hide">
-        <div className="flex gap-4 pb-2">
+      <div className="overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-3 pb-1">
           {talents.map((talent) => (
             <AvatarItem key={talent.id} talent={talent} />
           ))}
