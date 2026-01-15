@@ -455,7 +455,7 @@ async function extractFollowerCountFromHTML(
     if (error instanceof Error && error.message.includes("abort")) {
       logWarn("[INSTAGRAM] HTML extraction timeout (Instagram may be blocking)", { username });
     } else {
-      logWarn("[INSTAGRAM] HTML extraction failed", error, { username });
+      logWarn("[INSTAGRAM] HTML extraction failed", { username, error: String(error) });
     }
     return { followerCount: null, displayName: null };
   }
