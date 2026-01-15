@@ -39,10 +39,13 @@ router.get("/", async (req: Request, res: Response) => {
 
     // CRITICAL: Return direct array for consistency with campaigns/events/deals endpoints
     // Frontend expects: direct array, not wrapped object
-    res.json(contacts || []);
+    // Ensure contacts is properly serialized and never null
+    const response = Array.isArray(contacts) ? contacts : [];
+    res.status(200).json(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch contacts";
-    logError("Failed to fetch contacts", error, { userId: req.user?.id, route: req.path });
+    logError("Failed to fetch contacts", error, { userId: req.user?.id, route: req.path, brandId: req.query.brandId });
+    console.error("[CRM CONTACTS] GET / error:", error);
     return res.status(500).json({ 
       success: false,
       error: errorMessage,
@@ -57,10 +60,20 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    if (!id || !id.trim()) {
+      return res.status(400).json({ error: "Contact ID is required" });
+    }
+
     const contact = await prisma.crmBrandContact.findUnique({
-      where: { id },
+      where: { id: String(id).trim() },
       include: {
-        CrmBrand: true,
+        CrmBrand: {
+          select: {
+            id: true,
+            brandName: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -68,18 +81,14 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Contact not found" });
     }
 
-    res.json({ contact });
+    res.status(200).json(contact);
   } catch (error) {
-    console.error("[CRM CONTACTS] Error fetching contact:", error);
-    if (error instanceof Error) {
-      return res.status(400).json({
-        code: "CONTACT_FETCH_FAILED",
-        message: error.message,
-      });
-    }
-    return res.status(400).json({
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch contact";
+    logError("Failed to fetch single contact", error, { userId: req.user?.id, contactId: req.params.id });
+    console.error("[CRM CONTACTS] GET /:id error:", error);
+    return res.status(500).json({
       code: "CONTACT_FETCH_FAILED",
-      message: "Failed to fetch contact",
+      message: errorMessage,
     });
   }
 });
@@ -145,23 +154,25 @@ router.post("/", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ contact });
+    res.status(201).json(contact);
   } catch (error) {
-    console.error("[CRM CONTACTS] Error creating contact:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to create contact";
+    logError("Failed to create contact", error, { userId: req.user?.id, brandId: req.body?.brandId });
+    console.error("[CRM CONTACTS] POST / error:", error);
     if (error instanceof Error) {
       // Check for Prisma validation errors
       if (error.message.includes("Unique constraint") || error.message.includes("Foreign key constraint")) {
         return res.status(400).json({
           code: "CONTACT_CREATE_FAILED",
-          message: error.message,
+          message: errorMessage,
         });
       }
-      return res.status(400).json({
+      return res.status(500).json({
         code: "CONTACT_CREATE_FAILED",
-        message: error.message,
+        message: errorMessage,
       });
     }
-    return res.status(400).json({
+    return res.status(500).json({
       code: "CONTACT_CREATE_FAILED",
       message: "Invalid contact input",
     });
@@ -212,6 +223,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
         owner: owner !== undefined ? (owner?.trim() || null) : existing.owner,
         primaryContact: primaryContact !== undefined ? Boolean(primaryContact) : existing.primaryContact,
         notes: existing.notes,
+        updatedAt: new Date(),
       },
       include: {
         CrmBrand: {
@@ -224,22 +236,24 @@ router.patch("/:id", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ contact });
+    res.status(200).json(contact);
   } catch (error) {
-    console.error("[CRM CONTACTS] Error updating contact:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to update contact";
+    logError("Failed to update contact", error, { userId: req.user?.id, contactId: req.params.id });
+    console.error("[CRM CONTACTS] PATCH /:id error:", error);
     if (error instanceof Error) {
       if (error.message.includes("Unique constraint") || error.message.includes("Foreign key constraint")) {
         return res.status(400).json({
           code: "CONTACT_UPDATE_FAILED",
-          message: error.message,
+          message: errorMessage,
         });
       }
-      return res.status(400).json({
+      return res.status(500).json({
         code: "CONTACT_UPDATE_FAILED",
-        message: error.message,
+        message: errorMessage,
       });
     }
-    return res.status(400).json({
+    return res.status(500).json({
       code: "CONTACT_UPDATE_FAILED",
       message: "Invalid contact input",
     });
@@ -251,18 +265,32 @@ router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    await prisma.crmBrandContact.delete({ where: { id } });
+    if (!id || !id.trim()) {
+      return res.status(400).json({ error: "Contact ID is required" });
+    }
 
-    res.json({ success: true });
+    const existing = await prisma.crmBrandContact.findUnique({ 
+      where: { id: String(id).trim() } 
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: "Contact not found" });
+    }
+
+    await prisma.crmBrandContact.delete({ where: { id: String(id).trim() } });
+
+    res.status(200).json({ success: true, message: "Contact deleted successfully" });
   } catch (error) {
-    console.error("[CRM CONTACTS] Error deleting contact:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to delete contact";
+    logError("Failed to delete contact", error, { userId: req.user?.id, contactId: req.params.id });
+    console.error("[CRM CONTACTS] DELETE /:id error:", error);
     if (error instanceof Error) {
-      return res.status(400).json({
+      return res.status(500).json({
         code: "CONTACT_DELETE_FAILED",
-        message: error.message,
+        message: errorMessage,
       });
     }
-    return res.status(400).json({
+    return res.status(500).json({
       code: "CONTACT_DELETE_FAILED",
       message: "Failed to delete contact",
     });
