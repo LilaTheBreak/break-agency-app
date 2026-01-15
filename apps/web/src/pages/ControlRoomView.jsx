@@ -102,10 +102,22 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
       });
 
       if (response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          console.error("JSON parse error:", e);
+          data = {};
+        }
         alert("Gmail draft created successfully! Check your Gmail drafts.");
       } else {
-        const error = await response.json();
+        let error;
+        try {
+          error = await response.json();
+        } catch (e) {
+          console.error("JSON parse error:", e);
+          error = { error: "Unknown error" };
+        }
         if (error.error === "Gmail not connected") {
           // Prompt user to connect Gmail
           const shouldConnect = confirm("Gmail is not connected. Would you like to connect it now?");

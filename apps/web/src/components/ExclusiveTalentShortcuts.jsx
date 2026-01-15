@@ -39,7 +39,14 @@ export function ExclusiveTalentShortcuts() {
           throw new Error(`HTTP ${response.status}`);
         }
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          console.error("[ExclusiveTalentShortcuts] JSON parse error:", e);
+          data = { talents: [] };
+        }
+        
         setTalents(Array.isArray(data) ? data : (data.talents || []));
       } catch (err) {
         console.error("[ExclusiveTalentShortcuts]", err);

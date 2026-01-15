@@ -114,7 +114,13 @@ export default function EmailOpportunities() {
       });
 
       if (!response.ok) throw new Error("Failed to fetch opportunities");
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("JSON parse error:", e);
+        data = [];
+      }
       setOpportunities(data);
       setError(null);
     } catch (err) {
@@ -131,7 +137,13 @@ export default function EmailOpportunities() {
       });
 
       if (!response.ok) throw new Error("Failed to fetch stats");
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("JSON parse error:", e);
+        data = {};
+      }
       setStats(data);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
@@ -147,11 +159,22 @@ export default function EmailOpportunities() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData = {};
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          console.error("JSON parse error:", e);
+        }
         throw new Error(errorData.message || "Failed to scan inbox");
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("JSON parse error:", e);
+        data = { newOpportunities: 0 };
+      }
       alert(`Scan complete! Found ${data.newOpportunities} new opportunities.`);
       await fetchOpportunities();
       await fetchStats();
