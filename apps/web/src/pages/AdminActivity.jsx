@@ -240,6 +240,37 @@ export function AdminActivityPage() {
     return log.userId || "—";
   };
 
+  // Format timestamp as two lines: date and time
+  const formatTimestamp = (dateString) => {
+    const date = new Date(dateString);
+    const dateStr = date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+    const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    return { dateStr, timeStr };
+  };
+
+  // Convert ALL_CAPS action to Title Case with Spaces
+  const formatActionLabel = (action) => {
+    return action
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
+  // Map entity types to readable labels
+  const getEntityLabel = (entityType) => {
+    const labelMap = {
+      auth: "Auth",
+      user: "User",
+      brief: "Brief",
+      approval: "Approval",
+      finance: "Finance",
+      social: "Social",
+      audit: "Audit",
+      cron: "Cron Job"
+    };
+    return labelMap[entityType] || entityType.charAt(0).toUpperCase() + entityType.slice(1);
+  };
+
   // Determine severity for action
   const getActionSeverity = (action) => {
     const critical = ["USER_ARCHIVED", "ROLE_CHANGE", "USER_REJECTED", "PASSWORD_RESET"];
@@ -305,12 +336,14 @@ export function AdminActivityPage() {
 
       <section className="mt-6 grid gap-4 lg:grid-cols-[280px_1fr]">
         <form
-          className="rounded-3xl border border-brand-black/10 bg-brand-white p-5"
+          className="rounded-3xl border border-brand-black/10 bg-brand-white p-5 h-fit sticky top-6"
           onSubmit={applyFilters}
         >
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Filters</p>
-          <div className="mt-4 space-y-4 text-sm">
-            <label className="block space-y-2">
+          
+          {/* User ID */}
+          <div className="mt-4 space-y-3 text-sm">
+            <label className="block space-y-1">
               <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">User ID</span>
               <input
                 type="text"
@@ -320,7 +353,9 @@ export function AdminActivityPage() {
                 className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
               />
             </label>
-            <label className="block space-y-2">
+            
+            {/* Entity Type */}
+            <label className="block space-y-1">
               <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">Entity type</span>
               <select
                 value={formState.entityType}
@@ -334,7 +369,9 @@ export function AdminActivityPage() {
                 ))}
               </select>
             </label>
-            <label className="block space-y-2">
+            
+            {/* Action */}
+            <label className="block space-y-1">
               <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">Action</span>
               <select
                 value={formState.action}
@@ -348,7 +385,9 @@ export function AdminActivityPage() {
                 ))}
               </select>
             </label>
-            <label className="block space-y-2">
+            
+            {/* User Role */}
+            <label className="block space-y-1">
               <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">User role</span>
               <select
                 value={formState.userRole}
@@ -362,81 +401,90 @@ export function AdminActivityPage() {
                 ))}
               </select>
             </label>
-            <label className="block space-y-2">
-              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">Start date</span>
-              <input
-                type="date"
-                value={formState.startDate}
-                onChange={handleFilterChange("startDate")}
-                className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
-              />
-            </label>
-            <label className="block space-y-2">
-              <span className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60">End date</span>
-              <input
-                type="date"
-                value={formState.endDate}
-                onChange={handleFilterChange("endDate")}
-                className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
-              />
-            </label>
+
+            {/* Date Range Group */}
+            <div className="border-t border-brand-black/10 pt-3 mt-3">
+              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-brand-black/60 mb-2">Date Range</p>
+              <label className="block space-y-1 mb-2">
+                <span className="text-[0.55rem] uppercase tracking-[0.2em] text-brand-black/50">From</span>
+                <input
+                  type="date"
+                  value={formState.startDate}
+                  onChange={handleFilterChange("startDate")}
+                  className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-[0.55rem] uppercase tracking-[0.2em] text-brand-black/50">To</span>
+                <input
+                  type="date"
+                  value={formState.endDate}
+                  onChange={handleFilterChange("endDate")}
+                  className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
+                />
+              </label>
+            </div>
           </div>
-          <div className="mt-6 flex flex-wrap gap-2">
+
+          {/* Buttons */}
+          <div className="mt-6 flex flex-col gap-2 sticky bottom-0 bg-brand-white pt-4 border-t border-brand-black/10">
             <button
               type="submit"
-              className="flex-1 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white"
+              className="w-full rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90"
             >
               Apply
             </button>
             <button
               type="button"
               onClick={resetFilters}
-              className="flex-1 rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em]"
+              className="w-full rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] hover:bg-brand-black/5"
             >
               Reset
             </button>
           </div>
-          <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-xs text-brand-black/70">
+
+          {/* Entity Breakdown */}
+          <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-3 text-xs text-brand-black/70">
             <p className="font-subtitle text-[0.55rem] uppercase tracking-[0.35em] text-brand-red">
-              Current Page Mix
+              Page Mix
             </p>
-            <p className="mt-1 text-[0.6rem] text-brand-black/60">
-              Entity counts on this page (not database totals)
+            <p className="mt-0.5 text-[0.6rem] text-brand-black/50">
+              Current page entity counts
             </p>
             <ul className="mt-2 space-y-1">
               {entityBreakdown.length ? (
                 entityBreakdown.slice(0, 5).map(([entity, count]) => (
-                  <li key={entity} className="flex items-center justify-between">
+                  <li key={entity} className="flex items-center justify-between text-[0.6rem]">
                     <span className="uppercase tracking-[0.2em]">{entity}</span>
-                    <span>{count}</span>
+                    <span className="font-semibold">{count}</span>
                   </li>
                 ))
               ) : (
-                <li>No entries on current page.</li>
+                <li className="text-[0.6rem]">No entries on page.</li>
               )}
             </ul>
           </div>
         </form>
 
         <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Audit</p>
               <h3 className="font-display text-3xl uppercase">Activity table</h3>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <button
                 type="button"
                 onClick={exportCSV}
                 disabled={exportLoading || loading || logs.length === 0}
-                className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40 hover:bg-brand-black/5 whitespace-nowrap"
               >
                 {exportLoading ? "Exporting…" : "Export CSV"}
               </button>
               <button
                 type="button"
                 onClick={() => fetchLogs()}
-                className="rounded-full border border-brand-black px-4 py-1 text-xs uppercase tracking-[0.3em]"
+                className="rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40 hover:bg-brand-black/5 whitespace-nowrap"
                 disabled={loading}
               >
                 {loading ? "Syncing…" : "Refresh"}
@@ -453,70 +501,98 @@ export function AdminActivityPage() {
             <p className="mt-4 text-sm text-brand-black/60">Loading audit entries…</p>
           ) : (
             <>
-              <div className="mt-4 overflow-x-auto">
-                <table className="min-w-full text-left text-sm text-brand-black/80">
+              <div className="mt-6 overflow-x-auto border border-brand-black/10 rounded-2xl">
+                <table className="w-full text-left text-sm text-brand-black/80 border-collapse" style={{ tableLayout: "fixed" }}>
                   <thead>
-                    <tr className="text-xs uppercase tracking-[0.3em] text-brand-black/50">
-                      <th className="py-2 pr-3">Timestamp</th>
-                      <th className="py-2 pr-3">User</th>
-                      <th className="py-2 pr-3">Role</th>
-                      <th className="py-2 pr-3">Action</th>
-                      <th className="py-2 pr-3">Entity</th>
-                      <th className="py-2 pr-3">IP</th>
+                    <tr className="bg-brand-linen/50 text-xs uppercase tracking-[0.3em] text-brand-black/50 border-b border-brand-black/10">
+                      <th className="w-[140px] px-3 py-3 font-semibold">Timestamp</th>
+                      <th className="w-[160px] px-3 py-3 font-semibold">User</th>
+                      <th className="w-[100px] px-3 py-3 font-semibold">Role</th>
+                      <th className="flex-1 px-3 py-3 font-semibold">Action</th>
+                      <th className="w-[120px] px-3 py-3 font-semibold">Entity</th>
+                      <th className="w-[110px] px-3 py-3 font-semibold">IP Address</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {logs.map((log) => {
+                    {logs.map((log, idx) => {
                       const severity = getActionSeverity(log.action);
+                      const { dateStr, timeStr } = formatTimestamp(log.createdAt);
+                      const actionLabel = formatActionLabel(log.action);
+                      const entityLabel = getEntityLabel(log.entityType);
                       return (
-                        <tr key={log.id} className="border-t border-brand-black/10 text-xs hover:bg-brand-linen/30">
-                          <td className="py-2 pr-3 text-brand-black/60">
-                            {new Date(log.createdAt).toLocaleString()}
+                        <tr
+                          key={log.id}
+                          className={`text-xs border-b border-brand-black/10 hover:bg-brand-linen/40 transition-colors ${
+                            idx % 2 === 1 ? "bg-brand-linen/20" : ""
+                          }`}
+                        >
+                          <td className="px-3 py-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium text-brand-black">{dateStr}</span>
+                              <span className="text-[0.65rem] text-brand-black/50">{timeStr}</span>
+                            </div>
                           </td>
-                          <td className="py-2 pr-3">
+                          <td className="px-3 py-3 overflow-hidden text-ellipsis whitespace-nowrap">
                             {log.userId ? (
                               <a
                                 href={`/admin/users?search=${log.userId}`}
-                                className="text-brand-red underline hover:text-brand-red/80"
-                                title="View user"
+                                className="text-brand-red font-medium hover:text-brand-red/80 hover:underline transition-colors"
+                                title={`View user: ${getUserDisplay(log)}`}
                               >
                                 {getUserDisplay(log)}
                               </a>
                             ) : (
-                              "—"
+                              <span className="text-brand-black/40">—</span>
                             )}
                           </td>
-                          <td className="py-2 pr-3">
-                            <Badge tone="neutral">{log.userRole || "—"}</Badge>
+                          <td className="px-3 py-3">
+                            <span className="inline-block text-[0.65rem] font-medium px-2 py-1 rounded-lg bg-brand-black/5 text-brand-black/70 uppercase tracking-[0.15em]">
+                              {log.userRole || "—"}
+                            </span>
                           </td>
-                          <td className="py-2 pr-3">
-                            <div className="flex items-center gap-2">
+                          <td className="px-3 py-3 overflow-hidden">
+                            <div className="flex items-start gap-2">
                               {severity === "critical" && (
-                                <span className="h-2 w-2 rounded-full bg-brand-red" title="Critical action" />
+                                <span
+                                  className="h-2 w-2 rounded-full bg-brand-red flex-shrink-0 mt-1.5"
+                                  title="Critical action"
+                                />
                               )}
                               {severity === "warning" && (
-                                <span className="h-2 w-2 rounded-full bg-yellow-500" title="Warning action" />
+                                <span
+                                  className="h-2 w-2 rounded-full bg-yellow-500 flex-shrink-0 mt-1.5"
+                                  title="Warning action"
+                                />
                               )}
-                              <span className="uppercase tracking-[0.2em]">{log.action}</span>
+                              <span className="font-semibold text-brand-black whitespace-normal break-words">{actionLabel}</span>
                             </div>
                           </td>
-                          <td className="py-2 pr-3">
-                            <div className="flex flex-col gap-1">
-                              <Badge tone="neutral">{log.entityType || "unclassified"}</Badge>
+                          <td className="px-3 py-3">
+                            <div className="flex flex-col gap-1.5">
+                              <span className="inline-block text-[0.65rem] font-medium px-2 py-1 rounded-lg bg-brand-black/5 text-brand-black/70 uppercase tracking-[0.15em] w-fit">
+                                {entityLabel}
+                              </span>
                               {log.entityId && (
-                                <span className="text-[0.6rem] text-brand-black/60">{log.entityId}</span>
+                                <span
+                                  className="text-[0.6rem] text-brand-black/50 truncate cursor-help hover:text-brand-black/70"
+                                  title={log.entityId}
+                                >
+                                  ID: {log.entityId.substring(0, 8)}…
+                                </span>
                               )}
                             </div>
                           </td>
-                          <td className="py-2 pr-3 text-[0.65rem] text-brand-black/60">
-                            {log.ipAddress || "—"}
+                          <td className="px-3 py-3 text-[0.65rem] text-brand-black/60 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
+                            <span title={log.ipAddress || ""}>
+                              {log.ipAddress || "—"}
+                            </span>
                           </td>
                         </tr>
                       );
                     })}
                     {!logs.length ? (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-xs text-brand-black/60">
+                        <td colSpan={6} className="px-3 py-8 text-center text-xs text-brand-black/60">
                           {getEmptyStateMessage()}
                         </td>
                       </tr>
@@ -524,6 +600,7 @@ export function AdminActivityPage() {
                   </tbody>
                 </table>
               </div>
+
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-brand-black/70">
                 <p className="uppercase tracking-[0.3em]">
                   Page {pagination.page || page} / {pagination.totalPages || 1} · {pagination.total} total records
@@ -533,7 +610,7 @@ export function AdminActivityPage() {
                     type="button"
                     onClick={() => paginate("prev")}
                     disabled={page <= 1}
-                    className="rounded-full border border-brand-black px-4 py-1 uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-full border border-brand-black px-4 py-1 uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40 hover:bg-brand-black/5"
                   >
                     Prev
                   </button>
@@ -541,7 +618,7 @@ export function AdminActivityPage() {
                     type="button"
                     onClick={() => paginate("next")}
                     disabled={page >= (pagination.totalPages || 1)}
-                    className="rounded-full border border-brand-black px-4 py-1 uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-full border border-brand-black px-4 py-1 uppercase tracking-[0.3em] disabled:cursor-not-allowed disabled:opacity-40 hover:bg-brand-black/5"
                   >
                     Next
                   </button>
