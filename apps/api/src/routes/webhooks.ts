@@ -55,3 +55,108 @@ function toJson(value: unknown): Prisma.InputJsonValue {
     return (value ?? null) as Prisma.InputJsonValue;
   }
 }
+
+/**
+ * Instagram Webhook Verification
+ * Handles the GET request from Instagram to verify the webhook endpoint
+ */
+export async function instagramWebhookVerification(req: Request, res: Response) {
+  const VERIFY_TOKEN = process.env.INSTAGRAM_VERIFY_TOKEN;
+
+  if (!VERIFY_TOKEN) {
+    logError("INSTAGRAM_VERIFY_TOKEN not configured", new Error("Missing env var"));
+    return res.status(500).json({ error: "Instagram verify token not configured" });
+  }
+
+  const mode = req.query["hub.mode"] as string;
+  const token = req.query["hub.verify_token"] as string;
+  const challenge = req.query["hub.challenge"] as string;
+
+  console.log("[INSTAGRAM WEBHOOK] Verification request received", {
+    mode,
+    hasToken: !!token,
+    hasChallenge: !!challenge
+  });
+
+  // Verify the token matches
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("[INSTAGRAM WEBHOOK] ✅ Verification successful");
+    return res.status(200).send(challenge);
+  }
+
+  console.log("[INSTAGRAM WEBHOOK] ❌ Verification failed - invalid token or mode");
+  return res.sendStatus(403);
+}
+
+/**
+ * Instagram Webhook Event Receiver
+ * Handles POST requests from Instagram with incoming events
+ */
+export async function instagramWebhookEventHandler(req: Request, res: Response) {
+  try {
+    const body = req.body;
+
+    console.log("[INSTAGRAM WEBHOOK] Event received:", JSON.stringify(body, null, 2));
+
+    // Acknowledge receipt immediately (Instagram expects 200 within 20 seconds)
+    res.status(200).json({ status: "received" });
+
+    // Process the event asynchronously
+    if (body.entry && Array.isArray(body.entry)) {
+      for (const entry of body.entry) {
+        if (entry.messaging && Array.isArray(entry.messaging)) {
+          for (const message of entry.messaging) {
+            await processInstagramEvent(message);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    logError("Failed to process Instagram webhook event", error);
+    // Still return 200 to acknowledge receipt to Instagram
+    res.status(200).json({ status: "processed_with_error" });
+  }
+}
+
+/**
+ * Process individual Instagram events
+ */
+async function processInstagramEvent(event: any) {
+  try {
+    const senderId = event.sender?.id;
+    const recipientId = event.recipient?.id;
+
+    console.log("[INSTAGRAM EVENT] Processing:", {
+      senderId,
+      recipientId,
+      hasMessage: !!event.message,
+      hasPostback: !!event.postback,
+      hasDelivery: !!event.delivery,
+      hasRead: !!event.read
+    });
+
+    // Handle different event types
+    if (event.message) {
+      console.log("[INSTAGRAM EVENT] Message:", event.message);
+      // TODO: Implement message handling
+      // Store message in database, trigger notifications, etc.
+    }
+
+    if (event.postback) {
+      console.log("[INSTAGRAM EVENT] Postback:", event.postback);
+      // TODO: Implement postback handling
+    }
+
+    if (event.delivery) {
+      console.log("[INSTAGRAM EVENT] Delivery receipt");
+      // TODO: Update message status to delivered
+    }
+
+    if (event.read) {
+      console.log("[INSTAGRAM EVENT] Read receipt");
+      // TODO: Update message status to read
+    }
+  } catch (error) {
+    logError("Failed to process individual Instagram event", error, { event });
+  }
+}

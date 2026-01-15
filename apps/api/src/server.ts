@@ -28,7 +28,7 @@ import { initializeScheduledExports } from './services/scheduledExportService.js
 import { safeAsync } from './utils/safeAsync.js';
 
 // Webhooks
-import { stripeWebhookHandler } from './routes/webhooks.js';
+import { stripeWebhookHandler, instagramWebhookVerification, instagramWebhookEventHandler } from './routes/webhooks.js';
 import signatureWebhookRouter from './routes/signatureWebhooks.js';
 import { metaWebhookVerificationHandler } from './routes/metaWebhook.js';
 
@@ -468,6 +468,13 @@ app.post("/webhooks/stripe", express.raw({ type: "application/json" }), stripeWe
 // Meta (Instagram) webhook verification - PUBLIC, no auth required
 // This is a GET endpoint for Meta's verification challenge only
 app.get("/api/webhooks/meta", metaWebhookVerificationHandler);
+
+// Instagram webhooks - PUBLIC, no auth required
+// GET: Verification endpoint for Instagram callback URL setup
+app.get("/webhooks/instagram", instagramWebhookVerification);
+
+// POST: Event receiver for Instagram messages and interactions
+app.post("/webhooks/instagram", express.json(), instagramWebhookEventHandler);
 
 // JSON parser (after stripe)
 app.use(express.json({ limit: "350mb" }));
