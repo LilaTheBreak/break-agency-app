@@ -1902,6 +1902,10 @@ function DealsTab({ talent, onDealCreated }) {
     notes: false,
   });
   const [activeStatFilter, setActiveStatFilter] = useState(null); // Track which stat was clicked
+
+  // Load closed deals when tab is active
+  useEffect(() => {
+    if (dealView !== "closed") return;
     
     const loadClosedDeals = async () => {
       setClosedDealsLoading(true);
