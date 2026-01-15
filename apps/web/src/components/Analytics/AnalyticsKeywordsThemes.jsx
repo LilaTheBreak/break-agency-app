@@ -1,5 +1,57 @@
-import React, { useMemo } from "react";
-import { Tag, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Tag, TrendingUp, TrendingDown, Zap, HelpCircle } from "lucide-react";
+
+/**
+ * Metric Tooltip component
+ */
+function MetricTooltip({ explanation, status }) {
+  const [show, setShow] = useState(false);
+  
+  if (!explanation) return null;
+  
+  return (
+    <div className="relative inline-block">
+      <HelpCircle 
+        className="h-3 w-3 text-brand-black/20 cursor-help hover:text-brand-black/40"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      />
+      {show && (
+        <div className="absolute bottom-full left-0 mb-2 w-40 bg-brand-black rounded-lg p-2 text-white text-xs z-50">
+          <p>{explanation}</p>
+          <div className="absolute top-full left-2 w-2 h-2 bg-brand-black transform rotate-45 -mt-1"></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Helper to extract metric value and metadata
+ */
+function getMetricValue(metric) {
+  if (!metric) return { display: "—", status: "unavailable", explanation: "", source: "" };
+  if (typeof metric === "object" && "value" in metric) {
+    // New standardized format
+    const { value, status, explanation, source } = metric;
+    let display = "—";
+    if (value !== null && value !== undefined && value !== 0) {
+      if (typeof value === "number") {
+        display = value.toString();
+      } else {
+        display = value;
+      }
+    }
+    return { display, status, explanation, source };
+  }
+  // Fallback for old format
+  return { 
+    display: metric || "—",
+    status: "unknown",
+    explanation: "",
+    source: ""
+  };
+}
 
 /**
  * AnalyticsKeywordsThemes
@@ -57,6 +109,10 @@ export default function AnalyticsKeywordsThemes({ data, comparisonData, comparis
             const inComparison = compareKeywords?.some(
               ck => ck.term.toLowerCase() === kw.term.toLowerCase()
             );
+            
+            // Get metric values with new structure handling
+            const frequencyMetric = getMetricValue(kw.frequency);
+            const sentimentMetric = kw.sentiment ? getMetricValue(kw.sentiment) : null;
 
             return (
               <div
@@ -66,11 +122,16 @@ export default function AnalyticsKeywordsThemes({ data, comparisonData, comparis
                     ? "border-2 border-brand-red bg-brand-red/5"
                     : "border border-brand-black/10 hover:border-brand-black/20"
                 }`}
-                title={`${kw.frequency} mentions${inComparison ? " (Also in comparison)" : ""}`}
+                title={`${frequencyMetric.display} mentions${inComparison ? " (Also in comparison)" : ""}`}
               >
                 {kw.term}
-                {kw.frequency > 1 && (
-                  <span className="ml-1.5 font-mono text-[0.65rem]">×{kw.frequency}</span>
+                {frequencyMetric.display !== "—" && (
+                  <span className="ml-1.5 font-mono text-[0.65rem]">×{frequencyMetric.display}</span>
+                )}
+                {sentimentMetric && sentimentMetric.source && (
+                  <span className="ml-1.5 text-[0.6rem] opacity-60">
+                    [{sentimentMetric.source}]
+                  </span>
                 )}
               </div>
             );

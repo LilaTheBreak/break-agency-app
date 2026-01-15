@@ -1,5 +1,30 @@
-import React, { useMemo } from "react";
-import { Flame, MessageCircle, Heart, Eye } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Flame, MessageCircle, Heart, Eye, HelpCircle } from "lucide-react";
+
+/**
+ * Metric Tooltip component
+ */
+function MetricTooltip({ explanation, status }) {
+  const [show, setShow] = useState(false);
+  
+  if (!explanation) return null;
+  
+  return (
+    <div className="relative inline-block">
+      <HelpCircle 
+        className="h-3 w-3 text-brand-black/20 cursor-help hover:text-brand-black/40"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      />
+      {show && (
+        <div className="absolute bottom-full left-0 mb-2 w-40 bg-brand-black rounded-lg p-2 text-white text-xs z-50">
+          <p>{explanation}</p>
+          <div className="absolute top-full left-2 w-2 h-2 bg-brand-black transform rotate-45 -mt-1"></div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * AnalyticsContentPerformance
@@ -36,6 +61,37 @@ export default function AnalyticsContentPerformance({ data, platformFilter }) {
     );
   }
 
+  // Helper to extract metric value and metadata
+  const getMetricValue = (metric) => {
+    if (!metric) return { display: "—", status: "unavailable", explanation: "", source: "" };
+    if (typeof metric === "object" && "value" in metric) {
+      // New standardized format
+      const { value, status, explanation, source } = metric;
+      let display = "—";
+      if (value !== null && value !== undefined && value !== 0) {
+        if (typeof value === "number") {
+          display = value > 1000 
+            ? `${(value / 1000).toFixed(1)}K`
+            : value.toString();
+        } else {
+          display = value;
+        }
+      }
+      return { display, status, explanation, source };
+    }
+    // Fallback for old format
+    return { 
+      display: typeof metric === "number" 
+        ? metric > 1000 
+          ? `${(metric / 1000).toFixed(1)}K`
+          : metric.toString()
+        : metric || "—",
+      status: "unknown",
+      explanation: "",
+      source: ""
+    };
+  };
+
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <div className="mb-6">
@@ -51,10 +107,10 @@ export default function AnalyticsContentPerformance({ data, platformFilter }) {
       <div className="space-y-3">
         {topPosts.map((post, idx) => {
           const engagementMetrics = [
-            { label: "Engagement", value: post.engagementRate, icon: Flame, color: "text-brand-red" },
-            { label: "Comments", value: post.commentCount, icon: MessageCircle, color: "text-blue-600" },
-            { label: "Likes", value: post.likeCount, icon: Heart, color: "text-pink-600" },
-            ...(post.watchTime ? [{ label: "Views", value: post.watchTime, icon: Eye, color: "text-purple-600" }] : []),
+            { label: "Engagement", metric: post.engagementRate, icon: Flame, color: "text-brand-red" },
+            { label: "Comments", metric: post.comments, icon: MessageCircle, color: "text-blue-600" },
+            { label: "Likes", metric: post.likes, icon: Heart, color: "text-pink-600" },
+            ...(post.views ? [{ label: "Views", metric: post.views, icon: Eye, color: "text-purple-600" }] : []),
           ];
 
           return (
@@ -90,37 +146,44 @@ export default function AnalyticsContentPerformance({ data, platformFilter }) {
 
               {/* Engagement Metrics */}
               <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
-                {engagementMetrics.map((metric) => {
-                  const Icon = metric.icon;
-                  const value = typeof metric.value === "number" 
-                    ? metric.value > 1000 
-                      ? `${(metric.value / 1000).toFixed(1)}K`
-                      : metric.value.toString()
-                    : metric.value || "—";
+                {engagementMetrics.map((metricConfig) => {
+                  const Icon = metricConfig.icon;
+                  const { display, status, explanation, source } = getMetricValue(metricConfig.metric);
+                  const isUnavailable = status === "unavailable";
                   
                   return (
                     <div
-                      key={metric.label}
-                      className="flex items-start gap-2"
+                      key={metricConfig.label}
+                      className={`flex items-start gap-2 ${isUnavailable ? "opacity-50" : ""}`}
                     >
-                      <Icon className={`h-3 w-3 mt-1 ${metric.color}`} />
-                      <div>
-                        <p className="text-[0.7rem] uppercase tracking-[0.1em] text-brand-black/60">
-                          {metric.label}
-                        </p>
-                        <p className="text-sm font-semibold text-brand-black">{value}</p>
+                      <Icon className={`h-3 w-3 mt-1 ${metricConfig.color}`} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1">
+                          <p className="text-[0.7rem] uppercase tracking-[0.1em] text-brand-black/60">
+                            {metricConfig.label}
+                          </p>
+                          {explanation && <MetricTooltip explanation={explanation} status={status} />}
+                        </div>
+                        <p className="text-sm font-semibold text-brand-black">{display}</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Date */}
-              {post.postedAt && (
-                <p className="text-[0.7rem] text-brand-black/50 mt-3 pt-3 border-t border-brand-black/10">
-                  {new Date(post.postedAt).toLocaleDateString()}
-                </p>
-              )}
+              {/* Date & Source */}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-brand-black/10">
+                {post.postedAt && (
+                  <p className="text-[0.7rem] text-brand-black/50">
+                    {new Date(post.postedAt).toLocaleDateString()}
+                  </p>
+                )}
+                {post.likes?.source && (
+                  <span className="text-[0.65rem] uppercase tracking-[0.1em] font-semibold px-2 py-0.5 rounded-full bg-brand-black/5 text-brand-black/50">
+                    {post.likes.source}
+                  </span>
+                )}
+              </div>
             </div>
           );
         })}

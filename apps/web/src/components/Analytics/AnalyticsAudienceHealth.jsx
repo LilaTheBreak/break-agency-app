@@ -1,5 +1,30 @@
-import React from "react";
-import { Users, MessageSquare, TrendingUp, AlertCircle } from "lucide-react";
+import React, { useState } from "react";
+import { Users, MessageSquare, TrendingUp, AlertCircle, HelpCircle } from "lucide-react";
+
+/**
+ * Metric Tooltip component
+ */
+function MetricTooltip({ explanation, status }) {
+  const [show, setShow] = useState(false);
+  
+  if (!explanation) return null;
+  
+  return (
+    <div className="relative inline-block">
+      <HelpCircle 
+        className="h-3 w-3 text-brand-black/20 cursor-help hover:text-brand-black/40"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      />
+      {show && (
+        <div className="absolute bottom-full left-0 mb-2 w-40 bg-brand-black rounded-lg p-2 text-white text-xs z-50">
+          <p>{explanation}</p>
+          <div className="absolute top-full left-2 w-2 h-2 bg-brand-black transform rotate-45 -mt-1"></div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * AnalyticsAudienceHealth
@@ -22,11 +47,39 @@ export default function AnalyticsAudienceHealth({ data }) {
 
   const community = data.community;
 
+  // Helper to extract metric value and metadata
+  const getMetricValue = (metric) => {
+    if (!metric) return { display: "—", status: "unavailable", explanation: "", source: "" };
+    if (typeof metric === "object" && "value" in metric) {
+      // New standardized format
+      const { value, status, explanation, source } = metric;
+      let display = "—";
+      if (value !== null && value !== undefined && value !== 0) {
+        if (typeof value === "number") {
+          display = value.toLocaleString ? value.toLocaleString() : value.toString();
+        } else {
+          display = value;
+        }
+      }
+      return { display, status, explanation, source };
+    }
+    // Fallback for old format
+    return { 
+      display: metric || "—",
+      status: "unknown",
+      explanation: "",
+      source: ""
+    };
+  };
+
   // Determine community temperature
   const getTemperature = () => {
     if (!community.commentTrend) return "stable";
-    if (community.commentTrend > 0.15) return "growing";
-    if (community.commentTrend < -0.15) return "declining";
+    const trendValue = community.commentTrend?.value !== undefined 
+      ? community.commentTrend.value 
+      : community.commentTrend;
+    if (trendValue > 0.15) return "growing";
+    if (trendValue < -0.15) return "declining";
     return "stable";
   };
 
@@ -39,6 +92,11 @@ export default function AnalyticsAudienceHealth({ data }) {
   };
 
   const config = temperatureConfig[temperature];
+  const commentVolumeMetric = getMetricValue(community.commentVolume);
+  const responseRateMetric = getMetricValue(community.responseRate);
+  const sentimentMetric = getMetricValue(community.averageSentiment);
+  const commentTrendMetric = getMetricValue(community.commentTrend);
+  const consistencyMetric = getMetricValue(community.consistencyScore);
 
   return (
     <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
@@ -54,32 +112,60 @@ export default function AnalyticsAudienceHealth({ data }) {
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Comment Velocity */}
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+        <div className={`rounded-2xl border border-brand-black/10 p-4 ${
+          commentVolumeMetric.status === "unavailable" 
+            ? "bg-brand-linen/20 opacity-60" 
+            : "bg-brand-linen/30"
+        }`}>
           <div className="flex items-start justify-between mb-3">
-            <p className="text-[0.7rem] uppercase tracking-[0.2em] font-semibold text-brand-red">
-              Comment Volume
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[0.7rem] uppercase tracking-[0.2em] font-semibold text-brand-red">
+                Comment Volume
+              </p>
+              {commentVolumeMetric.explanation && (
+                <MetricTooltip 
+                  explanation={commentVolumeMetric.explanation} 
+                  status={commentVolumeMetric.status}
+                />
+              )}
+            </div>
             <MessageSquare className="h-4 w-4 text-brand-black/40" />
           </div>
           <p className="font-display text-2xl text-brand-black">
-            {community.commentVolume || "0"}
+            {commentVolumeMetric.display}
           </p>
           <p className="text-xs text-brand-black/60 mt-2">
-            {community.commentTrend > 0 ? "📈 " : community.commentTrend < 0 ? "📉 " : "→ "}
-            {Math.abs(community.commentTrend * 100).toFixed(1)}% trend
+            {commentTrendMetric.status === "unavailable" ? "—" : (
+              <>
+                {commentTrendMetric.display > 0 ? "📈 " : commentTrendMetric.display < 0 ? "📉 " : "→ "}
+                {commentTrendMetric.display}% trend
+              </>
+            )}
           </p>
         </div>
 
         {/* Response Rate */}
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+        <div className={`rounded-2xl border border-brand-black/10 p-4 ${
+          responseRateMetric.status === "unavailable" 
+            ? "bg-brand-linen/20 opacity-60" 
+            : "bg-brand-linen/30"
+        }`}>
           <div className="flex items-start justify-between mb-3">
-            <p className="text-[0.7rem] uppercase tracking-[0.2em] font-semibold text-brand-red">
-              Response Rate
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[0.7rem] uppercase tracking-[0.2em] font-semibold text-brand-red">
+                Response Rate
+              </p>
+              {responseRateMetric.explanation && (
+                <MetricTooltip 
+                  explanation={responseRateMetric.explanation} 
+                  status={responseRateMetric.status}
+                />
+              )}
+            </div>
             <TrendingUp className="h-4 w-4 text-brand-black/40" />
           </div>
           <p className="font-display text-2xl text-brand-black">
-            {community.responseRate ? `${(community.responseRate * 100).toFixed(1)}%` : "—"}
+            {responseRateMetric.display}
           </p>
           <p className="text-xs text-brand-black/60 mt-2">
             How often creator responds
@@ -87,23 +173,35 @@ export default function AnalyticsAudienceHealth({ data }) {
         </div>
 
         {/* Sentiment */}
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+        <div className={`rounded-2xl border border-brand-black/10 p-4 ${
+          sentimentMetric.status === "unavailable" 
+            ? "bg-brand-linen/20 opacity-60" 
+            : "bg-brand-linen/30"
+        }`}>
           <div className="flex items-start justify-between mb-3">
-            <p className="text-[0.7rem] uppercase tracking-[0.2em] font-semibold text-brand-red">
-              Avg Sentiment
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[0.7rem] uppercase tracking-[0.2em] font-semibold text-brand-red">
+                Avg Sentiment
+              </p>
+              {sentimentMetric.explanation && (
+                <MetricTooltip 
+                  explanation={sentimentMetric.explanation} 
+                  status={sentimentMetric.status}
+                />
+              )}
+            </div>
             <div className="text-2xl">
-              {community.averageSentiment > 0.6
-                ? "😊"
-                : community.averageSentiment < 0.4
-                ? "😕"
-                : "😐"}
+              {sentimentMetric.display === "—" ? "?" : (
+                sentimentMetric.display > 0.6
+                  ? "😊"
+                  : sentimentMetric.display < 0.4
+                  ? "😕"
+                  : "😐"
+              )}
             </div>
           </div>
           <p className="font-display text-2xl text-brand-black">
-            {community.averageSentiment
-              ? `${(community.averageSentiment * 100).toFixed(0)}%`
-              : "—"}
+            {sentimentMetric.display}
           </p>
           <p className="text-xs text-brand-black/60 mt-2">
             Community sentiment score
@@ -126,21 +224,29 @@ export default function AnalyticsAudienceHealth({ data }) {
       </div>
 
       {/* Consistency Score Progress Bar */}
-      {community.consistencyScore !== undefined && (
+      {consistencyMetric.status !== "unavailable" && (
         <div className="mt-6 pt-6 border-t border-brand-black/10">
-          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-brand-black/60 mb-3">
-            Engagement Consistency
-          </p>
+          <div className="flex items-center gap-2 mb-3">
+            <p className="text-xs uppercase tracking-[0.2em] font-semibold text-brand-black/60">
+              Engagement Consistency
+            </p>
+            {consistencyMetric.explanation && (
+              <MetricTooltip 
+                explanation={consistencyMetric.explanation} 
+                status={consistencyMetric.status}
+              />
+            )}
+          </div>
           <div className="relative h-3 rounded-full bg-brand-black/10 overflow-hidden mb-2">
             <div
               className="h-full bg-brand-red transition-all"
-              style={{ width: `${Math.min(community.consistencyScore * 100, 100)}%` }}
+              style={{ width: `${Math.min(consistencyMetric.display * 100, 100)}%` }}
             ></div>
           </div>
           <p className="text-xs text-brand-black/60">
-            {community.consistencyScore > 0.8
+            {consistencyMetric.display > 0.8
               ? "Highly consistent engagement patterns"
-              : community.consistencyScore > 0.6
+              : consistencyMetric.display > 0.6
               ? "Regular engagement cycles"
               : "Variable engagement patterns"}
           </p>
@@ -164,25 +270,6 @@ export default function AnalyticsAudienceHealth({ data }) {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Response Trend */}
-      {community.responseTrend !== undefined && (
-        <div className="mt-6 pt-6 border-t border-brand-black/10">
-          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-brand-black/60 mb-3">
-            Response Trend
-          </p>
-          <p className="text-sm text-brand-black">
-            {community.responseTrend > 0 ? (
-              <span className="text-green-600 font-semibold">↑ Improving</span>
-            ) : community.responseTrend < 0 ? (
-              <span className="text-orange-600 font-semibold">↓ Declining</span>
-            ) : (
-              <span className="text-blue-600 font-semibold">→ Stable</span>
-            )}
-            {" "}({Math.abs(community.responseTrend * 100).toFixed(1)}%)
-          </p>
         </div>
       )}
     </section>
