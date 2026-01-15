@@ -36,20 +36,20 @@ export function BrandSelect({
 
   // Get selected brand display name
   const selectedBrand = useMemo(() => {
-    return brands.find(b => b.id === value);
+    return (brands || []).find(b => b?.id === value);
   }, [brands, value]);
 
   // Filter brands by search text
   const filteredBrands = useMemo(() => {
-    if (!searchText.trim()) return brands;
+    if (!searchText.trim()) return brands || [];
     const search = searchText.toLowerCase().trim();
-    return brands.filter(b => b.name.toLowerCase().includes(search));
+    return (brands || []).filter(b => b?.name?.toLowerCase?.()?.includes(search));
   }, [brands, searchText]);
 
   // Check if search text matches any existing brand (case-insensitive)
   const exactMatch = useMemo(() => {
     const search = searchText.toLowerCase().trim();
-    return brands.some(b => b.name.toLowerCase() === search);
+    return (brands || []).some(b => b?.name?.toLowerCase?.() === search);
   }, [brands, searchText]);
 
   // Should show "Create new brand" option?
