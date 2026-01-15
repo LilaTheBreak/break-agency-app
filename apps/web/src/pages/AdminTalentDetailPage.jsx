@@ -136,13 +136,18 @@ function LinkUserModal({ open, onClose, talentId, onSuccess }) {
   }, [open]);
 
   const filteredUsers = useMemo(() => {
-    if (!search) return users;
-    const searchLower = search.toLowerCase();
-    return users.filter(
-      (u) =>
-        u.email?.toLowerCase().includes(searchLower) ||
-        u.name?.toLowerCase().includes(searchLower)
-    );
+    if (!search || typeof search !== 'string') return users || [];
+    try {
+      const searchLower = search.toLowerCase();
+      return (users || []).filter(
+        (u) =>
+          u?.email?.toLowerCase?.()?.includes(searchLower) ||
+          u?.name?.toLowerCase?.()?.includes(searchLower)
+      );
+    } catch (err) {
+      console.error("[FILTER] Error filtering users:", err);
+      return users || [];
+    }
   }, [users, search]);
 
   const handleLink = async () => {
@@ -2105,15 +2110,15 @@ function DealsTab({ talent, onDealCreated }) {
         break;
       case 'brandAZ':
         sorted.sort((a, b) => {
-          const nameA = (a.brand?.name || a.brandName || '').toLowerCase();
-          const nameB = (b.brand?.name || b.brandName || '').toLowerCase();
+          const nameA = (a?.brand?.name || a?.brandName || '').toLowerCase();
+          const nameB = (b?.brand?.name || b?.brandName || '').toLowerCase();
           return nameA.localeCompare(nameB);
         });
         break;
       case 'brandZA':
         sorted.sort((a, b) => {
-          const nameA = (a.brand?.name || a.brandName || '').toLowerCase();
-          const nameB = (b.brand?.name || b.brandName || '').toLowerCase();
+          const nameA = (a?.brand?.name || a?.brandName || '').toLowerCase();
+          const nameB = (b?.brand?.name || b?.brandName || '').toLowerCase();
           return nameB.localeCompare(nameA);
         });
         break;
