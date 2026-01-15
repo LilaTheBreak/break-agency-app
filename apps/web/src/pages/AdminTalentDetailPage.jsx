@@ -1165,15 +1165,61 @@ function TalentSocialSection({ talentId }) {
   );
 }
 
+// Helper: Calculate attention required items
+function getAttentionRequiredItems(talent) {
+  if (!talent) return { dealsClosing: [], dealsNeedAction: [], tasksOverdue: [], meetingsUpcoming: [] };
+
+  const now = new Date();
+  const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  
+  const deals = talent.deals || [];
+  const tasks = talent.tasks || [];
+  
+  // Deals closing in next 14 days
+  const dealsClosing = deals.filter(d => {
+    if (!d.expectedClose) return false;
+    const closeDate = new Date(d.expectedClose);
+    return closeDate >= now && closeDate <= twoWeeksFromNow && !["COMPLETED", "LOST"].includes(d.stage);
+  }).slice(0, 3);
+  
+  // Deals missing critical info (no fee, no contract, stuck in stage)
+  const dealsNeedAction = deals.filter(d => {
+    if (["COMPLETED", "LOST"].includes(d.stage)) return false;
+    const missingFee = !d.value;
+    const stuckInStage = d.createdAt && (now.getTime() - new Date(d.createdAt).getTime()) > 14 * 24 * 60 * 60 * 1000 && d.stage === "NEW_LEAD";
+    return missingFee || stuckInStage;
+  }).slice(0, 3);
+  
+  // Tasks overdue
+  const tasksOverdue = (tasks || []).filter(t => {
+    if (t.status === "COMPLETED") return false;
+    const dueDate = new Date(t.dueDate);
+    return dueDate < now;
+  }).slice(0, 2);
+  
+  // Meetings in next 7 days (simplified - would need meetings data)
+  const meetingsUpcoming = [];
+  
+  return { dealsClosing, dealsNeedAction, tasksOverdue, meetingsUpcoming };
+}
+
 export function AdminTalentDetailPage() {
   const { talentId } = useParams();
   const navigate = useNavigate();
   const [talent, setTalent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("deals");
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  
+  // Section expansion states (collapsed by default for cleaner UX)
+  const [expandedSections, setExpandedSections] = useState({
+    representation: false,
+    emails: false,
+    social: false,
+    contact: false,
+  });
 
   // Use ref to prevent multiple simultaneous fetches
   const fetchingRef = useRef(false);
@@ -1425,6 +1471,80 @@ export function AdminTalentDetailPage() {
         </CollapsibleDetailSection>
       </section>
 
+      {/* TODAY / ATTENTION REQUIRED STRIP */}
+      {talent && (() => {
+        const attention = getAttentionRequiredItems(talent);
+        const totalItems = attention.dealsClosing.length + attention.dealsNeedAction.length + attention.tasksOverdue.length + attention.meetingsUpcoming.length;
+        
+        if (totalItems === 0) return null;
+        
+        return (
+          <section className="rounded-2xl border-l-4 border-l-brand-red bg-red-50 border border-red-200 p-5 mb-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-bold text-red-900 mb-3">📌 Today for {talent.name || "this talent"}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {attention.dealsClosing.length > 0 && (
+                    <div className="bg-white rounded-lg p-3 border border-red-100">
+                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">🔔 Closing Soon</p>
+                      <div className="space-y-1">
+                        {attention.dealsClosing.map(d => (
+                          <button
+                            key={d.id}
+                            onClick={() => setActiveTab("deals")}
+                            className="block text-xs text-red-900 hover:text-red-700 hover:underline truncate"
+                          >
+                            {d.dealName || "Untitled"} ({new Date(d.expectedClose).toLocaleDateString()})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {attention.dealsNeedAction.length > 0 && (
+                    <div className="bg-white rounded-lg p-3 border border-red-100">
+                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">⚠️ Needs Action</p>
+                      <div className="space-y-1">
+                        {attention.dealsNeedAction.map(d => (
+                          <button
+                            key={d.id}
+                            onClick={() => setActiveTab("deals")}
+                            className="block text-xs text-red-900 hover:text-red-700 hover:underline truncate"
+                          >
+                            {d.dealName || "Untitled"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {attention.tasksOverdue.length > 0 && (
+                    <div className="bg-white rounded-lg p-3 border border-red-100">
+                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">📝 Overdue Tasks</p>
+                      <div className="space-y-1">
+                        {attention.tasksOverdue.map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => setActiveTab("deals")}
+                            className="block text-xs text-red-900 hover:text-red-700 hover:underline truncate"
+                          >
+                            {t.title || "Untitled task"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {attention.meetingsUpcoming.length > 0 && (
+                    <div className="bg-white rounded-lg p-3 border border-red-100">
+                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">📅 Upcoming</p>
+                      <p className="text-xs text-red-900">{attention.meetingsUpcoming.length} meeting(s)</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* TIER 3: Workspace Tabs */}
       <div className="mb-6 flex flex-wrap gap-2 border-b border-brand-black/10">
         {TABS.map((tab) => {
@@ -1451,7 +1571,7 @@ export function AdminTalentDetailPage() {
       {/* Tab Content */}
       <div className="space-y-6">
         {activeTab === "overview" && (
-          <OverviewTab talent={talent} isExclusive={isExclusive} />
+          <OverviewTab talent={talent} isExclusive={isExclusive} expandedSections={expandedSections} setExpandedSections={setExpandedSections} />
         )}
         {activeTab === "contact-information" && (
           <ContactInformationSection talent={talent} isEditing={editModalOpen} />
@@ -1519,27 +1639,91 @@ export function AdminTalentDetailPage() {
         talent={talent}
         onSuccess={fetchTalentData}
       />
+
+      {/* STICKY FLOATING ACTION BAR */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
+        {/* Primary CTA: Add Deal */}
+        <button
+          onClick={() => {
+            if (activeTab !== "deals") setActiveTab("deals");
+            // Trigger the create deal modal through DealsTab
+            setTimeout(() => {
+              const addDealBtn = document.querySelector('[data-action="add-deal"]');
+              if (addDealBtn) addDealBtn.click();
+            }, 100);
+          }}
+          className="flex items-center justify-center gap-2 rounded-full bg-brand-red text-white shadow-lg hover:bg-brand-red/90 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
+          title="Add deal"
+        >
+          <Plus className="h-6 w-6" />
+          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">Deal</span>
+        </button>
+
+        {/* Secondary CTAs */}
+        <button
+          onClick={() => toast('Task creation coming soon', { icon: '📝' })}
+          className="flex items-center justify-center gap-2 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
+          title="Add task"
+        >
+          <CheckSquare className="h-5 w-5" />
+          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">Task</span>
+        </button>
+
+        <button
+          onClick={() => toast('Meeting scheduling coming soon', { icon: '📅' })}
+          className="flex items-center justify-center gap-2 rounded-full bg-green-500 text-white shadow-lg hover:bg-green-600 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
+          title="Schedule meeting"
+        >
+          <Calendar className="h-5 w-5" />
+          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">Meet</span>
+        </button>
+
+        <button
+          onClick={() => toast('Contract upload coming soon', { icon: '📎' })}
+          className="flex items-center justify-center gap-2 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
+          title="Upload contract"
+        >
+          <FileText className="h-5 w-5" />
+          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">File</span>
+        </button>
+      </div>
     </DashboardShell>
   );
 }
 
 // Tab Components
-function OverviewTab({ talent, isExclusive }) {
+function OverviewTab({ talent, isExclusive, expandedSections = {}, setExpandedSections = () => {} }) {
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   return (
     <div className="space-y-6">
+      {/* Representation Details - Collapsible */}
       <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Representation Details</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Type</p>
-            <p className="mt-2">
-              <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
-            </p>
-            <p className="mt-2 text-xs text-brand-black/50">
-              {REPRESENTATION_TYPES.find((t) => t.value === (talent.representationType || "NON_EXCLUSIVE"))?.description}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        <button
+          onClick={() => toggleSection('representation')}
+          className="w-full flex items-center justify-between mb-4 hover:opacity-70 transition"
+        >
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Representation Details</p>
+          <span className={`text-brand-black/60 transition-transform ${expandedSections.representation ? 'rotate-180' : ''}`}>▼</span>
+        </button>
+        
+        {expandedSections.representation && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Type</p>
+              <p className="mt-2">
+                <RepresentationBadge type={talent.representationType || "NON_EXCLUSIVE"} />
+              </p>
+              <p className="mt-2 text-xs text-brand-black/50">
+                {REPRESENTATION_TYPES.find((t) => t.value === (talent.representationType || "NON_EXCLUSIVE"))?.description}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
             <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Status</p>
             <p className="mt-2">
               <StatusBadge status={talent.status || "ACTIVE"} />
@@ -1557,19 +1741,55 @@ function OverviewTab({ talent, isExclusive }) {
               <p className="mt-2 text-sm text-brand-black">{talent.primaryEmail}</p>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </section>
 
       {talent.notes && (
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Internal Notes</p>
-          <p className="text-sm text-brand-black/80 whitespace-pre-wrap">{talent.notes}</p>
+          <button
+            onClick={() => toggleSection('notes')}
+            className="w-full flex items-center justify-between mb-4 hover:opacity-70 transition"
+          >
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Internal Notes</p>
+            <span className={`text-brand-black/60 transition-transform ${expandedSections.notes ? 'rotate-180' : ''}`}>▼</span>
+          </button>
+          {expandedSections.notes && (
+            <p className="text-sm text-brand-black/80 whitespace-pre-wrap">{talent.notes}</p>
+          )}
         </section>
       )}
 
-      <TalentEmailsSection talentId={talent.id} />
+      {/* Collapsible Emails Section */}
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <button
+          onClick={() => toggleSection('emails')}
+          className="w-full flex items-center justify-between mb-4 hover:opacity-70 transition"
+        >
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Linked Emails</p>
+          <span className={`text-brand-black/60 transition-transform ${expandedSections.emails ? 'rotate-180' : ''}`}>▼</span>
+        </button>
+        {expandedSections.emails && (
+          <TalentEmailsSection talentId={talent.id} />
+        )}
+      </section>
+
+      {/* Collapsible Social Section */}
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <button
+          onClick={() => toggleSection('social')}
+          className="w-full flex items-center justify-between mb-4 hover:opacity-70 transition"
+        >
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Social Profiles</p>
+          <span className={`text-brand-black/60 transition-transform ${expandedSections.social ? 'rotate-180' : ''}`}>▼</span>
+        </button>
+        {expandedSections.social && (
+          <TalentSocialSection talentId={talent.id} />
+        )}
+      </section>
+
+      {/* Tasks Section */}
       <TalentTasksSection talentId={talent.id} />
-      <TalentSocialSection talentId={talent.id} />
     </div>
   );
 }
@@ -1681,10 +1901,7 @@ function DealsTab({ talent, onDealCreated }) {
     closedDate: true,
     notes: false,
   });
-
-  // Load closed deals when tab is active
-  useEffect(() => {
-    if (dealView !== "closed") return;
+  const [activeStatFilter, setActiveStatFilter] = useState(null); // Track which stat was clicked
     
     const loadClosedDeals = async () => {
       setClosedDealsLoading(true);
@@ -2045,6 +2262,30 @@ function DealsTab({ talent, onDealCreated }) {
       return filtered;
     }
     
+    // Apply active stat filter (clickable stats)
+    if (activeStatFilter) {
+      switch (activeStatFilter) {
+        case "pipeline":
+          // All active deals
+          break;
+        case "pending":
+          filtered = filtered.filter(d => ["NEW_LEAD", "NEGOTIATION", "CONTRACT_SENT"].includes(d.stage));
+          break;
+        case "confirmed":
+          filtered = filtered.filter(d => ["CONTRACT_SIGNED", "DELIVERABLES_IN_PROGRESS", "PAYMENT_PENDING"].includes(d.stage));
+          break;
+        case "payment":
+          // Split by payment status (paid vs unpaid)
+          setPaymentFilter("Paid");
+          break;
+        case "largest":
+          filtered = filtered.filter(d => d.value === Math.max(...deals.map(d => d.value || 0)));
+          break;
+        default:
+          break;
+      }
+    }
+    
     if (stageFilter !== "ALL") {
       filtered = filtered.filter(d => d.stage === stageFilter);
     }
@@ -2079,7 +2320,7 @@ function DealsTab({ talent, onDealCreated }) {
     }
 
     return filtered;
-  }, [deals, dealView, stageFilter, currencyFilter, paymentFilter, dealFilters]);
+  }, [deals, dealView, stageFilter, currencyFilter, paymentFilter, dealFilters, activeStatFilter]);
 
   const sortedDeals = useMemo(() => {
     const sorted = [...filteredDeals];
@@ -2224,6 +2465,7 @@ function DealsTab({ talent, onDealCreated }) {
         </div>
         <button
           type="button"
+          data-action="add-deal"
           onClick={() => setDealView !== "closed" && setCreateOpen(true)}
           disabled={dealView === "closed"}
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] ${
@@ -2291,44 +2533,117 @@ function DealsTab({ talent, onDealCreated }) {
         </select>
       </div>
 
-      {/* Overview Summary */}
+      {/* Quick Action Filters */}
+      {dealView === "deals" && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveStatFilter(null)}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-[0.2em] transition ${
+              activeStatFilter === null
+                ? "bg-brand-red text-white"
+                : "bg-brand-black/5 text-brand-black hover:bg-brand-black/10"
+            }`}
+          >
+            ✕ Clear Filters
+          </button>
+          <button
+            onClick={() => {
+              const needsAction = deals.filter(d => {
+                if (["COMPLETED", "LOST"].includes(d.stage)) return false;
+                const missingFee = !d.value;
+                const stuckInStage = d.createdAt && (new Date().getTime() - new Date(d.createdAt).getTime()) > 14 * 24 * 60 * 60 * 1000 && d.stage === "NEW_LEAD";
+                return missingFee || stuckInStage;
+              });
+              // This is a derived filter, show deals needing action
+              setStageFilter("ALL");
+            }}
+            className="px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-[0.2em] bg-orange-100 text-orange-700 hover:bg-orange-200 transition"
+          >
+            ⚠️ Needs Action
+          </button>
+        </div>
+      )}
+
+      {/* Overview Summary - Clickable Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        <button
+          onClick={() => setActiveStatFilter("pipeline")}
+          className={`rounded-2xl border-2 p-4 transition cursor-pointer ${
+            activeStatFilter === "pipeline"
+              ? "border-brand-red bg-red-50"
+              : "border-brand-black/10 bg-brand-linen/50 hover:border-brand-red/50"
+          }`}
+        >
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Total Pipeline</p>
           <p className="font-display text-xl uppercase text-brand-black">
             £{totals.pipelineValue.toLocaleString()}
           </p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        </button>
+        <button
+          onClick={() => setActiveStatFilter("pending")}
+          className={`rounded-2xl border-2 p-4 transition cursor-pointer ${
+            activeStatFilter === "pending"
+              ? "border-brand-red bg-red-50"
+              : "border-brand-black/10 bg-brand-linen/50 hover:border-brand-red/50"
+          }`}
+        >
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Pending Deals</p>
           <p className="font-display text-xl uppercase text-brand-black">
             £{totals.pendingValue.toLocaleString()}
           </p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        </button>
+        <button
+          onClick={() => setActiveStatFilter("confirmed")}
+          className={`rounded-2xl border-2 p-4 transition cursor-pointer ${
+            activeStatFilter === "confirmed"
+              ? "border-brand-red bg-red-50"
+              : "border-brand-black/10 bg-brand-linen/50 hover:border-brand-red/50"
+          }`}
+        >
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Confirmed Revenue</p>
           <p className="font-display text-xl uppercase text-brand-black">
             £{totals.confirmedRevenue.toLocaleString()}
           </p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        </button>
+        <button
+          onClick={() => setActiveStatFilter("payment")}
+          className={`rounded-2xl border-2 p-4 transition cursor-pointer ${
+            activeStatFilter === "payment"
+              ? "border-brand-red bg-red-50"
+              : "border-brand-black/10 bg-brand-linen/50 hover:border-brand-red/50"
+          }`}
+        >
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Paid vs Unpaid</p>
           <p className="font-display text-xl uppercase text-brand-black">
             £{totals.paidValue.toLocaleString()} / £{totals.unpaidValue.toLocaleString()}
           </p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        </button>
+        <button
+          onClick={() => setActiveStatFilter("average")}
+          className={`rounded-2xl border-2 p-4 transition cursor-pointer ${
+            activeStatFilter === "average"
+              ? "border-brand-red bg-red-50"
+              : "border-brand-black/10 bg-brand-linen/50 hover:border-brand-red/50"
+          }`}
+        >
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Avg Deal Value</p>
           <p className="font-display text-xl uppercase text-brand-black">
             £{totals.avgValue.toLocaleString()}
           </p>
-        </div>
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        </button>
+        <button
+          onClick={() => setActiveStatFilter("largest")}
+          className={`rounded-2xl border-2 p-4 transition cursor-pointer ${
+            activeStatFilter === "largest"
+              ? "border-brand-red bg-red-50"
+              : "border-brand-black/10 bg-brand-linen/50 hover:border-brand-red/50"
+          }`}
+        >
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Largest Deal</p>
           <p className="font-display text-xl uppercase text-brand-black">
             £{totals.largestDeal.toLocaleString()}
           </p>
-        </div>
+        </button>
         <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-1">Closing This Month</p>
           <p className="font-display text-xl uppercase text-brand-black">
@@ -2589,13 +2904,13 @@ function DealsTab({ talent, onDealCreated }) {
 
       {/* Add Deal Modal */}
       {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="relative w-full max-w-md mx-4 rounded-3xl border border-brand-black/10 bg-brand-white p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl mx-4 rounded-3xl border border-brand-black/15 bg-brand-white p-10 shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <button
               type="button"
               onClick={() => setCreateOpen(false)}
-              className="absolute right-4 top-4 text-brand-black/40 hover:text-brand-black"
+              className="absolute right-6 top-6 p-1 rounded-full text-brand-black/50 hover:text-brand-black hover:bg-brand-black/5 transition-colors"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2603,35 +2918,36 @@ function DealsTab({ talent, onDealCreated }) {
             </button>
 
             {/* Title */}
-            <h2 className="mb-4 font-subtitle text-base uppercase tracking-[0.35em] text-brand-red">Create New Deal</h2>
+            <h2 className="mb-2 text-2xl font-bold text-brand-black">Create New Deal</h2>
+            <p className="mb-6 text-sm text-brand-black/60">Fill in the details below to create a new deal</p>
 
             {/* Error Message */}
             {createError && (
-              <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3">
-                <p className="text-sm text-red-700">{createError}</p>
+              <div className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4">
+                <p className="text-sm font-medium text-red-700">{createError}</p>
               </div>
             )}
 
             {/* Form */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Deal Name */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
-                  Deal Name *
+                <label className="block text-sm font-semibold text-brand-black mb-2">
+                  Deal Name <span className="text-brand-red">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter deal name"
+                  placeholder="e.g., Instagram Partnership Campaign"
                   value={createForm.dealName}
                   onChange={(e) => setCreateForm({...createForm, dealName: e.target.value})}
-                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 />
               </div>
 
               {/* Brand Selection */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
-                  Brand *
+                <label className="block text-sm font-semibold text-brand-black mb-2">
+                  Brand <span className="text-brand-red">*</span>
                 </label>
                 <BrandSelect
                   brands={brands}
@@ -2646,13 +2962,13 @@ function DealsTab({ talent, onDealCreated }) {
 
               {/* Status */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                <label className="block text-sm font-semibold text-brand-black mb-2">
                   Stage
                 </label>
                 <select
                   value={createForm.status}
                   onChange={(e) => setCreateForm({...createForm, status: e.target.value})}
-                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 >
                   <option value="NEW_LEAD">In discussion</option>
                   <option value="NEGOTIATION">Negotiation</option>
@@ -2666,9 +2982,9 @@ function DealsTab({ talent, onDealCreated }) {
               </div>
 
               {/* Estimated Value */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                  <label className="block text-sm font-semibold text-brand-black mb-2">
                     Estimated Value
                   </label>
                   <input
@@ -2676,70 +2992,70 @@ function DealsTab({ talent, onDealCreated }) {
                     placeholder="0.00"
                     value={createForm.estimatedValue}
                     onChange={(e) => setCreateForm({...createForm, estimatedValue: e.target.value})}
-                    className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                    className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                   />
                 </div>
 
                 {/* Currency */}
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                  <label className="block text-sm font-semibold text-brand-black mb-2">
                     Currency
                   </label>
                   <select
                     value={createForm.currency}
                     onChange={(e) => setCreateForm({...createForm, currency: e.target.value})}
-                    className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                    className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                   >
-                    <option value="GBP">GBP</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="CAD">CAD</option>
-                    <option value="AUD">AUD</option>
+                    <option value="GBP">GBP £</option>
+                    <option value="USD">USD $</option>
+                    <option value="EUR">EUR €</option>
+                    <option value="CAD">CAD C$</option>
+                    <option value="AUD">AUD A$</option>
                   </select>
                 </div>
               </div>
 
               {/* Expected Close Date */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                <label className="block text-sm font-semibold text-brand-black mb-2">
                   Expected Close Date
                 </label>
                 <input
                   type="date"
                   value={createForm.expectedCloseDate}
                   onChange={(e) => setCreateForm({...createForm, expectedCloseDate: e.target.value})}
-                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-brand-black mb-2">
+                <label className="block text-sm font-semibold text-brand-black mb-2">
                   Notes
                 </label>
                 <textarea
-                  placeholder="Add notes about this deal..."
+                  placeholder="Add any additional details about this deal..."
                   value={createForm.notes}
                   onChange={(e) => setCreateForm({...createForm, notes: e.target.value})}
                   rows={3}
-                  className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm resize-none focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 />
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="mt-6 flex gap-3">
+            <div className="mt-8 flex gap-3">
               <button
                 type="button"
                 onClick={() => setCreateOpen(false)}
-                className="flex-1 rounded-lg border border-brand-black/10 bg-brand-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-black hover:bg-brand-black/5 transition-colors"
+                className="flex-1 rounded-lg border-2 border-brand-black/20 bg-brand-white px-6 py-3 text-sm font-semibold text-brand-black hover:bg-brand-black/5 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleCreateDeal}
-                className="flex-1 rounded-lg bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-brand-black transition-colors"
+                className="flex-1 rounded-lg bg-brand-red px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl"
               >
                 Create Deal
               </button>
