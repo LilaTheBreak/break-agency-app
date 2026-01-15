@@ -2827,7 +2827,7 @@ function DealsTab({ talent, onDealCreated }) {
         deal={selectedDeal}
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
-        onSave={fetchTalentData}
+        onSave={onDealCreated}
         talent={talent}
         userRole="admin"
       />
