@@ -2561,7 +2561,7 @@ function DealsTab({ talent, onDealCreated }) {
               // This is a derived filter, show deals needing action
               setStageFilter("ALL");
             }}
-            className="px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-[0.2em] bg-orange-100 text-orange-700 hover:bg-orange-200 transition"
+            className="px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-[0.2em] bg-brand-red/10 text-brand-red hover:bg-brand-red/20 transition"
           >
             ⚠️ Needs Action
           </button>
