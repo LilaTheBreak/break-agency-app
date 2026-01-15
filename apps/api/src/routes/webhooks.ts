@@ -60,33 +60,23 @@ function toJson(value: unknown): Prisma.InputJsonValue {
  * Instagram Webhook Verification
  * Handles the GET request from Instagram to verify the webhook endpoint
  */
-export async function instagramWebhookVerification(req: Request, res: Response) {
-  const VERIFY_TOKEN = process.env.INSTAGRAM_VERIFY_TOKEN;
+export const instagramWebhookVerification = (req: Request, res: Response) => {
+  console.log("🔔 WEBHOOK HIT");
+  console.log("QUERY:", req.query);
+  console.log("ENV TOKEN:", process.env.INSTAGRAM_VERIFY_TOKEN);
 
-  if (!VERIFY_TOKEN) {
-    logError("INSTAGRAM_VERIFY_TOKEN not configured", new Error("Missing env var"));
-    return res.status(500).json({ error: "Instagram verify token not configured" });
-  }
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
 
-  const mode = req.query["hub.mode"] as string;
-  const token = req.query["hub.verify_token"] as string;
-  const challenge = req.query["hub.challenge"] as string;
-
-  console.log("[INSTAGRAM WEBHOOK] Verification request received", {
-    mode,
-    hasToken: !!token,
-    hasChallenge: !!challenge
-  });
-
-  // Verify the token matches
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("[INSTAGRAM WEBHOOK] ✅ Verification successful");
+  if (mode === "subscribe" && token === process.env.INSTAGRAM_VERIFY_TOKEN) {
+    console.log("✅ TOKEN MATCH — SENDING CHALLENGE");
     return res.status(200).send(challenge);
   }
 
-  console.log("[INSTAGRAM WEBHOOK] ❌ Verification failed - invalid token or mode");
+  console.log("❌ TOKEN MISMATCH");
   return res.sendStatus(403);
-}
+};
 
 /**
  * Instagram Webhook Event Receiver
