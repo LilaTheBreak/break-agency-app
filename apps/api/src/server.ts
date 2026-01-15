@@ -293,6 +293,22 @@ validateGmailCredentials();
 console.log("[SERVER] Initializing Express app...");
 const app = express();
 
+// Webhook verification endpoint (temporary)
+// Used for Instagram/Meta webhook verification while DNS is configured
+app.get("/__meta_test__", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+  
+  const VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || "").trim();
+  
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    return res.status(200).type("text/plain").send(challenge);
+  }
+  
+  return res.sendStatus(403);
+});
+
 // ========================================================
 // COMPREHENSIVE BOOT LOGGING
 // ========================================================
