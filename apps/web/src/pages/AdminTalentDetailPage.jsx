@@ -1167,40 +1167,102 @@ function TalentSocialSection({ talentId }) {
 
 // Helper: Calculate attention required items
 function getAttentionRequiredItems(talent) {
-  if (!talent) return { dealsClosing: [], dealsNeedAction: [], tasksOverdue: [], meetingsUpcoming: [] };
+  if (!talent) return [];
 
   const now = new Date();
-  const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const twoWeeksFromNow = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
   
-  const deals = talent.deals || [];
+  const items = [];
+  
+  // TASKS - Overdue or due today
   const tasks = talent.tasks || [];
+  const urgentTasks = tasks.filter(t => {
+    if (t.status === "COMPLETED" || !t.title || !t.id) return false;
+    const dueDate = new Date(t.dueDate);
+    return dueDate <= today;
+  });
   
-  // Deals closing in next 14 days
-  const dealsClosing = deals.filter(d => {
+  items.push(...urgentTasks.map(t => ({
+    id: `task-${t.id}`,
+    type: "task",
+    title: t.title,
+    objectId: t.id,
+    reason: new Date(t.dueDate) < today ? "Overdue" : "Due today",
+    severity: new Date(t.dueDate) < today ? "red" : "amber",
+    dueDate: t.dueDate,
+  })));
+  
+  // DEALS - Closing/unpaid/overdue
+  const deals = talent.deals || [];
+  
+  // Deals due to close today or tomorrow
+  const closingToday = deals.filter(d => {
+    if (["COMPLETED", "LOST"].includes(d.stage) || !d.id || !d.dealName) return false;
     if (!d.expectedClose) return false;
     const closeDate = new Date(d.expectedClose);
-    return closeDate >= now && closeDate <= twoWeeksFromNow && !["COMPLETED", "LOST"].includes(d.stage);
-  }).slice(0, 3);
+    const closeDay = new Date(closeDate.getFullYear(), closeDate.getMonth(), closeDate.getDate());
+    return closeDay >= today && closeDay <= new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000);
+  });
   
-  // Deals missing critical info (no fee, no contract, stuck in stage)
-  const dealsNeedAction = deals.filter(d => {
-    if (["COMPLETED", "LOST"].includes(d.stage)) return false;
-    const missingFee = !d.value;
-    const stuckInStage = d.createdAt && (now.getTime() - new Date(d.createdAt).getTime()) > 14 * 24 * 60 * 60 * 1000 && d.stage === "NEW_LEAD";
-    return missingFee || stuckInStage;
-  }).slice(0, 3);
+  items.push(...closingToday.map(d => ({
+    id: `deal-close-${d.id}`,
+    type: "deal",
+    title: d.dealName,
+    objectId: d.id,
+    reason: "Closing today",
+    severity: "red",
+    dueDate: d.expectedClose,
+  })));
   
-  // Tasks overdue
-  const tasksOverdue = (tasks || []).filter(t => {
-    if (t.status === "COMPLETED") return false;
-    const dueDate = new Date(t.dueDate);
-    return dueDate < now;
-  }).slice(0, 2);
+  // Deals with unpaid invoices (status = UNPAID)
+  const unpaidDeals = deals.filter(d => {
+    if (["COMPLETED", "LOST"].includes(d.stage) || !d.id || !d.dealName) return false;
+    return d.paymentStatus === "UNPAID" || d.stage === "UNPAID";
+  });
   
-  // Meetings in next 7 days (simplified - would need meetings data)
-  const meetingsUpcoming = [];
+  items.push(...unpaidDeals.slice(0, 2).map(d => ({
+    id: `deal-unpaid-${d.id}`,
+    type: "deal",
+    title: d.dealName,
+    objectId: d.id,
+    reason: "Unpaid",
+    severity: "red",
+    dueDate: null,
+  })));
   
-  return { dealsClosing, dealsNeedAction, tasksOverdue, meetingsUpcoming };
+  // Deals stuck in early stages for 2+ weeks
+  const stuckDeals = deals.filter(d => {
+    if (["COMPLETED", "LOST"].includes(d.stage) || !d.id || !d.dealName) return false;
+    if (!d.createdAt) return false;
+    const createdDate = new Date(d.createdAt);
+    const daysOld = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysOld > 14 && ["NEW_LEAD", "PROSPECTING"].includes(d.stage);
+  });
+  
+  items.push(...stuckDeals.slice(0, 1).map(d => ({
+    id: `deal-stuck-${d.id}`,
+    type: "deal",
+    title: d.dealName,
+    objectId: d.id,
+    reason: "No progress in 2+ weeks",
+    severity: "amber",
+    dueDate: null,
+  })));
+  
+  // Sort by severity (red first) then by date
+  items.sort((a, b) => {
+    const severityOrder = { red: 0, amber: 1, grey: 2 };
+    if (severityOrder[a.severity] !== severityOrder[b.severity]) {
+      return severityOrder[a.severity] - severityOrder[b.severity];
+    }
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    return 0;
+  });
+  
+  return items.slice(0, 5); // Max 5 items to keep it scannable
 }
 
 export function AdminTalentDetailPage() {
@@ -1471,77 +1533,104 @@ export function AdminTalentDetailPage() {
         </CollapsibleDetailSection>
       </section>
 
-      {/* TODAY / ATTENTION REQUIRED STRIP */}
+      {/* TODAY FOR [TALENT] - CLEAN ACTION SNAPSHOT */}
       {talent && (() => {
-        const attention = getAttentionRequiredItems(talent);
-        const totalItems = attention.dealsClosing.length + attention.dealsNeedAction.length + attention.tasksOverdue.length + attention.meetingsUpcoming.length;
+        const items = getAttentionRequiredItems(talent);
         
-        if (totalItems === 0) return null;
-        
-        return (
-          <section className="rounded-2xl border-l-4 border-l-brand-red bg-red-50 border border-red-200 p-5 mb-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <p className="text-sm font-bold text-red-900 mb-3">📌 Today for {talent.name || "this talent"}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {attention.dealsClosing.length > 0 && (
-                    <div className="bg-white rounded-lg p-3 border border-red-100">
-                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">🔔 Closing Soon</p>
-                      <div className="space-y-1">
-                        {attention.dealsClosing.map(d => (
-                          <button
-                            key={d.id}
-                            onClick={() => setActiveTab("deals")}
-                            className="block text-xs text-red-900 hover:text-red-700 hover:underline truncate"
-                          >
-                            {d.dealName || "Untitled"} ({new Date(d.expectedClose).toLocaleDateString()})
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {attention.dealsNeedAction.length > 0 && (
-                    <div className="bg-white rounded-lg p-3 border border-red-100">
-                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">⚠️ Needs Action</p>
-                      <div className="space-y-1">
-                        {attention.dealsNeedAction.map(d => (
-                          <button
-                            key={d.id}
-                            onClick={() => setActiveTab("deals")}
-                            className="block text-xs text-red-900 hover:text-red-700 hover:underline truncate"
-                          >
-                            {d.dealName || "Untitled"}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {attention.tasksOverdue.length > 0 && (
-                    <div className="bg-white rounded-lg p-3 border border-red-100">
-                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">📝 Overdue Tasks</p>
-                      <div className="space-y-1">
-                        {attention.tasksOverdue.map(t => (
-                          <button
-                            key={t.id}
-                            onClick={() => setActiveTab("deals")}
-                            className="block text-xs text-red-900 hover:text-red-700 hover:underline truncate"
-                          >
-                            {t.title || "Untitled task"}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {attention.meetingsUpcoming.length > 0 && (
-                    <div className="bg-white rounded-lg p-3 border border-red-100">
-                      <p className="text-xs font-semibold text-red-700 uppercase mb-2">📅 Upcoming</p>
-                      <p className="text-xs text-red-900">{attention.meetingsUpcoming.length} meeting(s)</p>
-                    </div>
-                  )}
-                </div>
+        if (items.length === 0) {
+          return (
+            <div className="mb-6 rounded-xl border border-brand-black/10 bg-brand-white p-5 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-brand-black">All clear today for {talent.name} 🎉</p>
+                <p className="text-xs text-brand-black/50 mt-1">No overdue tasks or urgent deals</p>
               </div>
             </div>
-          </section>
+          );
+        }
+        
+        return (
+          <div className="mb-6 rounded-xl border border-brand-black/10 bg-brand-white p-5">
+            {/* Header */}
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-black/60 mb-4">
+              Actions for {talent.name}
+            </p>
+            
+            {/* Items List */}
+            <div className="space-y-2">
+              {items.map((item) => {
+                // Determine icon and link target
+                let icon = "📋";
+                let linkFn = () => setActiveTab("tasks");
+                
+                if (item.type === "deal") {
+                  icon = "💰";
+                  linkFn = () => setActiveTab("deals");
+                }
+                
+                // Determine color scheme
+                const severityColor = {
+                  red: "border-brand-red/30 bg-brand-red/3 hover:bg-brand-red/5",
+                  amber: "border-amber-300/30 bg-amber-100/5 hover:bg-amber-100/10",
+                  grey: "border-brand-black/10 bg-brand-white hover:bg-brand-black/3",
+                }[item.severity] || "border-brand-black/10";
+                
+                const textColor = {
+                  red: "text-brand-red",
+                  amber: "text-amber-900",
+                  grey: "text-brand-black",
+                }[item.severity] || "text-brand-black";
+                
+                const reasonColor = {
+                  red: "bg-brand-red/10 text-brand-red",
+                  amber: "bg-amber-100/60 text-amber-900",
+                  grey: "bg-brand-black/5 text-brand-black/60",
+                }[item.severity] || "bg-brand-black/5 text-brand-black/60";
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={linkFn}
+                    className={`w-full rounded-lg border p-3 text-left transition-all duration-150 ${severityColor}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      {/* Left: Title + Reason */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold truncate ${textColor}`}>
+                          {icon} {item.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className={`text-[0.65rem] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded ${reasonColor}`}>
+                            {item.reason}
+                          </span>
+                          {item.dueDate && (
+                            <span className="text-[0.65rem] text-brand-black/50">
+                              {new Date(item.dueDate).toLocaleDateString("en-GB", { 
+                                month: "short",
+                                day: "numeric"
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Right: Arrow indicator */}
+                      <div className={`flex-shrink-0 mt-0.5 ${textColor}`}>→</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Footer link if max items shown */}
+            {items.length >= 5 && (
+              <button
+                onClick={() => setActiveTab("deals")}
+                className="mt-4 text-xs font-semibold uppercase tracking-[0.1em] text-brand-black/60 hover:text-brand-black transition-colors"
+              >
+                View all actions →
+              </button>
+            )}
+          </div>
         );
       })()}
 
