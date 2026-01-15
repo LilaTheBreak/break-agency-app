@@ -1279,7 +1279,6 @@ export function AdminTalentDetailPage() {
         };
       }
       
-      console.log("[TALENT] Setting talent state, deals array:", sanitizedTalent.deals);
       setTalent(sanitizedTalent);
     } catch (err) {
       console.error("[TALENT] Error fetching talent:", {
@@ -1789,6 +1788,57 @@ function OverviewTab({ talent, isExclusive, expandedSections = {}, setExpandedSe
         )}
       </section>
 
+      {/* Brand Relationships - Auto-populated from Deals */}
+      {talent.deals && talent.deals.length > 0 && (
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <button
+            onClick={() => toggleSection('brands')}
+            className="w-full flex items-center justify-between mb-4 hover:opacity-70 transition"
+          >
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Brand Relationships</p>
+            <span className={`text-brand-black/60 transition-transform ${expandedSections.brands ? 'rotate-180' : ''}`}>▼</span>
+          </button>
+          {expandedSections.brands && (
+            <div className="space-y-3">
+              {(() => {
+                // Extract unique brands from deals
+                const brandMap = new Map();
+                talent.deals.forEach(deal => {
+                  if (deal.brand && deal.brand.id) {
+                    if (!brandMap.has(deal.brand.id)) {
+                      brandMap.set(deal.brand.id, {
+                        id: deal.brand.id,
+                        name: deal.brand.name || 'Unknown',
+                        dealCount: 0
+                      });
+                    }
+                    brandMap.get(deal.brand.id).dealCount++;
+                  }
+                });
+                
+                const uniqueBrands = Array.from(brandMap.values());
+                
+                return uniqueBrands.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {uniqueBrands.map(brand => (
+                      <div key={brand.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-brand-black">{brand.name}</p>
+                          <p className="text-xs text-brand-black/60 mt-1">{brand.dealCount} {brand.dealCount === 1 ? 'deal' : 'deals'}</p>
+                        </div>
+                        <div className="text-2xl font-bold text-brand-red/30">{brand.dealCount}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-brand-black/60">No brands linked through deals yet.</p>
+                );
+              })()}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Tasks Section */}
       <TalentTasksSection talentId={talent.id} />
     </div>
@@ -1843,7 +1893,6 @@ function DealsTab({ talent, onDealCreated }) {
   const isSuperAdmin = user?.role === "SUPERADMIN";
   
   const deals = talent.deals || [];
-  console.log("[DEALS_TAB] Received deals:", deals, "talent.deals:", talent.deals);
   const [dealView, setDealView] = useState("deals"); // "deals" or "opportunities"
   const [stageFilter, setStageFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
@@ -2252,14 +2301,12 @@ function DealsTab({ talent, onDealCreated }) {
 
   const filteredDeals = useMemo(() => {
     let filtered = deals;
-    console.log("[FILTER] Starting with deals:", filtered.length, "dealView:", dealView);
     
     // Split into Opportunities (no stage) vs Deals (has stage but not closed) vs Closed
     if (dealView === "opportunities") {
       filtered = filtered.filter(d => !d.stage);
     } else if (dealView === "deals") {
       filtered = filtered.filter(d => d.stage && !["COMPLETED", "LOST"].includes(d.stage));
-      console.log("[FILTER] After stage filtering for deals view:", filtered.length);
     } else if (dealView === "closed") {
       // For closed view, we'll use the API data, but filter local copy for safety
       filtered = filtered.filter(d => ["COMPLETED", "LOST"].includes(d.stage || ""));
