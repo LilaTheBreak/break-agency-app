@@ -487,11 +487,34 @@ function EmailModal({ email, onClose }) {
   const timestamp = email.lastMessageAt || email.receivedAt;
   const [creatingBrand, setCreatingBrand] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
+  const [brands, setBrands] = React.useState([]);
+  const [selectedBrandId, setSelectedBrandId] = React.useState("");
+  const [loadingBrands, setLoadingBrands] = React.useState(false);
+  const [showBrandSelector, setShowBrandSelector] = React.useState(false);
 
   // Extract email from sender if it's in format "Name <email@domain>"
   const senderEmail = email.senderEmail || 
     (typeof email.sender === 'string' && email.sender.match(/<([^>]+)>/)?.[1]) || 
     null;
+
+  // Fetch brands on mount
+  React.useEffect(() => {
+    const fetchBrands = async () => {
+      setLoadingBrands(true);
+      try {
+        const response = await fetch('/api/crm-brands?limit=100');
+        if (response.ok) {
+          const data = await response.json();
+          setBrands(Array.isArray(data) ? data : (data.brands || []));
+        }
+      } catch (err) {
+        console.error("Failed to fetch brands:", err);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+    fetchBrands();
+  }, []);
 
   const handleAddAsBrand = async () => {
     if (!senderEmail) {
@@ -545,6 +568,11 @@ function EmailModal({ email, onClose }) {
       return;
     }
 
+    if (!selectedBrandId) {
+      setShowBrandSelector(true);
+      return;
+    }
+
     setCreatingContact(true);
     try {
       // Split sender name into first and last name
@@ -556,7 +584,7 @@ function EmailModal({ email, onClose }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          brandId: 'select-brand', // Placeholder - user will need to select brand
+          brandId: selectedBrandId,
           firstName,
           lastName,
           email: senderEmail,
@@ -565,18 +593,11 @@ function EmailModal({ email, onClose }) {
         }),
       });
 
-      if (response.status === 400) {
-        // If no brand selected, open a different flow
-        alert('ℹ️ To add contacts, please visit the CRM Contacts page where you can select a brand and add new contacts directly.');
-        onClose();
-        return;
-      }
-
       if (!response.ok) {
         let errorMsg = 'Failed to create contact';
         try {
-          const error = await response.json();
-          errorMsg = error.error || errorMsg;
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
         } catch (e) {
           // Could not parse error response
         }
@@ -584,11 +605,11 @@ function EmailModal({ email, onClose }) {
       }
 
       const result = await response.json();
-      alert(`✅ Contact ${firstName} ${lastName} added successfully!`);
+      alert(`✅ Contact ${firstName} ${lastName} added to ${brands.find(b => b.id === selectedBrandId)?.brandName}!`);
       onClose();
     } catch (error) {
       const errorMsg = error.message || 'Failed to create contact';
-      alert(`❌ ${errorMsg}\n\nTip: Visit the CRM Contacts page to add this contact with a selected brand.`);
+      alert(`❌ ${errorMsg}`);
     } finally {
       setCreatingContact(false);
     }
@@ -636,6 +657,35 @@ function EmailModal({ email, onClose }) {
             </div>
           </div>
         ) : null}
+
+        {/* Brand Selector for Contact Creation */}
+        {showBrandSelector && (
+          <div className="mt-6 rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-red mb-3">
+              Select a Brand for Contact
+            </p>
+            <select
+              value={selectedBrandId}
+              onChange={(e) => setSelectedBrandId(e.target.value)}
+              className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
+            >
+              <option value="">-- Choose a brand --</option>
+              {brands.map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.brandName}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-brand-black/60">
+              {loadingBrands
+                ? "Loading brands..."
+                : brands.length === 0
+                ? "No brands found. Create one first."
+                : `${brands.length} brand(s) available`}
+            </p>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-wrap gap-2">
           <button
             type="button"
