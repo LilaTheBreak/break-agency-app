@@ -523,42 +523,217 @@ async function buildAnalyticsFromProfile(profile: any, dateRange?: string | null
 /**
  * Build analytics from external social profile (snapshot-based)
  */
+/**
+ * Metric response structure for all analytics
+ * Ensures consistency and explainability across all sections
+ */
+interface MetricResponse {
+  value: number | string | null;
+  status: "measured" | "estimated" | "unavailable";
+  explanation: string;
+  source: "scrape" | "cache" | "inferred";
+}
+
+function wrapMetric(
+  value: number | string | null,
+  status: "measured" | "estimated" | "unavailable",
+  explanation: string,
+  source: "scrape" | "cache" | "inferred"
+): MetricResponse {
+  return { value, status, explanation, source };
+}
+
 function buildAnalyticsFromExternalProfile(profile: any): any {
   const snapshot = profile.snapshotJson
     ? JSON.parse(profile.snapshotJson)
     : {};
 
+  const followerCount = snapshot.followerCount || snapshot.subscriberCount || 0;
+  const engagementRate = snapshot.engagementRate || 0;
+  const postCount = snapshot.videoCount || snapshot.postCount || 0;
+
   return {
     connected: false,
     platform: profile.platform,
     username: profile.username,
+    dataSource: "external",
+    profileUrl: profile.url || `https://${profile.platform.toLowerCase()}.com/${profile.username}`,
+    
     overview: {
-      totalReach: snapshot.followerCount || snapshot.subscriberCount || 0,
-      engagementRate: snapshot.engagementRate || 0,
-      followerGrowth: 0,
-      postCount: snapshot.videoCount || snapshot.postCount || 0,
-      avgPostsPerWeek: 0,
-      topPlatform: profile.platform,
-      topPlatformFollowers: snapshot.followerCount || snapshot.subscriberCount || 0,
-      sentimentScore: 0,
-      consistencyScore: 0,
+      totalReach: wrapMetric(
+        followerCount > 0 ? followerCount : null,
+        followerCount > 0 ? "measured" : "unavailable",
+        "Total followers from public profile data",
+        "scrape"
+      ),
+      
+      engagementRate: wrapMetric(
+        engagementRate > 0 ? Number(engagementRate.toFixed(2)) : null,
+        engagementRate > 0 ? "estimated" : "unavailable",
+        "Calculated as (likes + comments) ÷ followers from recent posts",
+        "inferred"
+      ),
+      
+      followerGrowth: wrapMetric(
+        null,
+        "unavailable",
+        "Historical data not available for external profiles",
+        "scrape"
+      ),
+      
+      postCount: wrapMetric(
+        postCount > 0 ? postCount : null,
+        postCount > 0 ? "measured" : "unavailable",
+        "Total number of public posts visible on profile",
+        "scrape"
+      ),
+      
+      avgPostsPerWeek: wrapMetric(
+        null,
+        "estimated",
+        "Requires historical posting data not available for external profiles",
+        "scrape"
+      ),
+      
+      topPlatform: wrapMetric(
+        profile.platform,
+        "measured",
+        "Platform selected by user",
+        "cache"
+      ),
+      
+      topPlatformFollowers: wrapMetric(
+        followerCount > 0 ? followerCount : null,
+        followerCount > 0 ? "measured" : "unavailable",
+        "Followers on the primary platform",
+        "scrape"
+      ),
+      
+      sentimentScore: wrapMetric(
+        null,
+        "estimated",
+        "Sentiment estimation from public comments requires NLP processing. Limited accuracy for non-business accounts.",
+        "inferred"
+      ),
+      
+      consistencyScore: wrapMetric(
+        null,
+        "estimated",
+        "Posting consistency requires historical data spanning multiple weeks",
+        "inferred"
+      ),
     },
-    contentPerformance: [],
-    keywords: [],
+    
+    contentPerformance: snapshot.topPosts ? snapshot.topPosts.map((post: any) => ({
+      id: post.id || Math.random().toString(),
+      caption: post.caption || "",
+      likes: wrapMetric(
+        post.likes || 0,
+        "measured",
+        "Like count from public post metrics",
+        "scrape"
+      ),
+      comments: wrapMetric(
+        post.comments || 0,
+        "measured",
+        "Comment count from public post metrics",
+        "scrape"
+      ),
+      shares: wrapMetric(
+        post.shares || null,
+        post.shares ? "measured" : "unavailable",
+        "Share count if publicly available",
+        "scrape"
+      ),
+      views: wrapMetric(
+        post.views || null,
+        post.views ? "measured" : "unavailable",
+        "View count if publicly available",
+        "scrape"
+      ),
+      engagementRate: wrapMetric(
+        post.engagementRate || null,
+        post.engagementRate ? "estimated" : "unavailable",
+        "Engagement calculated as interactions ÷ followers",
+        "inferred"
+      ),
+      postedAt: post.postedAt || null,
+    })) : [],
+    
+    keywords: snapshot.topKeywords ? snapshot.topKeywords.map((kw: any) => ({
+      keyword: kw.keyword || kw.word,
+      frequency: wrapMetric(
+        kw.frequency || kw.count || 0,
+        "measured",
+        "Number of times keyword appears in public posts and captions",
+        "scrape"
+      ),
+      sentiment: wrapMetric(
+        kw.sentiment || null,
+        kw.sentiment ? "estimated" : "unavailable",
+        "Sentiment of posts containing this keyword",
+        "inferred"
+      ),
+    })) : [],
+    
     community: {
-      commentVolume: 0,
-      commentTrend: 0,
-      responseRate: 0,
-      responseTrend: 0,
-      averageSentiment: 0,
-      consistencyScore: 0,
+      commentVolume: wrapMetric(
+        snapshot.commentVolume || null,
+        snapshot.commentVolume ? "measured" : "unavailable",
+        "Total comments across recent public posts",
+        "scrape"
+      ),
+      
+      commentTrend: wrapMetric(
+        null,
+        "estimated",
+        "Comment trend requires multiple data points over time",
+        "inferred"
+      ),
+      
+      responseRate: wrapMetric(
+        null,
+        "unavailable",
+        "Response metrics require access to private messages. Not available for external profiles.",
+        "scrape"
+      ),
+      
+      responseTrend: wrapMetric(
+        null,
+        "unavailable",
+        "Response metrics require access to private messages. Not available for external profiles.",
+        "scrape"
+      ),
+      
+      averageSentiment: wrapMetric(
+        null,
+        "estimated",
+        "Sentiment analysis from public comments only. Limited accuracy for non-business accounts.",
+        "inferred"
+      ),
+      
+      consistencyScore: wrapMetric(
+        null,
+        "estimated",
+        "Posting consistency analysis requires extended historical data",
+        "inferred"
+      ),
+      
       alerts: snapshot.error
         ? [`Data fetch error: ${snapshot.error}`]
-        : ["External profile - snapshot data"],
+        : ["External profile - snapshot data. Based on publicly available information only."],
     },
+    
     paidContent: [],
     notes: "",
     updatedAt: profile.lastFetchedAt,
+    meta: {
+      isExternal: true,
+      requiresAuth: false,
+      dataFreshness: "snapshot",
+      lastUpdated: profile.lastFetchedAt,
+      cacheExpires: new Date(new Date(profile.lastFetchedAt).getTime() + 12 * 60 * 60 * 1000),
+    },
   };
 }
 
