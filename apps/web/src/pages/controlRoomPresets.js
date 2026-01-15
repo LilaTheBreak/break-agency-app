@@ -15,9 +15,9 @@ export const CONTROL_ROOM_PRESETS = {
         to: "/admin/dashboard"
       }, // Keep first - primary entry point
       {
-        title: "Activity",
-        copy: "Recent platform activity and audit logs.",
-        to: "/admin/activity"
+        title: "Reports & Activity",
+        copy: "Comprehensive analytics, audit logs, and reporting dashboard in one place.",
+        to: "/admin/reports"
       },
       {
         title: "Approvals",
