@@ -316,9 +316,9 @@ export function AdminContactsPage({ session }) {
 
       if (editorMode === "create") {
         const response = await createContact(contactData);
-        // API returns { contact: {...} }
-        const newContact = response?.contact;
-        if (newContact) {
+        // API returns the contact directly or wrapped in { contact: {...} }
+        const newContact = response?.contact || response;
+        if (newContact && newContact.id) {
           setContacts((prev) => [newContact, ...prev]);
           toast.success(`Contact "${firstName} ${lastName}" added successfully`);
         } else {
