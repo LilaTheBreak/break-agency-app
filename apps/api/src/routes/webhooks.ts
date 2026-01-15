@@ -61,15 +61,17 @@ function toJson(value: unknown): Prisma.InputJsonValue {
  * Handles the GET request from Instagram to verify the webhook endpoint
  */
 export const instagramWebhookVerification = (req: Request, res: Response) => {
+  const VERIFY_TOKEN = (process.env.INSTAGRAM_VERIFY_TOKEN || "").trim();
+
   console.log("🔔 WEBHOOK HIT");
   console.log("QUERY:", req.query);
-  console.log("ENV TOKEN:", process.env.INSTAGRAM_VERIFY_TOKEN);
+  console.log("ENV TOKEN:", VERIFY_TOKEN);
 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === process.env.INSTAGRAM_VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
     console.log("✅ TOKEN MATCH — SENDING CHALLENGE");
     return res.status(200).send(challenge);
   }
