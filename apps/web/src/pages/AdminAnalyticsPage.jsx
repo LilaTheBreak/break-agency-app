@@ -434,6 +434,24 @@ export function AdminAnalyticsPage({ session }) {
       {/* Analytics Modules */}
       {selectedProfile && analyticsData && !loading && (
         <>
+          {/* External Profile Disclaimer */}
+          {selectedProfile.type === "external" && (
+            <section className="rounded-3xl border-l-4 border-l-yellow-500 border border-yellow-200 bg-yellow-50 p-6">
+              <div className="flex gap-4">
+                <div className="text-yellow-600 text-lg">⚠️</div>
+                <div>
+                  <p className="font-semibold text-yellow-900">
+                    External profile — snapshot data
+                  </p>
+                  <p className="text-sm text-yellow-800 mt-2">
+                    Metrics are based on publicly available information and may be estimated. 
+                    Follower counts, engagement rates, and other metrics are updated periodically and may not reflect real-time data.
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Overview Intelligence */}
           <AnalyticsOverviewIntelligence 
             data={analyticsData}

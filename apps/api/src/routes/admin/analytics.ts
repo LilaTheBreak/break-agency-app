@@ -552,6 +552,25 @@ function buildAnalyticsFromExternalProfile(profile: any): any {
   const engagementRate = snapshot.engagementRate || 0;
   const postCount = snapshot.videoCount || snapshot.postCount || 0;
 
+  // Determine follower count status and source based on what data we have
+  let followerStatus: "measured" | "estimated" | "unavailable" = "unavailable";
+  let followerSource: "scrape" | "cache" | "inferred" = "inferred";
+  let followerExplanation = "Instagram restricts automated access to follower counts";
+
+  if (followerCount > 0) {
+    // We have actual data - determine if it's from cache or fresh scrape
+    if (snapshot.dataSource === "SCRAPE" || snapshot.dataSource === "cache") {
+      followerStatus = "estimated";
+      followerExplanation = "Estimated from publicly available profile metadata";
+      followerSource = "scrape";
+    } else if (profile.updatedAt && new Date(profile.updatedAt).getTime() > Date.now() - (12 * 60 * 60 * 1000)) {
+      // Recent update - treat as cached estimate
+      followerStatus = "estimated";
+      followerExplanation = "Previously captured public follower count (cached)";
+      followerSource = "cache";
+    }
+  }
+
   return {
     connected: false,
     platform: profile.platform,
@@ -562,9 +581,9 @@ function buildAnalyticsFromExternalProfile(profile: any): any {
     overview: {
       totalReach: wrapMetric(
         followerCount > 0 ? followerCount : null,
-        followerCount > 0 ? "measured" : "unavailable",
-        "Total followers from public profile data",
-        "scrape"
+        followerStatus,
+        followerExplanation,
+        followerSource
       ),
       
       engagementRate: wrapMetric(
@@ -604,9 +623,9 @@ function buildAnalyticsFromExternalProfile(profile: any): any {
       
       topPlatformFollowers: wrapMetric(
         followerCount > 0 ? followerCount : null,
-        followerCount > 0 ? "measured" : "unavailable",
-        "Followers on the primary platform",
-        "scrape"
+        followerStatus,
+        followerExplanation,
+        followerSource
       ),
       
       sentimentScore: wrapMetric(

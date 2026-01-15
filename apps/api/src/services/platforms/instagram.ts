@@ -359,12 +359,134 @@ async function scrapeWithBrowser(username: string): Promise<InstagramProfileMetr
 }
 
 /**
+ * Extract follower count from public HTML metadata
+ * Lightweight scrape that extracts follower count from meta tags only
+ * Does NOT use headless browser - just simple fetch + parse
+ * Timeout: 2 seconds max (fail fast if Instagram blocks)
+ */
+async function extractFollowerCountFromHTML(
+  username: string
+): Promise<{ followerCount: number | null; displayName: string | null }> {
+  try {
+    const userAgents = [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+    ];
+    const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+
+    const url = `https://www.instagram.com/${username}/`;
+    
+    logInfo("[INSTAGRAM] Attempting lightweight HTML metadata extraction", { username });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": userAgent,
+        "Accept": "text/html",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      logWarn("[INSTAGRAM] HTML fetch returned non-200", {
+        username,
+        status: response.status,
+      });
+      return { followerCount: null, displayName: null };
+    }
+
+    const html = await response.text();
+
+    // Extract follower count from og:description
+    // Format: "username posts, X followers, Y following"
+    const descriptionMatch = html.match(/<meta property="og:description" content="([^"]+)"/);
+    if (descriptionMatch) {
+      const description = descriptionMatch[1];
+      const followerMatch = description.match(/(\d+(?:,\d+)*)\s+followers/i);
+      if (followerMatch) {
+        const followerCount = parseInt(followerMatch[1].replace(/,/g, ''), 10);
+        
+        // Also extract display name from og:title: "Name (@username) • Instagram"
+        const titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/);
+        const displayName = titleMatch ? titleMatch[1].split(' (')[0] : null;
+
+        logInfo("[INSTAGRAM] Successfully extracted follower count from HTML", {
+          username,
+          followerCount,
+          displayName,
+          source: "og:description",
+        });
+
+        return { followerCount, displayName };
+      }
+    }
+
+    // Fallback: Look for JSON-LD schema
+    const jsonLdMatch = html.match(/<script type="application\/ld\+json">({[^}]+})<\/script>/);
+    if (jsonLdMatch) {
+      try {
+        const jsonLd = JSON.parse(jsonLdMatch[1]);
+        if (jsonLd.interactionStatistic) {
+          for (const stat of jsonLd.interactionStatistic) {
+            if (stat.interactionType === "http://schema.org/FollowAction") {
+              const followerCount = stat.userInteractionCount;
+              logInfo("[INSTAGRAM] Extracted follower count from JSON-LD", {
+                username,
+                followerCount,
+                source: "json-ld",
+              });
+              return { followerCount, displayName: jsonLd.name };
+            }
+          }
+        }
+      } catch (e) {
+        logWarn("[INSTAGRAM] Failed to parse JSON-LD", { username });
+      }
+    }
+
+    logWarn("[INSTAGRAM] Could not extract follower count from HTML", { username });
+    return { followerCount: null, displayName: null };
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("abort")) {
+      logWarn("[INSTAGRAM] HTML extraction timeout (Instagram may be blocking)", { username });
+    } else {
+      logWarn("[INSTAGRAM] HTML extraction failed", error, { username });
+    }
+    return { followerCount: null, displayName: null };
+  }
+}
+
+/**
  * Scrape Instagram public profile page (HTML meta tags)
  */
 async function scrapeInstagramProfile(
   username: string
 ): Promise<InstagramProfileMetrics | null> {
   try {
+    // Strategy 1: Try lightweight HTML metadata extraction first (no headless browser)
+    const { followerCount, displayName } = await extractFollowerCountFromHTML(username);
+    
+    if (followerCount !== null) {
+      logInfo("[INSTAGRAM] Scrape successful via HTML metadata", { username, followerCount });
+      return {
+        username,
+        displayName: displayName || username,
+        biography: "",
+        followerCount,
+        followingCount: 0,
+        postCount: 0,
+        profilePictureUrl: "",
+        isVerified: false,
+        isBusinessAccount: false,
+        dataSource: "SCRAPE",
+      };
+    }
+
     // Add user-agent rotation to avoid blocks
     const userAgents = [
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -373,11 +495,10 @@ async function scrapeInstagramProfile(
     ];
     const userAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
 
-    // Strategy 1: Try modern endpoint without the __a and __d parameters
-    // These parameters are known to be blocked by Instagram's anti-bot measures
+    // Strategy 2: Try full HTML scraping if metadata extraction failed
     let url = `https://www.instagram.com/${username}/`;
     
-    logInfo("[INSTAGRAM] Attempting scrape (strategy 1: HTML parse)", {
+    logInfo("[INSTAGRAM] Attempting scrape (strategy 2: full HTML parse)", {
       username,
       url: url,
       userAgent: userAgent.substring(0, 40) + "...",

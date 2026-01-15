@@ -161,12 +161,24 @@ export default function AnalyticsOverviewIntelligence({ data, profile }) {
             </div>
             {overview.topPlatformFollowers && (
               <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
-                <p className="text-sm font-semibold text-brand-black">
-                  {typeof overview.topPlatformFollowers === "object" 
-                    ? overview.topPlatformFollowers.value?.toLocaleString?.() || "—"
-                    : overview.topPlatformFollowers?.toLocaleString?.() || "—"}
+                <div className="flex items-baseline gap-2">
+                  <p className="text-sm font-semibold text-brand-black">
+                    {typeof overview.topPlatformFollowers === "object" 
+                      ? overview.topPlatformFollowers.value?.toLocaleString?.() || "—"
+                      : overview.topPlatformFollowers?.toLocaleString?.() || "—"}
+                  </p>
+                  {typeof overview.topPlatformFollowers === "object" && overview.topPlatformFollowers.status && (
+                    <span className="text-[0.6rem] uppercase tracking-[0.1em] font-semibold px-2 py-0.5 rounded-full bg-brand-black/5 text-brand-black/50">
+                      {overview.topPlatformFollowers.status}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-brand-black/60 mt-1">
+                  Followers {typeof overview.topPlatformFollowers === "object" && overview.topPlatformFollowers.status === "estimated" ? "(Estimated)" : ""}
                 </p>
-                <p className="text-xs text-brand-black/60 mt-1">Followers</p>
+                {typeof overview.topPlatformFollowers === "object" && overview.topPlatformFollowers.explanation && (
+                  <p className="text-xs text-brand-black/50 mt-2 italic">{overview.topPlatformFollowers.explanation}</p>
+                )}
               </div>
             )}
           </div>

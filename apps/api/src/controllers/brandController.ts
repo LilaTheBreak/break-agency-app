@@ -329,10 +329,11 @@ export async function createQuickBrandHandler(
 
     // Create new brand
     try {
+      const domainName = brandName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
       const newBrand = await brandUserService.createBrand({
         name: brandName,
-        // Don't require websiteUrl for quick creation
-        websiteUrl: `https://${brandName.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.example.com`,
+        domain: domainName,
+        websiteUrl: `https://${domainName}.example.com`,
       });
 
       res.status(201).json({
