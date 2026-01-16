@@ -86,7 +86,7 @@ router.get('/outreach', async (req: Request, res: Response) => {
           where: { status: { not: 'Completed' } },
         },
         SalesOpportunity: {
-          select: { id: true, stage: true, dealId: true },
+          select: { id: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -199,7 +199,7 @@ router.post('/outreach', async (req: Request, res: Response) => {
       },
     });
 
-    await logAdminActivity('CREATE_OUTREACH', { outreachId: outreach.id, target }, userId!);
+    await logAdminActivity(req as any, { action: 'CREATE_OUTREACH', metadata: { outreachId: outreach.id, target } });
 
     console.log('[OUTREACH_CREATE] Created:', outreach.id);
 
@@ -255,7 +255,7 @@ router.put('/outreach/:id', async (req: Request, res: Response) => {
       },
     });
 
-    await logAdminActivity('UPDATE_OUTREACH', { outreachId: id }, userId!);
+    await logAdminActivity(req as any, { action: 'UPDATE_OUTREACH', metadata: { outreachId: id } });
 
     return sendSuccess(res, updated, 200, 'Outreach record updated');
   } catch (error) {
@@ -291,8 +291,8 @@ router.delete('/outreach/:id', async (req: Request, res: Response) => {
       data: { archived: true, updatedAt: new Date() },
     });
 
-    await logAdminActivity('DELETE_OUTREACH', { outreachId: id }, userId!);
-    await logDestructiveAction('DELETE_OUTREACH', { outreachId: id }, userId!);
+    await logAdminActivity(req as any, { action: 'DELETE_OUTREACH', metadata: { outreachId: id } });
+    await logDestructiveAction(req as any, { action: 'DELETE_OUTREACH', metadata: { outreachId: id } });
 
     return sendSuccess(res, deleted, 200, 'Outreach record archived');
   } catch (error) {
@@ -345,7 +345,7 @@ router.patch('/outreach/:id/stage', async (req: Request, res: Response) => {
       },
     });
 
-    await logAdminActivity('UPDATE_OUTREACH_STAGE', { outreachId: id, newStage: stage }, userId!);
+    await logAdminActivity(req as any, { action: 'UPDATE_OUTREACH_STAGE', metadata: { outreachId: id, newStage: stage } });
 
     return sendSuccess(res, updated, 200, 'Stage updated');
   } catch (error) {
@@ -382,7 +382,7 @@ router.post('/outreach/:id/mark-replied', async (req: Request, res: Response) =>
 
     const updated = await markAsReplied(id, emailCount);
 
-    await logAdminActivity('MARK_OUTREACH_REPLIED', { outreachId: id }, userId!);
+    await logAdminActivity(req as any, { action: 'MARK_OUTREACH_REPLIED', metadata: { outreachId: id } });
 
     return sendSuccess(res, updated, 200, 'Marked as replied and stage updated');
   } catch (error) {
@@ -419,7 +419,7 @@ router.post('/outreach/:id/schedule-followup', async (req: Request, res: Respons
     const followUpDate = await scheduleFollowUp(id, daysFromNow);
     const updated = await prisma.outreach.findUnique({ where: { id } });
 
-    await logAdminActivity('SCHEDULE_OUTREACH_FOLLOWUP', { outreachId: id, daysFromNow }, userId!);
+    await logAdminActivity(req as any, { action: 'SCHEDULE_OUTREACH_FOLLOWUP', metadata: { outreachId: id, daysFromNow } });
 
     return sendSuccess(res, { ...updated, nextFollowUp: followUpDate }, 200, 'Follow-up scheduled');
   } catch (error) {
@@ -517,7 +517,7 @@ router.post('/outreach/:id/add-note', async (req: Request, res: Response) => {
       },
     });
 
-    await logAdminActivity('ADD_OUTREACH_NOTE', { outreachId: id }, userId!);
+    await logAdminActivity(req as any, { action: 'ADD_OUTREACH_NOTE', metadata: { outreachId: id } });
 
     return sendSuccess(res, note, 201, 'Note added');
   } catch (error) {
@@ -566,7 +566,7 @@ router.post('/outreach/:id/create-task', async (req: Request, res: Response) => 
       },
     });
 
-    await logAdminActivity('CREATE_OUTREACH_TASK', { outreachId: id, taskId: task.id }, userId!);
+    await logAdminActivity(req as any, { action: 'CREATE_OUTREACH_TASK', metadata: { outreachId: id, taskId: task.id } });
 
     return sendSuccess(res, task, 201, 'Task created');
   } catch (error) {
@@ -613,10 +613,9 @@ router.post('/outreach/:id/convert-to-opportunity', async (req: Request, res: Re
       opportunity = await prisma.salesOpportunity.create({
         data: {
           id: `opp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          outreachId: id,
+          Outreach: { connect: { id } },
           name: opportunityName,
-          stage,
-          createdBy: userId!,
+          value: 0,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -637,7 +636,7 @@ router.post('/outreach/:id/convert-to-opportunity', async (req: Request, res: Re
       },
     });
 
-    await logAdminActivity('CONVERT_OUTREACH_TO_OPPORTUNITY', { outreachId: id, opportunityId: opportunity.id }, userId!);
+    await logAdminActivity(req as any, { action: 'CONVERT_OUTREACH_TO_OPPORTUNITY', metadata: { outreachId: id, opportunityId: opportunity.id } });
 
     return sendSuccess(res, { outreach: updated, opportunity }, 200, 'Converted to opportunity');
   } catch (error) {
@@ -665,7 +664,7 @@ router.post('/outreach/sync-all', async (req: Request, res: Response) => {
 
     const result = await autoSyncAllOutreach();
 
-    await logAdminActivity('SYNC_ALL_OUTREACH', result, userId!);
+    await logAdminActivity(req as any, { action: 'SYNC_ALL_OUTREACH', metadata: result });
 
     console.log('[OUTREACH_SYNC_ALL] Completed:', result);
 

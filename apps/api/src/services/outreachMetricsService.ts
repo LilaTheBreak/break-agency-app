@@ -95,7 +95,7 @@ export async function calculateOutreachMetrics(
             })
           ).map((o) => o.id),
         },
-        dealId: { not: null },
+        Deal: { isNot: null },
       },
     });
 

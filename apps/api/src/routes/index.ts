@@ -27,7 +27,6 @@ import deckRouter from "./deck.js";
 import queuesRouter from "./queues.js";
 import talentAccessRouter from "./talentAccess.js";
 import opportunitiesRouter from "./opportunities.js";
-import preferencesRouter from "./preferences.js";
 
 // Enterprise Operating System routes
 import enterpriseValueRouter from "./enterpriseValue.js";
@@ -135,7 +134,6 @@ router.use(documentExtractionRouter);
 router.use(campaignsRouter);
 router.use("/deck", deckRouter);
 router.use("/opportunities", opportunitiesRouter);
-router.use("/preferences", preferencesRouter);
 router.use("/admin", adminUsersRouter);
 
 // Enterprise Operating System routes

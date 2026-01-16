@@ -31,10 +31,11 @@ export async function syncGmailThread(outreachId: string, gmailThreadId: string)
       // Create new email thread record
       emailThread = await prisma.outreachEmailThread.create({
         data: {
-          outreachId,
+          id: `thread_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          Outreach: { connect: { id: outreachId } },
           gmailThreadId,
           lastMessageAt: new Date(),
-          status: 'awaiting_reply',
+          updatedAt: new Date(),
         },
       });
     }
