@@ -16,6 +16,7 @@ import * as Sentry from "@sentry/node";
 import { scrapeInstagramProfile } from '../../services/socialScrapers/instagram.js';
 import { normalizeInstagramHandle } from '../../services/socialScrapers/instagramUtils.js';
 import * as storage from '../../services/storage.js';
+import * as aiOpportunitySuggestionsController from '../../controllers/aiOpportunitySuggestionsController.js';
 
 const router = Router();
 
@@ -3404,6 +3405,42 @@ router.post("/sync/profile-images", async (req: Request, res: Response) => {
       "SYNC_FAILED"
     );
   }
+});
+
+/**
+ * AI-Powered Opportunity Suggestions Routes
+ */
+
+/**
+ * POST /api/admin/talent/:id/ai-suggestions
+ * Generate AI suggestions for a talent (EXCLUSIVE only)
+ */
+router.post("/:id/ai-suggestions", async (req: Request, res: Response, next) => {
+  await aiOpportunitySuggestionsController.generateAISuggestions(req, res, next);
+});
+
+/**
+ * GET /api/admin/talent/:id/ai-suggestions
+ * Get AI suggestions for a talent
+ */
+router.get("/:id/ai-suggestions", async (req: Request, res: Response, next) => {
+  await aiOpportunitySuggestionsController.getTalentSuggestions(req, res, next);
+});
+
+/**
+ * PATCH /api/admin/talent/:id/ai-suggestions/:suggestionId
+ * Update suggestion status (save, dismiss, etc)
+ */
+router.patch("/:id/ai-suggestions/:suggestionId", async (req: Request, res: Response, next) => {
+  await aiOpportunitySuggestionsController.updateSuggestion(req, res, next);
+});
+
+/**
+ * POST /api/admin/talent/:id/ai-suggestions/:suggestionId/convert
+ * Convert suggestion to actual Opportunity
+ */
+router.post("/:id/ai-suggestions/:suggestionId/convert", async (req: Request, res: Response, next) => {
+  await aiOpportunitySuggestionsController.convertSuggestion(req, res, next);
 });
 
 export default router;

@@ -13,9 +13,9 @@ import { getErrorMessage } from "../../lib/errorHandler.js";
  */
 export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [newPlatform, setNewPlatform] = useState("INSTAGRAM");
   const [newHandle, setNewHandle] = useState("");
+  const [newFollowers, setNewFollowers] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const socialAccounts = talent.socialAccounts || [];
@@ -47,7 +47,11 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
       const response = await fetch(`/api/admin/talent/${talent.id}/socials`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform: newPlatform, handle: newHandle }),
+        body: JSON.stringify({ 
+          platform: newPlatform, 
+          handle: newHandle,
+          followers: newFollowers ? parseInt(newFollowers) : null
+        }),
       });
 
       if (!response.ok) {
@@ -58,7 +62,7 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
       toast.success(`${getPlatformLabel(newPlatform)} added successfully`);
       setNewPlatform("INSTAGRAM");
       setNewHandle("");
-      setShowAddForm(false);
+      setNewFollowers("");
       onUpdate?.();
     } catch (err) {
       toast.error(getErrorMessage(err, "Failed to add social profile"));
@@ -91,14 +95,14 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
   };
 
   return (
-    <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 overflow-hidden">
+    <div className="rounded-2xl border border-brand-black/10 bg-brand-white overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-brand-black/5 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-xs uppercase tracking-[0.3em] text-brand-black/60">
+          <span className="text-xs uppercase tracking-[0.3em] text-brand-red">
             Social Profiles
           </span>
           {socialAccounts.length > 0 && (
@@ -114,27 +118,109 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
         />
       </button>
 
-      {/* Content */}
+      {/* Content - Merged Form and Profiles */}
       {isOpen && (
-        <>
-          <div className="border-t border-brand-black/10 px-4 py-3">
+        <div className="border-t border-brand-black/10">
+          <div className="px-4 py-4 space-y-4">
+            {/* Add Social Form - Always visible when expanded */}
+            <div className="rounded-lg bg-brand-linen/40 border border-brand-black/10 p-4 space-y-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60 font-semibold">
+                {newPlatform}
+              </p>
+
+              <div>
+                <label className="block text-xs uppercase tracking-[0.2em] text-brand-black/60 mb-2">
+                  Platform
+                </label>
+                <select
+                  value={newPlatform}
+                  onChange={(e) => setNewPlatform(e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red appearance-none bg-no-repeat"
+                  style={{
+                    backgroundImage: `url("${
+                      {
+                        INSTAGRAM: "/logos/instagram.jpeg",
+                        TIKTOK: "/logos/tiktok.avif",
+                        YOUTUBE: "/logos/youtube.webp",
+                        X: "🐦",
+                        LINKEDIN: "/logos/linkedin.png",
+                      }[newPlatform] || "📷"
+                    }")`,
+                    backgroundPosition: "right 8px center",
+                    backgroundSize: "20px 20px",
+                    paddingRight: "32px",
+                  }}
+                >
+                  {platforms.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-[0.2em] text-brand-black/60 mb-2">
+                  Handle or Profile URL (e.g., @username or instagram.com/username)
+                </label>
+                <input
+                  type="text"
+                  value={newHandle}
+                  onChange={(e) => setNewHandle(e.target.value)}
+                  placeholder="e.g., @yourhandle"
+                  className="w-full rounded-lg border border-brand-black/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-[0.2em] text-brand-black/60 mb-2">
+                  Followers (optional, auto-populated for Instagram)
+                </label>
+                <input
+                  type="number"
+                  value={newFollowers}
+                  onChange={(e) => setNewFollowers(e.target.value)}
+                  placeholder="e.g., 50000"
+                  className="w-full rounded-lg border border-brand-black/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red"
+                />
+              </div>
+
+              <button
+                onClick={handleAddSocial}
+                disabled={isLoading || !newHandle.trim()}
+                className="w-full rounded-lg bg-brand-red px-3 py-2 text-xs uppercase tracking-[0.2em] text-white font-semibold hover:bg-brand-red/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? "Adding..." : "Add Social Profile"}
+              </button>
+            </div>
+
             {/* Social Accounts List */}
-            {socialAccounts.length > 0 ? (
-              <div className="space-y-2 mb-4">
+            {socialAccounts.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60 font-semibold">
+                  Connected Profiles
+                </p>
                 {socialAccounts.map((social) => (
                   <div
                     key={social.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-brand-white border border-brand-black/5 hover:border-brand-black/10 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg bg-brand-white border border-brand-black/10 hover:border-brand-black/20 transition-colors"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <PlatformLogo platform={social.platform} size="md" />
-                      <div className="min-w-0">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <span className="text-lg flex-shrink-0">
+                        {getPlatformIcon(social.platform)}
+                      </span>
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">
                           {getPlatformLabel(social.platform)}
                         </p>
                         <p className="text-sm font-medium text-brand-black truncate">
                           @{social.handle}
                         </p>
+                        {social.followers && (
+                          <p className="text-xs text-brand-black/50">
+                            {(social.followers || 0).toLocaleString()} followers
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -159,86 +245,16 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-xs text-brand-black/40 mb-4 italic">
+            )}
+
+            {/* Empty State */}
+            {socialAccounts.length === 0 && (
+              <p className="text-xs text-brand-black/40 italic text-center py-2">
                 No social profiles added yet
               </p>
             )}
-
-            {/* Add Social Form */}
-            {!showAddForm ? (
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-brand-black/20 text-xs uppercase tracking-[0.2em] text-brand-black/60 hover:bg-brand-black/5 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Add Social Profile
-              </button>
-            ) : (
-              <div className="p-3 rounded-lg bg-brand-white border border-brand-black/10 space-y-3">
-                <div>
-                  <label className="block text-xs uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                    Platform
-                  </label>
-                  <select
-                    value={newPlatform}
-                    onChange={(e) => setNewPlatform(e.target.value)}
-                    className="w-full rounded-lg border border-brand-black/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red appearance-none bg-no-repeat"
-                    style={{
-                      backgroundImage: `url("${
-                        {
-                          INSTAGRAM: "/logos/instagram.jpeg",
-                          TIKTOK: "/logos/tiktok.avif",
-                          YOUTUBE: "/logos/youtube.webp",
-                          X: "🐦",
-                          LINKEDIN: "/logos/linkedin.png",
-                        }[newPlatform] || "📷"
-                      }")`,
-                      backgroundPosition: "right 8px center",
-                      backgroundSize: "20px 20px",
-                      paddingRight: "32px",
-                    }}
-                  >
-                    {platforms.map((p) => (
-                      <option key={p.value} value={p.value}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs uppercase tracking-[0.2em] text-brand-black/60 mb-2">
-                    Handle (without @)
-                  </label>
-                  <input
-                    type="text"
-                    value={newHandle}
-                    onChange={(e) => setNewHandle(e.target.value)}
-                    placeholder="e.g., @yourhandle"
-                    className="w-full rounded-lg border border-brand-black/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddSocial}
-                    disabled={isLoading}
-                    className="flex-1 rounded-lg bg-brand-red px-3 py-2 text-xs uppercase tracking-[0.2em] text-white font-semibold hover:bg-brand-red/90 disabled:opacity-50 transition-colors"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => setShowAddForm(false)}
-                    className="flex-1 rounded-lg border border-brand-black/20 px-3 py-2 text-xs uppercase tracking-[0.2em] text-brand-black/60 hover:bg-brand-black/5 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

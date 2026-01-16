@@ -33,6 +33,8 @@ import { DealPipelineChart } from "../components/AdminTalent/DealPipelineChart.j
 import { SocialIntelligenceTab } from "../components/AdminTalent/SocialIntelligenceTab.jsx";
 import { ContactInformationSection } from "../components/AdminTalent/ContactInformationSection.jsx";
 import { MeetingSection } from "../components/AdminTalent/MeetingSection.jsx";
+import { HierarchicalTabNavigation } from "../components/AdminTalent/HierarchicalTabNavigation.jsx";
+import { AISuggestedOpportunitiesSection } from "../components/AdminTalent/AISuggestedOpportunitiesSection.jsx";
 import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
 import DealManagementPanel from "../components/AdminTalent/DealManagementPanel.jsx";
 import EnterpriseValueDashboard from "../components/EnterpriseValueDashboard.tsx";
@@ -55,26 +57,60 @@ const STATUS_OPTIONS = [
   { value: "ARCHIVED", label: "Archived", color: "bg-gray-400" },
 ];
 
-const TABS = [
-  { id: "overview", label: "Overview", icon: User },
-  { id: "contact-information", label: "Contact Information", icon: Lock },
-  { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
-  { id: "deals", label: "Deal Tracker", icon: Briefcase },
-  { id: "opportunities", label: "Opportunities", icon: TrendingUp },
-  { id: "meetings", label: "Meetings", icon: Calendar },
-  { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
-  { id: "contracts", label: "Contracts", icon: FileText },
-  { id: "payments", label: "Payments & Finance", icon: DollarSign },
-  { id: "commerce", label: "Commerce", icon: ShoppingCart },
-  { id: "enterprise-value", label: "Enterprise Metrics", icon: TrendingUp },
-  { id: "exit-readiness", label: "Exit Readiness", icon: BarChart3 },
-  { id: "owned-assets", label: "Assets & IP", icon: Archive },
-  { id: "revenue-architecture", label: "Revenue Pipeline", icon: Briefcase },
-  { id: "sop-engine", label: "SOP Engine", icon: CheckSquare },
-  { id: "access", label: "Access Control", icon: User },
-  { id: "notes", label: "Notes & History", icon: FileEdit },
-  { id: "files", label: "Files & Assets", icon: Archive },
+// Hierarchically organized tab groups for cleaner navigation
+const TAB_GROUPS = [
+  {
+    group: "PRIMARY",
+    label: null, // No header for primary row
+    tabs: [
+      { id: "overview", label: "Overview", icon: User },
+      { id: "opportunities", label: "Opportunities", icon: TrendingUp },
+      { id: "meetings", label: "Meetings", icon: Calendar },
+      { id: "deals", label: "Deal Tracker", icon: Briefcase },
+    ],
+  },
+  {
+    group: "INSIGHTS_CONTEXT",
+    label: "Insights & Context",
+    tabs: [
+      { id: "contact-information", label: "Contact Information", icon: Lock },
+      { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
+      { id: "notes", label: "Notes & History", icon: FileEdit },
+    ],
+  },
+  {
+    group: "DELIVERY_EXECUTION",
+    label: "Delivery & Execution",
+    tabs: [
+      { id: "deliverables", label: "Content Deliverables", icon: CheckSquare },
+      { id: "contracts", label: "Contracts", icon: FileText },
+      { id: "owned-assets", label: "Assets & IP", icon: Archive },
+      { id: "files", label: "Files & Assets", icon: FileText },
+    ],
+  },
+  {
+    group: "FINANCIALS_COMMERCIAL",
+    label: "Financials & Commercial",
+    tabs: [
+      { id: "payments", label: "Payments & Finance", icon: DollarSign },
+      { id: "revenue-architecture", label: "Revenue Pipeline", icon: Briefcase },
+      { id: "commerce", label: "Commerce", icon: ShoppingCart },
+    ],
+  },
+  {
+    group: "OPERATIONS_GOVERNANCE",
+    label: "Operations & Governance",
+    tabs: [
+      { id: "sop-engine", label: "SOP Engine", icon: CheckSquare },
+      { id: "access", label: "Access Control", icon: User },
+      { id: "enterprise-value", label: "Enterprise Metrics", icon: TrendingUp },
+      { id: "exit-readiness", label: "Exit Readiness", icon: BarChart3 },
+    ],
+  },
 ];
+
+// Flattened tabs array for backwards compatibility
+const TABS = TAB_GROUPS.flatMap(group => group.tabs);
 
 function RepresentationBadge({ type }) {
   const repType = REPRESENTATION_TYPES.find((t) => t.value === type) || REPRESENTATION_TYPES[1];
@@ -1634,27 +1670,41 @@ export function AdminTalentDetailPage() {
         );
       })()}
 
-      {/* TIER 3: Workspace Tabs */}
-      <div className="mb-6 flex flex-wrap gap-2 border-b border-brand-black/10">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 rounded-t-2xl border-b-2 px-4 py-3 text-xs uppercase tracking-[0.3em] transition ${
-                isActive
-                  ? "border-brand-red text-brand-red"
-                  : "border-transparent text-brand-black/60 hover:text-brand-black"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* TIER 3: Hierarchical Workspace Navigation */}
+      <div className="mb-8 space-y-5 border-b border-brand-black/10 pb-6">
+        {TAB_GROUPS.map((tabGroup) => (
+          <div key={tabGroup.group}>
+            {/* Group Header - Only show for non-primary groups */}
+            {tabGroup.label && (
+              <p className="text-xs uppercase tracking-[0.35em] font-semibold text-brand-red/70 mb-3 px-2">
+                {tabGroup.label}
+              </p>
+            )}
+            
+            {/* Tab Buttons Grid */}
+            <div className="flex flex-wrap gap-3">
+              {tabGroup.tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-[0.2em] rounded-lg border transition-all ${
+                      isActive
+                        ? "border-brand-red bg-brand-red/5 text-brand-red font-semibold"
+                        : "border-brand-black/10 bg-brand-white text-brand-black/60 hover:border-brand-black/20 hover:bg-brand-black/3"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Tab Content */}
@@ -1672,7 +1722,7 @@ export function AdminTalentDetailPage() {
           <DealsTab talent={talent} onDealCreated={fetchTalentData} />
         )}
         {activeTab === "opportunities" && (
-          <OpportunitiesTab talentId={talentId} isExclusive={isExclusive} />
+          <OpportunitiesTab talentId={talentId} isExclusive={isExclusive} talent={talent} />
         )}
         {activeTab === "meetings" && (
           <MeetingSection talentId={talentId} />
@@ -1934,7 +1984,7 @@ function OverviewTab({ talent, isExclusive, expandedSections = {}, setExpandedSe
   );
 }
 
-function OpportunitiesTab({ talentId, isExclusive }) {
+function OpportunitiesTab({ talentId, isExclusive, talent }) {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -1957,23 +2007,35 @@ function OpportunitiesTab({ talentId, isExclusive }) {
   }, [talentId]);
 
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Opportunities</p>
-      {loading ? (
-        <p className="text-brand-black/60">Loading opportunities...</p>
-      ) : opportunities.length === 0 ? (
-        <p className="text-brand-black/60">No opportunities found. This will be populated when Opportunity model is updated with talentId.</p>
-      ) : (
-        <div className="space-y-3">
-          {opportunities.map((opp) => (
-            <div key={opp.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
-              <p className="font-semibold text-brand-black">{opp.title}</p>
-              <p className="text-xs text-brand-black/60 mt-1">{opp.status}</p>
-            </div>
-          ))}
-        </div>
+    <div className="space-y-6">
+      {/* AI-Suggested Opportunities - Only for EXCLUSIVE talent */}
+      {isExclusive && (
+        <AISuggestedOpportunitiesSection
+          talentId={talentId}
+          talentName={talent?.name || "Talent"}
+          isExclusive={isExclusive}
+        />
       )}
-    </section>
+
+      {/* Manual Opportunities */}
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-4">Opportunities</p>
+        {loading ? (
+          <p className="text-brand-black/60">Loading opportunities...</p>
+        ) : opportunities.length === 0 ? (
+          <p className="text-brand-black/60">No opportunities found. This will be populated when Opportunity model is updated with talentId.</p>
+        ) : (
+          <div className="space-y-3">
+            {opportunities.map((opp) => (
+              <div key={opp.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+                <p className="font-semibold text-brand-black">{opp.title}</p>
+                <p className="text-xs text-brand-black/60 mt-1">{opp.status}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 

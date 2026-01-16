@@ -71,12 +71,13 @@ export function EnrichmentDiscoveryModal({ brand, onClose, onApprove }) {
       }
       
       const data = await response.json();
-      setDiscoveredContacts(data.job?.contacts || []);
+      const contacts = Array.isArray(data.job?.contacts) ? data.job.contacts : [];
+      setDiscoveredContacts(contacts);
       
       // Automatically select all if confidence > 70
       const autoSelected = new Set(
-        data.job?.contacts
-          ?.filter((c) => c.confidenceScore >= 70)
+        contacts
+          .filter((c) => c && c.confidenceScore >= 70)
           .map((c) => c.id) || []
       );
       setSelectedContactIds(autoSelected);
