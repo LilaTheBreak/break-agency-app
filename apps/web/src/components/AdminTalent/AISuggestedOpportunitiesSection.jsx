@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, RefreshCw, Loader } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AISuggestedOpportunityCard } from './AISuggestedOpportunityCard.jsx';
-import { apiFetch } from '../../lib/apiFetch.js';
+import { apiFetch } from '../../services/apiClient.js';
 
 /**
  * AISuggestedOpportunitiesSection
