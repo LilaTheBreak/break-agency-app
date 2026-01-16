@@ -1469,7 +1469,7 @@ export function AdminTalentDetailPage() {
       />
 
       {/* TIER 2: Health Snapshot (Key Metrics) */}
-      <HealthSnapshotCards talent={talent} />
+      <HealthSnapshotCards talent={talent} talentId={talentId} />
 
       {/* TIER 2B: Quick Details (Collapsible) */}
       <section className="mb-6 space-y-3">

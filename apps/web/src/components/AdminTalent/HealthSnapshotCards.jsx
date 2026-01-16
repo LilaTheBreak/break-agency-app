@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { TrendingUp, DollarSign, CheckSquare, BarChart3 } from "lucide-react";
 
 // Local currency formatter for GBP formatting
@@ -14,15 +15,19 @@ const formatCompactCurrency = (amount, currency = "GBP") => {
  * HealthSnapshotCards Component
  * 
  * Displays 4 key metrics in a scannable grid:
- * - Pipeline (active deals)
- * - Earnings (total revenue)
- * - Tasks (pending actions)
- * - Health Score (overall status)
+ * - Pipeline (active deals) → Deals Tab
+ * - Earnings (total revenue) → Revenue Tab
+ * - Tasks (pending actions) → Tasks Tab
+ * - Health Score (overall status) → Profile Tab
+ * 
+ * All cards are clickable and navigate to the relevant section.
  * 
  * This is the "Health" layer of the 3-tier architecture:
  * Identity → Health → Workspaces
  */
-export function HealthSnapshotCards({ talent, stats = {} }) {
+export function HealthSnapshotCards({ talent, stats = {}, talentId }) {
+  const navigate = useNavigate();
+  
   if (!talent) return null;
 
   // Calculate pipeline status
@@ -66,6 +71,23 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
 
   const healthColor = getHealthColor(healthScore);
 
+  // Click handlers for navigation
+  const handlePipelineClick = () => {
+    navigate(`/admin/talent/${talentId || talent.id}`, { state: { tab: "deals" } });
+  };
+
+  const handleEarningsClick = () => {
+    navigate(`/admin/talent/${talentId || talent.id}`, { state: { tab: "revenue" } });
+  };
+
+  const handleTasksClick = () => {
+    navigate(`/admin/talent/${talentId || talent.id}`, { state: { tab: "tasks" } });
+  };
+
+  const handleHealthClick = () => {
+    navigate(`/admin/talent/${talentId || talent.id}`, { state: { tab: "profile" } });
+  };
+
   const cards = [
     {
       label: "Active Pipeline",
@@ -73,6 +95,8 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
       subtext: dealCount === 0 ? "No active deals" : formatCompactCurrency(pipelineValue, talent.currency || "GBP"),
       icon: TrendingUp,
       color: "text-blue-600",
+      onClick: handlePipelineClick,
+      action: "View deals →",
     },
     {
       label: "Total Earnings",
@@ -82,6 +106,8 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
         : "No earnings yet",
       icon: DollarSign,
       color: "text-green-600",
+      onClick: handleEarningsClick,
+      action: "View revenue →",
     },
     {
       label: "Pending Tasks",
@@ -89,6 +115,8 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
       subtext: taskCount === 0 ? "All caught up!" : "Tasks awaiting action",
       icon: CheckSquare,
       color: `${taskCount === 0 ? "text-green-600" : "text-amber-600"}`,
+      onClick: handleTasksClick,
+      action: taskCount === 0 ? "Refresh →" : "View tasks →",
     },
     {
       label: "Health Score",
@@ -97,6 +125,8 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
       icon: BarChart3,
       color: healthColor.icon,
       bgColor: healthColor.bg,
+      onClick: handleHealthClick,
+      action: "View profile →",
     },
   ];
 
@@ -106,9 +136,10 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
         const Icon = card.icon;
         const bgClass = card.bgColor || "bg-brand-linen/50";
         return (
-          <div
+          <button
             key={idx}
-            className={`rounded-2xl border border-brand-black/10 ${bgClass} p-4 transition-all duration-300 hover:shadow-md hover:border-brand-black/20 hover:scale-105`}
+            onClick={card.onClick}
+            className={`rounded-2xl border border-brand-black/10 ${bgClass} p-4 transition-all duration-300 hover:shadow-md hover:border-brand-black/20 hover:scale-105 cursor-pointer text-left`}
             style={{
               animationDelay: `${idx * 50}ms`,
               animation: 'fadeInUp 0.6s ease-out forwards',
@@ -117,13 +148,16 @@ export function HealthSnapshotCards({ talent, stats = {} }) {
           >
             <div className="mb-3 flex items-center justify-between">
               <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{card.label}</p>
-              <Icon className={`h-4 w-4 ${card.color} transition-transform duration-300`} />
+              <Icon className={`h-4 w-4 ${card.color} transition-transform duration-300 hover:scale-110`} />
             </div>
             <p className="font-display text-2xl uppercase text-brand-black">{card.value}</p>
             {card.subtext && (
               <p className="mt-2 text-xs text-brand-black/50">{card.subtext}</p>
             )}
-          </div>
+            {card.action && (
+              <p className="mt-3 text-xs font-medium text-brand-black/70 hover:text-brand-black transition-colors">{card.action}</p>
+            )}
+          </button>
         );
       })}
       <style>{`
