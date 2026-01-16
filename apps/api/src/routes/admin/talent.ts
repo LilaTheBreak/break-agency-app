@@ -1754,11 +1754,12 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
     // with connected=true, but the TalentSocial route was only creating TalentSocial records.
     let accountConnection: any = null;
     try {
+      // Use correct Prisma composite key syntax for upsert
       accountConnection = await prisma.socialAccountConnection.upsert({
         where: {
           creatorId_platform: {
             creatorId: id,
-            platform: platform as any, // Platform enum matching
+            platform: platform, // String value for platform field
           },
         },
         update: {
@@ -1769,7 +1770,7 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
         create: {
           id: `conn_${id}_${platform}_${Date.now()}`, // Unique ID
           creatorId: id,
-          platform: platform as any,
+          platform: platform, // String value for platform field
           handle,
           connected: true, // Mark as connected
           updatedAt: new Date(),
@@ -1782,7 +1783,12 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
         handle,
       });
     } catch (connError) {
-      console.warn("[TALENT SOCIAL] Failed to create SocialAccountConnection:", connError);
+      console.error("[TALENT SOCIAL] Failed to create SocialAccountConnection:", {
+        error: connError instanceof Error ? connError.message : String(connError),
+        talentId: id,
+        platform,
+        handle,
+      });
       // Don't block the response - TalentSocial was created successfully
     }
 
