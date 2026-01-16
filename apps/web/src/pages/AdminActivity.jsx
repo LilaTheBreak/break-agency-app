@@ -502,15 +502,15 @@ export function AdminActivityPage() {
           ) : (
             <>
               <div className="mt-6 overflow-x-auto border border-brand-black/10 rounded-2xl">
-                <table className="w-full text-left text-sm text-brand-black/80 border-collapse" style={{ tableLayout: "fixed" }}>
+                <table className="w-full text-left text-sm text-brand-black/80 border-collapse" style={{ tableLayout: "fixed", minWidth: "1200px" }}>
                   <thead>
                     <tr className="bg-brand-linen/50 text-xs uppercase tracking-[0.3em] text-brand-black/50 border-b border-brand-black/10">
-                      <th className="w-[140px] px-3 py-3 font-semibold">Timestamp</th>
-                      <th className="w-[160px] px-3 py-3 font-semibold">User</th>
-                      <th className="w-[100px] px-3 py-3 font-semibold">Role</th>
-                      <th className="flex-1 px-3 py-3 font-semibold">Action</th>
-                      <th className="w-[120px] px-3 py-3 font-semibold">Entity</th>
-                      <th className="w-[110px] px-3 py-3 font-semibold">IP Address</th>
+                      <th className="w-[120px] px-3 py-3 font-semibold truncate">Timestamp</th>
+                      <th className="w-[140px] px-3 py-3 font-semibold truncate">User</th>
+                      <th className="w-[90px] px-3 py-3 font-semibold truncate">Role</th>
+                      <th className="w-[250px] px-3 py-3 font-semibold truncate">Action</th>
+                      <th className="w-[110px] px-3 py-3 font-semibold truncate">Entity</th>
+                      <th className="w-[140px] px-3 py-3 font-semibold truncate">IP Address</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -526,17 +526,17 @@ export function AdminActivityPage() {
                             idx % 2 === 1 ? "bg-brand-linen/20" : ""
                           }`}
                         >
-                          <td className="px-3 py-3">
+                          <td className="w-[120px] px-3 py-3 overflow-hidden">
                             <div className="flex flex-col gap-0.5">
-                              <span className="font-medium text-brand-black">{dateStr}</span>
-                              <span className="text-[0.65rem] text-brand-black/50">{timeStr}</span>
+                              <span className="font-medium text-brand-black truncate">{dateStr}</span>
+                              <span className="text-[0.65rem] text-brand-black/50 truncate">{timeStr}</span>
                             </div>
                           </td>
-                          <td className="px-3 py-3 overflow-hidden text-ellipsis whitespace-nowrap">
+                          <td className="w-[140px] px-3 py-3 overflow-hidden">
                             {log.userId ? (
                               <a
                                 href={`/admin/users?search=${log.userId}`}
-                                className="text-brand-red font-medium hover:text-brand-red/80 hover:underline transition-colors"
+                                className="text-brand-red font-medium hover:text-brand-red/80 hover:underline transition-colors truncate block"
                                 title={`View user: ${getUserDisplay(log)}`}
                               >
                                 {getUserDisplay(log)}
@@ -545,13 +545,13 @@ export function AdminActivityPage() {
                               <span className="text-brand-black/40">—</span>
                             )}
                           </td>
-                          <td className="px-3 py-3">
-                            <span className="inline-block text-[0.65rem] font-medium px-2 py-1 rounded-lg bg-brand-black/5 text-brand-black/70 uppercase tracking-[0.15em]">
+                          <td className="w-[90px] px-3 py-3 overflow-hidden">
+                            <span className="inline-block text-[0.65rem] font-medium px-2 py-1 rounded-lg bg-brand-black/5 text-brand-black/70 uppercase tracking-[0.15em] truncate max-w-full">
                               {log.userRole || "—"}
                             </span>
                           </td>
-                          <td className="px-3 py-3 overflow-hidden">
-                            <div className="flex items-start gap-2">
+                          <td className="w-[250px] px-3 py-3 overflow-hidden">
+                            <div className="flex items-start gap-2 min-h-6">
                               {severity === "critical" && (
                                 <span
                                   className="h-2 w-2 rounded-full bg-brand-red flex-shrink-0 mt-1.5"
@@ -564,12 +564,12 @@ export function AdminActivityPage() {
                                   title="Warning action"
                                 />
                               )}
-                              <span className="font-semibold text-brand-black whitespace-normal break-words">{actionLabel}</span>
+                              <span className="font-semibold text-brand-black text-ellipsis overflow-hidden line-clamp-2" title={actionLabel}>{actionLabel}</span>
                             </div>
                           </td>
-                          <td className="px-3 py-3">
+                          <td className="w-[110px] px-3 py-3 overflow-hidden">
                             <div className="flex flex-col gap-1.5">
-                              <span className="inline-block text-[0.65rem] font-medium px-2 py-1 rounded-lg bg-brand-black/5 text-brand-black/70 uppercase tracking-[0.15em] w-fit">
+                              <span className="inline-block text-[0.65rem] font-medium px-2 py-1 rounded-lg bg-brand-black/5 text-brand-black/70 uppercase tracking-[0.15em] w-fit truncate max-w-[90px]">
                                 {entityLabel}
                               </span>
                               {log.entityId && (
@@ -582,8 +582,8 @@ export function AdminActivityPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-3 py-3 text-[0.65rem] text-brand-black/60 font-mono overflow-hidden text-ellipsis whitespace-nowrap">
-                            <span title={log.ipAddress || ""}>
+                          <td className="w-[140px] px-3 py-3 text-[0.65rem] text-brand-black/60 font-mono overflow-hidden">
+                            <span title={log.ipAddress || ""} className="truncate block">
                               {log.ipAddress || "—"}
                             </span>
                           </td>
