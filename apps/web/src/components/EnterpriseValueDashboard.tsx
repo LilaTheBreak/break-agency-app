@@ -53,11 +53,26 @@ const EnterpriseValueDashboard: React.FC<Props> = ({ talentId, onLoadingChange }
         });
 
         if (!metricsResponse.ok) {
-          throw new Error(`Failed to fetch metrics: ${metricsResponse.status}`);
+          const contentType = metricsResponse.headers.get('content-type');
+          let errorMessage = `Failed to fetch metrics: ${metricsResponse.status}`;
+          
+          if (contentType?.includes('application/json')) {
+            try {
+              const errorData = await metricsResponse.json();
+              errorMessage = errorData.error || errorMessage;
+            } catch (e) {
+              // JSON parse failed
+            }
+          } else {
+            // Likely HTML error page
+            errorMessage = `Server error (${metricsResponse.status}). Enterprise value metrics may not be configured.`;
+          }
+          
+          throw new Error(errorMessage);
         }
 
         const metricsData = await metricsResponse.json();
-        setMetrics(metricsData);
+        setMetrics(metricsData.data || metricsData);
 
         // Fetch 12-month history
         const historyResponse = await fetch(
@@ -71,7 +86,7 @@ const EnterpriseValueDashboard: React.FC<Props> = ({ talentId, onLoadingChange }
 
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
-          setHistory(historyData);
+          setHistory(historyData.data || historyData);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load metrics');

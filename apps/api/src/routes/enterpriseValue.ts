@@ -31,9 +31,11 @@ router.get('/:talentId', requireAuth, checkTalentAccess, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting enterprise value metrics:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       error: 'Failed to get enterprise value metrics',
+      details: errorMessage,
     });
   }
 });
