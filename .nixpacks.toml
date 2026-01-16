@@ -15,7 +15,9 @@ cmds = [
 [phases.build]
 cmds = [
   "pnpm install",
+  "rm -rf apps/web/dist apps/web/.vite node_modules/.vite",
   "pnpm --filter @breakagency/shared build",
+  "pnpm --filter @breakagency/web build",
   "pnpm --filter @breakagency/api exec prisma generate --schema=./prisma/schema.prisma",
   "pnpm --filter @breakagency/api build || echo 'Build completed with warnings' || true"
 ]
