@@ -10,7 +10,7 @@ import { logAIInteraction } from "../lib/aiHistoryLogger.js";
  */
 export async function generateAISuggestions(req: Request, res: Response, next: NextFunction) {
   try {
-    const { talentId } = req.params;
+    const { id: talentId } = req.params;
     const userId = (req as any).user?.id;
 
     if (!talentId) {
@@ -70,7 +70,7 @@ export async function generateAISuggestions(req: Request, res: Response, next: N
  */
 export async function getTalentSuggestions(req: Request, res: Response, next: NextFunction) {
   try {
-    const { talentId } = req.params;
+    const { id: talentId } = req.params;
     const { status } = req.query;
 
     if (!talentId) {
@@ -114,7 +114,7 @@ export async function getTalentSuggestions(req: Request, res: Response, next: Ne
  */
 export async function updateSuggestion(req: Request, res: Response, next: NextFunction) {
   try {
-    const { talentId, suggestionId } = req.params;
+    const { id: talentId, suggestionId } = req.params;
     const { status } = req.body;
     const userId = (req as any).user?.id;
 
@@ -168,7 +168,7 @@ export async function updateSuggestion(req: Request, res: Response, next: NextFu
  */
 export async function convertSuggestion(req: Request, res: Response, next: NextFunction) {
   try {
-    const { talentId, suggestionId } = req.params;
+    const { id: talentId, suggestionId } = req.params;
     const userId = (req as any).user?.id;
 
     if (!userId) {
