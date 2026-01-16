@@ -1779,9 +1779,9 @@ export function AdminTalentDetailPage() {
         onSuccess={fetchTalentData}
       />
 
-      {/* STICKY FLOATING ACTION BAR */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
-        {/* Primary CTA: Add Deal */}
+      {/* STICKY FLOATING ACTION BAR - Brand Color Scheme */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2">
+        {/* Primary CTA: Add Deal - Brand Red */}
         <button
           onClick={() => {
             if (activeTab !== "deals") setActiveTab("deals");
@@ -1791,39 +1791,59 @@ export function AdminTalentDetailPage() {
               if (addDealBtn) addDealBtn.click();
             }, 100);
           }}
-          className="flex items-center justify-center gap-2 rounded-full bg-brand-red text-white shadow-lg hover:bg-brand-red/90 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
-          title="Add deal"
+          className="group relative flex items-center justify-center rounded-full bg-brand-red text-white shadow-lg hover:shadow-2xl hover:bg-brand-black/90 active:scale-95 transition-all duration-200 w-16 h-16"
+          title="Add new deal"
+          aria-label="Add new deal"
         >
-          <Plus className="h-6 w-6" />
-          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">Deal</span>
+          <Plus className="h-7 w-7 transition-transform group-hover:rotate-90 duration-300" />
+          <div className="absolute bottom-full right-0 mb-3 px-3 py-2 bg-brand-black text-white text-xs font-semibold uppercase tracking-[0.15em] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            New Deal
+          </div>
         </button>
 
-        {/* Secondary CTAs */}
+        {/* Task CTA - Blue brand accent */}
         <button
-          onClick={() => toast('Task creation coming soon', { icon: '📝' })}
-          className="flex items-center justify-center gap-2 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
-          title="Add task"
+          onClick={() => setActiveTab("notes")}
+          className="group relative flex items-center justify-center rounded-full bg-blue-600 text-white shadow-md hover:shadow-lg hover:bg-blue-700 active:scale-95 transition-all duration-200 w-14 h-14"
+          title="Create task"
+          aria-label="Create task"
         >
-          <CheckSquare className="h-5 w-5" />
-          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">Task</span>
+          <CheckSquare className="h-6 w-6 transition-transform group-hover:scale-110 duration-200" />
+          <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-brand-black text-white text-xs font-semibold uppercase tracking-[0.15em] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            Tasks
+          </div>
         </button>
 
+        {/* Meeting CTA - Green brand accent */}
         <button
-          onClick={() => toast('Meeting scheduling coming soon', { icon: '📅' })}
-          className="flex items-center justify-center gap-2 rounded-full bg-green-500 text-white shadow-lg hover:bg-green-600 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
+          onClick={() => {
+            if (activeTab !== "meetings") setActiveTab("meetings");
+            setTimeout(() => {
+              const addMeetingBtn = document.querySelector('[data-action="add-meeting"]');
+              if (addMeetingBtn) addMeetingBtn.click();
+            }, 100);
+          }}
+          className="group relative flex items-center justify-center rounded-full bg-green-600 text-white shadow-md hover:shadow-lg hover:bg-green-700 active:scale-95 transition-all duration-200 w-14 h-14"
           title="Schedule meeting"
+          aria-label="Schedule meeting"
         >
-          <Calendar className="h-5 w-5" />
-          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">Meet</span>
+          <Calendar className="h-6 w-6 transition-transform group-hover:scale-110 duration-200" />
+          <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-brand-black text-white text-xs font-semibold uppercase tracking-[0.15em] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            Meeting
+          </div>
         </button>
 
+        {/* Files CTA - Purple brand accent */}
         <button
-          onClick={() => toast('Contract upload coming soon', { icon: '📎' })}
-          className="flex items-center justify-center gap-2 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 hover:shadow-xl transition w-14 h-14 hover:w-auto hover:px-4"
-          title="Upload contract"
+          onClick={() => setActiveTab("files")}
+          className="group relative flex items-center justify-center rounded-full bg-purple-600 text-white shadow-md hover:shadow-lg hover:bg-purple-700 active:scale-95 transition-all duration-200 w-14 h-14"
+          title="Upload file"
+          aria-label="Upload file"
         >
-          <FileText className="h-5 w-5" />
-          <span className="hidden hover:inline text-xs font-bold uppercase tracking-[0.2em] whitespace-nowrap">File</span>
+          <FileText className="h-6 w-6 transition-transform group-hover:scale-110 duration-200" />
+          <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-brand-black text-white text-xs font-semibold uppercase tracking-[0.15em] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            Files
+          </div>
         </button>
       </div>
     </DashboardShell>
@@ -3110,35 +3130,39 @@ function DealsTab({ talent, onDealCreated }) {
 
       {/* Add Deal Modal */}
       {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="relative w-full max-w-2xl mx-4 rounded-3xl border border-brand-black/15 bg-brand-white p-10 shadow-2xl max-h-[90vh] overflow-y-auto">
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={() => setCreateOpen(false)}
-              className="absolute right-6 top-6 p-1 rounded-full text-brand-black/50 hover:text-brand-black hover:bg-brand-black/5 transition-colors"
-            >
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          {/* Modal Container - Fixed width, proper scrolling */}
+          <div className="relative w-full max-w-2xl rounded-3xl border border-brand-black/15 bg-brand-white shadow-2xl flex flex-col max-h-[90vh]">
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 border-b border-brand-black/10 px-8 py-6">
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setCreateOpen(false)}
+                className="absolute right-6 top-6 p-1 rounded-full text-brand-black/50 hover:text-brand-black hover:bg-brand-black/5 transition-colors z-10"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
 
-            {/* Title */}
-            <h2 className="mb-2 text-2xl font-bold text-brand-black">Create New Deal</h2>
-            <p className="mb-6 text-sm text-brand-black/60">Fill in the details below to create a new deal</p>
+              {/* Title */}
+              <h2 className="text-2xl font-bold text-brand-black">Create New Deal</h2>
+              <p className="mt-1 text-sm text-brand-black/60">Fill in the details below to create a new deal</p>
+            </div>
 
-            {/* Error Message */}
-            {createError && (
-              <div className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4">
-                <p className="text-sm font-medium text-red-700">{createError}</p>
-              </div>
-            )}
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+              {/* Error Message */}
+              {createError && (
+                <div className="rounded-xl border border-red-300 bg-red-50 p-4 flex-shrink-0">
+                  <p className="text-sm font-medium text-red-700">{createError}</p>
+                </div>
+              )}
 
-            {/* Form */}
-            <div className="space-y-6">
               {/* Deal Name */}
-              <div>
-                <label className="block text-sm font-semibold text-brand-black mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-brand-black">
                   Deal Name <span className="text-brand-red">*</span>
                 </label>
                 <input
@@ -3150,11 +3174,12 @@ function DealsTab({ talent, onDealCreated }) {
                 />
               </div>
 
-              {/* Brand Selection */}
-              <div>
-                <label className="block text-sm font-semibold text-brand-black mb-2">
+              {/* Brand Selection - with helper text */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-brand-black">
                   Brand <span className="text-brand-red">*</span>
                 </label>
+                <p className="text-xs text-brand-black/50">Search existing brands or create a new one</p>
                 <BrandSelect
                   brands={brands}
                   value={createForm.brandId}
@@ -3166,9 +3191,9 @@ function DealsTab({ talent, onDealCreated }) {
                 />
               </div>
 
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-semibold text-brand-black mb-2">
+              {/* Stage */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-brand-black">
                   Stage
                 </label>
                 <select
@@ -3187,10 +3212,10 @@ function DealsTab({ talent, onDealCreated }) {
                 </select>
               </div>
 
-              {/* Estimated Value */}
+              {/* Value & Currency - Two Column */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-brand-black mb-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-brand-black">
                     Estimated Value
                   </label>
                   <input
@@ -3202,9 +3227,8 @@ function DealsTab({ talent, onDealCreated }) {
                   />
                 </div>
 
-                {/* Currency */}
-                <div>
-                  <label className="block text-sm font-semibold text-brand-black mb-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-brand-black">
                     Currency
                   </label>
                   <select
@@ -3222,8 +3246,8 @@ function DealsTab({ talent, onDealCreated }) {
               </div>
 
               {/* Expected Close Date */}
-              <div>
-                <label className="block text-sm font-semibold text-brand-black mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-brand-black">
                   Expected Close Date
                 </label>
                 <input
@@ -3235,8 +3259,8 @@ function DealsTab({ talent, onDealCreated }) {
               </div>
 
               {/* Notes */}
-              <div>
-                <label className="block text-sm font-semibold text-brand-black mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-brand-black">
                   Notes
                 </label>
                 <textarea
@@ -3249,8 +3273,8 @@ function DealsTab({ talent, onDealCreated }) {
               </div>
             </div>
 
-            {/* Buttons */}
-            <div className="mt-8 flex gap-3">
+            {/* Fixed Footer with Buttons */}
+            <div className="flex-shrink-0 border-t border-brand-black/10 px-8 py-6 flex gap-3">
               <button
                 type="button"
                 onClick={() => setCreateOpen(false)}
@@ -3261,7 +3285,8 @@ function DealsTab({ talent, onDealCreated }) {
               <button
                 type="button"
                 onClick={handleCreateDeal}
-                className="flex-1 rounded-lg bg-brand-red px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl"
+                disabled={!createForm.dealName.trim() || !createForm.brandId}
+                className="flex-1 rounded-lg bg-brand-red px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create Deal
               </button>

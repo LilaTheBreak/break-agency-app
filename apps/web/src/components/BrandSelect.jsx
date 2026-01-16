@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Plus } from "lucide-react";
 
 /**
@@ -39,11 +39,23 @@ export function BrandSelect({
     return (brands || []).find(b => b?.id === value);
   }, [brands, value]);
 
-  // Filter brands by search text
+  // Advanced search: starts-with + contains matching (case-insensitive)
   const filteredBrands = useMemo(() => {
     if (!searchText.trim()) return brands || [];
+    
     const search = searchText.toLowerCase().trim();
-    return (brands || []).filter(b => b?.name?.toLowerCase?.()?.includes(search));
+    const brandArray = (brands || []);
+    
+    // Split results: exact starts-with matches first, then contains matches
+    const startsWithMatches = brandArray.filter(b => 
+      b?.name?.toLowerCase?.()?.startsWith?.(search)
+    );
+    const containsMatches = brandArray.filter(b => 
+      b?.name?.toLowerCase?.()?.includes?.(search) && 
+      !b?.name?.toLowerCase?.()?.startsWith?.(search)
+    );
+    
+    return [...startsWithMatches, ...containsMatches];
   }, [brands, searchText]);
 
   // Check if search text matches any existing brand (case-insensitive)
@@ -53,9 +65,10 @@ export function BrandSelect({
   }, [brands, searchText]);
 
   // Should show "Create new brand" option?
-  const shouldShowCreate = searchText.trim().length > 0 && !exactMatch;
+  // Only show if user typed something AND no exact match exists AND we have brands loaded
+  const shouldShowCreate = searchText.trim().length > 0 && !exactMatch && !isLoading;
 
-  const handleCreateBrand = async () => {
+  const handleCreateBrand = useCallback(async () => {
     if (!onCreateBrand) {
       console.warn("onCreateBrand handler not provided");
       return;
@@ -87,64 +100,81 @@ export function BrandSelect({
     } finally {
       setIsCreating(false);
     }
-  };
+  }, [onCreateBrand, searchText]);
 
-  const handleSelectBrand = (brandId) => {
+  const handleSelectBrand = useCallback((brandId) => {
     onChange(brandId);
     setIsOpen(false);
     setSearchText("");
-  };
+  }, [onChange]);
+
+  // Handle keyboard navigation and Esc key
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === "Escape") {
+      setIsOpen(false);
+    }
+  }, []);
 
   return (
     <div className="relative w-full">
       {/* Main dropdown button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
         disabled={disabled || isLoading}
-        className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-3 py-2 text-sm text-left focus:border-brand-red focus:outline-none disabled:opacity-50 flex items-center justify-between hover:border-brand-black/20 transition"
+        className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-left focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20 disabled:opacity-50 flex items-center justify-between hover:border-brand-black/20 transition"
       >
-        <span className="text-brand-black">
+        <span className={isLoading ? "text-brand-black/50" : "text-brand-black"}>
           {isLoading ? "Loading brands..." : selectedBrand?.name || "Select a brand"}
         </span>
-        <svg className="h-4 w-4 text-brand-black/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg 
+          className={`h-4 w-4 text-brand-black/60 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       </button>
 
-      {/* Dropdown menu */}
+      {/* Dropdown menu - Portal-like positioning to escape modal scroll */}
       {isOpen && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-lg border border-brand-black/10 bg-brand-white shadow-lg">
+        <div className="absolute top-full left-0 right-0 mt-2 z-[100] rounded-lg border border-brand-black/10 bg-brand-white shadow-xl">
           {/* Search input */}
-          <div className="border-b border-brand-black/10 p-2">
+          <div className="border-b border-brand-black/10 p-3 sticky top-0 bg-brand-white z-10">
             <input
               autoFocus
               type="text"
-              placeholder="Search or type brand name..."
+              placeholder="Search brands (e.g., 'nut' finds Neutrogena)…"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="w-full rounded px-2 py-2 text-sm border border-brand-black/10 focus:border-brand-red focus:outline-none"
+              onKeyDown={handleKeyDown}
+              className="w-full rounded-lg px-3 py-2 text-sm border border-brand-black/10 focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
             />
           </div>
 
           {/* Error message */}
           {createError && (
-            <div className="px-3 py-2 text-xs text-red-600 bg-red-50 border-b border-red-200">
-              {createError}
+            <div className="px-4 py-2 text-xs text-red-600 bg-red-50 border-b border-red-200">
+              <p className="font-medium">Error creating brand:</p>
+              <p>{createError}</p>
             </div>
           )}
 
           {/* Brand list or empty state */}
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-72 overflow-y-auto">
             {filteredBrands.length > 0 ? (
               filteredBrands.map((brand) => (
                 <button
                   key={brand.id}
                   onClick={() => handleSelectBrand(brand.id)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-brand-linen/50 transition ${
-                    value === brand.id ? "bg-brand-red/10 text-brand-red" : "text-brand-black"
+                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-linen/60 transition ${
+                    value === brand.id ? "bg-brand-red/10 text-brand-red font-medium" : "text-brand-black"
                   }`}
                 >
-                  {brand.name}
+                  {brand.name || brand.brandName}
                 </button>
               ))
             ) : (

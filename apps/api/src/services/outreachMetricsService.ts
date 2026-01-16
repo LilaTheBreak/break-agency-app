@@ -105,7 +105,6 @@ export async function calculateOutreachMetrics(
         ...where,
         emailsReplies: { gt: 0 },
         lastContact: { not: null },
-        createdAt: { not: null },
       },
       select: {
         createdAt: true,

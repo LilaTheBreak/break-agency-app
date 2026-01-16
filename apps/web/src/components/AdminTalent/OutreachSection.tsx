@@ -1,7 +1,22 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Plus, Search, MoreVertical, Send, Clock, CheckCircle, AlertCircle, Mail, User, Calendar, Trash2, Edit2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import type { OutreachMetrics } from '../services/outreachMetricsService';
+
+interface OutreachMetrics {
+  totalOutreach: number;
+  byStage: {
+    [key: string]: number;
+  };
+  responseRate: number;
+  conversionToMeetings: number;
+  conversionToOpportunities: number;
+  conversionToDeals: number;
+  averageTimeToReply: number;
+  pendingFollowUps: number;
+  overdueFolowUps: number;
+  topSources: Array<{ source: string; count: number }>;
+  topTypes: Array<{ type: string; count: number }>;
+}
 
 interface Outreach {
   id: string;

@@ -230,7 +230,7 @@ export async function autoSyncAllOutreach() {
       include: { OutreachEmailThread: true },
     });
 
-    const results = [];
+    const results: Array<{ previousStage: string; newStage: string; stageChanged: boolean }> = [];
     for (const outreach of outreachList) {
       try {
         const stageUpdate = await updateStageBasedOnGmail(outreach.id);
