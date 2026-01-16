@@ -135,26 +135,47 @@ router.get("/", async (req: Request, res: Response) => {
               console.warn("[TALENT] Failed to fetch CreatorTasks for talent", talent.id);
             }
             
-            // Fetch social accounts for primary handle display
+            // Fetch social accounts with profile image URLs
             let socialAccounts: Array<{ platform: string; handle: string }> = [];
             let primarySocialHandle: string | null = null;
+            let socialProfileImageUrl: string | null = null;
             try {
-              socialAccounts = await prisma.socialAccountConnection.findMany({
+              const socialConnections = await prisma.socialAccountConnection.findMany({
                 where: { creatorId: talent.id, connected: true },
-                select: {
-                  platform: true,
-                  handle: true,
+                include: {
+                  SocialProfile: {
+                    select: {
+                      profileImageUrl: true,
+                    },
+                  },
                 },
                 orderBy: { createdAt: "asc" },
                 take: 5, // Limit to primary platforms
               });
+              
+              socialAccounts = socialConnections.map(s => ({
+                platform: s.platform,
+                handle: s.handle,
+              }));
+              
               // Get first available handle as primary (prefer Instagram, then TikTok, then others)
-              const instagram = socialAccounts.find(s => s.platform === "INSTAGRAM");
-              const tiktok = socialAccounts.find(s => s.platform === "TIKTOK");
-              primarySocialHandle = instagram?.handle || tiktok?.handle || socialAccounts[0]?.handle || null;
+              const instagram = socialConnections.find(s => s.platform === "INSTAGRAM");
+              const tiktok = socialConnections.find(s => s.platform === "TIKTOK");
+              primarySocialHandle = instagram?.handle || tiktok?.handle || socialConnections[0]?.handle || null;
+              
+              // Get profile image from first available social profile
+              for (const conn of socialConnections) {
+                if (conn.SocialProfile?.profileImageUrl) {
+                  socialProfileImageUrl = conn.SocialProfile.profileImageUrl;
+                  break;
+                }
+              }
             } catch (socialError) {
               console.warn("[TALENT] Failed to fetch social accounts for talent", talent.id);
             }
+            
+            // Use profileImageUrl from talent record, fallback to social profile image
+            const profileImageUrl = talent.profileImageUrl || socialProfileImageUrl;
             
             return {
               id: talent.id,
@@ -170,7 +191,7 @@ router.get("/", async (req: Request, res: Response) => {
                     avatarUrl: userData.avatarUrl,
                   }
                 : null,
-              profileImageUrl: talent.profileImageUrl || null,
+              profileImageUrl: profileImageUrl,
               socialAccounts,
               primarySocialHandle,
               managerId: null,
@@ -3346,6 +3367,42 @@ router.delete("/:talentId/files/:fileId", async (req: Request, res: Response) =>
   } catch (error) {
     console.error("[TALENT_FILES] Error deleting file:", error);
     return handleApiError(res, error, "Failed to delete file", "FILES_DELETE_FAILED");
+  }
+});
+
+/**
+ * POST /api/admin/talent/sync/profile-images
+ * Bulk sync profile images for all talents without them
+ */
+router.post("/sync/profile-images", async (req: Request, res: Response) => {
+  try {
+    console.log("[TALENT SYNC] Starting bulk profile image sync");
+
+    const { talentProfileImageService } = await import(
+      "../../services/talent/TalentProfileImageService.js"
+    );
+
+    const result = await talentProfileImageService.syncAllTalents({
+      limit: 1000,
+      forceRefresh: false,
+      minHoursSinceLastSync: 0, // Sync even if recently synced
+    });
+
+    console.log("[TALENT SYNC] Bulk sync completed:", result);
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile image sync completed",
+      data: result,
+    });
+  } catch (error) {
+    console.error("[TALENT SYNC] Error:", error);
+    return handleApiError(
+      res,
+      error,
+      "Failed to sync profile images",
+      "SYNC_FAILED"
+    );
   }
 });
 
