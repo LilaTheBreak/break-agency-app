@@ -186,12 +186,8 @@ router.get("/", async (req, res) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch deals";
     logError("Failed to fetch deals", error, { userId: req.user?.id, route: req.path });
-    return res.status(500).json({ 
-      success: false,
-      error: errorMessage,
-      message: errorMessage,
-      code: "DEALS_FETCH_FAILED"
-    });
+    // CRITICAL: Return empty array on error to prevent '.filter is not a function' crashes
+    return res.status(500).json([]);
   }
 });
 

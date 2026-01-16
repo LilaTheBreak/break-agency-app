@@ -65,12 +65,9 @@ router.get("/", async (req, res) => {
     const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
     return res.json(safeCampaigns);
   } catch (error) {
-    // Phase 4: Fail loudly - no empty arrays on error
+    // CRITICAL: Return empty array on error to prevent '.filter is not a function' crashes
     logError("Failed to fetch campaigns", error, { userId: req.user?.id });
-    return res.status(500).json({ 
-      error: "Failed to fetch campaigns",
-      message: error instanceof Error ? error.message : "Unknown error"
-    });
+    return res.status(500).json([]);
   }
 });
 
