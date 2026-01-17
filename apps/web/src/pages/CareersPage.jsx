@@ -84,7 +84,7 @@ export function CareersPage() {
           </header>
 
           <main>
-            {cms.blocks && cms.blocks.length === 0 && cms.editMode ? (
+            {cms.draftBlocks && cms.draftBlocks.length === 0 && cms.editMode ? (
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">No content yet</h3>
