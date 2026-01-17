@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import prisma from '../lib/prisma.js';
+import { isSuperAdmin } from '../lib/roleHelpers.js';
 
 /**
  * Middleware to check if the authenticated user has access to a specific talent
@@ -22,7 +23,7 @@ export async function checkTalentAccess(req: Request, res: Response, next: NextF
     // This could be:
     // 1. The talent themselves (talent.userId === userId)
     // 2. A user with TalentUserAccess
-    // 3. An admin user
+    // 3. An admin user (ADMIN or SUPERADMIN)
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -31,8 +32,8 @@ export async function checkTalentAccess(req: Request, res: Response, next: NextF
       return res.status(401).json({ error: "User not found" });
     }
 
-    // Check if user is admin
-    if (user.role === 'ADMIN') {
+    // Check if user is superadmin or admin - they have access to all talents
+    if (user.role === 'SUPERADMIN' || user.role === 'ADMIN') {
       (req as any).talentId = talentId;
       return next();
     }
