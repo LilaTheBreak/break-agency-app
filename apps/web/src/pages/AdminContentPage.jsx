@@ -462,6 +462,10 @@ export function AdminContentPage({ session }) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState(null);
   const [newBlockType, setNewBlockType] = useState(null);
+  
+  // SEO metadata state
+  const [seoOpen, setSeoOpen] = useState(false);
+  const [seoData, setSeoData] = useState({ metaTitle: "", metaDescription: "", metaImage: "" });
 
   useEffect(() => {
     loadPages();
@@ -470,6 +474,12 @@ export function AdminContentPage({ session }) {
   useEffect(() => {
     if (selectedPage) {
       loadPageBlocks(selectedPage.slug);
+      // Load SEO data from selected page
+      setSeoData({
+        metaTitle: selectedPage.metaTitle || "",
+        metaDescription: selectedPage.metaDescription || "",
+        metaImage: selectedPage.metaImage || ""
+      });
     }
   }, [selectedPage, previewMode]);
 
@@ -745,6 +755,23 @@ export function AdminContentPage({ session }) {
     }
   };
 
+  const handleSaveSeoMetadata = async () => {
+    if (!selectedPage) return;
+
+    try {
+      setSaving(true);
+      // TODO: Implement SEO metadata save when Page model has metaTitle, metaDescription, metaImage fields
+      // For now, just show a message
+      toast.success("SEO metadata saved (feature coming soon - requires schema migration)");
+      setSeoOpen(false);
+    } catch (error) {
+      console.error("Failed to save SEO metadata:", error);
+      toast.error(error.message || "Failed to save SEO metadata");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getDefaultContent = (blockType) => {
     switch (blockType) {
       case "HERO":
@@ -855,6 +882,15 @@ export function AdminContentPage({ session }) {
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
+                  {/* SEO Metadata Button */}
+                  <button
+                    onClick={() => setSeoOpen(true)}
+                    className="rounded-full border border-brand-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5 flex items-center gap-2 transition-colors"
+                    title="Edit SEO metadata (title, description, image)"
+                  >
+                    🔍 SEO
+                  </button>
+                  
                   {/* View Live Button - opens page in new tab */}
                   {selectedPage.route && (
                     <a
@@ -1036,6 +1072,89 @@ export function AdminContentPage({ session }) {
             </div>
           </>
         )}
+
+        {/* SEO Metadata Editor Modal */}
+        <Modal
+          open={seoOpen}
+          title="Page SEO Metadata (Coming Soon)"
+          onClose={() => setSeoOpen(false)}
+        >
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-brand-black/5 border border-brand-black/10 p-4">
+              <p className="text-sm text-brand-black/70 mb-2 font-semibold">📅 Feature Coming Soon</p>
+              <p className="text-sm text-brand-black/60">
+                SEO metadata editing (meta title, description, and image) is currently being prepared. 
+                Once implemented, you'll be able to optimize how your pages appear in search results and social media.
+              </p>
+            </div>
+
+            <div className="space-y-3 opacity-50 pointer-events-none">
+              <label className="block">
+                <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">
+                  Meta Title (Browser tab, Search results)
+                </span>
+                <input
+                  type="text"
+                  value={seoData.metaTitle || ""}
+                  onChange={(e) => setSeoData({ ...seoData, metaTitle: e.target.value })}
+                  placeholder={selectedPage?.title || "Page title"}
+                  maxLength={60}
+                  className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
+                  disabled
+                />
+                <p className="mt-1 text-xs text-brand-black/50">
+                  {(seoData.metaTitle || "").length}/60 characters (ideal: 50-60)
+                </p>
+              </label>
+
+              <label className="block">
+                <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">
+                  Meta Description (Search results preview)
+                </span>
+                <textarea
+                  value={seoData.metaDescription || ""}
+                  onChange={(e) => setSeoData({ ...seoData, metaDescription: e.target.value })}
+                  placeholder="Describe what this page is about..."
+                  maxLength={160}
+                  rows={3}
+                  className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
+                  disabled
+                />
+                <p className="mt-1 text-xs text-brand-black/50">
+                  {(seoData.metaDescription || "").length}/160 characters (ideal: 120-160)
+                </p>
+              </label>
+
+              <label className="block">
+                <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">
+                  Meta Image (Social media preview, og:image)
+                </span>
+                <input
+                  type="url"
+                  value={seoData.metaImage || ""}
+                  onChange={(e) => setSeoData({ ...seoData, metaImage: e.target.value })}
+                  placeholder="https://... (1200x630px recommended)"
+                  className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
+                  disabled
+                />
+                <p className="mt-1 text-xs text-brand-black/50">
+                  Recommended: 1200x630px (16:9 aspect ratio)
+                </p>
+              </label>
+            </div>
+
+            {/* Close Button */}
+            <div className="flex gap-3 mt-6 pt-4 border-t border-brand-black/10">
+              <button
+                type="button"
+                onClick={() => setSeoOpen(false)}
+                className="flex-1 rounded-full border border-brand-black/20 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
 
         {/* Block Type Selector / Editor Modal */}
         <Modal
