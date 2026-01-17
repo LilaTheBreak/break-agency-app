@@ -309,4 +309,53 @@ router.get("/goals/:talentId", revenueController.getRevenueGoals);
  */
 router.delete("/goals/:goalId", revenueController.deleteRevenueGoal);
 
+/**
+ * GET /api/revenue/architecture/:talentId
+ * Get revenue architecture and pipeline analysis
+ */
+router.get("/architecture/:talentId", async (req: Request, res: Response) => {
+  try {
+    const { talentId } = req.params;
+    const userId = (req as any).user?.id;
+    const role = (req as any).user?.role;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Permission check
+    if (role !== "ADMIN" && role !== "SUPERADMIN" && userId !== talentId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    // Return basic architecture data structure
+    const architecture = {
+      id: `arch_${talentId}`,
+      talentId,
+      contentMRR: 0,
+      contentSources: 0,
+      leadGenerationMRR: 0,
+      leadChannels: 0,
+      conversionMRR: 0,
+      conversionRate: 0,
+      recurringRevenueMRR: 0,
+      recurringPercent: 0,
+      gaps: [],
+      recommendations: [],
+      updatedAt: new Date().toISOString(),
+    };
+
+    return res.json({
+      success: true,
+      data: architecture,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({
+      error: "Failed to get revenue architecture",
+      details: errorMessage
+    });
+  }
+});
+
 export default router;

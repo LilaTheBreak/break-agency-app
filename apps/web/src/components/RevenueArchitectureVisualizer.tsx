@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import SkeletonLoader from './SkeletonLoader';
 import { ErrorBoundary } from './ErrorBoundary';
+import { apiFetch } from '../services/apiClient.js';
 
 interface RevenueArchitecture {
   id: string;
@@ -41,18 +42,20 @@ const RevenueArchitectureVisualizer: React.FC<Props> = ({ talentId, onLoadingCha
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`/api/revenue-architecture/${talentId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+        const response = await apiFetch(`/api/revenue/architecture/${talentId}`);
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType?.includes('application/json')) {
+          throw new Error('API returned invalid response (HTML instead of JSON)');
+        }
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch architecture: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to fetch architecture: ${response.status}`);
         }
 
         const data = await response.json();
-        setArchitecture(data);
+        setArchitecture(data.data || data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load architecture');
       } finally {
