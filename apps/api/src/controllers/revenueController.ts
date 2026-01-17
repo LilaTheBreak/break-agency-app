@@ -73,7 +73,7 @@ export async function getRevenueSourcesForTalent(req: Request, res: Response, ne
     }
 
     // Permission check: admin can view all, users can view own
-    if (role !== "ADMIN" && userId !== talentId) {
+    if (role !== "ADMIN" && role !== "SUPERADMIN" && userId !== talentId) {
       return sendError(res, "FORBIDDEN", "Cannot view other users' revenue sources", 403);
     }
 
@@ -81,8 +81,12 @@ export async function getRevenueSourcesForTalent(req: Request, res: Response, ne
 
     return sendList(res, sources);
   } catch (error) {
-    logError("Failed to get revenue sources", error, { userId: (req as any).user?.id });
-    next(error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logError("Failed to get revenue sources", error, { userId: (req as any).user?.id, talentId: req.params.talentId });
+    return res.status(500).json({ 
+      error: "Failed to get revenue sources",
+      details: errorMessage
+    });
   }
 }
 
@@ -174,7 +178,7 @@ export async function getRevenueSummary(req: Request, res: Response, next: NextF
     }
 
     // Permission check
-    if (role !== "ADMIN" && userId !== talentId) {
+    if (role !== "ADMIN" && role !== "SUPERADMIN" && userId !== talentId) {
       return sendError(res, "FORBIDDEN", "Cannot view other users' revenue", 403);
     }
 
@@ -186,8 +190,12 @@ export async function getRevenueSummary(req: Request, res: Response, next: NextF
 
     return sendSuccess(res, { summary });
   } catch (error) {
-    logError("Failed to get revenue summary", error);
-    next(error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logError("Failed to get revenue summary", error, { talentId: req.params.talentId });
+    return res.status(500).json({ 
+      error: "Failed to get revenue summary",
+      details: errorMessage
+    });
   }
 }
 
@@ -206,7 +214,7 @@ export async function getRevenueByPlatform(req: Request, res: Response, next: Ne
     }
 
     // Permission check
-    if (role !== "ADMIN" && userId !== talentId) {
+    if (role !== "ADMIN" && role !== "SUPERADMIN" && userId !== talentId) {
       return sendError(res, "FORBIDDEN", "Cannot view other users' revenue", 403);
     }
 
@@ -217,8 +225,12 @@ export async function getRevenueByPlatform(req: Request, res: Response, next: Ne
 
     return sendSuccess(res, { byPlatform });
   } catch (error) {
-    logError("Failed to get revenue by platform", error);
-    next(error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logError("Failed to get revenue by platform", error, { talentId: req.params.talentId });
+    return res.status(500).json({ 
+      error: "Failed to get revenue by platform",
+      details: errorMessage
+    });
   }
 }
 
@@ -318,7 +330,7 @@ export async function getRevenueGoals(req: Request, res: Response, next: NextFun
     }
 
     // Permission check
-    if (role !== "ADMIN" && userId !== talentId) {
+    if (role !== "ADMIN" && role !== "SUPERADMIN" && userId !== talentId) {
       return sendError(res, "FORBIDDEN", "Cannot view other users' goals", 403);
     }
 
@@ -326,8 +338,12 @@ export async function getRevenueGoals(req: Request, res: Response, next: NextFun
 
     return sendSuccess(res, { goals: progress });
   } catch (error) {
-    logError("Failed to get revenue goals", error);
-    next(error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logError("Failed to get revenue goals", error, { talentId: req.params.talentId });
+    return res.status(500).json({ 
+      error: "Failed to get revenue goals",
+      details: errorMessage
+    });
   }
 }
 

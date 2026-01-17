@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { FC } from "react";
+import { apiFetch } from "../services/apiClient.js";
 
 interface RevenueSource {
   id: string;
@@ -100,31 +101,47 @@ const AdminRevenueManagement: FC<AdminRevenueManagementProps> = ({ talentId, isA
       setError(null);
 
       // Fetch sources
-      const sourcesRes = await fetch(`/api/revenue/sources/${talentId}`);
+      const sourcesRes = await apiFetch(`/api/revenue/sources/${talentId}`);
+      const contentType = sourcesRes.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        throw new Error('API returned invalid response (HTML instead of JSON)');
+      }
       if (sourcesRes.ok) {
         const sourcesData = await sourcesRes.json();
         setSources(sourcesData.data || []);
+      } else {
+        const errorData = await sourcesRes.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch sources: ${sourcesRes.status}`);
       }
 
       // Fetch summary
-      const summaryRes = await fetch(`/api/revenue/summary/${talentId}`);
+      const summaryRes = await apiFetch(`/api/revenue/summary/${talentId}`);
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
         setSummary(summaryData.data);
+      } else {
+        const errorData = await summaryRes.json().catch(() => ({}));
+        console.warn('Failed to fetch summary:', errorData);
       }
 
       // Fetch platform breakdown
-      const platformRes = await fetch(`/api/revenue/by-platform/${talentId}`);
+      const platformRes = await apiFetch(`/api/revenue/by-platform/${talentId}`);
       if (platformRes.ok) {
         const platformData = await platformRes.json();
         setPlatformBreakdown(platformData.data || []);
+      } else {
+        const errorData = await platformRes.json().catch(() => ({}));
+        console.warn('Failed to fetch platform breakdown:', errorData);
       }
 
       // Fetch goals
-      const goalsRes = await fetch(`/api/revenue/goals/${talentId}`);
+      const goalsRes = await apiFetch(`/api/revenue/goals/${talentId}`);
       if (goalsRes.ok) {
         const goalsData = await goalsRes.json();
         setGoals(goalsData.data || []);
+      } else {
+        const errorData = await goalsRes.json().catch(() => ({}));
+        console.warn('Failed to fetch goals:', errorData);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load revenue data");
