@@ -462,6 +462,7 @@ export function AdminContentPage({ session }) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState(null);
   const [newBlockType, setNewBlockType] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // SEO metadata state
   const [seoOpen, setSeoOpen] = useState(false);
@@ -482,6 +483,25 @@ export function AdminContentPage({ session }) {
       });
     }
   }, [selectedPage, previewMode]);
+
+  // Detect unsaved changes
+  useEffect(() => {
+    const blocksChanged = JSON.stringify(blocks) !== JSON.stringify(draftBlocks);
+    setHasUnsavedChanges(blocksChanged);
+  }, [draftBlocks, blocks]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const seedPages = async () => {
     try {
@@ -658,13 +678,16 @@ export function AdminContentPage({ session }) {
         method: "DELETE",
       });
 
-      if (!response.ok) throw new Error("Failed to delete block");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to delete block");
+      }
 
       await loadPageBlocks(selectedPage.slug);
       toast.success("Block deleted");
     } catch (error) {
       console.error("Failed to delete block:", error);
-      toast.error("Failed to delete block");
+      toast.error(error.message || "Failed to delete block");
     }
   };
 
@@ -674,13 +697,16 @@ export function AdminContentPage({ session }) {
         method: "POST",
       });
 
-      if (!response.ok) throw new Error("Failed to duplicate block");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to duplicate block");
+      }
 
       await loadPageBlocks(selectedPage.slug);
       toast.success("Block duplicated");
     } catch (error) {
       console.error("Failed to duplicate block:", error);
-      toast.error("Failed to duplicate block");
+      toast.error(error.message || "Failed to duplicate block");
     }
   };
 
@@ -722,12 +748,17 @@ export function AdminContentPage({ session }) {
         body: JSON.stringify({ blocks: draftBlocks }),
       });
 
-      if (!response.ok) throw new Error("Failed to save draft");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to save draft");
+      }
 
+      // Sync draftBlocks with blocks to clear unsaved changes indicator
+      setBlocks(draftBlocks);
       toast.success("Draft saved");
     } catch (error) {
       console.error("Failed to save draft:", error);
-      toast.error("Failed to save draft");
+      toast.error(error.message || "Failed to save draft");
     } finally {
       setSaving(false);
     }
@@ -742,14 +773,17 @@ export function AdminContentPage({ session }) {
         method: "POST",
       });
 
-      if (!response.ok) throw new Error("Failed to publish");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to publish");
+      }
 
       setPreviewMode(false);
       await loadPageBlocks(selectedPage.slug);
-      toast.success("Page published");
+      toast.success("Page published successfully");
     } catch (error) {
       console.error("Failed to publish:", error);
-      toast.error("Failed to publish");
+      toast.error(error.message || "Failed to publish");
     } finally {
       setSaving(false);
     }
@@ -871,7 +905,15 @@ export function AdminContentPage({ session }) {
             <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold">{selectedPage.title}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{selectedPage.title}</span>
+                    {hasUnsavedChanges && (
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-red" title="Unsaved changes"></span>
+                      </span>
+                    )}
+                  </div>
                   {selectedPage.route && (
                     <span className="rounded-full bg-brand-black/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/70">
                       {selectedPage.route}
@@ -1208,15 +1250,17 @@ function getBlockPreview(block) {
   const content = block.contentJson || {};
   switch (block.blockType) {
     case "HERO":
-      return content.headline || "No headline";
+      return content.headline ? `"${content.headline.substring(0, 60)}${content.headline.length > 60 ? '...' : ''}"` : "No headline";
     case "TEXT":
-      return content.headline || content.body?.substring(0, 50) || "No content";
+      const heading = content.headline || "";
+      const bodyPrev = content.body ? content.body.substring(0, 50) : "";
+      return heading ? `"${heading.substring(0, 60)}${heading.length > 60 ? '...' : ''}"` : (bodyPrev ? `"${bodyPrev}${content.body.length > 50 ? '...' : ''}"` : "No content");
     case "IMAGE":
-      return content.caption || "Image block";
+      return content.caption ? `"${content.caption.substring(0, 60)}"` : (content.image ? "Image (no caption)" : "No image");
     case "SPLIT":
-      return content.headline || "Split block";
+      return content.headline ? `"${content.headline.substring(0, 60)}${content.headline.length > 60 ? '...' : ''}"` : "No headline";
     case "ANNOUNCEMENT":
-      return content.message?.substring(0, 50) || "No message";
+      return content.message ? `"${content.message.substring(0, 60)}${content.message.length > 60 ? '...' : ''}"` : "No message";
     case "SPACER":
       return `Spacer (${content.size || "md"})`;
     default:
