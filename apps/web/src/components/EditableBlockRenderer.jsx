@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Edit2, Copy, Trash2, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -17,6 +17,19 @@ export function EditableBlockRenderer({
   saving = false
 }) {
   const [editingBlockId, setEditingBlockId] = useState(null);
+  const [lastBlockCount, setLastBlockCount] = useState(0);
+
+  // Auto-open newly created blocks for editing
+  useEffect(() => {
+    if (editMode && blocks.length > lastBlockCount && blocks.length > 0) {
+      // New block was created, auto-open it for editing
+      const lastBlock = blocks[blocks.length - 1];
+      if (lastBlock && lastBlock.id) {
+        setEditingBlockId(lastBlock.id);
+      }
+    }
+    setLastBlockCount(blocks.length);
+  }, [blocks.length, editMode, blocks, lastBlockCount]);
 
   if (!Array.isArray(blocks) || blocks.length === 0) {
     if (editMode) {
