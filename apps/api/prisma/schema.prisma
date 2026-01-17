@@ -299,6 +299,9 @@ model CalendarEvent {
 
   // Creator relation
   Creator User @relation("CalendarEventCreator", fields: [createdBy], references: [id])
+  
+  // Intelligence features relation
+  Warnings CalendarWarning[]
 
   @@index([createdBy])
   @@index([startAt])
@@ -1620,6 +1623,13 @@ model Talent {
   Files                   TalentFile[]
   Meetings                Meeting[]
   MeetingActionItems      MeetingActionItem[]
+  
+  // Advanced Intelligence Features (NEW)
+  ReminderSuggestions     SmartReminderSuggestion[]
+  WeeklyBriefs            TalentWeeklyBrief[]
+  CalendarWarnings        CalendarWarning[]
+  Availability            TalentAvailability?
+  BlackoutDates           TalentBlackoutDate[]
   
   // Enterprise Operating System relations
   EnterpriseValueMetrics  EnterpriseValueMetrics?
@@ -3292,6 +3302,220 @@ model EnrichmentJob {
   
   @@index([brandId])
   @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// ADVANCED INTELLIGENCE FEATURES (Smart Reminders, Agendas, Briefs, etc.)
+// ============================================================================
+
+// SmartReminderSuggestion
+// AI-generated follow-up suggestions based on meetings, tasks, deals, outreach
+// User approval required before creating task (never auto-created)
+model SmartReminderSuggestion {
+  id                String    @id @default(cuid())
+  
+  // What triggered this suggestion
+  talentId          String
+  contextType       String    // "meeting" | "task" | "deal" | "outreach"
+  contextId         String    // ID of meeting/task/deal/outreach
+  
+  // AI Suggestion details
+  suggestedAction   String    // "follow-up email" | "schedule call" | "check status"
+  suggestedTiming   DateTime  // When AI thinks this should happen
+  reasoning         String?   // Why AI thinks this is needed
+  aiConfidence      Float     @default(0.0) // 0.0 to 1.0
+  
+  // User workflow
+  status            String    @default("suggested") // "suggested" | "accepted" | "dismissed"
+  dismissedAt       DateTime?
+  dismissReason     String?
+  acceptedAt        DateTime?
+  linkedTaskId      String?   // Task created if accepted
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  Talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([status])
+  @@index([contextType, contextId])
+  @@index([suggestedTiming])
+  @@index([createdAt])
+}
+
+// MeetingAgenda
+// AI-generated agenda draft for meetings
+// User-editable, version tracking
+model MeetingAgenda {
+  id                String    @id @default(cuid())
+  
+  // Meeting reference
+  meetingId         String    @unique
+  
+  // Agenda content
+  objectives        String?   // JSON array of objectives
+  talkingPoints     String?   // JSON array of talking points
+  decisionsNeeded   String?   // JSON array of decisions to make
+  prepItems        String?   // JSON array of prep items
+  summaryText       String?   // Plain text summary
+  
+  // Version tracking
+  isEdited          Boolean   @default(false)
+  editedAt          DateTime?
+  originalVersion   String?   // Timestamp of original generation
+  
+  // Metadata
+  generatedBy       String?   // "ai" | "user"
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([meetingId])
+  @@index([createdAt])
+}
+
+// TalentWeeklyBrief
+// Weekly operational snapshot per talent
+// Contains meetings, tasks, deals, alerts, AI-flagged concerns
+model TalentWeeklyBrief {
+  id                String    @id @default(cuid())
+  
+  // Week reference
+  talentId          String
+  weekStartDate     DateTime
+  weekEndDate       DateTime
+  
+  // Content (stored as JSON for flexibility)
+  meetings          Json?     // Array: {title, date, participants}
+  upcomingTasks     Json?     // Array: {title, dueDate, priority}
+  outstandingFollowUps Json?  // Array: {action, daysOverdue, linkedEntity}
+  dealsAtRisk       Json?     // Array: {dealName, stage, riskScore, riskFactors}
+  paymentAlerts     Json?     // Array: {invoiceId, status, daysOverdue}
+  aiConcerns        Json?     // Array: {concern, severity, recommendation}
+  
+  // Summary metadata
+  urgencyLevel      String    @default("normal") // "low" | "normal" | "high" | "critical"
+  summaryText       String?   // AI-generated one-liner
+  hasHighRisk       Boolean   @default(false)
+  
+  // Delivery tracking
+  deliveredAt       DateTime?
+  deliveryChannels  String[]  @default([]) // ["in-app", "email", "slack"]
+  readAt            DateTime?
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  Talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([weekStartDate])
+  @@index([urgencyLevel])
+  @@index([createdAt])
+  @@unique([talentId, weekStartDate])
+}
+
+// CalendarWarning
+// Warnings about overload, no buffer time, deadline clusters, availability conflicts
+model CalendarWarning {
+  id                String    @id @default(cuid())
+  
+  // Warning target
+  talentId          String
+  eventId           String?   // If linked to specific calendar event
+  
+  // Warning details
+  warningType       String    // "overload" | "no_buffer" | "deadline_cluster" | "availability_conflict"
+  severity          String    @default("amber") // "amber" | "red"
+  message           String    // User-facing message
+  aiAnalysis        String?   // Why this warning was generated
+  
+  // Suggested actions
+  suggestedActions  Json?     // Array: {action, impact}
+  
+  // User interaction
+  dismissed         Boolean   @default(false)
+  dismissedAt       DateTime?
+  acknowledgedAt    DateTime?
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  Talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  CalendarEvent     CalendarEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  
+  @@index([talentId])
+  @@index([warningType])
+  @@index([severity])
+  @@index([dismissed])
+  @@index([createdAt])
+}
+
+// TalentAvailability
+// Working days, preferred hours, timezone
+// Used by calendar intelligence and AI suggestions
+model TalentAvailability {
+  id                String    @id @default(cuid())
+  
+  // Talent reference
+  talentId          String    @unique
+  
+  // Working schedule
+  workingDays       String[]  @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]) // Day names
+  startHour         Int       @default(9)   // 24-hour format
+  endHour           Int       @default(17)  // 24-hour format
+  timezone          String    @default("America/Los_Angeles")
+  
+  // Preferences
+  bufferBetweenMeetings Int  @default(15) // Minutes
+  maxMeetingsPerDay Int      @default(5)
+  minPrepTimeMinutes Int     @default(15)
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  Talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+}
+
+// TalentBlackoutDate
+// Vacation, illness, travel, or other unavailable periods
+model TalentBlackoutDate {
+  id                String    @id @default(cuid())
+  
+  // Talent reference
+  talentId          String
+  
+  // Date range
+  startDate         DateTime
+  endDate           DateTime
+  
+  // Details
+  reason            String    // "vacation" | "illness" | "travel" | "unavailable" | "other"
+  notes             String?
+  
+  // Visibility
+  visibleOnCalendar Boolean   @default(true)
+  
+  // Metadata
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  Talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  @@index([talentId])
+  @@index([startDate, endDate])
   @@index([createdAt])
 }
 

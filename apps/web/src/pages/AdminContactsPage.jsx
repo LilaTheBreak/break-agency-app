@@ -4,9 +4,10 @@ import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { ContactChip } from "../components/ContactChip.jsx";
 import { BrandChip } from "../components/BrandChip.jsx";
+import { BrandSelect } from "../components/BrandSelect.jsx";
+import { useBrands } from "../hooks/useBrands.js";
 import {
   fetchContacts,
-  fetchBrands,
   createContact,
   updateContact,
   deleteContact,
@@ -117,7 +118,6 @@ export function AdminContactsPage({ session }) {
   const ownerDefault = session?.name?.split(" ")?.[0] || session?.email?.split("@")?.[0]?.split(".")?.[0] || "Admin";
 
   const [contacts, setContacts] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [brandFilter, setBrandFilter] = useState("All");
@@ -141,27 +141,22 @@ export function AdminContactsPage({ session }) {
     notes: "",
   });
 
+  // Use canonical brands hook (single source of truth)
+  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
+
   // Load data
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
-        const [contactsResult, brandsResult] = await Promise.all([
-          fetchContacts().catch((err) => {
-            console.warn("[CONTACTS] Failed to load contacts:", err.message);
-            return { contacts: [] };
-          }),
-          fetchBrands().catch((err) => {
-            console.warn("[CONTACTS] Failed to load brands:", err.message);
-            return { brands: [] };
-          }),
-        ]);
+        const contactsResult = await fetchContacts().catch((err) => {
+          console.warn("[CONTACTS] Failed to load contacts:", err.message);
+          return { contacts: [] };
+        });
 
         const contactsData = Array.isArray(contactsResult) ? contactsResult : contactsResult?.contacts || [];
-        const brandsData = Array.isArray(brandsResult) ? brandsResult : brandsResult?.brands || [];
 
         setContacts(Array.isArray(contactsData) ? contactsData : []);
-        setBrands(Array.isArray(brandsData) ? brandsData : []);
       } catch (error) {
         console.error("[CONTACTS] Failed to load data:", error);
         setContacts([]);
@@ -466,16 +461,20 @@ export function AdminContactsPage({ session }) {
               <p className="text-xs text-brand-black/50">(fields marked * are required)</p>
             </div>
             <div className="space-y-4">
-              <Select
-                label="Brand"
-                value={editorDraft.brandId}
-                onChange={(v) => setEditorDraft((prev) => ({ ...prev, brandId: v }))}
-                options={[
-                  { value: "", label: "Select a brand" },
-                  ...safeBrands.map((b) => ({ value: b.id, label: b.brandName || b.name || "Unknown" })),
-                ]}
-                required={true}
-              />
+              <div>
+                <label className="block">
+                  <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Brand <span className="text-brand-red">*</span></span>
+                  <div className="mt-2">
+                    <BrandSelect
+                      brands={brands}
+                      value={editorDraft.brandId}
+                      onChange={(v) => setEditorDraft((prev) => ({ ...prev, brandId: v }))}
+                      isLoading={brandsLoading}
+                      onCreateBrand={createBrand}
+                    />
+                  </div>
+                </label>
+              </div>
               <Field
                 label="First Name"
                 value={editorDraft.firstName}

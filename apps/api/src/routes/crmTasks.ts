@@ -3,6 +3,8 @@ import { createId as cuid } from "@paralleldrive/cuid2";
 import prisma from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
 import { createTaskNotifications, canViewTask, buildTaskVisibilityWhere } from '../services/taskNotifications.js';
+import { syncTaskToCalendar, deleteCalendarEvent } from '../services/calendarService.js';
+import { logInfo, logError } from '../lib/logger.js';
 
 const router = Router();
 
@@ -295,6 +297,24 @@ router.post("/", async (req: Request, res: Response) => {
     // Create notifications for mentions and assignments
     await createTaskNotifications(task, "created");
 
+    // Sync task to calendar if it has a due date
+    if (task.dueDate) {
+      try {
+        const calendarResult = await syncTaskToCalendar(task, req.user?.id || "");
+        if (calendarResult.success && calendarResult.eventId) {
+          logInfo("[CRM_TASKS] Task synced to calendar", {
+            taskId: task.id,
+            eventId: calendarResult.eventId,
+          });
+        }
+      } catch (calendarErr) {
+        logError("[CRM_TASKS] Calendar sync failed for task", calendarErr, {
+          taskId: task.id,
+        });
+        // Don't fail the request - calendar sync is optional
+      }
+    }
+
     return res.status(201).json(task);
   } catch (error: any) {
     console.error("[CRM Tasks] Error creating task:", {
@@ -420,6 +440,24 @@ router.patch("/:id", async (req: Request, res: Response) => {
     
     // Create notifications for new mentions and assignments
     await createTaskNotifications(task, "updated");
+
+    // Sync task to calendar if dueDate was updated
+    if (dueDate !== undefined && task.dueDate) {
+      try {
+        const calendarResult = await syncTaskToCalendar(task, req.user?.id || "");
+        if (calendarResult.success && calendarResult.eventId) {
+          logInfo("[CRM_TASKS] Task synced to calendar on update", {
+            taskId: task.id,
+            eventId: calendarResult.eventId,
+          });
+        }
+      } catch (calendarErr) {
+        logError("[CRM_TASKS] Calendar sync failed for task update", calendarErr, {
+          taskId: task.id,
+        });
+        // Don't fail the request - calendar sync is optional
+      }
+    }
 
     return res.json(task);
   } catch (error) {

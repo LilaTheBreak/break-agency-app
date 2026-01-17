@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { requireAuth } from '../middleware/auth.js';
 import prisma from '../lib/prisma.js';
 import { logError } from '../lib/logger.js';
+import { getUnifiedTasks } from '../services/unifiedTaskService.js';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get("/api/dashboard/aggregate", requireAuth, checkDashboardAggregationEna
     const userRole = req.user!.role;
 
     // Phase 5: Rebuild aggregation using existing entities (no removed models)
-    const [deals, campaigns, tasks, contracts] = await Promise.all([
+    const [deals, campaigns, allTasks, contracts] = await Promise.all([
       // Active deals
       prisma.deal.findMany({
         where: {
@@ -59,21 +60,10 @@ router.get("/api/dashboard/aggregate", requireAuth, checkDashboardAggregationEna
         orderBy: { createdAt: "desc" }
       }),
 
-      // Pending tasks
-      prisma.crmTask.findMany({
-        where: {
-          ...(userRole !== 'ADMIN' && userRole !== 'SUPERADMIN' ? { owner: userId } : {}),
-          status: { not: "Completed" }
-        },
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          dueDate: true,
-          priority: true
-        },
-        take: 10,
-        orderBy: { dueDate: "asc" }
+      // Pending tasks - UNIFIED across all task models (TalentTask, CreatorTask, CrmTask, OutreachTask)
+      getUnifiedTasks({ 
+        excludeCompleted: true,
+        userId: userRole !== 'ADMIN' && userRole !== 'SUPERADMIN' ? userId : undefined
       }),
 
       // Pending contracts
@@ -95,6 +85,17 @@ router.get("/api/dashboard/aggregate", requireAuth, checkDashboardAggregationEna
       })
     ]);
 
+    // Transform tasks for backward compatibility
+    // Now includes TalentTask, CreatorTask, CrmTask, and OutreachTask combined
+    const tasks = allTasks.slice(0, 10).map(t => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      dueDate: t.dueDate,
+      priority: t.priority,
+      taskType: t.taskType, // Include source type for debugging
+    }));
+
     // Transform deals for backward compatibility
     const transformedDeals = deals.map(d => ({
       ...d,
@@ -115,7 +116,7 @@ router.get("/api/dashboard/aggregate", requireAuth, checkDashboardAggregationEna
     // Calculate summary metrics
     const totalDealValue = transformedDeals.reduce((sum, d) => sum + (d.estimatedValue || 0), 0);
     const activeCampaigns = campaigns.length;
-    const pendingTasks = tasks.length;
+    const pendingTasks = allTasks.length; // Count of ALL tasks from unified query
     const pendingContracts = transformedContracts.length;
 
     res.json({
@@ -123,7 +124,7 @@ router.get("/api/dashboard/aggregate", requireAuth, checkDashboardAggregationEna
       summary: {
         totalDealValue,
         activeCampaigns,
-        pendingTasks,
+        pendingTasks, // Now includes TalentTask
         pendingContracts
       },
       deals: transformedDeals.slice(0, 5),

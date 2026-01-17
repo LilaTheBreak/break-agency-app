@@ -4,6 +4,8 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { useMessaging } from "../context/messaging.js";
 import { getRecentInbox, getGmailStatus, syncGmailInbox } from "../services/inboxClient.js";
 import { useGmailAuth } from "../hooks/useGmailAuth.js";
+import { useBrands } from "../hooks/useBrands.js";
+import { BrandSelect } from "../components/BrandSelect.jsx";
 import { useEmailClassifier, ClassificationBadge, UncertainClassificationAlert } from "../hooks/useEmailClassifier.jsx";
 import toast from "react-hot-toast";
 
@@ -488,12 +490,13 @@ function EmailModal({ email, onClose }) {
   const timestamp = email.lastMessageAt || email.receivedAt;
   const [creatingBrand, setCreatingBrand] = React.useState(false);
   const [creatingContact, setCreatingContact] = React.useState(false);
-  const [brands, setBrands] = React.useState([]);
   const [selectedBrandId, setSelectedBrandId] = React.useState("");
-  const [loadingBrands, setLoadingBrands] = React.useState(false);
   const [showBrandSelector, setShowBrandSelector] = React.useState(false);
   const [classification, setClassification] = React.useState(null);
   const [classificationLoading, setClassificationLoading] = React.useState(true);
+  
+  // Use canonical brands hook (single source of truth)
+  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
   const { classify } = useEmailClassifier();
 
   // Extract email from sender if it's in format "Name <email@domain>"
@@ -525,22 +528,7 @@ function EmailModal({ email, onClose }) {
     classifyEmail();
   }, [email.id, subject, body, senderName, senderEmail, email.attachments, email.participants, classify]);
 
-  // Fetch brands on mount
-  React.useEffect(() => {
-    const fetchBrands = async () => {
-      setLoadingBrands(true);
-      try {
-        const response = await fetch('/api/crm-brands?limit=100');
-        if (response.ok) {
-          const data = await response.json();
-          setBrands(Array.isArray(data) ? data : (data.brands || []));
-        }
-      } catch (err) {
-        console.error("Failed to fetch brands:", err);
-      } finally {
-        setLoadingBrands(false);
-      }
-    };
+  useEffect(() => {
     fetchBrands();
   }, []);
 
@@ -712,25 +700,13 @@ function EmailModal({ email, onClose }) {
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-red mb-3">
               Select a Brand for Contact
             </p>
-            <select
+            <BrandSelect
+              brands={brands}
               value={selectedBrandId}
-              onChange={(e) => setSelectedBrandId(e.target.value)}
-              className="w-full rounded-2xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-black focus:outline-none"
-            >
-              <option value="">-- Choose a brand --</option>
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.brandName}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-xs text-brand-black/60">
-              {loadingBrands
-                ? "Loading brands..."
-                : brands.length === 0
-                ? "No brands found. Create one first."
-                : `${brands.length} brand(s) available`}
-            </p>
+              onChange={(v) => setSelectedBrandId(v)}
+              isLoading={brandsLoading}
+              onCreateBrand={createBrand}
+            />
           </div>
         )}
 

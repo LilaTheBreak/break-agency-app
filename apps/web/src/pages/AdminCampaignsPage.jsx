@@ -7,11 +7,12 @@ import { CampaignChip } from "../components/CampaignChip.jsx";
 import { EventChip } from "../components/EventChip.jsx";
 import { DealChip } from "../components/DealChip.jsx";
 import { ContractChip } from "../components/ContractChip.jsx";
+import { BrandSelect } from "../components/BrandSelect.jsx";
+import { useBrands } from "../hooks/useBrands.js";
 import { CAMPAIGN_TYPES, CAMPAIGN_STATUSES, formatCampaignDateRange } from "../lib/crmCampaigns.js";
 import { formatEventDateTimeRange } from "../lib/crmEvents.js";
 import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
 import {
-  fetchBrands,
   fetchCampaigns,
   fetchEvents,
   fetchDeals,
@@ -207,7 +208,6 @@ export function AdminCampaignsPage({ session }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [events, setEvents] = useState([]);
   const [deals, setDeals] = useState([]);
   const [contracts, setContracts] = useState([]);
@@ -216,6 +216,9 @@ export function AdminCampaignsPage({ session }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [dismissedHints, setDismissedHints] = useState({});
   const [migrationNeeded, setMigrationNeeded] = useState(false);
+
+  // Use canonical brands hook (single source of truth)
+  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
 
   // Load data from API
   useEffect(() => {
@@ -227,16 +230,14 @@ export function AdminCampaignsPage({ session }) {
           setMigrationNeeded(true);
         }
         
-        const [campaignsData, brandsData, eventsData, dealsData, contractsData] = await Promise.all([
+        const [campaignsData, eventsData, dealsData, contractsData] = await Promise.all([
           fetchCampaigns(),
-          fetchBrands(),
           fetchEvents(),
           fetchDeals(),
           fetchContracts(),
         ]);
         // Use shared helper to normalize API responses
         setCampaigns(normalizeApiArray(campaignsData, 'campaigns'));
-        setBrands(normalizeApiArray(brandsData, 'brands'));
         setEvents(normalizeApiArray(eventsData, 'events'));
         setDeals(normalizeApiArray(dealsData, 'deals'));
         setContracts(normalizeApiArray(contractsData, 'contracts'));
@@ -244,7 +245,6 @@ export function AdminCampaignsPage({ session }) {
         console.error("Failed to load data:", error);
         // Ensure arrays are set even on error
         setCampaigns([]);
-        setBrands([]);
       } finally {
         setLoading(false);
       }
@@ -748,14 +748,20 @@ export function AdminCampaignsPage({ session }) {
                     className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-white/70 px-4 py-3 text-sm text-brand-black outline-none focus:border-brand-black/30"
                   />
                 </label>
-                <Select
-                  label="Brand"
-                  value={selectedCampaign.brandId}
-                  onChange={(v) => updateCampaign({ brandId: v })}
-                  options={[
-                    ...brands.map((b) => ({ value: b.id, label: b.brandName }))
-                  ]}
-                />
+                <div>
+                  <label className="block">
+                    <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Brand</span>
+                    <div className="mt-2">
+                      <BrandSelect
+                        brands={brands}
+                        value={selectedCampaign.brandId}
+                        onChange={(v) => updateCampaign({ brandId: v })}
+                        isLoading={brandsLoading}
+                        onCreateBrand={createBrand}
+                      />
+                    </div>
+                  </label>
+                </div>
                 <Field
                   label="Owner"
                   value={selectedCampaign.owner || ""}

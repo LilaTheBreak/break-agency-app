@@ -11,6 +11,8 @@ import { ContractChip } from "../components/ContractChip.jsx";
 import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection.jsx";
 import { DealSnapshotSummary } from "../components/DealSnapshotSummary.jsx";
 import DealClassificationModal from "../components/DealClassificationModal.tsx";
+import { BrandSelect } from "../components/BrandSelect.jsx";
+import { useBrands } from "../hooks/useBrands.js";
 import {
   DEAL_CONFIDENCE,
   DEAL_STATUSES,
@@ -240,7 +242,6 @@ export function AdminDealsPage({ session }) {
   const [events, setEvents] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [contracts, setContracts] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [talents, setTalents] = useState([]);
   const [drawerId, setDrawerId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -251,11 +252,8 @@ export function AdminDealsPage({ session }) {
   const [classificationModalOpen, setClassificationModalOpen] = useState(false);
   const [classifyingDealId, setClassifyingDealId] = useState(null);
 
-  // Load brands from localStorage (they're still there for now)
-  useEffect(() => {
-    const loadedBrands = safeRead(BRANDS_STORAGE_KEY, []);
-    setBrands(loadedBrands);
-  }, []);
+  // Use canonical brands hook (single source of truth)
+  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
 
   const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
   const campaignById = useMemo(() => new Map((campaigns || []).map((c) => [c.id, c])), [campaigns]);
@@ -264,12 +262,12 @@ export function AdminDealsPage({ session }) {
   const loadDeals = async () => {
     try {
       setLoading(true);
-      const [dealsData, eventsData, campaignsData, contractsData, brandsData, talentsData] = await Promise.all([
+      // Don't load brands here - useBrands hook handles that
+      const [dealsData, eventsData, campaignsData, contractsData, talentsData] = await Promise.all([
         fetchDeals(),
         fetchEvents(),
         fetchCampaigns(),
         fetchContracts(),
-        fetchBrands(),
         fetchTalents().catch(() => []), // Load talents for deal creation (single source of truth)
       ]);
       // Use shared helper to normalize API responses
@@ -277,7 +275,6 @@ export function AdminDealsPage({ session }) {
       setEvents(normalizeApiArray(eventsData, 'events'));
       setCampaigns(normalizeApiArray(campaignsData, 'campaigns'));
       setContracts(normalizeApiArray(contractsData, 'contracts'));
-      setBrands(normalizeApiArray(brandsData, 'brands'));
       setTalents(Array.isArray(talentsData) ? talentsData : []);
       
       // Check for localStorage migration
@@ -292,7 +289,6 @@ export function AdminDealsPage({ session }) {
       setEvents([]);
       setCampaigns([]);
       setContracts([]);
-      setBrands([]);
       setTalents([]);
     } finally {
       setLoading(false);
@@ -808,16 +804,20 @@ export function AdminDealsPage({ session }) {
             onChange={(v) => setCreateForm((p) => ({ ...p, dealName: v }))}
             placeholder="e.g. Maison Orion Spring Partnership"
           />
-          <Select
-            label="Brand"
-            required
-            value={createForm.brandId}
-            onChange={(v) => setCreateForm((p) => ({ ...p, brandId: v }))}
-            options={[
-              { value: "", label: "Select a brand…" },
-              ...brands.map((b) => ({ value: b.id, label: b.brandName || b.name }))
-            ]}
-          />
+          <div>
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Brand <span className="text-brand-red">*</span></span>
+              <div className="mt-2">
+                <BrandSelect
+                  brands={brands}
+                  value={createForm.brandId}
+                  onChange={(v) => setCreateForm((p) => ({ ...p, brandId: v }))}
+                  isLoading={brandsLoading}
+                  onCreateBrand={createBrand}
+                />
+              </div>
+            </label>
+          </div>
           <Select
             label="Deal type"
             value={createForm.dealType}
@@ -977,16 +977,20 @@ export function AdminDealsPage({ session }) {
                   onChange={(v) => handleUpdateDeal({ dealName: v })}
                   placeholder="Deal name"
                 />
-                <Select
-                  label="Brand"
-                  required
-                  value={selectedDeal.brandId || ""}
-                  onChange={(v) => handleUpdateDeal({ brandId: v })}
-                  options={[
-                    { value: "", label: "Select a brand…" },
-                    ...brands.map((b) => ({ value: b.id, label: b.brandName || b.name }))
-                  ]}
-                />
+                <div>
+                  <label className="block">
+                    <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Brand <span className="text-brand-red">*</span></span>
+                    <div className="mt-2">
+                      <BrandSelect
+                        brands={brands}
+                        value={selectedDeal.brandId || ""}
+                        onChange={(v) => handleUpdateDeal({ brandId: v })}
+                        isLoading={brandsLoading}
+                        onCreateBrand={createBrand}
+                      />
+                    </div>
+                  </label>
+                </div>
                 <Select
                   label="Status"
                   value={selectedDeal.status}

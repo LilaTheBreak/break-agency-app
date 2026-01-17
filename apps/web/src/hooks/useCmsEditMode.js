@@ -38,6 +38,7 @@ export function useCmsEditMode(slug, initialEditMode = false) {
   useEffect(() => {
     const loadBlocks = async () => {
       if (!slug) {
+        console.warn(`[CMS Edit] No slug provided to useCmsEditMode`);
         setLoading(false);
         return;
       }
@@ -46,25 +47,32 @@ export function useCmsEditMode(slug, initialEditMode = false) {
         setLoading(true);
         // Get admin version with drafts when in edit mode
         const url = editMode ? `/api/content/pages/${slug}?preview=true` : `/api/content/public/${slug}`;
+        console.log(`[CMS Edit] Loading ${editMode ? "draft" : "public"} content for slug: ${slug}`);
+        
         const response = await apiFetch(url);
 
         if (!response.ok) {
           if (response.status === 404) {
+            console.warn(`[CMS Edit] Page '${slug}' not found in CMS registry (404)`);
             setBlocks([]);
             setDraftBlocks([]);
             setLoading(false);
             return;
           }
-          throw new Error(`Failed to fetch page`);
+          const errorText = await response.text().catch(() => response.statusText);
+          throw new Error(`Failed to fetch page: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
         const pageBlocks = Array.isArray(data.blocks) ? data.blocks : [];
+        console.log(`[CMS Edit] Successfully loaded ${pageBlocks.length} blocks for slug: ${slug}`);
         
         setBlocks(pageBlocks);
         setDraftBlocks(pageBlocks);
       } catch (error) {
-        console.warn(`[CMS Edit] Failed to load page '${slug}':`, error);
+        console.error(`[CMS Edit] Failed to load page '${slug}':`, error);
+        // Show visible error message to user, not just silent log
+        toast.error(`Failed to load page content: ${error.message}`);
         setBlocks([]);
         setDraftBlocks([]);
       } finally {

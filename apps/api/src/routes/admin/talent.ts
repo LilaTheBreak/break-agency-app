@@ -17,6 +17,7 @@ import { scrapeInstagramProfile } from '../../services/socialScrapers/instagram.
 import { normalizeInstagramHandle } from '../../services/socialScrapers/instagramUtils.js';
 import * as storage from '../../services/storage.js';
 import * as aiOpportunitySuggestionsController from '../../controllers/aiOpportunitySuggestionsController.js';
+import { createTaskNotifications } from '../../services/taskNotifications.js';
 
 const router = Router();
 
@@ -1534,7 +1535,10 @@ router.post("/:id/tasks", async (req: Request, res: Response) => {
     const { title, notes, dueDate, status } = req.body;
 
     // Validate talent exists
-    const talent = await prisma.talent.findUnique({ where: { id } });
+    const talent = await prisma.talent.findUnique({ 
+      where: { id },
+      include: { User: { select: { email: true, name: true } } }
+    });
     if (!talent) {
       return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
@@ -1554,6 +1558,28 @@ router.post("/:id/tasks", async (req: Request, res: Response) => {
         createdBy: req.user!.id,
       },
     });
+
+    // Emit notifications for TalentTask creation
+    // Notify the talent's associated user if a due date is set
+    if (talent.userId) {
+      try {
+        await createTaskNotifications(
+          {
+            id: task.id,
+            title: task.title,
+            createdBy: req.user!.id,
+            ownerId: talent.userId,
+            assignedUserIds: [talent.userId],
+            mentions: [],
+            CreatedByUser: { name: req.user!.email }
+          },
+          "created"
+        );
+      } catch (notifError) {
+        logError("[TALENT_TASK] Notification creation failed", notifError);
+        // Continue - notifications are non-critical
+      }
+    }
 
     await logAdminActivity(req, {
       action: "TALENT_TASK_CREATED",

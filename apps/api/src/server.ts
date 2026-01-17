@@ -126,6 +126,8 @@ import adminTalentRouter from './routes/admin/talent.js';
 import adminTalentSettingsRouter from './routes/admin/talentSettings.js';
 import talentAccessRouter from './routes/talentAccess.js';
 import meetingsRouter from './routes/admin/meetings.js';
+import calendarRouter from './routes/admin/calendar.js';
+import intelligenceRouter from './routes/admin/intelligence.js';
 
 // Admin Deals
 import adminDealsRouter from './routes/admin/deals.js';
@@ -184,6 +186,7 @@ import crmEventsRouter from './routes/crmEvents.js';
 import crmDealsRouter from './routes/crmDeals.js';
 import crmContractsRouter from './routes/crmContracts.js';
 import crmTasksRouter from './routes/crmTasks.js';
+import unifiedTasksRouter from './routes/unifiedTasks.js';
 // DISABLED: Enrichment feature not production-ready (see ENRICHMENT_AUDIT_START_HERE.md)
 // import enrichmentRouter from './routes/enrichment.js';
 
@@ -195,7 +198,6 @@ import notificationsRouter from './routes/notifications.js';
 
 // Calendar Intelligence
 import calendarIntelligenceRouter from './routes/calendarIntelligence.js';
-import calendarRouter from './routes/calendar.js';
 
 // Integrations (V1.1)
 import integrationsRouter from './routes/integrations.js';
@@ -580,6 +582,7 @@ app.use("/api/cron", cronRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/calendar", calendarIntelligenceRouter);
 app.use("/api/calendar", calendarRouter); // Real calendar CRUD routes
+app.use("/api/intelligence", intelligenceRouter); // AI Intelligence features (reminders, agendas, briefs, overload detection, availability)
 
 // ------------------------------------------------------
 // INTEGRATIONS (V1.1)
@@ -747,6 +750,7 @@ app.use("/api/crm-events", crmEventsRouter);
 app.use("/api/crm-deals", crmDealsRouter);
 app.use("/api/crm-contracts", crmContractsRouter);
 app.use("/api/crm-tasks", crmTasksRouter);
+app.use("/api/tasks", unifiedTasksRouter); // Unified task queries across all models (TalentTask, CreatorTask, CrmTask, OutreachTask)
 // DISABLED: Enrichment feature not production-ready (see ENRICHMENT_AUDIT_START_HERE.md)
 // app.use("/api/enrichment", enrichmentRouter);
 app.use("/api/notifications", notificationsRouter);

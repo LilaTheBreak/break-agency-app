@@ -5,28 +5,35 @@ import { logInfo, logError } from '../lib/logger.js';
 
 // const calendar = google.calendar("v3");
 
+interface CalendarEventInput {
+  title: string;
+  description?: string;
+  startAt: Date;
+  endAt?: Date;
+  type?: string;
+  source?: string;
+  location?: string;
+  status?: string;
+  isAllDay?: boolean;
+  metadata?: Record<string, any>;
+  relatedBrandIds?: string[];
+  relatedCreatorIds?: string[];
+  relatedDealIds?: string[];
+  relatedCampaignIds?: string[];
+  relatedTaskIds?: string[];
+}
+
 interface CalendarMeeting {
   id: string;
   title: string;
   startTime: Date;
-  endTime?: Date;
-  meetingLink?: string;
-  description?: string;
-}
-
-/**
- * Get a user's Google Calendar OAuth credentials
- * Note: Google OAuth fields need to be added to User model first
- */
-async function getUserCalendarAuth(userId: string) {
-  try {
-    logInfo("[CALENDAR] Note: Google OAuth credentials not yet implemented in User model", { userId });
-    // TODO: Add googleRefreshToken and googleAccessToken to User model
-    return null;
-  } catch (err) {
-    logError("[CALENDAR] Error getting user auth", err);
-    return null;
-  }
+  endTime: Date | null;
+  meetingLink?: string | null;
+  description?: string | null;
+  notes?: string | null;
+  meetingType?: string;
+  platform?: string;
+  talentId?: string;
 }
 
 /**
@@ -34,34 +41,85 @@ async function getUserCalendarAuth(userId: string) {
  */
 export async function syncMeetingToCalendar(meeting: CalendarMeeting, userId: string) {
   try {
-    const auth = await getUserCalendarAuth(userId);
-    if (!auth) {
-      logInfo("[CALENDAR] Cannot sync - no calendar auth", { meetingId: meeting.id });
-      return { success: false, eventId: null };
-    }
+    logInfo('[CALENDAR_SERVICE] Syncing meeting to calendar', { meetingId: meeting.id });
 
-    // TODO: Implement calendar sync when OAuth is set up
-    logInfo("[CALENDAR] Calendar sync stubbed - will implement when OAuth fields added", { meetingId: meeting.id });
+    const event = await prisma.calendarEvent.create({
+      data: {
+        title: `Meeting: ${meeting.title}`,
+        description: meeting.description || meeting.notes,
+        startAt: meeting.startTime,
+        endAt: meeting.endTime || new Date(new Date(meeting.startTime).getTime() + 60 * 60 * 1000),
+        type: 'meeting',
+        source: 'internal',
+        status: 'scheduled',
+        createdBy: userId,
+        metadata: {
+          meetingId: meeting.id,
+          meetingType: meeting.meetingType,
+          platform: meeting.platform,
+          talentId: meeting.talentId,
+        },
+      },
+    });
+
+    logInfo('[CALENDAR_SERVICE] Meeting synced to calendar', {
+      meetingId: meeting.id,
+      eventId: event.id,
+    });
 
     return {
-      success: false,
-      eventId: null,
+      eventId: event.id,
+      success: true,
     };
   } catch (err) {
-    logError("[CALENDAR] Error syncing meeting", err, { meetingId: meeting.id });
-    return { success: false, eventId: null, error: err instanceof Error ? err.message : String(err) };
+    logError('[CALENDAR_SERVICE] Failed to sync meeting to calendar', err, {
+      meetingId: meeting.id,
+    });
+    return {
+      eventId: null,
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
 /**
  * Update an existing calendar event
  */
-export async function updateCalendarEvent(eventId: string, meeting: CalendarMeeting) {
+export async function updateCalendarEvent(
+  eventId: string,
+  updates: Partial<CalendarEventInput>
+) {
   try {
-    logInfo("[CALENDAR] Update calendar event called", { eventId });
-    // Implementation would follow the same pattern as syncMeetingToCalendar
+    logInfo('[CALENDAR_SERVICE] Updating calendar event', { eventId });
+
+    await prisma.calendarEvent.update({
+      where: { id: eventId },
+      data: {
+        title: updates.title,
+        description: updates.description,
+        startAt: updates.startAt,
+        endAt: updates.endAt,
+        type: updates.type,
+        source: updates.source,
+        location: updates.location,
+        status: updates.status,
+        isAllDay: updates.isAllDay,
+        metadata: updates.metadata,
+        relatedBrandIds: updates.relatedBrandIds,
+        relatedCreatorIds: updates.relatedCreatorIds,
+        relatedDealIds: updates.relatedDealIds,
+        relatedCampaignIds: updates.relatedCampaignIds,
+        relatedTaskIds: updates.relatedTaskIds,
+      },
+    });
+
+    logInfo('[CALENDAR_SERVICE] Calendar event updated', { eventId });
+
+    return { success: true };
   } catch (err) {
-    logError("[CALENDAR] Error updating calendar event", err, { eventId });
+    logError('[CALENDAR_SERVICE] Failed to update calendar event', err, { eventId });
+    return { success: false };
   }
 }
 
@@ -70,10 +128,18 @@ export async function updateCalendarEvent(eventId: string, meeting: CalendarMeet
  */
 export async function deleteCalendarEvent(eventId: string) {
   try {
-    logInfo("[CALENDAR] Delete calendar event called", { eventId });
-    // Implementation would follow the same pattern as syncMeetingToCalendar
+    logInfo('[CALENDAR_SERVICE] Deleting calendar event', { eventId });
+
+    await prisma.calendarEvent.delete({
+      where: { id: eventId },
+    });
+
+    logInfo('[CALENDAR_SERVICE] Calendar event deleted', { eventId });
+
+    return { success: true };
   } catch (err) {
-    logError("[CALENDAR] Error deleting calendar event", err, { eventId });
+    logError('[CALENDAR_SERVICE] Failed to delete calendar event', err, { eventId });
+    return { success: false };
   }
 }
 
@@ -82,16 +148,158 @@ export async function deleteCalendarEvent(eventId: string) {
  */
 export async function getCalendarEvents(userId: string, timeMin?: Date, timeMax?: Date) {
   try {
-    const auth = await getUserCalendarAuth(userId);
-    if (!auth) {
-      logInfo("[CALENDAR] Cannot fetch events - no calendar auth", { userId });
-      return { success: false, events: [] };
+    const where: any = {};
+
+    if (timeMin && timeMax) {
+      where.startAt = {
+        gte: timeMin,
+        lte: timeMax,
+      };
     }
 
-    logInfo("[CALENDAR] Calendar event fetching stubbed", { userId });
-    return { success: false, events: [] };
+    const events = await prisma.calendarEvent.findMany({
+      where,
+      include: {
+        Creator: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: { startAt: 'asc' },
+    });
+
+    return { success: true, events };
   } catch (err) {
-    logError("[CALENDAR] Error fetching calendar events", err);
+    logError('[CALENDAR_SERVICE] Error fetching calendar events', err, { userId });
     return { success: false, events: [] };
+  }
+}
+
+/**
+ * Create a calendar event from a task
+ */
+export async function syncTaskToCalendar(task: any, userId: string) {
+  try {
+    // Only create calendar event if task has a dueDate
+    if (!task.dueDate) {
+      return { eventId: null, success: true };
+    }
+
+    logInfo('[CALENDAR_SERVICE] Syncing task to calendar', { taskId: task.id });
+
+    const event = await prisma.calendarEvent.create({
+      data: {
+        title: `Task: ${task.title}`,
+        description: task.description,
+        startAt: task.dueDate,
+        endAt: new Date(new Date(task.dueDate).getTime() + 60 * 60 * 1000),
+        type: 'task',
+        source: 'internal',
+        status: task.status === 'completed' ? 'completed' : 'scheduled',
+        createdBy: userId,
+        metadata: {
+          taskId: task.id,
+          taskPriority: task.priority,
+          taskStatus: task.status,
+          brandId: task.brandId,
+          dealId: task.dealId,
+        },
+        relatedTaskIds: [task.id],
+        relatedBrandIds: task.brandId ? [task.brandId] : [],
+        relatedDealIds: task.dealId ? [task.dealId] : [],
+      },
+    });
+
+    logInfo('[CALENDAR_SERVICE] Task synced to calendar', {
+      taskId: task.id,
+      eventId: event.id,
+    });
+
+    return {
+      eventId: event.id,
+      success: true,
+    };
+  } catch (err) {
+    logError('[CALENDAR_SERVICE] Failed to sync task to calendar', err, {
+      taskId: task.id,
+    });
+    return {
+      eventId: null,
+      success: false,
+    };
+  }
+}
+
+/**
+ * Link a CRM entity to a calendar event
+ */
+export async function linkEntityToCalendarEvent(
+  eventId: string,
+  entityType: 'brand' | 'creator' | 'deal' | 'campaign' | 'task',
+  entityId: string
+) {
+  try {
+    logInfo('[CALENDAR_SERVICE] Linking entity to calendar event', {
+      eventId,
+      entityType,
+      entityId,
+    });
+
+    const event = await prisma.calendarEvent.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      return { success: false };
+    }
+
+    const updateData: any = {};
+
+    switch (entityType) {
+      case 'brand':
+        updateData.relatedBrandIds = [
+          ...new Set([...(event.relatedBrandIds || []), entityId]),
+        ];
+        break;
+      case 'creator':
+        updateData.relatedCreatorIds = [
+          ...new Set([...(event.relatedCreatorIds || []), entityId]),
+        ];
+        break;
+      case 'deal':
+        updateData.relatedDealIds = [
+          ...new Set([...(event.relatedDealIds || []), entityId]),
+        ];
+        break;
+      case 'campaign':
+        updateData.relatedCampaignIds = [
+          ...new Set([...(event.relatedCampaignIds || []), entityId]),
+        ];
+        break;
+      case 'task':
+        updateData.relatedTaskIds = [
+          ...new Set([...(event.relatedTaskIds || []), entityId]),
+        ];
+        break;
+    }
+
+    await prisma.calendarEvent.update({
+      where: { id: eventId },
+      data: updateData,
+    });
+
+    logInfo('[CALENDAR_SERVICE] Entity linked to calendar event', {
+      eventId,
+      entityType,
+      entityId,
+    });
+
+    return { success: true };
+  } catch (err) {
+    logError('[CALENDAR_SERVICE] Failed to link entity to calendar event', err, {
+      eventId,
+      entityType,
+      entityId,
+    });
+    return { success: false };
   }
 }

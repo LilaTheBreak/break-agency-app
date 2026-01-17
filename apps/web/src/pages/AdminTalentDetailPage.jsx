@@ -3,9 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
-import { fetchTalent, createDeal, fetchBrands, updateDeal } from "../services/crmClient.js";
+import { fetchTalent, createDeal, updateDeal } from "../services/crmClient.js";
 import { BrandSelect } from "../components/BrandSelect.jsx";
-import { createBrand } from "../services/brandClient.js";
+import { useBrands } from "../hooks/useBrands.js";
 import { Badge } from "../components/Badge.jsx";
 import { TalentAccessSettings } from "../components/TalentAccessSettings.jsx";
 import { ViewAsTalentButton } from "../components/ViewAsTalentButton.jsx";
@@ -2089,8 +2089,10 @@ function DealsTab({ talent, onDealCreated }) {
   });
   const [createError, setCreateError] = useState("");
   const [updateError, setUpdateError] = useState("");
-  const [brands, setBrands] = useState([]);
-  const [brandsLoading, setBrandsLoading] = useState(false);
+  
+  // Use canonical brands hook (single source of truth)
+  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
+  
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -2192,26 +2194,6 @@ function DealsTab({ talent, onDealCreated }) {
     
     loadDealData();
   }, [editModalOpen, selectedDeal?.id]);
-
-  // Load brands when modal opens
-  useEffect(() => {
-    if (!createOpen) return;
-    
-    const loadBrands = async () => {
-      setBrandsLoading(true);
-      try {
-        const data = await fetchBrands();
-        setBrands(Array.isArray(data?.brands) ? data.brands : (Array.isArray(data) ? data : []));
-      } catch (err) {
-        console.error("[BRANDS] Load error:", err);
-        setBrands([]);
-      } finally {
-        setBrandsLoading(false);
-      }
-    };
-    
-    loadBrands();
-  }, [createOpen]);
 
   // Handle inline field edits
   const handleEditField = async (dealId, field, value) => {

@@ -40,28 +40,44 @@ export function BrandSelect({
   }, [brands, value]);
 
   // Advanced search: starts-with + contains matching (case-insensitive)
+  // Searches both 'name' and 'brandName' fields
   const filteredBrands = useMemo(() => {
     if (!searchText.trim()) return brands || [];
     
     const search = searchText.toLowerCase().trim();
     const brandArray = (brands || []);
     
+    // Helper to get searchable text from brand object
+    const getSearchText = (brand) => {
+      const name = brand?.name || '';
+      const brandName = brand?.brandName || '';
+      return `${name} ${brandName}`.toLowerCase();
+    };
+    
     // Split results: exact starts-with matches first, then contains matches
     const startsWithMatches = brandArray.filter(b => 
-      b?.name?.toLowerCase?.()?.startsWith?.(search)
+      getSearchText(b).split(' ').some(part => part.startsWith(search))
     );
-    const containsMatches = brandArray.filter(b => 
-      b?.name?.toLowerCase?.()?.includes?.(search) && 
-      !b?.name?.toLowerCase?.()?.startsWith?.(search)
-    );
+    const containsMatches = brandArray.filter(b => {
+      const text = getSearchText(b);
+      return text.includes(search) && 
+             !text.split(' ').some(part => part.startsWith(search));
+    });
     
     return [...startsWithMatches, ...containsMatches];
   }, [brands, searchText]);
 
   // Check if search text matches any existing brand (case-insensitive)
+  // Checks both name and brandName fields
   const exactMatch = useMemo(() => {
     const search = searchText.toLowerCase().trim();
-    return (brands || []).some(b => b?.name?.toLowerCase?.() === search);
+    if (!search) return false;
+    
+    return (brands || []).some(b => {
+      const name = (b?.name || '').toLowerCase();
+      const brandName = (b?.brandName || '').toLowerCase();
+      return name === search || brandName === search;
+    });
   }, [brands, searchText]);
 
   // Should show "Create new brand" option?

@@ -2,8 +2,7 @@ import { Router, Request, Response } from "express";
 import { requireAuth } from '../../middleware/auth.js';
 import { logInfo, logError } from '../../lib/logger.js';
 import prisma from '../../lib/prisma.js';
-// TODO: calendarService needs to be properly exported
-// import { syncMeetingToCalendar, updateCalendarEvent, deleteCalendarEvent } from '../../services/calendarService.js';
+import { syncMeetingToCalendar, updateCalendarEvent, deleteCalendarEvent } from '../../services/calendarService.js';
 
 const router = Router();
 
@@ -135,19 +134,27 @@ router.post("/:talentId/meetings", requireAuth, async (req: Request, res: Respon
 
     // Try to sync with calendar
     try {
-      // TODO: Calendar sync - calendarService not available yet
-      // const calendarResult = await syncMeetingToCalendar(meeting, userId);
-      // if (calendarResult.eventId) {
-      //   await prisma.meeting.update({
-      //     where: { id: meeting.id },
-      //     data: {
-      //       calendarEventId: calendarResult.eventId,
-      //       calendarProvider: "google",
-      //     },
-      //   });
-      //   logInfo("[MEETINGS] Meeting synced to calendar", { meetingId: meeting.id, eventId: calendarResult.eventId });
-      // }
-      logInfo("[MEETINGS] Calendar sync skipped (calendarService unavailable)", { meetingId: meeting.id });
+      const calendarResult = await syncMeetingToCalendar({
+        id: meeting.id,
+        title: meeting.title,
+        startTime: meeting.startTime,
+        endTime: meeting.endTime,
+        description: meeting.description,
+        notes: meeting.notes,
+        meetingType: meeting.meetingType,
+        platform: meeting.platform,
+        talentId: meeting.talentId,
+      }, userId);
+      if (calendarResult.success && calendarResult.eventId) {
+        await prisma.meeting.update({
+          where: { id: meeting.id },
+          data: {
+            calendarEventId: calendarResult.eventId,
+            calendarProvider: "google",
+          },
+        });
+        logInfo("[MEETINGS] Meeting synced to calendar", { meetingId: meeting.id, eventId: calendarResult.eventId });
+      }
     } catch (calendarErr) {
       logError("[MEETINGS] Calendar sync failed", calendarErr, { meetingId: meeting.id });
       // Don't fail the request - calendar sync is optional
@@ -207,9 +214,22 @@ router.put("/:meetingId", requireAuth, async (req: Request, res: Response) => {
     // Update calendar event if times changed
     if ((startTime || endTime) && existingMeeting.calendarEventId) {
       try {
-        // TODO: Calendar sync - calendarService not available yet
-        // await updateCalendarEvent(existingMeeting.calendarEventId, updatedMeeting);
-        logInfo("[MEETINGS] Calendar event update skipped (calendarService unavailable)", { eventId: existingMeeting.calendarEventId });
+        const updates: any = {};
+        if (startTime) {
+          updates.startAt = new Date(startTime);
+        }
+        if (endTime) {
+          updates.endAt = new Date(endTime);
+        }
+        if (title) {
+          updates.title = `Meeting: ${title}`;
+        }
+        if (description) {
+          updates.description = description;
+        }
+        
+        await updateCalendarEvent(existingMeeting.calendarEventId, updates);
+        logInfo("[MEETINGS] Calendar event updated", { eventId: existingMeeting.calendarEventId });
       } catch (calendarErr) {
         logError("[MEETINGS] Calendar update failed", calendarErr, { meetingId });
       }
@@ -246,9 +266,8 @@ router.delete("/:meetingId", requireAuth, async (req: Request, res: Response) =>
     // Delete from calendar if synced
     if (meeting.calendarEventId) {
       try {
-        // TODO: Calendar sync - calendarService not available yet
-        // await deleteCalendarEvent(meeting.calendarEventId);
-        logInfo("[MEETINGS] Calendar event deletion skipped (calendarService unavailable)", { eventId: meeting.calendarEventId });
+        await deleteCalendarEvent(meeting.calendarEventId);
+        logInfo("[MEETINGS] Calendar event deleted", { eventId: meeting.calendarEventId });
       } catch (calendarErr) {
         logError("[MEETINGS] Calendar deletion failed", calendarErr, { meetingId });
       }

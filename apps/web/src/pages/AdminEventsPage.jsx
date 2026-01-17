@@ -6,6 +6,8 @@ import { BrandChip } from "../components/BrandChip.jsx";
 import { CampaignChip } from "../components/CampaignChip.jsx";
 import { EventChip } from "../components/EventChip.jsx";
 import { DealChip } from "../components/DealChip.jsx";
+import { BrandSelect } from "../components/BrandSelect.jsx";
+import { useBrands } from "../hooks/useBrands.js";
 import {
   EVENT_STATUSES,
   EVENT_TYPES,
@@ -234,7 +236,6 @@ export function AdminEventsPage({ session }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
-  const [brands, setBrands] = useState([]);
   const [deals, setDeals] = useState([]);
   const [drawerId, setDrawerId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -242,11 +243,8 @@ export function AdminEventsPage({ session }) {
   const [migrationData, setMigrationData] = useState(null);
   const [isMigrating, setIsMigrating] = useState(false);
 
-  // Load brands from localStorage (they're still there for now)
-  useEffect(() => {
-    const loadedBrands = safeRead(BRANDS_STORAGE_KEY, []);
-    setBrands(loadedBrands);
-  }, []);
+  // Use canonical brands hook (single source of truth)
+  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
 
   const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
   const campaignById = useMemo(() => new Map((campaigns || []).map((c) => [c.id, c])), [campaigns]);
@@ -856,15 +854,20 @@ export function AdminEventsPage({ session }) {
                   onChange={(v) => handleUpdateEvent({ owner: v })}
                   placeholder="Agent / admin"
                 />
-                <Select
-                  label="Brand (optional)"
-                  value={selectedEvent.brandId || ""}
-                  onChange={(v) => handleUpdateEvent({ brandId: v || null })}
-                  options={[
-                    { value: "", label: "None" },
-                    ...brands.map((b) => ({ value: b.id, label: b.brandName || b.name }))
-                  ]}
-                />
+                <div>
+                  <label className="block">
+                    <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Brand (optional)</span>
+                    <div className="mt-2">
+                      <BrandSelect
+                        brands={brands}
+                        value={selectedEvent.brandId || ""}
+                        onChange={(v) => handleUpdateEvent({ brandId: v || null })}
+                        isLoading={brandsLoading}
+                        onCreateBrand={createBrand}
+                      />
+                    </div>
+                  </label>
+                </div>
                 <Select
                   label="Campaign (optional)"
                   value={selectedEvent.campaignId || ""}

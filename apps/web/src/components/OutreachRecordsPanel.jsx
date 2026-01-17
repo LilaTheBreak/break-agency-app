@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { BrandChip } from "./BrandChip.jsx";
 import { ContactChip } from "./ContactChip.jsx";
+import { ContactSelect } from "./ContactSelect.jsx";
+import { useContacts } from "../hooks/useContacts.js";
 import {
   fetchBrands,
   fetchContacts,
@@ -221,8 +223,10 @@ export function OutreachRecordsPanel({
 
   const [records, setRecords] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Use canonical contacts hook
+  const { contacts, isLoading: contactsLoading, createContact } = useContacts();
 
   const [query, setQuery] = useState("");
   const [outcomeFilter, setOutcomeFilter] = useState("All");
@@ -253,14 +257,13 @@ export function OutreachRecordsPanel({
     async function loadData() {
       try {
         setLoading(true);
-        const [recordsData, brandsData, contactsData] = await Promise.all([
+        const [recordsData, brandsData] = await Promise.all([
           fetchOutreachRecords(filter),
           fetchBrands(),
-          fetchContacts(),
+          // Contacts now loaded via useContacts hook
         ]);
         setRecords(recordsData);
         setBrands(brandsData);
-        setContacts(contactsData);
       } catch (error) {
         console.error('Failed to load outreach data:', error);
       } finally {
@@ -756,19 +759,20 @@ export function OutreachRecordsPanel({
 
             <label className="block">
               <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Contact (optional)</span>
-              <select
-                value={draft.contactId}
-                onChange={(e) => setDraft((p) => ({ ...p, contactId: e.target.value }))}
-                className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black outline-none focus:border-brand-black/30"
-                disabled={!draft.brandId}
-              >
-                <option value="">{draft.brandId ? "Select contact…" : "Choose a brand first"}</option>
-                {availableContacts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {`${c.firstName} ${c.lastName}`.trim()}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-2">
+                <ContactSelect
+                  contacts={availableContacts}
+                  value={draft.contactId}
+                  onChange={(v) => setDraft((p) => ({ ...p, contactId: v }))}
+                  isLoading={contactsLoading}
+                  onCreateContact={createContact}
+                  brandId={draft.brandId}
+                  disabled={!draft.brandId}
+                />
+                {!draft.brandId && (
+                  <p className="mt-1 text-xs text-brand-black/50">Choose a brand first</p>
+                )}
+              </div>
             </label>
 
             <Field label="Deal ID (optional)" value={draft.dealId} onChange={(v) => setDraft((p) => ({ ...p, dealId: v }))} placeholder="e.g. deal_123" />

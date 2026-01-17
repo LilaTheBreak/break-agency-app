@@ -16,6 +16,8 @@ import { ContractChip } from "../components/ContractChip.jsx";
 import { computeExpiryRisk, formatContractEndDate } from "../lib/crmContracts.js";
 import { fetchCampaigns, fetchEvents, fetchDeals, fetchContracts } from "../services/crmClient.js";
 import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection.jsx";
+import { ContactSelect } from "../components/ContactSelect.jsx";
+import { useContacts } from "../hooks/useContacts.js";
 import {
   fetchBrands,
   createBrand,
@@ -2604,17 +2606,13 @@ export function AdminBrandsPage({ session }) {
               onChange={(v) => setEditorDraft((prev) => ({ ...prev, relationshipStrength: v }))}
               options={RELATIONSHIP_STRENGTHS}
             />
-            <Select
-              label="Primary contact (optional)"
+            <ContactSelect
+              contacts={Array.isArray(brandContacts) ? brandContacts : []}
               value={editorDraft.primaryContactId}
               onChange={(v) => setEditorDraft((prev) => ({ ...prev, primaryContactId: v }))}
-              options={[
-                { value: "", label: "None" },
-                ...(Array.isArray(brandContacts) ? brandContacts : []).map(c => ({ 
-                  value: c.id, 
-                  label: `${c.firstName || ""} ${c.lastName || ""}`.trim() || c.email || "Unnamed" 
-                }))
-              ]}
+              onCreateContact={createContact}
+              brandId={selectedBrand?.id}
+              showCreate={false}
             />
           </div>
         </div>
