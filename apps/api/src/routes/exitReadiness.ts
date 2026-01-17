@@ -30,9 +30,11 @@ router.get('/:talentId', requireAuth, checkTalentAccess, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting exit readiness score:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       error: 'Failed to get exit readiness score',
+      details: errorMessage,
     });
   }
 });
@@ -53,9 +55,11 @@ router.post('/:talentId/compute', requireAuth, checkTalentAccess, async (req, re
     });
   } catch (error) {
     console.error('Error computing exit readiness score:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       error: 'Failed to compute exit readiness score',
+      details: errorMessage,
     });
   }
 });
@@ -126,9 +130,11 @@ router.get('/:talentId/breakdown', requireAuth, checkTalentAccess, async (req, r
     });
   } catch (error) {
     console.error('Error getting exit readiness breakdown:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       error: 'Failed to get breakdown',
+      details: errorMessage,
     });
   }
 });
@@ -163,9 +169,11 @@ router.get('/:talentId/recommendations', requireAuth, checkTalentAccess, async (
     });
   } catch (error) {
     console.error('Error getting exit readiness recommendations:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
       error: 'Failed to get recommendations',
+      details: errorMessage,
     });
   }
 });

@@ -58,12 +58,18 @@ const ExitReadinessScorecard: React.FC<Props> = ({ talentId, onLoadingChange }) 
           },
         });
 
+        const contentType = scoreResponse.headers.get('content-type');
+        if (!contentType?.includes('application/json')) {
+          throw new Error('API returned invalid response (HTML instead of JSON)');
+        }
+
         if (!scoreResponse.ok) {
-          throw new Error(`Failed to fetch scorecard: ${scoreResponse.status}`);
+          const errorData = await scoreResponse.json().catch(() => ({}));
+          throw new Error(`Failed to fetch scorecard: ${scoreResponse.status} - ${errorData.error || 'Unknown error'}`);
         }
 
         const scoreData = await scoreResponse.json();
-        setScore(scoreData);
+        setScore(scoreData.data || scoreData);
 
         // Fetch recommendations
         const recsResponse = await fetch(`/api/exit-readiness/${talentId}/recommendations`, {
@@ -74,7 +80,7 @@ const ExitReadinessScorecard: React.FC<Props> = ({ talentId, onLoadingChange }) 
 
         if (recsResponse.ok) {
           const recsData = await recsResponse.json();
-          setRecommendations(recsData);
+          setRecommendations(recsData.data || recsData);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load scorecard');
