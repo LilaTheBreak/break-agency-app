@@ -90,7 +90,7 @@ export function CareersPage() {
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">No content yet</h3>
                   <p className="text-sm text-slate-600 mb-6">This page doesn't have any CMS blocks yet.</p>
                   <button
-                    onClick={cms.createBlock}
+                    onClick={() => cms.createBlock()}
                     disabled={cms.saving}
                     className="inline-flex items-center gap-2 rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 disabled:opacity-50"
                   >
