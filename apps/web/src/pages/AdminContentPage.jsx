@@ -946,6 +946,20 @@ export function AdminContentPage({ session }) {
                       View Live
                     </a>
                   )}
+
+                  {/* Edit Page Button - opens page in edit mode */}
+                  {selectedPage.route && (
+                    <a
+                      href={`${selectedPage.route}?edit=true`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-full border border-brand-red/20 bg-brand-red/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-red hover:bg-brand-red/10 flex items-center gap-2 transition-colors"
+                      title="Edit this page inline"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                      Edit Page
+                    </a>
+                  )}
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
