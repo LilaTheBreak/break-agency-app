@@ -769,187 +769,269 @@ export function AdminContentPage({ session }) {
   return (
     <DashboardShell title="CMS" subtitle="Edit page content without code changes" navLinks={ADMIN_NAV_LINKS} session={session}>
       <div className="space-y-6">
-        {/* Page Selector */}
+        {/* Page Selector with Quick Links */}
         <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-          <label className="block mb-3">
-            <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Select Page</span>
-            {loading ? (
-              <div className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black/60">
-                Loading pages...
-              </div>
-            ) : pages.length === 0 ? (
-              <div className="mt-2 rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-6 text-center">
-                <p className="text-sm text-brand-black/70 mb-4">
-                  No CMS pages available yet. Click below to seed system pages.
-                </p>
-                <button
-                  onClick={seedPages}
-                  className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black transition-colors"
+          <div className="space-y-4">
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Select Page to Edit</span>
+              {loading ? (
+                <div className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black/60">
+                  Loading pages...
+                </div>
+              ) : pages.length === 0 ? (
+                <div className="mt-2 rounded-2xl border border-brand-black/10 bg-brand-linen/50 px-4 py-6 text-center">
+                  <p className="text-sm text-brand-black/70 mb-4">
+                    No CMS pages available yet. Click below to seed system pages.
+                  </p>
+                  <button
+                    onClick={seedPages}
+                    className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black transition-colors"
+                  >
+                    Seed CMS Pages
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={selectedPage?.id || ""}
+                  onChange={(e) => {
+                    const page = pages.find((p) => p.id === e.target.value);
+                    setSelectedPage(page || null);
+                    setPreviewMode(false);
+                  }}
+                  className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
                 >
-                  Seed CMS Pages
-                </button>
+                  <option value="">Choose a page...</option>
+                  {pages.map((page) => (
+                    <option key={page.id} value={page.id}>
+                      {page.title} {page.route ? `(${page.route})` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </label>
+
+            {/* Quick Page Links - make editing easy */}
+            {!loading && pages.length > 0 && (
+              <div className="pt-3 border-t border-brand-black/10">
+                <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60 mb-3">Quick Links</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                  {pages.map((page) => (
+                    <button
+                      key={page.id}
+                      onClick={() => {
+                        setSelectedPage(page);
+                        setPreviewMode(false);
+                      }}
+                      className={`rounded-2xl px-3 py-2 text-xs font-semibold uppercase tracking-[0.25em] transition-colors ${
+                        selectedPage?.id === page.id
+                          ? "bg-brand-red text-white"
+                          : "bg-brand-black/5 text-brand-black hover:bg-brand-black/10"
+                      }`}
+                      title={page.title}
+                    >
+                      {page.title.length > 10 ? page.title.substring(0, 8) + "..." : page.title}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <select
-                value={selectedPage?.id || ""}
-                onChange={(e) => {
-                  const page = pages.find((p) => p.id === e.target.value);
-                  setSelectedPage(page || null);
-                  setPreviewMode(false);
-                }}
-                className="mt-2 w-full rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm"
-              >
-                <option value="">Choose a page...</option>
-                {pages.map((page) => (
-                  <option key={page.id} value={page.id}>
-                    {page.title} {page.route ? `(${page.route})` : ""}
-                  </option>
-                ))}
-              </select>
             )}
-          </label>
+          </div>
         </div>
 
         {selectedPage && (
           <>
-            {/* Preview Mode Toggle */}
-            <div className="flex items-center justify-between rounded-3xl border border-brand-black/10 bg-brand-white p-4">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold">{selectedPage.title}</span>
-                {selectedPage.route && (
+            {/* Page Header with Controls */}
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-semibold">{selectedPage.title}</span>
+                  {selectedPage.route && (
+                    <span className="rounded-full bg-brand-black/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/70">
+                      {selectedPage.route}
+                    </span>
+                  )}
                   <span className="rounded-full bg-brand-black/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/70">
-                    {selectedPage.route}
+                    {selectedPage.roleScope}
                   </span>
-                )}
-                <span className="rounded-full bg-brand-black/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-brand-black/70">
-                  {selectedPage.roleScope}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={previewMode}
-                    onChange={(e) => {
-                      setPreviewMode(e.target.checked);
-                      if (e.target.checked) {
-                        setDraftBlocks([...blocks]);
-                      }
-                    }}
-                    className="rounded border-brand-black/20"
-                  />
-                  <span className="text-xs uppercase tracking-[0.3em] text-brand-black/70">Preview Mode</span>
-                </label>
-                {previewMode && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleSaveDraft}
-                      disabled={saving}
-                      className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5 disabled:opacity-50"
-                    >
-                      Save Draft
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handlePublish}
-                      disabled={saving}
-                      className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 disabled:opacity-50"
-                    >
-                      Publish
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Block List */}
-            <div className="space-y-3">
-              {displayBlocks.map((block, index) => (
-                <div
-                  key={block.id}
-                  className={`rounded-2xl border ${
-                    block.isVisible ? "border-brand-black/10 bg-brand-white" : "border-brand-black/5 bg-brand-linen/30 opacity-60"
-                  } p-4`}
-                >
-                  <div className="flex items-center gap-3">
-                    <GripVertical className="h-5 w-5 text-brand-black/30 cursor-move" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/70">
-                          {BLOCK_TYPES.find((t) => t.value === block.blockType)?.label || block.blockType}
-                        </span>
-                        {!block.isVisible && (
-                          <span className="text-xs text-brand-black/50">(Hidden)</span>
-                        )}
-                      </div>
-                      <div className="mt-1 text-sm text-brand-black/60">
-                        {getBlockPreview(block)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleVisibility(block)}
-                        className="rounded-full border border-brand-black/20 p-2 hover:bg-brand-black/5"
-                        title={block.isVisible ? "Hide" : "Show"}
-                      >
-                        {block.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingBlock(block);
-                          setEditorOpen(true);
-                        }}
-                        className="rounded-full border border-brand-black/20 p-2 hover:bg-brand-black/5"
-                        title="Edit"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDuplicateBlock(block.id)}
-                        className="rounded-full border border-brand-black/20 p-2 hover:bg-brand-black/5"
-                        title="Duplicate"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteBlock(block.id)}
-                        className="rounded-full border border-brand-red/20 p-2 hover:bg-brand-red/10 text-brand-red"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
                 </div>
-              ))}
+                <div className="flex items-center gap-3">
+                  {/* View Live Button - opens page in new tab */}
+                  {selectedPage.route && (
+                    <a
+                      href={selectedPage.route}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-full border border-brand-black/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5 flex items-center gap-2 transition-colors"
+                      title="View this page live on the site"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View Live
+                    </a>
+                  )}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={previewMode}
+                      onChange={(e) => {
+                        setPreviewMode(e.target.checked);
+                        if (e.target.checked) {
+                          setDraftBlocks([...blocks]);
+                        }
+                      }}
+                      className="rounded border-brand-black/20"
+                    />
+                    <span className="text-xs uppercase tracking-[0.3em] text-brand-black/70">Preview</span>
+                  </label>
+                </div>
+              </div>
 
-              {displayBlocks.length === 0 && (
-                <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/50 p-12 text-center">
-                  <p className="text-sm text-brand-black/60 mb-4">No blocks yet. Click below to hydrate with default content.</p>
+              {/* Preview Mode Action Buttons */}
+              {previewMode && (
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-brand-black/10">
+                  <span className="text-xs text-brand-black/60 mr-2">Preview changes before publishing:</span>
                   <button
-                    onClick={hydratePages}
-                    className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-black transition-colors"
+                    type="button"
+                    onClick={handleSaveDraft}
+                    disabled={saving}
+                    className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5 disabled:opacity-50"
                   >
-                    Hydrate with Default Content
+                    Save Draft
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={saving}
+                    className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 disabled:opacity-50"
+                  >
+                    Publish Live
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Add Block Button */}
-            <div className="flex items-center justify-center">
+            {/* Block List Header */}
+            <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/30 p-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold">Content Blocks</h3>
+                  <p className="text-xs text-brand-black/60">
+                    {displayBlocks.length} {displayBlocks.length === 1 ? "block" : "blocks"}
+                    {displayBlocks.some((b) => !b.isVisible) && (
+                      <span className="ml-2">({displayBlocks.filter((b) => b.isVisible).length} visible)</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setNewBlockType("HERO");
+                    setEditingBlock(null);
+                    setEditorOpen(true);
+                  }}
+                  className="flex items-center gap-2 rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90"
+                  title="Add a new content block"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Block
+                </button>
+              </div>
+            </div>
+
+            {/* Block List */}
+            <div className="space-y-3">
+              {displayBlocks.length === 0 ? (
+                <div className="rounded-2xl border-2 border-dashed border-brand-black/10 bg-brand-linen/20 p-8 text-center">
+                  <p className="text-sm text-brand-black/60 mb-4">No content blocks yet</p>
+                  <button
+                    onClick={() => {
+                      setNewBlockType("HERO");
+                      setEditingBlock(null);
+                      setEditorOpen(true);
+                    }}
+                    className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90"
+                  >
+                    Create First Block
+                  </button>
+                </div>
+              ) : (
+                displayBlocks.map((block, index) => (
+                  <div
+                    key={block.id}
+                    className={`rounded-2xl border ${
+                      block.isVisible ? "border-brand-black/10 bg-brand-white" : "border-brand-black/5 bg-brand-linen/30 opacity-60"
+                    } p-4`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <GripVertical className="h-5 w-5 text-brand-black/30 cursor-move" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/70">
+                            {BLOCK_TYPES.find((t) => t.value === block.blockType)?.label || block.blockType}
+                          </span>
+                          {!block.isVisible && (
+                            <span className="text-xs text-brand-black/50">(Hidden)</span>
+                          )}
+                          <span className="text-xs text-brand-black/40">Block {index + 1}</span>
+                        </div>
+                        <div className="mt-1 text-sm text-brand-black/60 line-clamp-1">
+                          {getBlockPreview(block)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleVisibility(block)}
+                          className="rounded-full border border-brand-black/20 p-2 hover:bg-brand-black/5"
+                          title={block.isVisible ? "Hide" : "Show"}
+                        >
+                          {block.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingBlock(block);
+                            setEditorOpen(true);
+                          }}
+                          className="rounded-full border border-brand-black/20 p-2 hover:bg-brand-black/5"
+                          title="Edit"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDuplicateBlock(block.id)}
+                          className="rounded-full border border-brand-black/20 p-2 hover:bg-brand-black/5"
+                          title="Duplicate"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBlock(block.id)}
+                          className="rounded-full border border-brand-red/20 p-2 hover:bg-brand-red/10 text-brand-red"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Add Block Button Fallback */}
+            <div className="text-center pt-2">
               <button
                 type="button"
-                onClick={() => setEditorOpen(true)}
-                className="flex items-center gap-2 rounded-full border border-brand-black/20 bg-brand-white px-6 py-3 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5"
+                onClick={() => {
+                  setNewBlockType("HERO");
+                  setEditingBlock(null);
+                  setEditorOpen(true);
+                }}
+                className="rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black/5 inline-flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add Block
+                Add Another Block
               </button>
             </div>
           </>
