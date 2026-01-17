@@ -20,8 +20,11 @@ export function CareersPage() {
     }
   }, [cms.editMode, setSearchParams]);
 
-  // If CMS has blocks, render them instead of hardcoded content
-  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
+  // Show editor if in edit mode OR if CMS has blocks
+  // This fixes the silent failure when entering edit mode on empty pages
+  const showEditor = cms.editMode || (!cms.loading && cms.blocks && cms.blocks.length > 0);
+  
+  if (showEditor) {
     return (
       <div className="bg-white text-slate-900 min-h-screen">
         {/* Edit Mode Header */}
@@ -81,16 +84,32 @@ export function CareersPage() {
           </header>
 
           <main>
-            <EditableBlockRenderer
-              blocks={cms.draftBlocks}
-              editMode={cms.editMode}
-              onUpdateBlock={cms.updateBlock}
-              onDeleteBlock={cms.deleteBlock}
-              onDuplicateBlock={cms.duplicateBlock}
-              onReorderBlocks={cms.reorderBlocks}
-              onCreateBlock={cms.createBlock}
-              saving={cms.saving}
-            />
+            {cms.blocks && cms.blocks.length === 0 && cms.editMode ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No content yet</h3>
+                  <p className="text-sm text-slate-600 mb-6">This page doesn't have any CMS blocks yet.</p>
+                  <button
+                    onClick={cms.createBlock}
+                    disabled={cms.saving}
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 disabled:opacity-50"
+                  >
+                    + Create First Block
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <EditableBlockRenderer
+                blocks={cms.draftBlocks}
+                editMode={cms.editMode}
+                onUpdateBlock={cms.updateBlock}
+                onDeleteBlock={cms.deleteBlock}
+                onDuplicateBlock={cms.duplicateBlock}
+                onReorderBlocks={cms.reorderBlocks}
+                onCreateBlock={cms.createBlock}
+                saving={cms.saving}
+              />
+            )}
           </main>
         </div>
 
