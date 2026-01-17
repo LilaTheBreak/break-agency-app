@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { EditableBlockRenderer } from "../components/EditableBlockRenderer.jsx";
 import { useCmsEditMode } from "../hooks/useCmsEditMode.js";
 import { useSearchParams } from "react-router-dom";
-import { Save, X, AlertCircle } from "lucide-react";
+import { Save, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export function CareersPage() {
@@ -15,16 +15,13 @@ export function CareersPage() {
     // Sync URL with edit mode state
     if (cms.editMode) {
       setSearchParams({ edit: "true" });
-      console.log("[CMS] Edit mode enabled for /careers");
     } else {
       setSearchParams({});
     }
   }, [cms.editMode, setSearchParams]);
 
-  // Show editor UI if in edit mode, OR if CMS has blocks to display
-  const showEditor = cms.editMode || (!cms.loading && cms.blocks && cms.blocks.length > 0);
-  
-  if (showEditor) {
+  // If CMS has blocks, render them instead of hardcoded content
+  if (!cms.loading && cms.blocks && cms.blocks.length > 0) {
     return (
       <div className="bg-white text-slate-900 min-h-screen">
         {/* Edit Mode Header */}
@@ -40,9 +37,6 @@ export function CareersPage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-red"></span>
                   </span>
-                )}
-                {cms.loading && (
-                  <span className="text-xs text-slate-600 animate-pulse">Loading content...</span>
                 )}
               </div>
               <div className="flex items-center gap-3">
@@ -87,47 +81,16 @@ export function CareersPage() {
           </header>
 
           <main>
-            {cms.loading && cms.editMode ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-red mx-auto mb-4"></div>
-                  <p className="text-sm text-slate-600">Loading editor content...</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {cms.blocks && cms.blocks.length === 0 && cms.editMode && (
-                  <div className="mx-auto max-w-6xl px-6 py-10">
-                    <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                      <AlertCircle className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                      <h3 className="text-lg font-semibold text-slate-900 mb-2">No content yet</h3>
-                      <p className="text-sm text-slate-600 mb-6">
-                        This page doesn't have any CMS blocks yet. Click the button below to create your first block.
-                      </p>
-                      <button
-                        onClick={cms.createBlock}
-                        disabled={cms.saving}
-                        className="inline-flex items-center gap-2 rounded-full bg-brand-red px-6 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 disabled:opacity-50"
-                      >
-                        + Create First Block
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {cms.blocks && cms.blocks.length > 0 && (
-                  <EditableBlockRenderer
-                    blocks={cms.draftBlocks}
-                    editMode={cms.editMode}
-                    onUpdateBlock={cms.updateBlock}
-                    onDeleteBlock={cms.deleteBlock}
-                    onDuplicateBlock={cms.duplicateBlock}
-                    onReorderBlocks={cms.reorderBlocks}
-                    onCreateBlock={cms.createBlock}
-                    saving={cms.saving}
-                  />
-                )}
-              </>
-            )}
+            <EditableBlockRenderer
+              blocks={cms.draftBlocks}
+              editMode={cms.editMode}
+              onUpdateBlock={cms.updateBlock}
+              onDeleteBlock={cms.deleteBlock}
+              onDuplicateBlock={cms.duplicateBlock}
+              onReorderBlocks={cms.reorderBlocks}
+              onCreateBlock={cms.createBlock}
+              saving={cms.saving}
+            />
           </main>
         </div>
 
@@ -144,11 +107,8 @@ export function CareersPage() {
     );
   }
 
-  // Fallback to hardcoded content only when NOT in edit mode AND no blocks
-  return <CareersPageHardcoded onEditMode={() => {
-    console.log("[CMS] Edit Page clicked - entering edit mode");
-    cms.setEditMode(true);
-  }} />;
+  // Fallback to hardcoded content if CMS is empty or loading
+  return <CareersPageHardcoded onEditMode={() => cms.setEditMode(true)} />;
 }
 
 function CareersPageHardcoded({ onEditMode }) {
