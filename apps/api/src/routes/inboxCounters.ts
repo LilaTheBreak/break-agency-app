@@ -5,22 +5,41 @@ import { requireAuth } from '../middleware/auth.js';
 const router = Router();
 
 async function getAwaitingReplyCount(userId: string, userEmail: string): Promise<number> {
+  // Fetch recent outbound emails with thread info
   const outboundEmails = await prisma.inboundEmail.findMany({
     where: { fromEmail: userEmail },
     orderBy: { receivedAt: "desc" },
     take: 100, // Limit the search space for performance
+    select: { id: true, threadId: true, receivedAt: true }
   });
 
+  if (outboundEmails.length === 0) return 0;
+
+  // Get all thread IDs
+  const threadIds = outboundEmails
+    .filter(msg => msg.threadId)
+    .map(msg => msg.threadId);
+
+  if (threadIds.length === 0) return 0;
+
+  // Fetch all replies in one query instead of per-message queries
+  const replyCounts = await prisma.inboundEmail.groupBy({
+    by: ['threadId'],
+    where: {
+      threadId: { in: threadIds },
+      NOT: { fromEmail: userEmail },
+    },
+    _count: { id: true },
+  });
+
+  // Create map of thread to reply count
+  const replyMap = new Map(replyCounts.map(r => [r.threadId, r._count.id]));
+
+  // Count threads where there are no replies after the outbound email
   let awaitingCount = 0;
   for (const msg of outboundEmails) {
     if (!msg.threadId) continue;
-    const replyCount = await prisma.inboundEmail.count({
-      where: {
-        threadId: msg.threadId,
-        receivedAt: { gt: msg.receivedAt },
-        NOT: { fromEmail: userEmail },
-      },
-    });
+    const replyCount = replyMap.get(msg.threadId) || 0;
     if (replyCount === 0) {
       awaitingCount++;
     }

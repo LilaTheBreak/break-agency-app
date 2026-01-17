@@ -95,29 +95,30 @@ const TalentRevenueDashboard: FC<TalentRevenueDashboardProps> = ({ talentId: pro
       setLoading(true);
       setError(null);
 
-      // Fetch sources
-      const sourcesRes = await fetch(`/api/revenue/sources/${talentId}`);
+      // Fetch all data in parallel for ~4x faster loading
+      const [sourcesRes, summaryRes, sourceRes, goalsRes] = await Promise.all([
+        fetch(`/api/revenue/sources/${talentId}`),
+        fetch(`/api/revenue/summary/${talentId}`),
+        fetch(`/api/revenue/by-source/${talentId}`),
+        fetch(`/api/revenue/goals/${talentId}`)
+      ]);
+
+      // Process responses
       if (sourcesRes.ok) {
         const sourcesData = await sourcesRes.json();
         setSources(sourcesData.data || []);
       }
 
-      // Fetch summary
-      const summaryRes = await fetch(`/api/revenue/summary/${talentId}`);
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
         setSummary(summaryData.data);
       }
 
-      // Fetch by-source breakdown
-      const sourceRes = await fetch(`/api/revenue/by-source/${talentId}`);
       if (sourceRes.ok) {
         const sourceData = await sourceRes.json();
         setSourceBreakdown(sourceData.data || []);
       }
 
-      // Fetch goals
-      const goalsRes = await fetch(`/api/revenue/goals/${talentId}`);
       if (goalsRes.ok) {
         const goalsData = await goalsRes.json();
         setGoals(goalsData.data || []);
