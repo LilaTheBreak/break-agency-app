@@ -1111,14 +1111,6 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           <Route path="socials" element={<BrandSocialsPage />} />
           <Route path="campaigns" element={<BrandCampaignsPage />} />
           <Route
-            path="opportunities"
-            element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
-                <BrandOpportunitiesPage />
-              </RoleGate>
-            }
-          />
-          <Route
             path="contracts"
             element={
               <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
