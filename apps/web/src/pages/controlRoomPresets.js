@@ -141,20 +141,12 @@ export const CONTROL_ROOM_PRESETS = {
       { label: "Messages", anchor: "#creator-messages" },
       { label: "Opportunities", anchor: "#creator-opportunities" }
     ],
-    metrics: [
-      { label: "Active campaigns", value: "6", sub: "Deliverables due this week" },
-      { label: "Projected revenue", value: "£74K", sub: "Next 90 days" },
-      { label: "Inbox health", value: "96%", sub: "Responses under 12h" }
-    ],
+    metrics: [],  // Populated dynamically from real data
     queue: {
       label: "Action items",
       title: "Creator to-do",
       cta: "Open planner",
-      items: [
-        { title: "Upload Atlantis hero cut", owner: "Content Pod", status: "Due tomorrow" },
-        { title: "Approve fintech usage rights", owner: "Legal Desk", status: "Needs signature" },
-        { title: "Confirm AI live brief", owner: "Automation Pod", status: "Draft reminder" }
-      ]
+      items: []  // Populated dynamically from real data
     },
     quickLinks: [
       { title: "AI agent", copy: "Prep responses, rate cards, and trackers via natural language." },
