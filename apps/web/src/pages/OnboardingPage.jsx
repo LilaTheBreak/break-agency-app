@@ -228,6 +228,7 @@ export default function OnboardingPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [error, setError] = useState("");
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
 
   const ugcFlow = isUgcFlow(resolvedRole, form.context);
   const steps = useMemo(() => buildSteps(ugcFlow), [ugcFlow]);
@@ -387,12 +388,14 @@ export default function OnboardingPage() {
   };
 
   const handleSkipOnboarding = async () => {
+    setIsSkipping(true);
     try {
       const response = await skipOnboarding();
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: "Failed to skip onboarding" }));
         console.error("Skip onboarding failed:", error);
         setError(error.error || "Failed to skip onboarding. Please try again.");
+        setIsSkipping(false);
         return;
       }
       // Navigate to dashboard after skipping
@@ -401,6 +404,7 @@ export default function OnboardingPage() {
     } catch (err) {
       console.error("Error skipping onboarding:", err);
       setError("Failed to skip onboarding. Please try again.");
+      setIsSkipping(false);
     }
   };
 
@@ -418,9 +422,10 @@ export default function OnboardingPage() {
           <button
             type="button"
             onClick={handleSkipOnboarding}
-            className="w-full rounded-full border border-brand-black/20 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60 transition hover:bg-brand-black/5 hover:text-brand-black"
+            disabled={isSkipping}
+            className="w-full rounded-full border border-brand-black/20 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60 transition hover:bg-brand-black/5 hover:text-brand-black disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Do this later
+            {isSkipping ? "Skipping..." : "Do this later"}
           </button>
         </div>
       );
@@ -458,9 +463,10 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={handleSkipOnboarding}
-          className="w-full rounded-full border border-brand-black/20 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60 transition hover:bg-brand-black/5 hover:text-brand-black"
+          disabled={isSkipping}
+          className="w-full rounded-full border border-brand-black/20 px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60 transition hover:bg-brand-black/5 hover:text-brand-black disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Do this later
+          {isSkipping ? "Skipping..." : "Do this later"}
         </button>
       </div>
     );
