@@ -34,6 +34,12 @@ export function AdminUsersPage() {
   const [impersonating, setImpersonating] = useState(null);
   const [showNotImplementedModal, setShowNotImplementedModal] = useState(false);
   const [notImplementedFeature, setNotImplementedFeature] = useState(null);
+  const [showLinkBrandModal, setShowLinkBrandModal] = useState(false);
+  const [selectedUserForBrand, setSelectedUserForBrand] = useState(null);
+  const [brands, setBrands] = useState([]);
+  const [selectedBrandId, setSelectedBrandId] = useState("");
+  const [brandLoading, setBrandLoading] = useState(false);
+  const [brandLinkingLoading, setBrandLinkingLoading] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -160,6 +166,62 @@ export function AdminUsersPage() {
       ]
     });
     setShowNotImplementedModal(true);
+  };
+
+  const handleOpenLinkBrandModal = async (user) => {
+    // Check if user role is BRAND
+    const userRole = user.role || (Array.isArray(user.roles) ? user.roles[0]?.role?.name : null);
+    if (userRole !== "BRAND") {
+      alert("Only BRAND role users can be linked to brands");
+      return;
+    }
+
+    setSelectedUserForBrand(user);
+    setShowLinkBrandModal(true);
+    setBrandLoading(true);
+    
+    try {
+      // Fetch all brands
+      const response = await apiFetch("/api/brands");
+      if (!response.ok) throw new Error("Failed to fetch brands");
+      const brandsData = await response.json();
+      setBrands(Array.isArray(brandsData) ? brandsData : []);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+      alert("Failed to load brands");
+    } finally {
+      setBrandLoading(false);
+    }
+  };
+
+  const handleLinkUserToBrand = async () => {
+    if (!selectedUserForBrand || !selectedBrandId) {
+      alert("Please select a brand");
+      return;
+    }
+
+    setBrandLinkingLoading(true);
+    try {
+      const response = await apiFetch(`/api/admin/users/${selectedUserForBrand.id}/link-brand`, {
+        method: "POST",
+        body: JSON.stringify({ brandId: selectedBrandId })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to link user to brand");
+      }
+      
+      const result = await response.json();
+      alert(`Successfully linked ${selectedUserForBrand.email} to brand`);
+      setShowLinkBrandModal(false);
+      setSelectedUserForBrand(null);
+      setSelectedBrandId("");
+    } catch (error) {
+      alert(error.message || "Failed to link user to brand");
+    } finally {
+      setBrandLinkingLoading(false);
+    }
   };
 
   const handleExitImpersonation = () => {
@@ -352,6 +414,14 @@ export function AdminUsersPage() {
                       >
                         Edit
                       </button>
+                      {(user.role === "BRAND" || (Array.isArray(user.roles) && user.roles[0]?.role?.name === "BRAND")) && (
+                        <button
+                          className="inline-flex items-center justify-center rounded-full border border-brand-black px-3 py-1.5 text-xs uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors whitespace-nowrap"
+                          onClick={() => handleOpenLinkBrandModal(user)}
+                        >
+                          Link Brand
+                        </button>
+                      )}
                       {isSuperAdmin && !showArchived && (
                         <button
                           className="inline-flex items-center justify-center rounded-full border border-brand-red px-3 py-1.5 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50 transition-colors whitespace-nowrap"
@@ -477,6 +547,60 @@ export function AdminUsersPage() {
                 className="rounded-full border border-brand-black bg-brand-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-brand-white transition-all hover:bg-brand-black/90"
               >
                 Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Link User to Brand Modal */}
+      {showLinkBrandModal && selectedUserForBrand && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-brand-black/20 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-[36px] border border-brand-black/10 bg-white p-8 text-left text-brand-black shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+            <h3 className="font-display text-3xl uppercase">Link Brand</h3>
+            <p className="mt-2 text-sm text-brand-black/70">
+              Link <strong>{selectedUserForBrand.email}</strong> to a brand
+            </p>
+            
+            {brandLoading ? (
+              <div className="mt-4 p-4 text-center text-brand-black/60">Loading brands...</div>
+            ) : brands.length === 0 ? (
+              <div className="mt-4 p-4 text-center text-brand-black/60">No brands found</div>
+            ) : (
+              <>
+                <select
+                  value={selectedBrandId}
+                  onChange={(e) => setSelectedBrandId(e.target.value)}
+                  className="mt-4 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+                >
+                  <option value="">Select a brand...</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name || brand.domain || "Untitled Brand"}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLinkBrandModal(false);
+                  setSelectedUserForBrand(null);
+                  setSelectedBrandId("");
+                }}
+                className="rounded-full border border-brand-black px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-linen transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLinkUserToBrand}
+                disabled={!selectedBrandId || brandLinkingLoading}
+                className="rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white hover:bg-brand-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {brandLinkingLoading ? "Linking..." : "Link Brand"}
               </button>
             </div>
           </div>

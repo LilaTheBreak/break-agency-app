@@ -311,4 +311,73 @@ router.patch("/users/:id", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/users/:id/link-brand
+ * Link a BRAND role user to a brand
+ * Body: { brandId }
+ */
+router.post("/users/:id/link-brand", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { brandId } = req.body;
+
+    if (!id || !brandId) {
+      return res.status(400).json({ error: "User ID and Brand ID are required" });
+    }
+
+    // Verify user exists and has BRAND role
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.role !== "BRAND") {
+      return res.status(400).json({ error: "Only BRAND role users can be linked to brands" });
+    }
+
+    // Verify brand exists
+    const brand = await prisma.brand.findUnique({
+      where: { id: brandId }
+    });
+
+    if (!brand) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+
+    // Create or update BrandUser entry
+    const brandUser = await prisma.brandUser.upsert({
+      where: {
+        brandId_userId: {
+          brandId,
+          userId: id
+        }
+      },
+      create: {
+        id: `branduser_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        brandId,
+        userId: id,
+        role: "ADMIN", // Default to ADMIN role for brand users
+        status: "ACTIVE"
+      },
+      update: {
+        status: "ACTIVE",
+        role: "ADMIN"
+      }
+    });
+
+    console.log(`[ADMIN] Linked user ${id} to brand ${brandId}`);
+    res.json({ 
+      success: true, 
+      message: `User linked to brand successfully`,
+      brandUser 
+    });
+  } catch (error) {
+    console.error("[ADMIN LINK BRAND]", error);
+    res.status(500).json({ error: "Failed to link user to brand" });
+  }
+});
+
 export default router;
