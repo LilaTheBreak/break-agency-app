@@ -1,7 +1,42 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export function CreatorAgentPage({ session }) {
+  const { user } = useAuth();
+  const [socialsConnected, setSocialsConnected] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [applyMessage, setApplyMessage] = useState("");
+
+  useEffect(() => {
+    // Check if user has connected socials
+    if (user?.connectedSocials && Object.keys(user.connectedSocials).length > 0) {
+      setSocialsConnected(true);
+    }
+  }, [user]);
+
+  const handleApplyExclusive = async () => {
+    setIsApplying(true);
+    try {
+      // TODO: Call API endpoint to submit exclusive talent application
+      const response = await fetch("/api/talent/apply-exclusive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user?.id })
+      });
+      if (response.ok) {
+        setApplyMessage("✓ Application submitted! Our team will review your profile.");
+      } else {
+        setApplyMessage("Failed to submit application. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to apply:", error);
+      setApplyMessage("Error submitting application. Please try again.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
   return (
     <DashboardShell
       title="AI Agent"
@@ -12,7 +47,7 @@ export function CreatorAgentPage({ session }) {
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
           <h2 className="text-xl font-semibold text-brand-black">AI Agent Configuration</h2>
           <p className="mt-2 text-sm text-brand-black/70">
-            Set up and manage your personal AI agent for handling briefs, rate cards, and automated responses.
+            <span className="font-medium">For Exclusive Talent:</span> This feature is available exclusively for members of The Break's premium creator network. Set up and manage your personal AI agent for handling briefs, rate cards, and automated responses.
           </p>
           <div className="mt-6 space-y-4">
             <div className="rounded-xl bg-brand-linen/40 p-4">
@@ -40,6 +75,36 @@ export function CreatorAgentPage({ session }) {
               <p className="font-medium text-brand-black">Brief Tracking</p>
               <p className="text-sm text-brand-black/60">AI-powered brief organization and prioritization</p>
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <h2 className="text-xl font-semibold text-brand-black">Exclusive Talent Program</h2>
+          <p className="mt-2 text-sm text-brand-black/70">
+            Unlock premium features and direct collaboration opportunities with The Break by joining our exclusive talent network.
+          </p>
+          <div className="mt-6 rounded-xl bg-brand-linen/40 p-4">
+            {socialsConnected ? (
+              <>
+                <p className="text-sm text-brand-black/60">
+                  ✓ You've connected your social profiles. You're eligible to apply for exclusive talent status.
+                </p>
+                <button
+                  onClick={handleApplyExclusive}
+                  disabled={isApplying}
+                  className="mt-4 rounded-lg bg-brand-red px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-red/90 disabled:opacity-50"
+                >
+                  {isApplying ? "Submitting..." : "Apply to be an Exclusive Talent with The Break"}
+                </button>
+                {applyMessage && (
+                  <p className="mt-3 text-xs text-brand-black/70">{applyMessage}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-brand-black/60">
+                📱 Connect your social media profiles first to qualify for the exclusive talent program.
+              </p>
+            )}
           </div>
         </section>
       </div>
