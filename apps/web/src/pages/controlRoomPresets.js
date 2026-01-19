@@ -137,6 +137,7 @@ export const CONTROL_ROOM_PRESETS = {
       { label: "Account", to: "/creator/account" },
       { label: "Agent", to: "/creator/agent" },
       { label: "Campaigns", to: "/creator/campaigns" },
+      { label: "Calendar", to: "/creator/calendar" },
       { label: "Contracts", to: "/creator/contracts" },
       { label: "Messages", to: "/creator/messages" },
       { label: "Opportunities", to: "/creator/opportunities" }

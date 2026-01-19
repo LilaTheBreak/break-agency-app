@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import { useDashboardSummary } from "../hooks/useDashboardSummary.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { isAwaitingApproval, loadOnboardingState } from "../lib/onboardingState.js";
@@ -30,6 +30,7 @@ export function DashboardShell({
   showStatusSummary = false,
   session
 }) {
+  const location = useLocation();
   const { user, logout } = useAuth();
   const activeUser = session || user;
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
@@ -114,6 +115,11 @@ export function DashboardShell({
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [navCollapsed, userToggledNav]);
+
+  // Reset scroll position when navigation changes to prevent auto-collapse
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   const showApprovalHold = isAwaitingApproval(user);
   const onboardingLocal = user ? loadOnboardingState(user.email) : {};

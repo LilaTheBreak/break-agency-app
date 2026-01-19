@@ -39,6 +39,7 @@ import { CreatorDashboard } from "./pages/CreatorDashboard.jsx";
 import { CreatorAccountPage } from "./pages/CreatorAccountPage.jsx";
 import { CreatorAgentPage } from "./pages/CreatorAgentPage.jsx";
 import { CreatorCampaignsPage } from "./pages/CreatorCampaignsPage.jsx";
+import { CreatorCalendarPage } from "./pages/CreatorCalendarPage.jsx";
 import { CreatorContractsPage } from "./pages/CreatorContractsPage.jsx";
 import { CreatorMessagesPage } from "./pages/CreatorMessagesPage.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
@@ -628,6 +629,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <CreatorCampaignsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/calendar"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <CreatorCalendarPage session={session} />
             </ProtectedRoute>
           }
         />
