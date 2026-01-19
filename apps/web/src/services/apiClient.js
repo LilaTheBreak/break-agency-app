@@ -140,6 +140,14 @@ function extractAction(path) {
   const parts = path.split('/').filter(Boolean);
   const lastPart = parts[parts.length - 1];
   
+  // Auth-specific patterns
+  if (path.includes('/auth/me')) return 'fetch user profile';
+  if (path.includes('/auth/welcome')) return 'send welcome email';
+  if (path.includes('/auth/login')) return 'sign in';
+  if (path.includes('/auth/signup')) return 'sign up';
+  if (path.includes('/auth/logout')) return 'sign out';
+  if (path.includes('/auth/verify')) return 'verify email';
+  
   // Common patterns
   if (path.includes('/gmail')) return 'connect Gmail';
   if (path.includes('/approve')) return 'approve user';
