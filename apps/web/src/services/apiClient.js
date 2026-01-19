@@ -101,7 +101,9 @@ export async function apiFetch(path, options = {}) {
 
     // Show toast notifications for errors
     // Note: Don't show errors for /auth/me - it's expected to return 200 or 401 when not logged in
+    // Also don't show errors for /campaigns/user - talent users viewing campaigns may get 403 but we handle it gracefully
     const isAuthMe = path.includes('/auth/me');
+    const isCampaignUser = path.includes('/campaigns/user');
     
     if (response.status >= 500) {
       console.error(`[API] Server error ${response.status} for ${path}`);
@@ -110,8 +112,11 @@ export async function apiFetch(path, options = {}) {
       }
     } else if (response.status === 403) {
       // For /auth/me, 403 might be a CORS issue - don't show confusing error
+      // For /campaigns/user, 403 is handled gracefully in campaignClient - don't show error
       if (isAuthMe) {
         console.warn(`[API] CORS or permission issue for /auth/me - this is expected if not logged in`);
+      } else if (isCampaignUser) {
+        console.warn(`[API] 403 permission for campaigns - will be handled gracefully`);
       } else {
         toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
       }
