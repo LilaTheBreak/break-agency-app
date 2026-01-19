@@ -92,7 +92,7 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
   let targetId = req.params.userId;
   try {
     const requester = req.user!;
-    console.log("[CAMPAIGNS] GET /campaigns/user/", targetId, "by user", requester.id);
+    console.log("[CAMPAIGNS] GET /campaigns/user/", targetId, "by user", requester.id, "with role:", requester.role);
     
     if (targetId === "me") targetId = requester.id;
     
@@ -102,7 +102,7 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
       return sendEmptyList(res);
     }
     
-    // Build where clause
+    // Build where clause - allow talent/creator/ugc users to see their own campaigns
     const whereClause =
       targetId === "all"
         ? {}

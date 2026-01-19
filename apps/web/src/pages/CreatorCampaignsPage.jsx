@@ -1,7 +1,10 @@
 import React from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
+import { useCampaigns } from "../hooks/useCampaigns.js";
 
 export function CreatorCampaignsPage({ session }) {
+  const { campaigns, loading, error } = useCampaigns({ session });
+
   return (
     <DashboardShell
       title="Campaigns"
@@ -14,11 +17,27 @@ export function CreatorCampaignsPage({ session }) {
           <p className="mt-2 text-sm text-brand-black/70">
             Track all your current briefs, deliverables, and campaign timelines.
           </p>
+          {error && <p className="mt-2 text-sm text-brand-red">{error}</p>}
           <div className="mt-6">
-            <div className="rounded-xl bg-brand-linen/40 p-4 text-center">
-              <p className="text-sm text-brand-black/60">No active campaigns yet</p>
-              <p className="mt-1 text-xs text-brand-black/50">New opportunities will appear here as they're assigned to you</p>
-            </div>
+            {loading ? (
+              <div className="rounded-xl bg-brand-linen/40 p-4 text-center">
+                <p className="text-sm text-brand-black/60">Loading campaigns...</p>
+              </div>
+            ) : campaigns.length === 0 ? (
+              <div className="rounded-xl bg-brand-linen/40 p-4 text-center">
+                <p className="text-sm text-brand-black/60">No active campaigns yet</p>
+                <p className="mt-1 text-xs text-brand-black/50">New opportunities will appear here as they're assigned to you</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {campaigns.map((campaign) => (
+                  <div key={campaign.id} className="rounded-xl bg-brand-linen/40 p-4">
+                    <p className="font-medium text-brand-black">{campaign.title}</p>
+                    <p className="text-sm text-brand-black/60">Stage: {campaign.stage}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
