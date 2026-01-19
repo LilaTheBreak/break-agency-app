@@ -19,6 +19,11 @@ export function OnboardingReminderBanner() {
     return null;
   }
 
+  // Don't show for admins
+  if (user?.role === "SUPERADMIN" || user?.role === "ADMIN") {
+    return null;
+  }
+
   // Show banner when: user is approved BUT onboarding is not completed
   const shouldShow = user?.isApproved === true && user?.onboardingComplete !== true;
 
