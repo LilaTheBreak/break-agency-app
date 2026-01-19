@@ -39,6 +39,7 @@ import exitReadinessRouter from "./exitReadiness.js";
 // NOTE: authRouter is mounted in server.ts at /api/auth, not here
 import onboardingRouter from './onboarding.js';
 import adminUsersRouter from './adminUsers.js';
+import talentRouter from './talent.js';
 
 // Social OAuth routes
 import instagramAuthRouter from './auth/instagram.js';
@@ -122,6 +123,7 @@ router.use("/dashboard", dashboardCampaignPacingRouter);
 router.use("/dashboard", dashboardExclusiveTalentRouter);
 router.use("/queues", queuesRouter);
 router.use("/talent", talentAccessRouter);
+router.use("/talent", talentRouter);
 router.use(messagesRouter);
 router.use(filesRouter);
 router.use(contractsRouter);
