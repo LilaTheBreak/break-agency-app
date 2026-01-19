@@ -3116,7 +3116,7 @@ function DealsTab({ talent, onDealCreated }) {
           {/* Modal Container - Fixed width, proper scrolling */}
           <div className="relative w-full max-w-2xl rounded-3xl border border-brand-black/15 bg-brand-white shadow-2xl flex flex-col max-h-[90vh]">
             {/* Fixed Header */}
-            <div className="flex-shrink-0 border-b border-brand-black/10 px-8 py-6">
+            <div className="relative flex-shrink-0 border-b border-brand-black/10 px-8 py-8">
               {/* Close Button */}
               <button
                 type="button"
@@ -3130,11 +3130,11 @@ function DealsTab({ talent, onDealCreated }) {
 
               {/* Title */}
               <h2 className="text-2xl font-bold text-brand-black">Create New Deal</h2>
-              <p className="mt-1 text-sm text-brand-black/60">Fill in the details below to create a new deal</p>
+              <p className="mt-2 text-sm text-brand-black/60">Fill in the details below to create a new deal</p>
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-7">
               {/* Error Message */}
               {createError && (
                 <div className="rounded-xl border border-red-300 bg-red-50 p-4 flex-shrink-0">
@@ -3143,7 +3143,7 @@ function DealsTab({ talent, onDealCreated }) {
               )}
 
               {/* Deal Name */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-semibold text-brand-black">
                   Deal Name <span className="text-brand-red">*</span>
                 </label>
@@ -3152,16 +3152,16 @@ function DealsTab({ talent, onDealCreated }) {
                   placeholder="e.g., Instagram Partnership Campaign"
                   value={createForm.dealName}
                   onChange={(e) => setCreateForm({...createForm, dealName: e.target.value})}
-                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+                  className="w-full rounded-xl border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 />
               </div>
 
               {/* Brand Selection - with helper text */}
-              <div className="space-y-2">
+              <div className="space-y-3 pb-2">
                 <label className="block text-sm font-semibold text-brand-black">
                   Brand <span className="text-brand-red">*</span>
                 </label>
-                <p className="text-xs text-brand-black/50">Search existing brands or create a new one</p>
+                <p className="text-xs text-brand-black/50 -mt-1">Search existing brands or create a new one</p>
                 <BrandSelect
                   brands={brands}
                   value={createForm.brandId}
@@ -3174,14 +3174,14 @@ function DealsTab({ talent, onDealCreated }) {
               </div>
 
               {/* Stage */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-semibold text-brand-black">
                   Stage
                 </label>
                 <select
                   value={createForm.status}
                   onChange={(e) => setCreateForm({...createForm, status: e.target.value})}
-                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+                  className="w-full rounded-xl border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 >
                   <option value="NEW_LEAD">In discussion</option>
                   <option value="NEGOTIATION">Negotiation</option>
@@ -3196,7 +3196,7 @@ function DealsTab({ talent, onDealCreated }) {
 
               {/* Value & Currency - Two Column */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="block text-sm font-semibold text-brand-black">
                     Estimated Value
                   </label>
@@ -3205,18 +3205,18 @@ function DealsTab({ talent, onDealCreated }) {
                     placeholder="0.00"
                     value={createForm.estimatedValue}
                     onChange={(e) => setCreateForm({...createForm, estimatedValue: e.target.value})}
-                    className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+                    className="w-full rounded-xl border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="block text-sm font-semibold text-brand-black">
                     Currency
                   </label>
                   <select
                     value={createForm.currency}
                     onChange={(e) => setCreateForm({...createForm, currency: e.target.value})}
-                    className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+                    className="w-full rounded-xl border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                   >
                     <option value="GBP">GBP £</option>
                     <option value="USD">USD $</option>
@@ -3228,7 +3228,7 @@ function DealsTab({ talent, onDealCreated }) {
               </div>
 
               {/* Expected Close Date */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-semibold text-brand-black">
                   Expected Close Date
                 </label>
@@ -3236,12 +3236,12 @@ function DealsTab({ talent, onDealCreated }) {
                   type="date"
                   value={createForm.expectedCloseDate}
                   onChange={(e) => setCreateForm({...createForm, expectedCloseDate: e.target.value})}
-                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+                  className="w-full rounded-xl border border-brand-black/15 bg-brand-white px-4 py-3 text-sm focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 />
               </div>
 
               {/* Notes */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <label className="block text-sm font-semibold text-brand-black">
                   Notes
                 </label>
@@ -3250,17 +3250,17 @@ function DealsTab({ talent, onDealCreated }) {
                   value={createForm.notes}
                   onChange={(e) => setCreateForm({...createForm, notes: e.target.value})}
                   rows={3}
-                  className="w-full rounded-lg border border-brand-black/15 bg-brand-white px-4 py-3 text-sm resize-none focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+                  className="w-full rounded-xl border border-brand-black/15 bg-brand-white px-4 py-3 text-sm resize-none focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
                 />
               </div>
             </div>
 
             {/* Fixed Footer with Buttons */}
-            <div className="flex-shrink-0 border-t border-brand-black/10 px-8 py-6 flex gap-3">
+            <div className="flex-shrink-0 border-t border-brand-black/10 px-8 py-8 flex gap-4 bg-brand-white/50">
               <button
                 type="button"
                 onClick={() => setCreateOpen(false)}
-                className="flex-1 rounded-lg border-2 border-brand-black/20 bg-brand-white px-6 py-3 text-sm font-semibold text-brand-black hover:bg-brand-black/5 transition-colors"
+                className="flex-1 rounded-xl border-2 border-brand-black/20 bg-brand-white px-6 py-3 text-sm font-semibold text-brand-black hover:bg-brand-black/5 transition-colors"
               >
                 Cancel
               </button>
@@ -3268,7 +3268,7 @@ function DealsTab({ talent, onDealCreated }) {
                 type="button"
                 onClick={handleCreateDeal}
                 disabled={!createForm.dealName.trim() || !createForm.brandId}
-                className="flex-1 rounded-lg bg-brand-red px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 rounded-xl bg-brand-red px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create Deal
               </button>
