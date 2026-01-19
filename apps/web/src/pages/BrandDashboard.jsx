@@ -23,18 +23,49 @@ import { ContractsPanel } from "../components/ContractsPanel.jsx";
 // Creator roster - guarded by feature flag CREATOR_ROSTER_ENABLED
 const CREATOR_ROSTER = [];
 
-
+/**
+ * BRAND_NAV_LINKS - Brand-native menu structure
+ * 
+ * Organized into logical sections for brand clients:
+ * - Overview (campaign summary)
+ * - Campaigns (live, upcoming, completed)
+ * - Creators (matched creators, shortlists, AI recommendations)
+ * - Agreements (contracts, scopes, signatures)
+ * - Inbox (messages between brand and The Break)
+ * - Billing & Payments (invoices, payment status, receipts)
+ * - Reporting (campaign performance, deliverables, post-campaign)
+ * - Brand Profile (company details, contacts, preferences)
+ * 
+ * Excluded for brand users:
+ * ✗ Settings (internal)
+ * ✗ Socials (talent feature)
+ * ✗ Email Opportunities (talent feature)
+ * ✗ Opportunities (internal CRM)
+ */
 const BRAND_NAV_LINKS = (basePath) => [
-  { label: "Overview", to: `${basePath}`, end: true }, // Keep first - primary entry point
-  { label: "Campaigns", to: `${basePath}/campaigns` },
-  { label: "Contracts", to: `${basePath}/contracts` },
-  { label: "Email Opportunities", to: `/creator/opportunities` },
-  { label: "Financials", to: `${basePath}/financials` },
-  { label: "Messages", to: `${basePath}/messages` },
-  { label: "My Profile", to: `${basePath}/profile` },
-  { label: "Opportunities", to: `${basePath}/opportunities` },
-  { label: "Settings", to: `${basePath}/settings` }, // Keep last - standard placement
-  { label: "Socials", to: `${basePath}/socials` }
+  // Overview - Campaign summary & next steps
+  { label: "Overview", to: `${basePath}`, end: true, section: "Dashboard" },
+  
+  // Campaigns - Live, upcoming, completed
+  { label: "Campaigns", to: `${basePath}/campaigns`, section: "Campaigns" },
+  
+  // Creators - Matched creators, shortlists, AI recommendations
+  { label: "Creators", to: `${basePath}/creators`, section: "Creators" },
+  
+  // Agreements - Contracts, scopes, signatures
+  { label: "Agreements", to: `${basePath}/contracts`, section: "Agreements" },
+  
+  // Inbox - Brand ↔ The Break messages
+  { label: "Inbox", to: `${basePath}/messages`, section: "Inbox" },
+  
+  // Billing & Payments - Invoices, payment status, receipts
+  { label: "Billing & Payments", to: `${basePath}/financials`, section: "Billing" },
+  
+  // Reporting - Campaign performance, deliverables, post-campaign
+  { label: "Reporting", to: `${basePath}/reporting`, section: "Reporting" },
+  
+  // Brand Profile - Company details, contacts, preferences
+  { label: "Brand Profile", to: `${basePath}/profile`, section: "Profile" }
 ];
 
 export default function BrandDashboardLayout({ basePath = "/brand/dashboard", session }) {
@@ -64,31 +95,61 @@ export function BrandProfilePage() {
   return <BrandProfileSection />;
 }
 
-export function BrandSocialsPage() {
-  return <BrandSocialsSection />;
-}
-
 export function BrandCampaignsPage() {
   const { session } = useOutletContext() || {};
   return <BrandCampaignSection session={session} />;
 }
 
-export function BrandOpportunitiesPage() {
+export function BrandCreatorsPage() {
   const { session } = useOutletContext() || {};
-  return <BrandOpportunitiesSection session={session} />;
+  return (
+    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div>
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator management</p>
+        <h3 className="font-display text-3xl uppercase">Creators</h3>
+        <p className="mt-2 text-sm text-brand-black/70">Matched creators, shortlists, and AI recommendations</p>
+      </div>
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <p className="text-sm font-semibold text-brand-black/70">Coming soon</p>
+        <p className="mt-2 text-xs text-brand-black/50">Creator management and recommendations will be available soon.</p>
+      </div>
+    </section>
+  );
 }
 
 export function BrandContractsPage() {
   const { session } = useOutletContext() || {};
   return (
-    <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6" id="brand-contracts">
+    <section className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <ContractsPanel
         session={session}
-        title="Contracts"
+        title="Agreements"
         description="Track briefs sent for signature and monitor who has signed."
       />
     </section>
   );
+}
+
+export function BrandReportingPage() {
+  const { session } = useOutletContext() || {};
+  return (
+    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div>
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Insights</p>
+        <h3 className="font-display text-3xl uppercase">Reporting</h3>
+        <p className="mt-2 text-sm text-brand-black/70">Campaign performance, deliverables status, and post-campaign summaries</p>
+      </div>
+      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <p className="text-sm font-semibold text-brand-black/70">Coming soon</p>
+        <p className="mt-2 text-xs text-brand-black/50">Detailed reporting and performance analytics will be available soon.</p>
+      </div>
+    </section>
+  );
+}
+
+// Deprecated pages - not shown in brand menu but kept for backwards compatibility
+export function BrandSocialsPage() {
+  return <BrandSocialsSection />;
 }
 
 export function BrandFinancialsPage() {

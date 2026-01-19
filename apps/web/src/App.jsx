@@ -29,11 +29,12 @@ import BrandDashboardLayout, {
   BrandProfilePage,
   BrandSocialsPage,
   BrandCampaignsPage,
-  BrandOpportunitiesPage,
+  BrandCreatorsPage,
   BrandContractsPage,
   BrandFinancialsPage,
   BrandMessagesPage,
-  BrandSettingsPage
+  BrandSettingsPage,
+  BrandReportingPage
 } from "./pages/BrandDashboard.jsx";
 import { CreatorDashboard } from "./pages/CreatorDashboard.jsx";
 import { CreatorAccountPage } from "./pages/CreatorAccountPage.jsx";
@@ -694,28 +695,34 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           }
         >
           <Route index element={<BrandOverviewPage />} />
-          <Route path="profile" element={<BrandProfilePage />} />
-          <Route path="socials" element={<BrandSocialsPage />} />
           <Route path="campaigns" element={<BrandCampaignsPage />} />
-          <Route
-            path="opportunities"
-            element={
-              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.BRAND]}>
-                <BrandOpportunitiesPage />
-              </RoleGate>
-            }
-          />
-          <Route
-            path="contracts"
-            element={
-              <RoleGate session={session} allowed={[Roles.BRAND, Roles.ADMIN, Roles.SUPERADMIN]}>
-                <BrandContractsPage />
-              </RoleGate>
-            }
-          />
-          <Route path="financials" element={<BrandFinancialsPage />} />
+          <Route path="creators" element={<BrandCreatorsPage />} />
+          <Route path="contracts" element={<BrandContractsPage />} />
           <Route path="messages" element={<BrandMessagesPage />} />
-          <Route path="settings" element={<BrandSettingsPage />} />
+          <Route path="financials" element={<BrandFinancialsPage />} />
+          <Route path="reporting" element={<BrandReportingPage />} />
+          <Route path="profile" element={<BrandProfilePage />} />
+          
+          {/* Deprecated/restricted routes - guarded from brand users */}
+          {/* Settings: Internal only - redirect admin/superadmin, show error for brand */}
+          <Route 
+            path="settings" 
+            element={
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
+                <BrandSettingsPage />
+              </RoleGate>
+            } 
+          />
+          
+          {/* Socials: Talent feature - redirect brand users */}
+          <Route 
+            path="socials" 
+            element={
+              <RoleGate session={session} allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
+                <BrandSocialsPage />
+              </RoleGate>
+            } 
+          />
         </Route>
         <Route
           path="/admin/dashboard"
