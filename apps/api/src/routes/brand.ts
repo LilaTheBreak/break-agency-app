@@ -6,6 +6,8 @@ import { logError } from "../lib/logger.js";
 // Brand campaign workflow routers
 import campaignsRouter from "./brand/campaigns.js";
 import shortlistRouter from "./brand/shortlist.js";
+import feedbackRouter from "./brand/feedback.js";
+import reportsRouter from "./brand/reports.js";
 
 const router = express.Router();
 
@@ -458,6 +460,8 @@ router.get("/onboarding", requireAuth, async (req, res) => {
 // ============================================================================
 router.use('/campaigns', campaignsRouter);
 router.use('/shortlist', shortlistRouter);
+router.use('/feedback', feedbackRouter);
+router.use('/reports', reportsRouter);
 
 export default router;
 

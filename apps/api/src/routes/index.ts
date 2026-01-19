@@ -52,6 +52,7 @@ import socialAnalyticsRouter from './analytics/socials.js';
 // Meetings & calendar
 import meetingsRouter from './admin/meetings.js';
 import { router as outreachRouter } from './admin/outreach.js';
+import adminReportsRouter from './admin/reports.js';
 
 // ❗ You referenced these in your router but did not import them
 // import agentRouter from './agent.js';
@@ -159,6 +160,7 @@ router.use("/meetings", meetingsRouter);
 router.use(meetingsRouter); // Also mount without prefix for /api/talent/:talentId/meetings
 router.use("/outreach", outreachRouter);
 router.use(outreachRouter); // Also mount without prefix for convenience
+router.use("/admin/campaigns/:campaignId/report", adminReportsRouter);
 
 /* -------------------------------------------------------
    PROFILE ROUTES (authenticated)
