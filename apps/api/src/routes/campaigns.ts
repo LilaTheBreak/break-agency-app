@@ -369,8 +369,8 @@ function canAccessCampaign(campaign: any, userId: string, userRole: string) {
   if (isAdmin({ role: userRole })) return true;
   if (campaign.ownerId && campaign.ownerId === userId) return true;
   if (campaign.brandSummaries?.some((brand: any) => brand.id === userId)) return true;
-  // Allow talent/creator/ugc users to view campaigns (for browsing opportunities)
-  if (['CREATOR', 'UGC', 'FOUNDER'].includes(userRole)) return true;
+  // Allow all talent/creator/ugc users to view campaigns (for browsing opportunities)
+  if (['CREATOR', 'TALENT', 'EXCLUSIVE_TALENT', 'UGC', 'UGC_CREATOR', 'FOUNDER'].includes(userRole)) return true;
   return false;
 }
 
