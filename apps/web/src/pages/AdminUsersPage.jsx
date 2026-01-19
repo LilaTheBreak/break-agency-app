@@ -283,12 +283,14 @@ export function AdminUsersPage() {
       </div>
 
       <section className="rounded-3xl border border-brand-black/10 bg-brand-white overflow-hidden">
-        <table className="w-full text-left text-sm text-brand-black/80">
+        <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm text-brand-black/80 min-w-max">
           <thead>
             <tr>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[35%]">Email</th>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[20%]">Roles</th>
-              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[15%]">Joined</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[15%]">Name</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[25%]">Email</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[18%]">Roles</th>
+              <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[12%]">Joined</th>
               <th className="border-b border-brand-black/10 px-4 py-3 text-xs uppercase tracking-[0.3em] text-brand-red w-[12%]">Status</th>
               <th className="border-b border-brand-black/10 px-4 py-3 text-right w-[18%]">
                 {!showArchived && (
@@ -304,11 +306,11 @@ export function AdminUsersPage() {
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan="5" className="p-4 text-center text-brand-black/60">Loading users...</td></tr>}
-            {error && <tr><td colSpan="5" className="p-4 text-center text-brand-black/60">{error}</td></tr>}
+            {loading && <tr><td colSpan="6" className="p-4 text-center text-brand-black/60">Loading users...</td></tr>}
+            {error && <tr><td colSpan="6" className="p-4 text-center text-brand-black/60">{error}</td></tr>}
             {!loading && !error && filteredUsers.length === 0 && (
               <tr>
-                <td colSpan="5" className="p-4 text-center text-brand-black/60">
+                <td colSpan="6" className="p-4 text-center text-brand-black/60">
                   {showArchived ? "No archived users" : "No users found"}
                 </td>
               </tr>
@@ -319,6 +321,7 @@ export function AdminUsersPage() {
               
               return (
                 <tr key={user.id} className="border-b border-brand-black/5 hover:bg-brand-linen/30 transition-colors">
+                  <td className="px-4 py-3 truncate">{user.name || "—"}</td>
                   <td className="px-4 py-3 truncate">{user.email || "—"}</td>
                   <td className="px-4 py-3 capitalize">
                     {Array.isArray(user.roles) && user.roles.length > 0 
@@ -364,6 +367,7 @@ export function AdminUsersPage() {
             })}
           </tbody>
         </table>
+        </div>
       </section>
 
       {/* Edit User Drawer */}
