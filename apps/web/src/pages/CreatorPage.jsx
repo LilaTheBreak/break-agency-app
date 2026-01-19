@@ -98,17 +98,17 @@ export function CreatorPage({ onRequestSignIn }) {
           <p className="max-w-2xl text-sm text-slate-600">
             Create a profile, get approved, and apply to paid brand campaigns — with clarity, protection, and support.
           </p>
-          <div className="flex flex-col gap-2 pt-3 sm:flex-row sm:flex-wrap">
+          <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:gap-3">
             <button
               type="button"
               onClick={onRequestSignIn}
-              className="w-full rounded-full bg-slate-900 px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90 sm:w-auto"
+              className="w-full rounded-full bg-slate-900 px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-slate-900/90 transition-colors sm:w-auto"
             >
               Create your profile
             </button>
             <a
               href="#opportunities-preview"
-              className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 underline-offset-4 hover:text-brand-red"
+              className="w-full rounded-full border-2 border-slate-900 px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.35em] text-slate-900 hover:bg-slate-900 hover:text-white transition-colors sm:w-auto"
             >
               Browse opportunities
             </a>
