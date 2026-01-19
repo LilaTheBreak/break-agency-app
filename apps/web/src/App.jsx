@@ -36,6 +36,11 @@ import BrandDashboardLayout, {
   BrandSettingsPage
 } from "./pages/BrandDashboard.jsx";
 import { CreatorDashboard } from "./pages/CreatorDashboard.jsx";
+import { CreatorAccountPage } from "./pages/CreatorAccountPage.jsx";
+import { CreatorAgentPage } from "./pages/CreatorAgentPage.jsx";
+import { CreatorCampaignsPage } from "./pages/CreatorCampaignsPage.jsx";
+import { CreatorContractsPage } from "./pages/CreatorContractsPage.jsx";
+import { CreatorMessagesPage } from "./pages/CreatorMessagesPage.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
 import { AdminActivityPage } from "./pages/AdminActivity.jsx";
 import ExclusiveTalentDashboardLayout, {
@@ -587,6 +592,66 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <CreatorDashboard session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/account"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <CreatorAccountPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/agent"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <CreatorAgentPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/campaigns"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <CreatorCampaignsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/contracts"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <CreatorContractsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/messages"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <CreatorMessagesPage session={session} />
             </ProtectedRoute>
           }
         />

@@ -133,13 +133,13 @@ export const CONTROL_ROOM_PRESETS = {
     title: "Talent Control Room",
     subtitle: "See what a vetted creator experiences — briefs, revenue, and automations in one place.",
     tabs: [
-      { label: "Overview", anchor: "#creator-overview", default: true }, // Keep first - default tab
-      { label: "Account", anchor: "#creator-account" },
-      { label: "Agent", anchor: "#creator-agent" },
-      { label: "Campaigns", anchor: "#creator-campaigns" },
-      { label: "Contracts", anchor: "#creator-contracts" },
-      { label: "Messages", anchor: "#creator-messages" },
-      { label: "Opportunities", anchor: "#creator-opportunities" }
+      { label: "Overview", to: "/creator/dashboard" },
+      { label: "Account", to: "/creator/account" },
+      { label: "Agent", to: "/creator/agent" },
+      { label: "Campaigns", to: "/creator/campaigns" },
+      { label: "Contracts", to: "/creator/contracts" },
+      { label: "Messages", to: "/creator/messages" },
+      { label: "Opportunities", to: "/creator/opportunities" }
     ],
     metrics: [],  // Populated dynamically from real data
     queue: {
