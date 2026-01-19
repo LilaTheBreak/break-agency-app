@@ -57,7 +57,7 @@ export const BrandCampaignReportView: React.FC<{
   const fetchReport = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/brand/reports/campaigns/${campaignId}/report`);
+      const response = await axios.get(`/api/brand/reports/${campaignId}`);
       setReportData(response.data);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to load report');

@@ -49,7 +49,7 @@ export const BrandFeedbackForm: React.FC<{
 
     try {
       const response = await axios.post(
-        `/api/brand/feedback/campaigns/${campaignId}/feedback`,
+        `/api/brand/feedback/${campaignId}/feedback`,
         {
           feedbackType,
           content,
