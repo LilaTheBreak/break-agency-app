@@ -12,6 +12,7 @@ import { VersionHistoryCard } from "../components/VersionHistoryCard.jsx";
 import { MultiBrandCampaignCard } from "../components/MultiBrandCampaignCard.jsx";
 import { OnboardingSnapshot } from "../components/OnboardingSnapshot.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
+import { useRevenue } from "../hooks/useAnalytics.js";
 import { Roles } from "../auth/session.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
