@@ -121,7 +121,17 @@ export async function apiFetch(path, options = {}) {
         console.warn(`[API] CORS or permission issue for /auth/me - this is expected if not logged in`);
       } else {
         console.error(`[API] 403 Permission denied for ${path}`);
-        toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
+        // Try to get specific error message from response
+        try {
+          const errorData = await response.clone().json();
+          if (errorData.error) {
+            toast.error(`Permission denied: ${errorData.error}`);
+          } else {
+            toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
+          }
+        } catch {
+          toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
+        }
       }
     } else if (response.status === 404) {
       // Silent for 404s - often expected (checking if resource exists)
