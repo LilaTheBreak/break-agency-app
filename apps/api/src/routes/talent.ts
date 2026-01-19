@@ -32,11 +32,11 @@ router.get("/socials", async (req: Request, res: Response) => {
         id: true,
         platform: true,
         handle: true,
-        followers: true,
-        connectedAt: true,
-        lastSyncedAt: true
+        profileUrl: true,
+        createdAt: true,
+        updatedAt: true
       },
-      orderBy: { connectedAt: "desc" }
+      orderBy: { createdAt: "desc" }
     });
 
     console.log(`[TALENT SOCIALS] Found ${socialConnections.length} connected platforms`);
@@ -47,9 +47,10 @@ router.get("/socials", async (req: Request, res: Response) => {
         id: platform.id,
         platform: platform.platform,
         handle: platform.handle,
-        followers: platform.followers || 0,
-        connectedAt: platform.connectedAt,
-        lastSyncedAt: platform.lastSyncedAt
+        url: platform.profileUrl,
+        followers: 0, // TODO: Fetch from actual platform API
+        connectedAt: platform.createdAt,
+        lastSyncedAt: platform.updatedAt
       }))
     });
   } catch (error) {
