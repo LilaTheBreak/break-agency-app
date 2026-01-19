@@ -327,4 +327,82 @@ router.post("/creators/:talentId/request-campaign", requireAuth, async (req, res
   }
 });
 
+/**
+ * PATCH /api/brand/onboarding
+ * 
+ * Mark onboarding step as complete
+ */
+router.patch("/onboarding", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { completedStep } = req.body;
+
+    if (!userId || !completedStep) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const validSteps = ["profile", "billing", "goals", "creators", "approve"];
+    if (!validSteps.includes(completedStep)) {
+      return res.status(400).json({ error: "Invalid onboarding step" });
+    }
+
+    // Get brand and update onboarding
+    const brand = await prisma.brand.findUnique({
+      where: { userId },
+      select: { id: true, onboardingStatus: true }
+    });
+
+    if (!brand) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+
+    // Parse current status (stored as JSON)
+    let onboardingStatus = brand.onboardingStatus as Record<string, boolean> || {};
+    onboardingStatus[completedStep] = true;
+
+    // Update brand
+    const updated = await prisma.brand.update({
+      where: { id: brand.id },
+      data: {
+        onboardingStatus: onboardingStatus as any
+      },
+      select: { id: true, onboardingStatus: true }
+    });
+
+    console.log(`[BRAND] PATCH /onboarding - Brand ${brand.id} completed step: ${completedStep}`);
+    res.json({ success: true, onboardingStatus: updated.onboardingStatus });
+  } catch (error) {
+    logError(error, "BRAND_ONBOARDING_UPDATE_FAILED");
+    res.status(500).json({ error: "Failed to update onboarding" });
+  }
+});
+
+/**
+ * GET /api/brand/onboarding
+ * 
+ * Get brand's onboarding status
+ */
+router.get("/onboarding", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const brand = await prisma.brand.findUnique({
+      where: { userId },
+      select: { id: true, onboardingStatus: true }
+    });
+
+    if (!brand) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+
+    console.log(`[BRAND] GET /onboarding - Brand ${brand.id}`);
+    res.json(brand.onboardingStatus || {});
+  } catch (error) {
+    logError(error, "BRAND_ONBOARDING_FETCH_FAILED");
+    res.status(500).json({ error: "Failed to fetch onboarding status" });
+  }
+});
+
 export default router;
+

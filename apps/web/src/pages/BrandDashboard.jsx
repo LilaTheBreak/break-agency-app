@@ -19,6 +19,7 @@ import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
 import { OpportunitiesCard } from "../components/OpportunitiesCard.jsx";
 import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
 import { ContractsPanel } from "../components/ContractsPanel.jsx";
+import { BrandOnboardingChecklist } from "../components/BrandOnboardingChecklist.jsx";
 
 // Creator roster - guarded by feature flag CREATOR_ROSTER_ENABLED
 const CREATOR_ROSTER = [];
@@ -410,6 +411,24 @@ function BrandOverviewSection({ session }) {
   // Use analytics hooks for real data
   const { data: revenueData, loading: revenueLoading } = useRevenue('Month');
   const { data: metricsData, loading: metricsLoading } = useMetrics();
+  const [onboardingStatus, setOnboardingStatus] = useState({});
+
+  // Fetch onboarding status
+  useEffect(() => {
+    fetchOnboarding();
+  }, []);
+
+  const fetchOnboarding = async () => {
+    try {
+      const response = await apiFetch("/api/brand/onboarding");
+      if (response.ok) {
+        const data = await response.json();
+        setOnboardingStatus(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch onboarding status:", error);
+    }
+  };
 
   const overview = {
     description:
@@ -425,7 +444,17 @@ function BrandOverviewSection({ session }) {
   };
 
   return (
-    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+    <section className="space-y-6">
+      {/* Onboarding Checklist - Show if incomplete */}
+      {Object.keys(onboardingStatus).length < 5 && (
+        <BrandOnboardingChecklist 
+          onboarding={onboardingStatus}
+          onComplete={fetchOnboarding}
+        />
+      )}
+
+      {/* Overview Section */}
+      <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
       <AiAssistantCard
         session={session}
         role="brand"
@@ -517,6 +546,7 @@ function BrandOverviewSection({ session }) {
           </div>
         )}
       </div>
+      </section>
     </section>
   );
 }
