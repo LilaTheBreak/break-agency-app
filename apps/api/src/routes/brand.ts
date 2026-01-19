@@ -3,6 +3,10 @@ import { requireAuth } from "../middleware/auth.js";
 import prisma from "../lib/prisma.js";
 import { logError } from "../lib/logger.js";
 
+// Brand campaign workflow routers
+import campaignsRouter from "./brand/campaigns.js";
+import shortlistRouter from "./brand/shortlist.js";
+
 const router = express.Router();
 
 /**
@@ -448,6 +452,12 @@ router.get("/onboarding", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch onboarding status" });
   }
 });
+
+// ============================================================================
+// BRAND CAMPAIGN WORKFLOW ROUTES
+// ============================================================================
+router.use('/campaigns', campaignsRouter);
+router.use('/shortlist', shortlistRouter);
 
 export default router;
 
