@@ -510,15 +510,44 @@ model CrmCampaign {
   linkedEventIds    String[]  @default([])
   activity          Json[]    @default([])
   lastActivityAt    DateTime?
+  
+  // BRAND SUBMISSION TRACKING (NEW)
+  submittedByUserId    String?           // FK to User (brand creator)
+  submissionSource     String            @default("ADMIN_CREATED")  // BRAND_PORTAL | ADMIN_CREATED
+  approvalStatus       String            @default("PENDING_ADMIN_REVIEW")  // PENDING_ADMIN_REVIEW | APPROVED | REVISION_REQUESTED | REJECTED
+  
+  // BRAND-PROVIDED PREFERENCES (NEW)
+  budgetRange          String?           // "£5K-£10K" etc
+  campaignObjective    String?           // AWARENESS | CONVERSION | LAUNCH | EVENT
+  platforms            String[]          @default([])  // [Instagram, TikTok, YouTube]
+  targetRegion         String[]          @default([])  // [UK, US, EU]
+  contentVerticals     String[]          @default([])  // [Fashion, Tech, Beauty, etc]
+  audiencePreferences  Json?             // { ageRange?: string, interests?: string[] }
+  creatorSizeRange     String?           // NANO | MICRO | MID | MACRO
+  
+  // TIMELINE (NEW)
+  preferredStartDate   DateTime?
+  preferredEndDate     DateTime?
+  flexibilityToggle    Boolean           @default(true)  // fixed vs flexible
+  
+  // RELATIONS (NEW)
+  CreatorShortlist     CreatorShortlist[]
+  CampaignApprovals    CampaignApproval[]
+  CampaignFeedback     CampaignFeedback[]
+  CampaignReport       CampaignReport?
+  
   createdAt         DateTime  @default(now())
   updatedAt         DateTime
   Brand             Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  SubmittedByUser   User?     @relation("CampaignSubmittedBy", fields: [submittedByUserId], references: [id], onDelete: SetNull)
   CrmTask           CrmTask[]
 
   @@index([brandId])
   @@index([lastActivityAt])
   @@index([owner])
   @@index([status])
+  @@index([approvalStatus])
+  @@index([submittedByUserId])
 }
 
 model CrmTask {
@@ -1619,6 +1648,7 @@ model Talent {
   TravelInfo              TalentTravelInfo?
   BrandPreferences        TalentBrandPreferences?
   InternalNotes           TalentInternalNotes?
+  CreatorShortlist        CreatorShortlist[]     @relation("ShortlistTalent")
   Consent                 TalentConsent?
   Files                   TalentFile[]
   Meetings                Meeting[]
@@ -1869,6 +1899,15 @@ model User {
   BrandUsers                              BrandUser[]
   TalentFilesUploaded                     TalentFile[]            @relation("TalentFileUploader")
   MeetingsCreated                         Meeting[]               @relation("MeetingCreator")
+  
+  // BRAND CAMPAIGN WORKFLOW RELATIONS (NEW)
+  CampaignsSubmitted                      CrmCampaign[]           @relation("CampaignSubmittedBy")
+  ShortlistsAddedBy                       CreatorShortlist[]      @relation("ShortlistAddedBy")
+  ShortlistsApprovedBy                    CreatorShortlist[]      @relation("ShortlistBrandApprovedBy")
+  ShortlistsOverrideBy                    CreatorShortlist[]      @relation("ShortlistAdminOverrideBy")
+  CampaignApprovalsActedOn                CampaignApproval[]      @relation("CampaignApprovalActor")
+  CampaignFeedbackSubmitted               CampaignFeedback[]      @relation("CampaignFeedbackSubmittedBy")
+  ReportsApprovedBy                       CampaignReport[]        @relation("ReportApprovedBy")
 }
 
 model WellnessCheckin {
@@ -3517,6 +3556,109 @@ model TalentBlackoutDate {
   @@index([talentId])
   @@index([startDate, endDate])
   @@index([createdAt])
+}
+
+// ============================================================================
+// BRAND CAMPAIGN WORKFLOW MODELS
+// ============================================================================
+
+// Track curated creator list with approval state
+model CreatorShortlist {
+  id                      String   @id @default(cuid())
+  campaignId              String
+  talentId                String
+  
+  // Admin curation
+  adminNotes              String?           // Internal notes (hidden from brand)
+  aiExplanation           String?           // "Why this creator fits" (shown to brand)
+  addedByAdminId          String
+  
+  // Brand approval state
+  brandApprovalStatus     String @default("PENDING_BRAND_APPROVAL")  // PENDING_BRAND_APPROVAL | APPROVED | REJECTED | REVISION_REQUESTED
+  brandApprovedAt         DateTime?
+  brandApprovedByUserId   String?
+  
+  // Admin override
+  adminOverrideReason     String?           // If admin overrides brand rejection
+  adminOverrideAt         DateTime?
+  adminOverrideByUserId   String?
+  
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  
+  Campaign                CrmCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  Talent                  Talent @relation("ShortlistTalent", fields: [talentId], references: [id], onDelete: Cascade)
+  AddedByAdmin            User @relation("ShortlistAddedBy", fields: [addedByAdminId], references: [id])
+  BrandApprovedBy         User? @relation("ShortlistBrandApprovedBy", fields: [brandApprovedByUserId], references: [id])
+  AdminOverrideBy         User? @relation("ShortlistAdminOverrideBy", fields: [adminOverrideByUserId], references: [id])
+  
+  @@unique([campaignId, talentId])
+  @@index([campaignId])
+  @@index([talentId])
+  @@index([brandApprovalStatus])
+}
+
+// Track all approval/override/feedback events
+model CampaignApproval {
+  id              String   @id @default(cuid())
+  campaignId      String
+  action          String   // "BRAND_APPROVED" | "BRAND_REJECTED" | "ADMIN_OVERRIDE" | "FEEDBACK_SUBMITTED"
+  actorId         String   // User who took action
+  actorRole       String   // "BRAND" | "ADMIN"
+  reason          String?  // Provided reason (especially for overrides)
+  metadata        Json?    // Additional context (e.g., shortlist IDs affected)
+  createdAt       DateTime @default(now())
+  
+  Campaign        CrmCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  Actor           User @relation("CampaignApprovalActor", fields: [actorId], references: [id])
+  
+  @@index([campaignId])
+  @@index([createdAt])
+  @@index([actorRole, action])
+}
+
+// Store brand feedback for AI learning
+model CampaignFeedback {
+  id              String   @id @default(cuid())
+  campaignId      String
+  shortlistId     String?  // Specific shortlist item if feedback on creator
+  feedbackType    String   // "APPROVAL" | "REJECTION" | "PREFERENCE" | "CONCERN"
+  content         String
+  signals         String[] @default([])  // AI learning signals: ["good_fit", "audience_mismatch", etc]
+  submittedByUserId String
+  submittedAt     DateTime @default(now())
+  
+  Campaign        CrmCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  SubmittedBy     User @relation("CampaignFeedbackSubmittedBy", fields: [submittedByUserId], references: [id])
+  
+  @@index([campaignId])
+  @@index([feedbackType])
+  @@index([submittedByUserId])
+}
+
+// Store AI-generated post-campaign reports
+model CampaignReport {
+  id              String   @id @default(cuid())
+  campaignId      String   @unique
+  
+  reportContent   Json     // Generated report (JSON to support rich formatting)
+  tone            String @default("confident")  // Brand-safe tone
+  
+  generatedAt     DateTime @default(now())
+  approvedByAdminId String?
+  approvedAt      DateTime?
+  
+  releasedAt      DateTime?
+  viewedByBrandAt DateTime?
+  
+  updatedAt       DateTime @updatedAt
+  
+  Campaign        CrmCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ApprovedByAdmin User? @relation("ReportApprovedBy", fields: [approvedByAdminId], references: [id])
+  
+  @@index([campaignId])
+  @@index([approvedAt])
+  @@index([releasedAt])
 }
 
 // ============================================================================
