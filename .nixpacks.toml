@@ -14,7 +14,9 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "echo 'Building API server only - web app deployed to Vercel'",
+  "echo 'Clearing build caches...'",
+  "rm -rf apps/web/dist apps/web/.vite node_modules/.vite dist .next",
+  "echo 'Building API server...'",
   "pnpm install",
   "pnpm --filter @breakagency/shared build",
   "pnpm --filter @breakagency/api exec prisma generate --schema=./prisma/schema.prisma",
