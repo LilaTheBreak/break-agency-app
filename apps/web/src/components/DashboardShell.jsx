@@ -119,6 +119,10 @@ export function DashboardShell({
   // Reset scroll position when navigation changes to prevent auto-collapse
   useEffect(() => {
     window.scrollTo(0, 0);
+    setNavCollapsed(false); // Ensure nav opens on navigation
+    setUserToggledNav(true); // Prevent auto-collapse for 5s after navigation
+    const timer = setTimeout(() => setUserToggledNav(false), 5000);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   const showApprovalHold = isAwaitingApproval(user);

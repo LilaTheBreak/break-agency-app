@@ -1,7 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 
 export function CreatorCalendarPage({ session }) {
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
+
+  const handleGoogleCalendarConnect = async () => {
+    setIsConnecting(true);
+    try {
+      // TODO: Implement actual Google Calendar connection
+      // This would typically redirect to Google OAuth or call an auth endpoint
+      setConnected(true);
+    } catch (error) {
+      console.error("Failed to connect calendar:", error);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   return (
     <DashboardShell
       title="Calendar"
@@ -9,6 +25,34 @@ export function CreatorCalendarPage({ session }) {
       role={session?.user?.role}
     >
       <div className="space-y-6">
+        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+          <h2 className="text-xl font-semibold text-brand-black">Calendar Sync</h2>
+          <p className="mt-2 text-sm text-brand-black/70">
+            Connect your calendar to automatically sync campaign deadlines and important dates.
+          </p>
+          <div className="mt-6 space-y-3">
+            <div className="rounded-xl bg-brand-linen/40 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-brand-black">Google Calendar</p>
+                  <p className="text-sm text-brand-black/60">Sync deadlines with your Google Calendar</p>
+                </div>
+                <button
+                  onClick={handleGoogleCalendarConnect}
+                  disabled={isConnecting || connected}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    connected
+                      ? "bg-green-100 text-green-700 cursor-default"
+                      : "bg-brand-red text-white hover:bg-brand-red/90 disabled:opacity-50"
+                  }`}
+                >
+                  {isConnecting ? "Connecting..." : connected ? "✓ Connected" : "Connect"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
           <h2 className="text-xl font-semibold text-brand-black">Your Schedule</h2>
           <p className="mt-2 text-sm text-brand-black/70">
