@@ -84,11 +84,13 @@ router.get("/", async (req: Request, res: Response) => {
         avatarUrl: true,
         role: true,
         createdAt: true,
+        onboarding_status: true,
+        status: true,
       },
       orderBy: { createdAt: "desc" }
     });
     console.log(`✅ Found ${users.length} users`);
-    res.json({ users });
+    res.json(users);
   } catch (error) {
     console.error("❌ Error loading users:", error);
     res.status(500).json({ error: "Could not load users." });
