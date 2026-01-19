@@ -300,4 +300,102 @@ router.get('/:campaignId', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/brand/campaigns/:campaignId/feedback
+ * 
+ * Brand submits feedback about campaign preferences or performance
+ * Stores learning signals for AI to improve future recommendations
+ * 
+ * Body:
+ * {
+ *   feedbackType: "APPROVAL" | "REJECTION" | "PREFERENCE" | "CONCERN"
+ *   content: string (detailed feedback)
+ *   signals: string[] (e.g., ["good_fit", "audience_mismatch", "budget_constraint"])
+ * }
+ */
+router.post('/:campaignId/feedback', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { campaignId } = req.params;
+    const { feedbackType, content, signals } = req.body;
+
+    if (user?.role !== 'BRAND') {
+      return res.status(403).json({ 
+        error: 'Only brand users can submit feedback.' 
+      });
+    }
+
+    const brandUser = await prisma.brandUser.findFirst({
+      where: { userId: user.id }
+    });
+
+    if (!brandUser) {
+      return res.status(403).json({ 
+        error: 'You are not linked to any brand. Contact your admin to link you to a brand.' 
+      });
+    }
+
+    // Verify campaign belongs to this brand
+    const campaign = await prisma.crmCampaign.findFirst({
+      where: {
+        id: campaignId,
+        brandId: brandUser.brandId
+      }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    if (!feedbackType || !content) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: feedbackType, content' 
+      });
+    }
+
+    // Create feedback record
+    const feedback = await prisma.campaignFeedback.create({
+      data: {
+        id: `feedback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        campaignId,
+        feedbackType: feedbackType as any,
+        content,
+        signals: signals || [],
+        submittedByUserId: user.id,
+        submittedAt: new Date()
+      }
+    });
+
+    // Log action
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        userEmail: user.email,
+        userRole: 'BRAND',
+        action: 'BRAND_CAMPAIGN_FEEDBACK_SUBMITTED',
+        entityType: 'CampaignFeedback',
+        entityId: feedback.id,
+        metadata: {
+          campaignId,
+          feedbackType,
+          signals
+        }
+      }
+    });
+
+    console.log(`[BRAND CAMPAIGNS] Feedback submitted for campaign ${campaignId} by user ${user.id}`);
+
+    res.status(201).json({
+      feedbackId: feedback.id,
+      campaignId,
+      feedbackType,
+      submittedAt: feedback.submittedAt
+    });
+
+  } catch (error) {
+    console.error('[BRAND CAMPAIGNS] Error submitting feedback:', error);
+    res.status(500).json({ error: 'Failed to submit feedback' });
+  }
+});
+
 export default router;

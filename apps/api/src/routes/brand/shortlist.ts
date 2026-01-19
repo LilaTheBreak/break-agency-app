@@ -1,6 +1,11 @@
 import { Router, type Request, type Response } from 'express';
 import prisma from '../../lib/prisma.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { 
+  generateCampaignReport, 
+  saveCampaignReport, 
+  releaseCampaignReport 
+} from '../../services/campaignReportService.js';
 
 const router = Router();
 
@@ -611,6 +616,420 @@ router.put('/brand/shortlist/:shortlistId/revise', requireAuth, async (req: Requ
   } catch (error) {
     console.error('[SHORTLIST] Error requesting revision:', error);
     res.status(500).json({ error: 'Failed to request revision' });
+  }
+});
+
+// ============================================================================
+// ADMIN REPORT ENDPOINTS — Generate, approve, and release campaign reports
+// ============================================================================
+
+/**
+ * POST /api/admin/campaigns/:campaignId/generate-report
+ * 
+ * Admin generates an AI-written campaign report
+ * Analyzes: campaign data, creator approvals, brand feedback
+ * Report is brand-safe (no internal notes, earnings, etc)
+ * Report status: DRAFT (pending admin approval)
+ */
+router.post('/admin/campaigns/:campaignId/generate-report', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { campaignId } = req.params;
+
+    // Guard: Only ADMIN role can generate reports
+    if (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN') {
+      return res.status(403).json({ 
+        error: 'Only admins can generate campaign reports.' 
+      });
+    }
+
+    // Verify campaign exists
+    const campaign = await prisma.crmCampaign.findUnique({
+      where: { id: campaignId }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    // Generate report content (AI analysis)
+    const reportContent = await generateCampaignReport(campaignId, user.id);
+
+    // Save report in DRAFT status (not yet approved for brand)
+    const report = await prisma.campaignReport.upsert({
+      where: { campaignId },
+      update: {
+        reportContent,
+        generatedAt: new Date()
+      },
+      create: {
+        id: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        campaignId,
+        reportContent,
+        tone: 'PROFESSIONAL',
+        generatedAt: new Date()
+        // Note: NOT setting approvedByAdminId or approvedAt - status is DRAFT
+      }
+    });
+
+    // Log action
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        userRole: 'ADMIN',
+        action: 'CAMPAIGN_REPORT_GENERATED',
+        entityType: 'CampaignReport',
+        entityId: report.id,
+        metadata: {
+          campaignId,
+          reportSummary: reportContent.executiveSummary
+        }
+      }
+    });
+
+    console.log(`[ADMIN REPORTS] Report generated for campaign ${campaignId}`);
+
+    res.status(201).json({
+      reportId: report.id,
+      campaignId,
+      status: 'DRAFT',
+      reportContent,
+      generatedAt: report.generatedAt,
+      message: 'Report generated. Review and approve to release to brand.'
+    });
+
+  } catch (error) {
+    console.error('[ADMIN REPORTS] Error generating report:', error);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
+/**
+ * GET /api/admin/campaigns/:campaignId/report
+ * 
+ * Admin views draft or approved campaign report
+ * Includes edit status and approval workflow info
+ */
+router.get('/admin/campaigns/:campaignId/report', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { campaignId } = req.params;
+
+    // Guard: Only ADMIN role
+    if (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN') {
+      return res.status(403).json({ 
+        error: 'Only admins can view campaign reports.' 
+      });
+    }
+
+    const report = await prisma.campaignReport.findUnique({
+      where: { campaignId },
+      include: {
+        ApprovedByAdmin: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    res.json({
+      reportId: report.id,
+      campaignId,
+      reportContent: report.reportContent,
+      status: report.approvedAt ? 'APPROVED' : (report.releasedAt ? 'RELEASED' : 'DRAFT'),
+      generatedAt: report.generatedAt,
+      approvedAt: report.approvedAt,
+      approvedByAdmin: report.ApprovedByAdmin,
+      releasedAt: report.releasedAt
+    });
+
+  } catch (error) {
+    console.error('[ADMIN REPORTS] Error fetching report:', error);
+    res.status(500).json({ error: 'Failed to fetch report' });
+  }
+});
+
+/**
+ * PUT /api/admin/campaigns/:campaignId/report
+ * 
+ * Admin edits draft report content before approval
+ * Only allowed in DRAFT status
+ */
+router.put('/admin/campaigns/:campaignId/report', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { campaignId } = req.params;
+    const { reportContent } = req.body;
+
+    // Guard: Only ADMIN role
+    if (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN') {
+      return res.status(403).json({ 
+        error: 'Only admins can edit campaign reports.' 
+      });
+    }
+
+    const report = await prisma.campaignReport.findUnique({
+      where: { campaignId }
+    });
+
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    // Only allow edits if not approved yet
+    if (report.approvedAt) {
+      return res.status(400).json({ 
+        error: 'Cannot edit approved reports. Create new version instead.' 
+      });
+    }
+
+    const updated = await prisma.campaignReport.update({
+      where: { campaignId },
+      data: {
+        reportContent
+      }
+    });
+
+    // Log action
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        userRole: 'ADMIN',
+        action: 'CAMPAIGN_REPORT_EDITED',
+        entityType: 'CampaignReport',
+        entityId: report.id,
+        metadata: { campaignId }
+      }
+    });
+
+    res.json({
+      reportId: updated.id,
+      status: 'DRAFT',
+      reportContent: updated.reportContent,
+      message: 'Report updated. Review and then approve to release.'
+    });
+
+  } catch (error) {
+    console.error('[ADMIN REPORTS] Error editing report:', error);
+    res.status(500).json({ error: 'Failed to edit report' });
+  }
+});
+
+/**
+ * POST /api/admin/campaigns/:campaignId/report/approve
+ * 
+ * Admin approves draft report
+ * After approval, report can be released to brand
+ */
+router.post('/admin/campaigns/:campaignId/report/approve', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { campaignId } = req.params;
+
+    // Guard: Only ADMIN role
+    if (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN') {
+      return res.status(403).json({ 
+        error: 'Only admins can approve campaign reports.' 
+      });
+    }
+
+    const report = await prisma.campaignReport.findUnique({
+      where: { campaignId }
+    });
+
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    if (report.approvedAt) {
+      return res.status(400).json({ 
+        error: 'Report already approved.' 
+      });
+    }
+
+    // Approve report
+    const approved = await prisma.campaignReport.update({
+      where: { campaignId },
+      data: {
+        approvedByAdminId: user.id,
+        approvedAt: new Date()
+      }
+    });
+
+    // Log action
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        userRole: 'ADMIN',
+        action: 'CAMPAIGN_REPORT_APPROVED',
+        entityType: 'CampaignReport',
+        entityId: report.id,
+        metadata: { campaignId }
+      }
+    });
+
+    console.log(`[ADMIN REPORTS] Report approved for campaign ${campaignId}`);
+
+    res.json({
+      reportId: approved.id,
+      status: 'APPROVED',
+      approvedAt: approved.approvedAt,
+      message: 'Report approved. You can now release it to the brand.'
+    });
+
+  } catch (error) {
+    console.error('[ADMIN REPORTS] Error approving report:', error);
+    res.status(500).json({ error: 'Failed to approve report' });
+  }
+});
+
+/**
+ * POST /api/admin/campaigns/:campaignId/report/release
+ * 
+ * Admin releases approved report to brand user
+ * Brand can then view report via GET /api/brand/campaigns/:id/report
+ */
+router.post('/admin/campaigns/:campaignId/report/release', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { campaignId } = req.params;
+
+    // Guard: Only ADMIN role
+    if (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN') {
+      return res.status(403).json({ 
+        error: 'Only admins can release campaign reports.' 
+      });
+    }
+
+    const report = await prisma.campaignReport.findUnique({
+      where: { campaignId }
+    });
+
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    if (!report.approvedAt) {
+      return res.status(400).json({ 
+        error: 'Cannot release unapproved reports. Approve first.' 
+      });
+    }
+
+    if (report.releasedAt) {
+      return res.status(400).json({ 
+        error: 'Report already released.' 
+      });
+    }
+
+    // Release report
+    const released = await releaseCampaignReport(campaignId, user.id);
+
+    console.log(`[ADMIN REPORTS] Report released to brand for campaign ${campaignId}`);
+
+    res.json({
+      reportId: released.id,
+      status: 'RELEASED',
+      releasedAt: released.releasedAt,
+      message: 'Report released to brand. They can now view it.'
+    });
+
+  } catch (error) {
+    console.error('[ADMIN REPORTS] Error releasing report:', error);
+    res.status(500).json({ error: 'Failed to release report' });
+  }
+});
+
+// ============================================================================
+// BRAND REPORT ENDPOINTS — View approved reports
+// ============================================================================
+
+/**
+ * GET /api/brand/campaigns/:campaignId/report
+ * 
+ * Brand views approved campaign report
+ * Only available after admin releases report
+ * Tracks when brand views report
+ */
+router.get('/brand/campaigns/:campaignId/report', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { campaignId } = req.params;
+
+    // Guard: Brand role only
+    if (user?.role !== 'BRAND') {
+      return res.status(403).json({ 
+        error: 'Only brand users can view campaign reports.' 
+      });
+    }
+
+    // Verify brand access to campaign
+    const brandUser = await prisma.brandUser.findFirst({
+      where: { userId: user.id }
+    });
+
+    if (!brandUser) {
+      return res.status(403).json({ 
+        error: 'You are not linked to any brand.' 
+      });
+    }
+
+    // Verify campaign belongs to brand
+    const campaign = await prisma.crmCampaign.findFirst({
+      where: {
+        id: campaignId,
+        brandId: brandUser.brandId
+      }
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    // Fetch report (must be released)
+    const report = await prisma.campaignReport.findUnique({
+      where: { campaignId }
+    });
+
+    if (!report) {
+      return res.status(404).json({ 
+        error: 'Report not available yet. Admin is still preparing it.' 
+      });
+    }
+
+    if (!report.releasedAt) {
+      return res.status(403).json({ 
+        error: 'Report not yet released. Contact admin for availability.' 
+      });
+    }
+
+    // Update view timestamp
+    const updated = await prisma.campaignReport.update({
+      where: { campaignId },
+      data: {
+        viewedByBrandAt: new Date()
+      }
+    });
+
+    res.json({
+      reportId: report.id,
+      campaignId,
+      reportContent: report.reportContent,
+      generatedAt: report.generatedAt,
+      releasedAt: report.releasedAt,
+      viewedAt: updated.viewedByBrandAt,
+      message: 'Campaign report ready for review.'
+    });
+
+  } catch (error) {
+    console.error('[BRAND REPORTS] Error fetching report:', error);
+    res.status(500).json({ error: 'Failed to fetch report' });
   }
 });
 
