@@ -37,7 +37,7 @@ router.get("/creators", requireAuth, async (req, res) => {
 
     if (!brandUser) {
       console.log(`[BRAND] GET /creators - No brand found for user ${userId}`);
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
     const limit = Math.min(parseInt((req.query.limit as string) || "20"), 50);
@@ -120,7 +120,7 @@ router.get("/creators/saved", requireAuth, async (req, res) => {
     });
 
     if (!brandUser) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
     // Fetch saved talents
@@ -207,7 +207,7 @@ router.post("/creators/saved", requireAuth, async (req, res) => {
     });
 
     if (!brandUser) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
     // Verify talent exists
@@ -270,7 +270,7 @@ router.delete("/creators/saved/:talentId", requireAuth, async (req, res) => {
     });
 
     if (!brandUser) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
     // Delete saved talent entry
@@ -318,7 +318,7 @@ router.post("/creators/:talentId/request-campaign", requireAuth, async (req, res
     });
 
     if (!brandUser) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
     // Verify creator exists and is active
@@ -384,7 +384,7 @@ router.patch("/onboarding", requireAuth, async (req, res) => {
     });
 
     if (!brandUser) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
     // Get brand to check for existing onboarding status
@@ -394,7 +394,7 @@ router.patch("/onboarding", requireAuth, async (req, res) => {
     });
 
     if (!brand) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "Brand access denied" });
     }
 
     // For now, just log the update
@@ -426,7 +426,7 @@ router.get("/onboarding", requireAuth, async (req, res) => {
     });
 
     if (!brandUser) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
     const brand = await prisma.brand.findUnique({
@@ -435,7 +435,7 @@ router.get("/onboarding", requireAuth, async (req, res) => {
     });
 
     if (!brand) {
-      return res.status(404).json({ error: "Brand not found" });
+      return res.status(403).json({ error: "Brand access denied" });
     }
 
     console.log(`[BRAND] GET /onboarding - Brand ${brand.id}`);
