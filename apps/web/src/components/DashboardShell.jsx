@@ -118,10 +118,17 @@ export function DashboardShell({
 
   // Reset scroll position when navigation changes to prevent auto-collapse
   useEffect(() => {
-    window.scrollTo(0, 0);
-    setNavCollapsed(false); // Ensure nav opens on navigation
-    setUserToggledNav(true); // Prevent auto-collapse for 5s after navigation
-    const timer = setTimeout(() => setUserToggledNav(false), 5000);
+    // Disable scroll event temporarily by setting userToggledNav first
+    setUserToggledNav(true);
+    setNavCollapsed(false); // Force nav open immediately
+    
+    // Use requestAnimationFrame to ensure DOM updates before scrolling
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+    });
+    
+    // Keep userToggledNav enabled for 8 seconds to fully prevent auto-collapse
+    const timer = setTimeout(() => setUserToggledNav(false), 8000);
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
