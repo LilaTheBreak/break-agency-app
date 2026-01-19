@@ -18,6 +18,7 @@ import { isFeatureEnabled } from "../config/features.js";
 import { ComingSoon, BetaBadge } from "../components/ComingSoon.jsx";
 import { OpportunitiesCard } from "../components/OpportunitiesCard.jsx";
 import { SkeletonMetrics, SkeletonSection, SkeletonCampaign, SkeletonWithMessage } from "../components/SkeletonLoader.jsx";
+import { ContractsPanel } from "../components/ContractsPanel.jsx";
 
 // Creator roster - guarded by feature flag CREATOR_ROSTER_ENABLED
 const CREATOR_ROSTER = [];
