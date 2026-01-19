@@ -116,8 +116,9 @@ export async function apiFetch(path, options = {}) {
       if (isAuthMe) {
         console.warn(`[API] CORS or permission issue for /auth/me - this is expected if not logged in`);
       } else if (isCampaignUser) {
-        console.warn(`[API] 403 permission for campaigns - will be handled gracefully`);
+        console.warn(`[API] 403 for ${path} (campaigns) - suppressing toast, will handle gracefully`);
       } else {
+        console.error(`[API] 403 Permission denied for ${path}`);
         toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
       }
     } else if (response.status === 404) {
