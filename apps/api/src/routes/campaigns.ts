@@ -92,7 +92,7 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
   let targetId = req.params.userId;
   try {
     const requester = req.user!;
-    console.log("[CAMPAIGNS] GET /campaigns/user/", targetId, "by user", requester.id, "with role:", requester.role);
+    console.log("[CAMPAIGNS] GET /campaigns/user/", targetId, "by user", requester.id, "with role:", requester.role, "email:", requester.email);
     
     if (targetId === "me") targetId = requester.id;
     
@@ -102,11 +102,11 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
       return sendEmptyList(res);
     }
     
-    // Build where clause - allow talent/creator/ugc users to see their own campaigns
-    const whereClause =
-      targetId === "all"
-        ? {}
-        : {
+    // Build where clause - allow all talent/creator/ugc users to see their own campaigns
+    // For "me" requests, always allow (user is requesting their own campaigns)
+    const whereClause = targetId === "all"
+      ? {}
+      : {
             OR: [{ ownerId: targetId }, { CampaignBrandPivot: { some: { brandId: targetId } } }]
           };
     
@@ -366,11 +366,25 @@ function ensureManager(req: Request, res: Response, next: NextFunction) {
 
 function canAccessCampaign(campaign: any, userId: string, userRole: string) {
   // Use centralized helper - superadmin is already handled in isAdmin
-  if (isAdmin({ role: userRole })) return true;
-  if (campaign.ownerId && campaign.ownerId === userId) return true;
-  if (campaign.brandSummaries?.some((brand: any) => brand.id === userId)) return true;
+  if (isAdmin({ role: userRole })) {
+    console.log("[CAMPAIGNS] canAccessCampaign: Admin user", userRole);
+    return true;
+  }
+  if (campaign.ownerId && campaign.ownerId === userId) {
+    console.log("[CAMPAIGNS] canAccessCampaign: User is owner");
+    return true;
+  }
+  if (campaign.brandSummaries?.some((brand: any) => brand.id === userId)) {
+    console.log("[CAMPAIGNS] canAccessCampaign: User is brand");
+    return true;
+  }
   // Allow all talent/creator/ugc users to view campaigns (for browsing opportunities)
-  if (['CREATOR', 'TALENT', 'EXCLUSIVE_TALENT', 'UGC', 'UGC_CREATOR', 'FOUNDER'].includes(userRole)) return true;
+  const allowedRoles = ['CREATOR', 'TALENT', 'EXCLUSIVE_TALENT', 'UGC', 'UGC_CREATOR', 'FOUNDER'];
+  if (allowedRoles.includes(userRole)) {
+    console.log("[CAMPAIGNS] canAccessCampaign: Talent/Creator user allowed, role:", userRole);
+    return true;
+  }
+  console.log("[CAMPAIGNS] canAccessCampaign: ACCESS DENIED for role:", userRole, "allowed roles:", allowedRoles);
   return false;
 }
 
