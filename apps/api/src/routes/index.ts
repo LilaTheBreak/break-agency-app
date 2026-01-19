@@ -40,6 +40,7 @@ import exitReadinessRouter from "./exitReadiness.js";
 import onboardingRouter from './onboarding.js';
 import adminUsersRouter from './adminUsers.js';
 import talentRouter from './talent.js';
+import brandRouter from './brand.js';
 
 // Social OAuth routes
 import instagramAuthRouter from './auth/instagram.js';
@@ -137,6 +138,7 @@ router.use(campaignsRouter);
 router.use("/deck", deckRouter);
 router.use("/opportunities", opportunitiesRouter);
 router.use("/admin", adminUsersRouter);
+router.use("/brand", brandRouter);
 
 // Enterprise Operating System routes
 router.use("/enterprise-value", enterpriseValueRouter);

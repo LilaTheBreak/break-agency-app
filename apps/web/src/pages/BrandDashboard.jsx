@@ -102,18 +102,260 @@ export function BrandCampaignsPage() {
 
 export function BrandCreatorsPage() {
   const { session } = useOutletContext() || {};
+  const [creators, setCreators] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [savedCreators, setSavedCreators] = useState(new Set());
+  const [filterVertical, setFilterVertical] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState("recommended"); // "recommended" or "saved"
+
+  useEffect(() => {
+    fetchCreators();
+    fetchSavedCreators();
+  }, []);
+
+  const fetchCreators = async () => {
+    try {
+      setLoading(true);
+      const response = await apiFetch(`/api/brand/creators?limit=20`);
+      if (!response.ok) throw new Error("Failed to fetch creators");
+      const data = await response.json();
+      setCreators(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+      setCreators([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSavedCreators = async () => {
+    try {
+      const response = await apiFetch(`/api/brand/creators/saved`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedCreators(new Set(data.map(c => c.talentId)));
+      }
+    } catch (err) {
+      console.error("Failed to fetch saved creators:", err);
+    }
+  };
+
+  const toggleSaveCreator = async (creatorId, isSaved) => {
+    try {
+      if (isSaved) {
+        await apiFetch(`/api/brand/creators/saved/${creatorId}`, { method: "DELETE" });
+        setSavedCreators(prev => new Set([...prev].filter(id => id !== creatorId)));
+      } else {
+        await apiFetch(`/api/brand/creators/saved`, {
+          method: "POST",
+          body: JSON.stringify({ talentId: creatorId })
+        });
+        setSavedCreators(prev => new Set([...prev, creatorId]));
+      }
+    } catch (err) {
+      console.error("Failed to toggle save:", err);
+    }
+  };
+
+  const filteredCreators = creators.filter(creator => {
+    if (filterVertical !== "all" && !creator.categories?.includes(filterVertical)) return false;
+    if (searchQuery && !creator.displayName?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  const displayCreators = viewMode === "saved" 
+    ? creators.filter(c => savedCreators.has(c.id))
+    : filteredCreators;
+
   return (
-    <section className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-      <div>
-        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator management</p>
-        <h3 className="font-display text-3xl uppercase">Creators</h3>
-        <p className="mt-2 text-sm text-brand-black/70">Matched creators, shortlists, and AI recommendations</p>
+    <section className="space-y-6">
+      {/* Header */}
+      <div className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div>
+          <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Creator management</p>
+          <h1 className="font-display text-3xl uppercase">Creators</h1>
+          <p className="mt-2 text-sm text-brand-black/70">Discover vetted creators, build shortlists, and request campaigns</p>
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-3 rounded-2xl border border-brand-red/30 bg-brand-red/10 p-4">
+            <span className="flex-shrink-0 text-xl">!</span>
+            <p className="text-sm font-medium text-brand-black">{error}</p>
+          </div>
+        )}
+
+        {/* View Mode Toggle */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode("recommended")}
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition-colors ${
+              viewMode === "recommended"
+                ? "bg-brand-red text-brand-white"
+                : "border border-brand-black/20 text-brand-black/70 hover:border-brand-black/50"
+            }`}
+          >
+            AI Recommendations ({filteredCreators.length})
+          </button>
+          <button
+            onClick={() => setViewMode("saved")}
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] transition-colors ${
+              viewMode === "saved"
+                ? "bg-brand-red text-brand-white"
+                : "border border-brand-black/20 text-brand-black/70 hover:border-brand-black/50"
+            }`}
+          >
+            Saved ({savedCreators.size})
+          </button>
+        </div>
       </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
-        <p className="text-sm font-semibold text-brand-black/70">Coming soon</p>
-        <p className="mt-2 text-xs text-brand-black/50">Creator management and recommendations will be available soon.</p>
-      </div>
+
+      {/* Filters */}
+      {viewMode === "recommended" && (
+        <div className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-white p-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Filters</p>
+          <div className="flex flex-col gap-3 md:flex-row md:gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search creators by name..."
+              className="flex-1 rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+            />
+            <select
+              value={filterVertical}
+              onChange={(e) => setFilterVertical(e.target.value)}
+              className="flex-1 rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+            >
+              <option value="all">All Verticals</option>
+              <option value="Beauty">Beauty</option>
+              <option value="Fitness">Fitness</option>
+              <option value="Food">Food</option>
+              <option value="Fashion">Fashion</option>
+              <option value="Tech">Tech</option>
+              <option value="Lifestyle">Lifestyle</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Creators Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-black/20 border-t-brand-black"></div>
+        </div>
+      ) : displayCreators.length === 0 ? (
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-12 text-center">
+          <p className="text-sm font-semibold text-brand-black/70">
+            {viewMode === "saved" ? "No saved creators yet" : "No creators found matching your filters"}
+          </p>
+          <p className="mt-2 text-xs text-brand-black/50">
+            {viewMode === "saved" ? "Save creators from recommendations to view them here" : "Try adjusting your search or filters"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {displayCreators.map((creator) => (
+            <BrandCreatorCard
+              key={creator.id}
+              creator={creator}
+              isSaved={savedCreators.has(creator.id)}
+              onToggleSave={() => toggleSaveCreator(creator.id, savedCreators.has(creator.id))}
+            />
+          ))}
+        </div>
+      )}
     </section>
+  );
+}
+
+/**
+ * BrandCreatorCard - Creator card for brand view
+ * 
+ * Shows: profile image, name, platforms, follower ranges, verticals,
+ * brand fit tags, AI explanation, and CTA button.
+ * 
+ * Hides: internal data, earnings, risk flags, talent notes.
+ */
+function BrandCreatorCard({ creator, isSaved, onToggleSave }) {
+  return (
+    <div className="flex flex-col rounded-2xl border border-brand-black/10 bg-brand-white p-4 hover:border-brand-black/20 transition-colors">
+      {/* Profile Header */}
+      <div className="flex items-start gap-3 mb-4">
+        {creator.profileImageUrl ? (
+          <img
+            src={creator.profileImageUrl}
+            alt={creator.displayName}
+            className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="h-12 w-12 rounded-full bg-brand-linen/50 flex items-center justify-center flex-shrink-0 text-xs font-semibold text-brand-black/60">
+            {creator.displayName?.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-brand-black truncate">{creator.displayName}</h3>
+          <p className="text-xs text-brand-black/60">Creator</p>
+        </div>
+        <button
+          onClick={onToggleSave}
+          className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] transition-colors ${
+            isSaved
+              ? "bg-brand-red text-brand-white border-brand-red"
+              : "border-brand-black/20 text-brand-black/70 hover:border-brand-black/50"
+          }`}
+        >
+          {isSaved ? "Saved" : "Save"}
+        </button>
+      </div>
+
+      {/* Platforms & Followers */}
+      <div className="mb-4 space-y-2">
+        <div className="flex flex-wrap gap-2">
+          {creator.connectedPlatforms?.instagram && (
+            <span className="rounded-full bg-brand-linen/50 px-2 py-1 text-xs text-brand-black/70">
+              📷 {creator.connectedPlatforms.instagram.followers || "—"}
+            </span>
+          )}
+          {creator.connectedPlatforms?.tiktok && (
+            <span className="rounded-full bg-brand-linen/50 px-2 py-1 text-xs text-brand-black/70">
+              🎵 {creator.connectedPlatforms.tiktok.followers || "—"}
+            </span>
+          )}
+          {creator.connectedPlatforms?.youtube && (
+            <span className="rounded-full bg-brand-linen/50 px-2 py-1 text-xs text-brand-black/70">
+              ▶️ {creator.connectedPlatforms.youtube.followers || "—"}
+            </span>
+          )}
+        </div>
+
+        {/* Verticals */}
+        {creator.categories && creator.categories.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {creator.categories.slice(0, 3).map((cat) => (
+              <span key={cat} className="rounded-full border border-brand-black/20 px-2 py-1 text-xs text-brand-black/70">
+                {cat}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Brand Fit & AI Explanation */}
+      {creator.aiRecommendationExplanation && (
+        <div className="mb-4 space-y-2">
+          <p className="text-xs font-semibold text-brand-black/60">Why this creator fits</p>
+          <p className="text-xs text-brand-black/70 line-clamp-3">{creator.aiRecommendationExplanation}</p>
+        </div>
+      )}
+
+      {/* CTA */}
+      <button className="mt-auto rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-black hover:bg-brand-black hover:text-brand-white transition-colors">
+        Request Campaign
+      </button>
+    </div>
   );
 }
 
