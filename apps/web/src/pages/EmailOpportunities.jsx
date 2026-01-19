@@ -1,78 +1,27 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { isFeatureEnabled } from "../config/features.js";
 import { ComingSoon } from "../components/ComingSoon.jsx";
-// Fallback icon set to avoid external dependency
-const makeIcon = (glyph) => (props) => (
-  <span aria-hidden="true" {...props}>
-    {glyph}
-  </span>
-);
-
-const Sparkles = makeIcon("✦");
-const Mail = makeIcon("✉");
-const Calendar = makeIcon("📅");
-const Users = makeIcon("👥");
-const TrendingUp = makeIcon("↗");
-const Filter = makeIcon("⏷");
-const Search = makeIcon("🔍");
-const Check = makeIcon("✓");
-const X = makeIcon("✕");
-const Clock = makeIcon("⏱");
-const AlertCircle = makeIcon("!");
-const ExternalLink = makeIcon("↗");
-const MessageSquare = makeIcon("💬");
-const FileText = makeIcon("📄");
-const ThumbsUp = makeIcon("👍");
-const ThumbsDown = makeIcon("👎");
-const RefreshCw = makeIcon("⟳");
-const BarChart3 = makeIcon("▤");
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 const categoryConfig = {
-  EVENT_INVITE: {
-    label: "Event Invites",
-    icon: Calendar,
-    color: "from-purple-500 to-pink-500",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-200",
-  },
-  BRAND_OPPORTUNITY: {
-    label: "Brand Opportunities",
-    icon: TrendingUp,
-    color: "from-blue-500 to-cyan-500",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
-  },
-  COLLABORATION_REQUEST: {
-    label: "Collaboration Requests",
-    icon: Users,
-    color: "from-green-500 to-emerald-500",
-    bgColor: "bg-green-50",
-    borderColor: "border-green-200",
-  },
-  INBOUND_BRAND_INTEREST: {
-    label: "Inbound Brand Interest",
-    icon: Sparkles,
-    color: "from-orange-500 to-amber-500",
-    bgColor: "bg-orange-50",
-    borderColor: "border-orange-200",
-  },
+  EVENT_INVITE: { label: "Event Invites" },
+  BRAND_OPPORTUNITY: { label: "Brand Opportunities" },
+  COLLABORATION_REQUEST: { label: "Collaboration Requests" },
+  INBOUND_BRAND_INTEREST: { label: "Inbound Brand Interest" },
 };
 
 const statusConfig = {
-  NEW: { label: "New", color: "bg-blue-100 text-blue-700" },
-  REPLIED: { label: "Replied", color: "bg-green-100 text-green-700" },
-  DECLINED: { label: "Declined", color: "bg-red-100 text-red-700" },
-  NEGOTIATING: { label: "Negotiating", color: "bg-yellow-100 text-yellow-700" },
-  AWAITING_BRIEF: { label: "Awaiting Brief", color: "bg-purple-100 text-purple-700" },
-  IN_PROGRESS: { label: "In Progress", color: "bg-indigo-100 text-indigo-700" },
-  ARCHIVED: { label: "Archived", color: "bg-gray-100 text-gray-700" },
+  NEW: { label: "New" },
+  REPLIED: { label: "Replied" },
+  DECLINED: { label: "Declined" },
+  NEGOTIATING: { label: "Negotiating" },
+  AWAITING_BRIEF: { label: "Awaiting Brief" },
+  IN_PROGRESS: { label: "In Progress" },
+  ARCHIVED: { label: "Archived" },
 };
 
 export default function EmailOpportunities() {
-  // Gate this feature - opportunities API is not yet fully wired
   if (!isFeatureEnabled('CREATOR_OPPORTUNITIES_ENABLED')) {
     return (
       <div className="mx-auto max-w-6xl px-6 py-16">
@@ -153,29 +102,15 @@ export default function EmailOpportunities() {
   const scanInbox = async () => {
     try {
       setScanning(true);
-      setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/email-opportunities/scan`, {
+      const response = await fetch(`${API_BASE_URL}/api/inbox/rescan`, {
+        method: "POST",
         credentials: "include",
       });
 
-      if (!response.ok) {
-        let errorData = {};
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          console.error("JSON parse error:", e);
-        }
-        throw new Error(errorData.message || "Failed to scan inbox");
-      }
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (e) {
-        console.error("JSON parse error:", e);
-        data = { newOpportunities: 0 };
-      }
-      alert(`Scan complete! Found ${data.newOpportunities} new opportunities.`);
+      if (!response.ok) throw new Error("Failed to scan inbox");
+      
+      // Refresh opportunities after scanning
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await fetchOpportunities();
       await fetchStats();
     } catch (err) {
@@ -188,7 +123,7 @@ export default function EmailOpportunities() {
   const updateOpportunity = async (id, updates) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/email-opportunities/${id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(updates),
@@ -196,33 +131,9 @@ export default function EmailOpportunities() {
 
       if (!response.ok) throw new Error("Failed to update opportunity");
       await fetchOpportunities();
-      await fetchStats();
     } catch (err) {
       setError(err.message);
     }
-  };
-
-  const takeAction = async (id, actionType, actionData = {}) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/email-opportunities/${id}/actions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ action: actionType, ...actionData }),
-      });
-
-      if (!response.ok) throw new Error("Failed to take action");
-      const result = await response.json();
-      alert(result.message || "Action completed successfully");
-      await fetchOpportunities();
-      await fetchStats();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const markRelevance = async (id, isRelevant) => {
-    await updateOpportunity(id, { isRelevant });
   };
 
   const filteredOpportunities = opportunities.filter((opp) => {
@@ -238,170 +149,163 @@ export default function EmailOpportunities() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
       {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-              Email Opportunities
-            </h1>
-            <p className="text-gray-600">AI-powered inbox scanning for creator opportunities</p>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Inbox scanning</p>
+            <h1 className="font-display text-3xl uppercase">Email Opportunities</h1>
+            <p className="mt-2 text-sm text-brand-black/70">AI-powered inbox scanning for creator opportunities</p>
           </div>
-          <motion.button
+          <button
             onClick={scanInbox}
             disabled={scanning}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-lg transition-all ${
+            className={`flex-shrink-0 rounded-full px-6 py-3 text-xs font-semibold uppercase tracking-[0.3em] transition-colors ${
               scanning
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-xl"
+                ? "bg-brand-black/30 text-brand-white cursor-not-allowed"
+                : "bg-brand-red text-brand-white hover:bg-brand-red/90"
             }`}
           >
-            {scanning ? (
-              <>
-                <RefreshCw className="w-5 h-5 animate-spin" />
-                Scanning...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Scan Inbox
-              </>
-            )}
-          </motion.button>
+            {scanning ? "Scanning..." : "+ Scan Inbox"}
+          </button>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <p className="text-red-700">{error}</p>
+          <div className="flex items-start gap-3 rounded-2xl border border-brand-red/30 bg-brand-red/10 p-4">
+            <span className="flex-shrink-0 text-xl">!</span>
+            <p className="text-sm font-medium text-brand-black">{error}</p>
           </div>
         )}
+      </div>
 
-        {/* Stats Dashboard */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard
-              label="Total Opportunities"
-              value={stats.total}
-              icon={Mail}
-              gradient="from-purple-500 to-pink-500"
-            />
-            <StatCard
-              label="Urgent"
-              value={stats.urgent}
-              icon={AlertCircle}
-              gradient="from-red-500 to-orange-500"
-            />
-            <StatCard
-              label="New"
-              value={stats.byStatus?.NEW || 0}
-              icon={Sparkles}
-              gradient="from-blue-500 to-cyan-500"
-            />
-            <StatCard
-              label="In Progress"
-              value={stats.byStatus?.IN_PROGRESS || 0}
-              icon={TrendingUp}
-              gradient="from-green-500 to-emerald-500"
-            />
+      {/* Stats Dashboard */}
+      {stats && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Total</p>
+            <p className="mt-2 font-display text-2xl uppercase text-brand-black">{stats.total || 0}</p>
           </div>
-        )}
-
-        {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-wrap gap-4">
-            {/* Category Filter */}
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="ALL">All Categories</option>
-                {Object.entries(categoryConfig).map(([key, config]) => (
-                  <option key={key} value={key}>
-                    {config.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="ALL">All Status</option>
-                {Object.entries(statusConfig).map(([key, config]) => (
-                  <option key={key} value={key}>
-                    {config.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Search */}
-            <div className="flex-1 min-w-[250px]">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by subject, brand, or sender..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Urgent Toggle */}
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={showUrgentOnly}
-                  onChange={(e) => setShowUrgentOnly(e.target.checked)}
-                  className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
-                />
-                <AlertCircle className="w-4 h-4 text-orange-500" />
-                <span className="text-sm font-medium text-gray-700">Urgent Only</span>
-              </label>
-            </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Urgent</p>
+            <p className="mt-2 font-display text-2xl uppercase text-brand-red">{stats.urgent || 0}</p>
           </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">New</p>
+            <p className="mt-2 font-display text-2xl uppercase text-brand-black">{stats.byStatus?.NEW || 0}</p>
+          </div>
+          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">In Progress</p>
+            <p className="mt-2 font-display text-2xl uppercase text-brand-black">{stats.byStatus?.IN_PROGRESS || 0}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="space-y-4 rounded-2xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">Filters</p>
+        <div className="flex flex-col gap-3 md:flex-row md:gap-2">
+          {/* Category Filter */}
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="flex-1 rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+          >
+            <option value="ALL">All Categories</option>
+            {Object.entries(categoryConfig).map(([key, config]) => (
+              <option key={key} value={key}>
+                {config.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Status Filter */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="flex-1 rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+          >
+            <option value="ALL">All Status</option>
+            {Object.entries(statusConfig).map(([key, config]) => (
+              <option key={key} value={key}>
+                {config.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Search */}
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by subject, brand, or sender..."
+            className="flex-1 rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
+          />
+
+          {/* Urgent Toggle */}
+          <label className="flex items-center gap-2 rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 cursor-pointer hover:bg-brand-linen/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={showUrgentOnly}
+              onChange={(e) => setShowUrgentOnly(e.target.checked)}
+              className="h-4 w-4 accent-brand-red"
+            />
+            <span className="whitespace-nowrap text-xs font-medium uppercase tracking-[0.2em] text-brand-black/70">Urgent Only</span>
+          </label>
         </div>
       </div>
 
       {/* Opportunities List */}
-      <div className="max-w-7xl mx-auto">
+      <div className="space-y-4 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="w-8 h-8 animate-spin text-purple-600" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-black/20 border-t-brand-black"></div>
           </div>
         ) : filteredOpportunities.length === 0 ? (
-          <div className="text-center py-12">
-            <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No opportunities found</p>
-            <p className="text-gray-400 text-sm mt-2">Try scanning your inbox or adjusting filters</p>
+          <div className="py-12 text-center">
+            <p className="text-sm font-semibold text-brand-black/70">No opportunities found</p>
+            <p className="mt-2 text-xs text-brand-black/50">Try scanning your inbox or adjusting filters</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-3">
             {filteredOpportunities.map((opportunity) => (
-              <OpportunityCard
+              <div
                 key={opportunity.id}
-                opportunity={opportunity}
-                onSelect={() => setSelectedOpportunity(opportunity)}
-                onMarkRelevance={markRelevance}
-                onTakeAction={takeAction}
-                onUpdateStatus={(status) => updateOpportunity(opportunity.id, { status })}
-              />
+                onClick={() => setSelectedOpportunity(opportunity)}
+                className="cursor-pointer rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4 transition-colors hover:bg-brand-linen/50"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate font-semibold text-brand-black">{opportunity.subject}</h3>
+                      {opportunity.isUrgent && (
+                        <span className="flex-shrink-0 rounded-full bg-brand-red/20 px-2 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-brand-red">
+                          Urgent
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-brand-black/60">
+                      <span>{opportunity.from}</span>
+                      <span>•</span>
+                      <span>{new Date(opportunity.receivedAt).toLocaleDateString()}</span>
+                      {opportunity.brandName && (
+                        <>
+                          <span>•</span>
+                          <span className="font-semibold text-brand-black">{opportunity.brandName}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <span className="rounded-full border border-brand-black/20 bg-brand-white px-2 py-1 text-xs font-medium text-brand-black/70">
+                        {statusConfig[opportunity.status]?.label || opportunity.status}
+                      </span>
+                      <span className="rounded-full border border-brand-black/20 bg-brand-white px-2 py-1 text-xs font-medium text-brand-black/70">
+                        {Math.round(opportunity.confidence * 100)}% confidence
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -409,348 +313,119 @@ export default function EmailOpportunities() {
 
       {/* Detail Modal */}
       {selectedOpportunity && (
-        <OpportunityDetailModal
-          opportunity={selectedOpportunity}
-          onClose={() => setSelectedOpportunity(null)}
-          onTakeAction={takeAction}
-          onUpdateStatus={(status) => updateOpportunity(selectedOpportunity.id, { status })}
-        />
-      )}
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon: Icon, gradient }) {
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
-      className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">{label}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
-        </div>
-        <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient}`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function OpportunityCard({ opportunity, onSelect, onMarkRelevance, onTakeAction, onUpdateStatus }) {
-  const category = categoryConfig[opportunity.category];
-  const status = statusConfig[opportunity.status];
-  const CategoryIcon = category?.icon || Mail;
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.01, y: -2 }}
-      className={`bg-white rounded-2xl shadow-sm border ${category?.borderColor || "border-gray-200"} p-6 cursor-pointer transition-all hover:shadow-lg`}
-      onClick={onSelect}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-start gap-4 flex-1">
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${category?.color || "from-gray-400 to-gray-500"}`}>
-            <CategoryIcon className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-lg font-semibold text-gray-900 truncate">{opportunity.subject}</h3>
-              {opportunity.isUrgent && (
-                <span className="flex-shrink-0 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-lg flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Urgent
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-              <span className="flex items-center gap-1">
-                <Mail className="w-4 h-4" />
-                {opportunity.from}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {new Date(opportunity.receivedAt).toLocaleDateString()}
-              </span>
-              {opportunity.brandName && (
-                <span className="flex items-center gap-1 font-medium text-purple-600">
-                  <TrendingUp className="w-4 h-4" />
-                  {opportunity.brandName}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`px-3 py-1 ${status.color} text-xs font-medium rounded-lg`}>{status.label}</span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg">
-                {Math.round(opportunity.confidence * 100)}% confidence
-              </span>
-            </div>
-            {opportunity.opportunityType && (
-              <p className="text-sm text-gray-700 mb-2">
-                <span className="font-medium">Type:</span> {opportunity.opportunityType}
-              </p>
-            )}
-            {opportunity.suggestedActions && opportunity.suggestedActions.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {opportunity.suggestedActions.slice(0, 3).map((action, idx) => (
-                  <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg">
-                    {action}
+        <div 
+          className="fixed inset-0 z-50 grid place-items-center bg-brand-black/20 backdrop-blur-sm p-4"
+          onClick={() => setSelectedOpportunity(null)}
+        >
+          <div 
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-brand-black/10 bg-brand-white p-8 text-brand-black"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1 min-w-0">
+                <h2 className="font-display text-2xl uppercase mb-2">{selectedOpportunity.subject}</h2>
+                <p className="text-sm text-brand-black/70 mb-2">{selectedOpportunity.from}</p>
+                <div className="flex gap-2 flex-wrap">
+                  <span className="rounded-full border border-brand-black/20 bg-brand-linen/50 px-3 py-1 text-xs font-medium">
+                    {statusConfig[selectedOpportunity.status]?.label || selectedOpportunity.status}
                   </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex items-center gap-2 ml-4" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => onMarkRelevance(opportunity.id, true)}
-            className={`p-2 rounded-lg transition-colors ${
-              opportunity.isRelevant === true
-                ? "bg-green-100 text-green-600"
-                : "bg-gray-100 text-gray-400 hover:bg-green-50 hover:text-green-600"
-            }`}
-            title="Mark as relevant"
-          >
-            <ThumbsUp className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onMarkRelevance(opportunity.id, false)}
-            className={`p-2 rounded-lg transition-colors ${
-              opportunity.isRelevant === false
-                ? "bg-red-100 text-red-600"
-                : "bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-600"
-            }`}
-            title="Mark as not relevant"
-          >
-            <ThumbsDown className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function OpportunityDetailModal({ opportunity, onClose, onTakeAction, onUpdateStatus }) {
-  const category = categoryConfig[opportunity.category];
-  const status = statusConfig[opportunity.status];
-  const CategoryIcon = category?.icon || Mail;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6" onClick={onClose}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className={`p-6 border-b ${category?.borderColor || "border-gray-200"} ${category?.bgColor || "bg-gray-50"}`}>
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-xl bg-gradient-to-br ${category?.color || "from-gray-400 to-gray-500"}`}>
-                <CategoryIcon className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{opportunity.subject}</h2>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <span>{opportunity.from}</span>
-                  <span>•</span>
-                  <span>{new Date(opportunity.receivedAt).toLocaleString()}</span>
+                  {selectedOpportunity.isUrgent && (
+                    <span className="rounded-full bg-brand-red/20 px-3 py-1 text-xs font-semibold text-brand-red uppercase tracking-[0.1em]">
+                      Urgent
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/50 rounded-lg transition-colors"
-            >
-              <X className="w-6 h-6 text-gray-600" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 ${status.color} text-sm font-medium rounded-lg`}>{status.label}</span>
-            {opportunity.isUrgent && (
-              <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-medium rounded-lg flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                Urgent
-              </span>
-            )}
-            <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg">
-              {Math.round(opportunity.confidence * 100)}% confidence
-            </span>
-          </div>
-        </div>
-
-        {/* Details */}
-        <div className="p-6 space-y-6">
-          {/* Brand & Type */}
-          {(opportunity.brandName || opportunity.opportunityType) && (
-            <div className="grid grid-cols-2 gap-4">
-              {opportunity.brandName && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                  <p className="text-gray-900 font-medium">{opportunity.brandName}</p>
-                </div>
-              )}
-              {opportunity.opportunityType && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <p className="text-gray-900">{opportunity.opportunityType}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Deliverables */}
-          {opportunity.deliverables && opportunity.deliverables.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Deliverables</label>
-              <ul className="list-disc list-inside space-y-1">
-                {opportunity.deliverables.map((item, idx) => (
-                  <li key={idx} className="text-gray-900">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Dates, Location, Payment */}
-          <div className="grid grid-cols-3 gap-4">
-            {opportunity.dates && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dates</label>
-                <p className="text-gray-900">{opportunity.dates}</p>
-              </div>
-            )}
-            {opportunity.location && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <p className="text-gray-900">{opportunity.location}</p>
-              </div>
-            )}
-            {opportunity.paymentDetails && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment</label>
-                <p className="text-gray-900 font-medium text-green-600">{opportunity.paymentDetails}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Contact Email */}
-          {opportunity.contactEmail && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-              <a
-                href={`mailto:${opportunity.contactEmail}`}
-                className="text-purple-600 hover:text-purple-700 font-medium"
+              <button
+                onClick={() => setSelectedOpportunity(null)}
+                className="flex-shrink-0 rounded-full border border-brand-black/20 px-3 py-2 font-semibold uppercase tracking-[0.2em] hover:bg-brand-linen/50 transition-colors"
               >
-                {opportunity.contactEmail}
-              </a>
+                ✕
+              </button>
             </div>
-          )}
 
-          {/* Email Body */}
-          {opportunity.emailBody && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email Content</label>
-              <div className="bg-gray-50 rounded-xl p-4 max-h-64 overflow-y-auto">
-                <p className="text-gray-700 whitespace-pre-wrap text-sm">{opportunity.emailBody}</p>
-              </div>
+            <div className="space-y-6 border-t border-brand-black/10 pt-6">
+              {selectedOpportunity.brandName && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">Brand</p>
+                  <p className="mt-2 font-semibold text-brand-black">{selectedOpportunity.brandName}</p>
+                </div>
+              )}
+
+              {selectedOpportunity.opportunityType && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">Type</p>
+                  <p className="mt-2 text-brand-black">{selectedOpportunity.opportunityType}</p>
+                </div>
+              )}
+
+              {selectedOpportunity.deliverables && selectedOpportunity.deliverables.length > 0 && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">Deliverables</p>
+                  <ul className="mt-2 space-y-1 list-disc list-inside text-sm text-brand-black">
+                    {selectedOpportunity.deliverables.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {selectedOpportunity.paymentDetails && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">Payment</p>
+                  <p className="mt-2 font-semibold text-brand-red">{selectedOpportunity.paymentDetails}</p>
+                </div>
+              )}
+
+              {selectedOpportunity.dates && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">Dates</p>
+                  <p className="mt-2 text-brand-black">{selectedOpportunity.dates}</p>
+                </div>
+              )}
+
+              {selectedOpportunity.emailBody && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-brand-black/60">Message</p>
+                  <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm text-brand-black/80 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+                    {selectedOpportunity.emailBody}
+                  </p>
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Suggested Actions */}
-          {opportunity.suggestedActions && opportunity.suggestedActions.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Suggested Actions</label>
-              <div className="flex flex-wrap gap-2">
-                {opportunity.suggestedActions.map((action, idx) => (
-                  <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-lg">
-                    {action}
-                  </span>
-                ))}
-              </div>
+            <div className="mt-8 flex gap-3 pt-6 border-t border-brand-black/10">
+              <button
+                onClick={() => {
+                  updateOpportunity(selectedOpportunity.id, { status: "REPLIED" });
+                  setSelectedOpportunity(null);
+                }}
+                className="flex-1 rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+              >
+                Mark Replied
+              </button>
+              <button
+                onClick={() => {
+                  updateOpportunity(selectedOpportunity.id, { status: "DECLINED" });
+                  setSelectedOpportunity(null);
+                }}
+                className="flex-1 rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+              >
+                Mark Declined
+              </button>
+              <button
+                onClick={() => {
+                  updateOpportunity(selectedOpportunity.id, { status: "ARCHIVED" });
+                  setSelectedOpportunity(null);
+                }}
+                className="flex-1 rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] hover:bg-brand-black hover:text-brand-white transition-colors"
+              >
+                Archive
+              </button>
             </div>
-          )}
-
-          {/* Notes */}
-          {opportunity.notes && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-              <p className="text-gray-700">{opportunity.notes}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => {
-                onTakeAction(opportunity.id, "reply");
-                onClose();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all font-medium"
-            >
-              <MessageSquare className="w-4 h-4" />
-              Reply
-            </button>
-            <button
-              onClick={() => {
-                onTakeAction(opportunity.id, "negotiate");
-                onClose();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-            >
-              <Users className="w-4 h-4" />
-              Negotiate
-            </button>
-            <button
-              onClick={() => {
-                onTakeAction(opportunity.id, "request_brief");
-                onClose();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-medium"
-            >
-              <FileText className="w-4 h-4" />
-              Request Brief
-            </button>
-            <button
-              onClick={() => {
-                onTakeAction(opportunity.id, "decline");
-                onClose();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium"
-            >
-              <X className="w-4 h-4" />
-              Decline
-            </button>
-            <button
-              onClick={() => {
-                onTakeAction(opportunity.id, "archive");
-                onClose();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors font-medium"
-            >
-              Archive
-            </button>
-            <a
-              href={`https://mail.google.com/mail/u/0/#inbox/${opportunity.gmailMessageId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium ml-auto"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open in Gmail
-            </a>
           </div>
         </div>
-      </motion.div>
+      )}
     </div>
   );
 }
