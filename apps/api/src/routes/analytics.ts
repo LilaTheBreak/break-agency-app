@@ -93,13 +93,84 @@ router.get('/revenue', async (req: Request, res: Response) => {
  */
 router.get('/metrics', async (req: Request, res: Response) => {
   try {
-    // Return sample data for now
+    const user = (req as any).user;
+    if (!user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // For brand users, calculate metrics based on brand campaigns
+    if (user.role === 'BRAND') {
+      const brandUser = await prisma.brandUser.findFirst({
+        where: { userId: user.id }
+      });
+
+      if (!brandUser) {
+        return res.json({
+          activeCampaigns: 0,
+          totalOpportunities: 0,
+          winRate: '0%',
+          avgDealValue: '£0',
+          completionRate: '0%'
+        });
+      }
+
+      const [activeCampaigns, totalCampaigns] = await Promise.all([
+        prisma.crmCampaign.count({
+          where: { 
+            brandId: brandUser.brandId,
+            status: { in: ['Active', 'active'] }
+          }
+        }),
+        prisma.crmCampaign.count({
+          where: { brandId: brandUser.brandId }
+        })
+      ]);
+
+      return res.json({
+        activeCampaigns,
+        totalOpportunities: totalCampaigns,
+        winRate: totalCampaigns > 0 ? `${Math.round((activeCampaigns / totalCampaigns) * 100)}%` : '0%',
+        avgDealValue: '£0', // Placeholder - would need more campaign data
+        completionRate: '0%'
+      });
+    }
+
+    // For creator/admin users, calculate based on deals
+    const [activeCampaigns, totalDeals, wonDeals] = await Promise.all([
+      prisma.crmCampaign.count({
+        where: { 
+          status: { in: ['Active', 'active'] }
+        }
+      }),
+      prisma.deal.count({
+        where: { userId: user.id }
+      }),
+      prisma.deal.count({
+        where: { 
+          userId: user.id,
+          stage: { in: ['WON', 'COMPLETED', 'Won'] }
+        }
+      })
+    ]);
+
+    const winRate = totalDeals > 0 ? Math.round((wonDeals / totalDeals) * 100) : 0;
+
+    // Calculate average deal value
+    const deals = await prisma.deal.findMany({
+      where: { userId: user.id },
+      select: { value: true }
+    });
+
+    const avgDealValue = deals.length > 0 
+      ? Math.round(deals.reduce((sum, d) => sum + (d.value || 0), 0) / deals.length / 100)
+      : 0;
+
     res.json({
-      activeCampaigns: 12,
-      totalOpportunities: 34,
-      winRate: '45%',
-      avgDealValue: '£12K',
-      completionRate: '85%'
+      activeCampaigns,
+      totalOpportunities: totalDeals,
+      winRate: `${winRate}%`,
+      avgDealValue: `£${avgDealValue}K`,
+      completionRate: totalDeals > 0 ? `${Math.round((wonDeals / totalDeals) * 100)}%` : '0%'
     });
 
   } catch (error) {
