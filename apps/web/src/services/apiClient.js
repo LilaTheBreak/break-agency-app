@@ -129,7 +129,9 @@ export async function apiFetch(path, options = {}) {
     // Show toast for network errors
     if (error.name !== 'AbortError') {
       console.error(`[API] Network error for ${path}:`, error);
-      toast.error(`Connection failed: Unable to ${extractAction(path)}`);
+      const action = extractAction(path);
+      const errorDetail = error.message ? ` - ${error.message}` : '';
+      toast.error(`Connection failed: Unable to ${action}${errorDetail}`);
     }
     throw error;
   }
