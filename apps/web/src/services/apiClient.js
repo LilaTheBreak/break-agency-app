@@ -100,10 +100,15 @@ export async function apiFetch(path, options = {}) {
     };
 
     // Show toast notifications for errors
-    // Note: Don't show errors for /auth/me - it's expected to return 200 or 401 when not logged in
-    // Also suppress errors for /campaigns/* - talent users may get 403 but we handle it gracefully
+    // IMPORTANT: Suppress errors for campaign endpoints - they handle 403/404 gracefully
     const isAuthMe = path.includes('/auth/me');
-    const isCampaignEndpoint = path.includes('/campaign');
+    const isCampaignEndpoint = path.includes('/campaign') || path.includes('/campaigns');
+    
+    // For campaign endpoints, NEVER show error toast - they handle errors gracefully
+    if (isCampaignEndpoint && (response.status === 403 || response.status === 404 || response.status === 503)) {
+      console.log(`[API] Suppressing ${response.status} for ${path} (campaign endpoint handles gracefully)`);
+      return response;
+    }
     
     if (response.status >= 500) {
       console.error(`[API] Server error ${response.status} for ${path}`);
@@ -112,11 +117,8 @@ export async function apiFetch(path, options = {}) {
       }
     } else if (response.status === 403) {
       // For /auth/me, 403 might be a CORS issue - don't show confusing error
-      // For /campaign* paths, 403 is handled gracefully in campaignClient - don't show error
       if (isAuthMe) {
         console.warn(`[API] CORS or permission issue for /auth/me - this is expected if not logged in`);
-      } else if (isCampaignEndpoint) {
-        console.warn(`[API] 403 for ${path} - suppressing toast, will handle gracefully in client`);
       } else {
         console.error(`[API] 403 Permission denied for ${path}`);
         toast.error(`Permission denied: You don't have access to ${extractAction(path)}`);
