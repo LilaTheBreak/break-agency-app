@@ -101,14 +101,17 @@ export function DashboardShell({
   useEffect(() => {
     // Auto-collapse nav on scroll (only if user hasn't manually toggled)
     const handleScroll = () => {
+      // NEVER auto-collapse during navigation transitions
+      if (userToggledNav) {
+        return;
+      }
+      
       const currentScrollY = window.scrollY;
       
-      if (!userToggledNav) {
-        if (currentScrollY > 150 && !navCollapsed) {
-          setNavCollapsed(true);
-        } else if (currentScrollY < 50 && navCollapsed) {
-          setNavCollapsed(false);
-        }
+      if (currentScrollY > 150 && !navCollapsed) {
+        setNavCollapsed(true);
+      } else if (currentScrollY < 50 && navCollapsed) {
+        setNavCollapsed(false);
       }
     };
 
@@ -116,19 +119,21 @@ export function DashboardShell({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [navCollapsed, userToggledNav]);
 
-  // Reset scroll position when navigation changes to prevent auto-collapse
+  // Reset scroll position and LOCK nav open when navigation changes
   useEffect(() => {
-    // Disable scroll event temporarily by setting userToggledNav first
+    // LOCK: Set userToggledNav to true FIRST before anything else
     setUserToggledNav(true);
-    setNavCollapsed(false); // Force nav open immediately
     
-    // Use requestAnimationFrame to ensure DOM updates before scrolling
+    // Then force nav open
+    setNavCollapsed(false);
+    
+    // Reset scroll in next frame
     requestAnimationFrame(() => {
       window.scrollTo(0, 0);
     });
     
-    // Keep userToggledNav enabled for 8 seconds to fully prevent auto-collapse
-    const timer = setTimeout(() => setUserToggledNav(false), 8000);
+    // KEEP IT LOCKED for 12 seconds to ensure no scroll events interfere
+    const timer = setTimeout(() => setUserToggledNav(false), 12000);
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
