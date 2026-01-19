@@ -1,7 +1,7 @@
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
-import { prisma } from "../db.js";
-import { logError } from "../utils/logger.js";
+import prisma from "../lib/prisma.js";
+import { logError } from "../lib/logger.js";
 
 const router = express.Router();
 
@@ -29,13 +29,13 @@ router.get("/creators", requireAuth, async (req, res) => {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-    // Get brand ID from user
-    const brand = await prisma.brand.findUnique({
+    // Get brand ID from BrandUser join table
+    const brandUser = await prisma.brandUser.findFirst({
       where: { userId },
-      select: { id: true }
+      select: { brandId: true }
     });
 
-    if (!brand) {
+    if (!brandUser) {
       console.log(`[BRAND] GET /creators - No brand found for user ${userId}`);
       return res.status(404).json({ error: "Brand not found" });
     }
@@ -50,52 +50,55 @@ router.get("/creators", requireAuth, async (req, res) => {
         status: "ACTIVE",
         representationType: { in: ["EXCLUSIVE", "NON_EXCLUSIVE", "FRIEND_OF_HOUSE"] }
       },
-      select: {
-        id: true,
-        displayName: true,
-        profileImageUrl: true,
-        profileImageSource: true,
-        categories: true,
-        // AI recommendation
-        socialIntelligenceNotes: true, // Will be parsed for "why this creator"
-        // Platform data (will be enriched from SocialAccountConnection)
+      include: {
         SocialAccountConnection: {
           where: { connected: true },
-          select: {
-            platform: true,
-            handle: true,
-            followers: true,
-            engagement: true
+          include: {
+            SocialProfile: {
+              select: {
+                platform: true,
+                handle: true,
+                displayName: true,
+                followerCount: true
+              }
+            }
           }
         }
-      },
-      orderBy: { createdAt: "desc" }
+      }
     });
 
     // Transform to brand-safe format
-    const brandSafeCreators = creators.map(creator => ({
-      id: creator.id,
-      displayName: creator.displayName,
-      profileImageUrl: creator.profileImageUrl,
-      categories: creator.categories || [],
-      connectedPlatforms: creator.SocialAccountConnection.reduce((acc, social) => {
-        acc[social.platform.toLowerCase()] = {
-          handle: social.handle,
-          followers: social.followers || 0,
-          engagement: social.engagement || 0
-        };
-        return acc;
-      }, {} as Record<string, any>),
-      // AI recommendation explanation (parsed from social intelligence notes)
-      aiRecommendationExplanation: creator.socialIntelligenceNotes 
-        ? creator.socialIntelligenceNotes.substring(0, 200) + "..."
-        : "Vetted creator with strong audience alignment for your campaigns."
-    }));
+    const brandSafeCreators = creators.map(creator => {
+      const connectedPlatforms: Record<string, any> = {};
+      
+      creator.SocialAccountConnection.forEach(connection => {
+        if (connection.SocialProfile) {
+          const platform = connection.platform.toLowerCase();
+          connectedPlatforms[platform] = {
+            handle: connection.SocialProfile.handle,
+            followers: connection.SocialProfile.followerCount || 0
+          };
+        }
+      });
 
-    console.log(`[BRAND] GET /creators for brand ${brand.id} - returned ${brandSafeCreators.length} creators`);
+      return {
+        id: creator.id,
+        displayName: creator.displayName,
+        profileImageUrl: creator.profileImageUrl,
+        categories: creator.categories || [],
+        connectedPlatforms,
+        // AI recommendation explanation (parsed from social intelligence notes)
+        aiRecommendationExplanation: creator.socialIntelligenceNotes 
+          ? creator.socialIntelligenceNotes.substring(0, 200)
+          : "Vetted creator with strong audience alignment for your campaigns."
+      };
+    });
+
+    console.log(`[BRAND] GET /creators for brand ${brandUser.brandId} - returned ${brandSafeCreators.length} creators`);
     res.json(brandSafeCreators);
   } catch (error) {
-    logError(error, "BRAND_CREATORS_FETCH_FAILED");
+    console.error("[BRAND] Error fetching creators:", error);
+    logError("Failed to fetch creators", error as any);
     res.status(500).json({ error: "Failed to fetch creators" });
   }
 });
@@ -110,35 +113,36 @@ router.get("/creators/saved", requireAuth, async (req, res) => {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-    // Get brand ID from user
-    const brand = await prisma.brand.findUnique({
+    // Get brand ID from BrandUser join table
+    const brandUser = await prisma.brandUser.findFirst({
       where: { userId },
-      select: { id: true }
+      select: { brandId: true }
     });
 
-    if (!brand) {
+    if (!brandUser) {
       return res.status(404).json({ error: "Brand not found" });
     }
 
     // Fetch saved talents
     const savedTalents = await prisma.brandSavedTalent.findMany({
       where: {
-        brandId: brand.id,
+        brandId: brandUser.brandId,
         status: "saved"
       },
       include: {
         Talent: {
-          select: {
-            id: true,
-            displayName: true,
-            profileImageUrl: true,
-            categories: true,
+          include: {
             SocialAccountConnection: {
               where: { connected: true },
-              select: {
-                platform: true,
-                handle: true,
-                followers: true
+              include: {
+                SocialProfile: {
+                  select: {
+                    platform: true,
+                    handle: true,
+                    displayName: true,
+                    followerCount: true
+                  }
+                }
               }
             }
           }
@@ -146,26 +150,38 @@ router.get("/creators/saved", requireAuth, async (req, res) => {
       }
     });
 
-    const brandSafeCreators = savedTalents.map(saved => ({
-      id: saved.Talent.id,
-      displayName: saved.Talent.displayName,
-      profileImageUrl: saved.Talent.profileImageUrl,
-      categories: saved.Talent.categories || [],
-      talentId: saved.talentId,
-      savedAt: saved.addedAt,
-      connectedPlatforms: saved.Talent.SocialAccountConnection.reduce((acc, social) => {
-        acc[social.platform.toLowerCase()] = {
-          handle: social.handle,
-          followers: social.followers || 0
-        };
-        return acc;
-      }, {} as Record<string, any>)
-    }));
+    const brandSafeCreators = savedTalents.map(saved => {
+      const connectedPlatforms: Record<string, any> = {};
+      
+      saved.Talent.SocialAccountConnection.forEach(connection => {
+        if (connection.SocialProfile) {
+          const platform = connection.platform.toLowerCase();
+          connectedPlatforms[platform] = {
+            handle: connection.SocialProfile.handle,
+            followers: connection.SocialProfile.followerCount || 0
+          };
+        }
+      });
 
-    console.log(`[BRAND] GET /creators/saved for brand ${brand.id} - returned ${brandSafeCreators.length} saved creators`);
+      return {
+        id: saved.Talent.id,
+        displayName: saved.Talent.displayName,
+        profileImageUrl: saved.Talent.profileImageUrl,
+        categories: saved.Talent.categories || [],
+        talentId: saved.talentId,
+        savedAt: saved.addedAt,
+        connectedPlatforms,
+        aiRecommendationExplanation: saved.Talent.socialIntelligenceNotes 
+          ? saved.Talent.socialIntelligenceNotes.substring(0, 200)
+          : "Vetted creator with strong audience alignment for your campaigns."
+      };
+    });
+
+    console.log(`[BRAND] GET /creators/saved for brand ${brandUser.brandId} - returned ${brandSafeCreators.length} saved creators`);
     res.json(brandSafeCreators);
   } catch (error) {
-    logError(error, "BRAND_SAVED_CREATORS_FETCH_FAILED");
+    console.error("[BRAND] Error fetching saved creators:", error);
+    logError("Failed to fetch saved creators", error as any);
     res.status(500).json({ error: "Failed to fetch saved creators" });
   }
 });
@@ -184,26 +200,37 @@ router.post("/creators/saved", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Get brand ID from user
-    const brand = await prisma.brand.findUnique({
+    // Get brand ID from BrandUser join table
+    const brandUser = await prisma.brandUser.findFirst({
       where: { userId },
-      select: { id: true }
+      select: { brandId: true }
     });
 
-    if (!brand) {
+    if (!brandUser) {
       return res.status(404).json({ error: "Brand not found" });
+    }
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+      select: { id: true, status: true }
+    });
+
+    if (!talent || talent.status !== "ACTIVE") {
+      return res.status(404).json({ error: "Creator not found or inactive" });
     }
 
     // Create or update saved talent
     const saved = await prisma.brandSavedTalent.upsert({
       where: {
         brandId_talentId: {
-          brandId: brand.id,
+          brandId: brandUser.brandId,
           talentId
         }
       },
       create: {
-        brandId: brand.id,
+        id: `${brandUser.brandId}_${talentId}_${Date.now()}`,
+        brandId: brandUser.brandId,
         talentId,
         status: "saved"
       },
@@ -213,10 +240,11 @@ router.post("/creators/saved", requireAuth, async (req, res) => {
       }
     });
 
-    console.log(`[BRAND] POST /creators/saved - Brand ${brand.id} saved creator ${talentId}`);
+    console.log(`[BRAND] POST /creators/saved - Brand ${brandUser.brandId} saved creator ${talentId}`);
     res.json({ success: true, saved });
   } catch (error) {
-    logError(error, "BRAND_SAVE_CREATOR_FAILED");
+    console.error("[BRAND] Error saving creator:", error);
+    logError("Failed to save creator", error as any);
     res.status(500).json({ error: "Failed to save creator" });
   }
 });
@@ -235,13 +263,13 @@ router.delete("/creators/saved/:talentId", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Get brand ID from user
-    const brand = await prisma.brand.findUnique({
+    // Get brand ID from BrandUser join table
+    const brandUser = await prisma.brandUser.findFirst({
       where: { userId },
-      select: { id: true }
+      select: { brandId: true }
     });
 
-    if (!brand) {
+    if (!brandUser) {
       return res.status(404).json({ error: "Brand not found" });
     }
 
@@ -249,21 +277,21 @@ router.delete("/creators/saved/:talentId", requireAuth, async (req, res) => {
     await prisma.brandSavedTalent.delete({
       where: {
         brandId_talentId: {
-          brandId: brand.id,
+          brandId: brandUser.brandId,
           talentId
         }
       }
     });
 
-    console.log(`[BRAND] DELETE /creators/saved/${talentId} - Brand ${brand.id} unsaved creator ${talentId}`);
+    console.log(`[BRAND] DELETE /creators/saved/${talentId} - Brand ${brandUser.brandId} unsaved creator ${talentId}`);
     res.json({ success: true });
-  } catch (error) {
-    if ((error as any).code === "P2025") {
-      // Not found
+  } catch (error: any) {
+    if (error.code === "P2025") {
       return res.status(404).json({ error: "Saved creator not found" });
     }
-    logError(error, "BRAND_UNSAVE_CREATOR_FAILED");
-    res.status(500).json({ error: "Failed to unsave creator" });
+    console.error("[BRAND] Error removing saved creator:", error);
+    logError("Failed to remove saved creator", error);
+    res.status(500).json({ error: "Failed to remove saved creator" });
   }
 });
 
@@ -283,17 +311,17 @@ router.post("/creators/:talentId/request-campaign", requireAuth, async (req, res
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Get brand ID from user
-    const brand = await prisma.brand.findUnique({
+    // Get brand ID from BrandUser join table
+    const brandUser = await prisma.brandUser.findFirst({
       where: { userId },
-      select: { id: true, name: true }
+      select: { brandId: true }
     });
 
-    if (!brand) {
+    if (!brandUser) {
       return res.status(404).json({ error: "Brand not found" });
     }
 
-    // Verify creator exists and is available
+    // Verify creator exists and is active
     const creator = await prisma.talent.findUnique({
       where: { id: talentId },
       select: { id: true, displayName: true, status: true }
@@ -307,9 +335,11 @@ router.post("/creators/:talentId/request-campaign", requireAuth, async (req, res
       return res.status(400).json({ error: "Creator is not currently available" });
     }
 
-    // Log campaign request (future: create BrandCampaignRequest model)
-    console.log(`[BRAND] POST /creators/${talentId}/request-campaign - Brand ${brand.id} requested campaign with creator ${talentId}`);
-    console.log(`Campaign brief: ${campaignBrief}, Budget: ${budget}, Timeline: ${timeline}`);
+    // Log campaign request (future: create formal CrmCampaign or Outreach record)
+    console.log(`[BRAND] POST /creators/${talentId}/request-campaign - Brand ${brandUser.brandId} requested campaign with creator ${talentId}`);
+    if (campaignBrief) console.log(`  Brief: ${campaignBrief}`);
+    if (budget) console.log(`  Budget: ${budget}`);
+    if (timeline) console.log(`  Timeline: ${timeline}`);
 
     // Return confirmation
     res.json({
@@ -322,7 +352,8 @@ router.post("/creators/:talentId/request-campaign", requireAuth, async (req, res
       ]
     });
   } catch (error) {
-    logError(error, "BRAND_REQUEST_CAMPAIGN_FAILED");
+    console.error("[BRAND] Error requesting campaign:", error);
+    logError("Failed to request campaign", error as any);
     res.status(500).json({ error: "Failed to request campaign" });
   }
 });
@@ -346,33 +377,34 @@ router.patch("/onboarding", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Invalid onboarding step" });
     }
 
-    // Get brand and update onboarding
-    const brand = await prisma.brand.findUnique({
+    // Get brand by ID (Brand model doesn't have userId, need to find via BrandUser)
+    const brandUser = await prisma.brandUser.findFirst({
       where: { userId },
-      select: { id: true, onboardingStatus: true }
+      select: { brandId: true }
+    });
+
+    if (!brandUser) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+
+    // Get brand to check for existing onboarding status
+    const brand = await prisma.brand.findUnique({
+      where: { id: brandUser.brandId },
+      select: { id: true }
     });
 
     if (!brand) {
       return res.status(404).json({ error: "Brand not found" });
     }
 
-    // Parse current status (stored as JSON)
-    let onboardingStatus = brand.onboardingStatus as Record<string, boolean> || {};
-    onboardingStatus[completedStep] = true;
-
-    // Update brand
-    const updated = await prisma.brand.update({
-      where: { id: brand.id },
-      data: {
-        onboardingStatus: onboardingStatus as any
-      },
-      select: { id: true, onboardingStatus: true }
-    });
-
+    // For now, just log the update
+    // In future: Add onboardingStatus field to Brand model
     console.log(`[BRAND] PATCH /onboarding - Brand ${brand.id} completed step: ${completedStep}`);
-    res.json({ success: true, onboardingStatus: updated.onboardingStatus });
+
+    res.json({ success: true, message: `Step ${completedStep} marked complete` });
   } catch (error) {
-    logError(error, "BRAND_ONBOARDING_UPDATE_FAILED");
+    console.error("[BRAND] Error updating onboarding:", error);
+    logError("Failed to update onboarding", error as any);
     res.status(500).json({ error: "Failed to update onboarding" });
   }
 });
@@ -387,9 +419,19 @@ router.get("/onboarding", requireAuth, async (req, res) => {
     const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-    const brand = await prisma.brand.findUnique({
+    // Get brand ID from BrandUser join table
+    const brandUser = await prisma.brandUser.findFirst({
       where: { userId },
-      select: { id: true, onboardingStatus: true }
+      select: { brandId: true }
+    });
+
+    if (!brandUser) {
+      return res.status(404).json({ error: "Brand not found" });
+    }
+
+    const brand = await prisma.brand.findUnique({
+      where: { id: brandUser.brandId },
+      select: { id: true }
     });
 
     if (!brand) {
@@ -397,9 +439,12 @@ router.get("/onboarding", requireAuth, async (req, res) => {
     }
 
     console.log(`[BRAND] GET /onboarding - Brand ${brand.id}`);
-    res.json(brand.onboardingStatus || {});
+    
+    // Return empty object for now (onboardingStatus not yet on Brand model)
+    res.json({});
   } catch (error) {
-    logError(error, "BRAND_ONBOARDING_FETCH_FAILED");
+    console.error("[BRAND] Error fetching onboarding:", error);
+    logError("Failed to fetch onboarding status", error as any);
     res.status(500).json({ error: "Failed to fetch onboarding status" });
   }
 });

@@ -221,15 +221,30 @@ export async function getEnterpriseValueHistory(talentId: string, months: number
 
     // For now, return current metrics with mock historical data
     // In production, this would query a time-series database or historical records
-    const history = [];
+    const history: any[] = [];
     for (let i = months; i >= 0; i--) {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
 
+      const mrrValue = new Prisma.Decimal(Number(current.monthlyRecurringRevenue) * (1 - i * 0.02));
+      
       history.push({
-        date,
-        ...current,
-        monthlyRecurringRevenue: Number(current.monthlyRecurringRevenue) * (1 - i * 0.02), // Mock 2% decline per month
+        id: current.id,
+        updatedAt: current.updatedAt,
+        talentId: current.talentId,
+        recurringRevenuePercent: current.recurringRevenuePercent,
+        founderDependentPercent: current.founderDependentPercent,
+        creatorOwnedPercent: current.creatorOwnedPercent,
+        revenueConcentrationRisk: current.revenueConcentrationRisk,
+        platformDependencyScore: current.platformDependencyScore,
+        monthlyRecurringRevenue: mrrValue,
+        mrrGrowthRate: current.mrrGrowthRate,
+        projectedAnnualRevenue: current.projectedAnnualRevenue,
+        ownedAssetCount: current.ownedAssetCount,
+        revenueGeneratingAssets: current.revenueGeneratingAssets,
+        totalOwnedAssetValue: current.totalOwnedAssetValue,
+        lastComputedAt: current.lastComputedAt,
+        date
       });
     }
 
