@@ -42,6 +42,7 @@ import { CreatorCampaignsPage } from "./pages/CreatorCampaignsPage.jsx";
 import { CreatorCalendarPage } from "./pages/CreatorCalendarPage.jsx";
 import { CreatorContractsPage } from "./pages/CreatorContractsPage.jsx";
 import { CreatorMessagesPage } from "./pages/CreatorMessagesPage.jsx";
+import { CreatorSocialsPage } from "./pages/CreatorSocialsPage.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
 import { AdminActivityPage } from "./pages/AdminActivity.jsx";
 import ExclusiveTalentDashboardLayout, {
@@ -665,6 +666,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <CreatorMessagesPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/socials"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <CreatorSocialsPage session={session} />
             </ProtectedRoute>
           }
         />

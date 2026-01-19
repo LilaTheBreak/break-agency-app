@@ -140,6 +140,7 @@ export const CONTROL_ROOM_PRESETS = {
       { label: "Calendar", to: "/creator/calendar" },
       { label: "Contracts", to: "/creator/contracts" },
       { label: "Messages", to: "/creator/messages" },
+      { label: "Socials", to: "/creator/socials" },
       { label: "Opportunities", to: "/creator/opportunities" }
     ],
     metrics: [],  // Populated dynamically from real data
