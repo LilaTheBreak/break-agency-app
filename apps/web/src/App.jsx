@@ -82,6 +82,7 @@ import { AdminReportsPage } from "./pages/AdminReportsPage.jsx";
 import AdminTasksPage from "./pages/AdminTasksPage.jsx";
 import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
 import { AdminOutreachPage } from "./pages/AdminOutreachPage.jsx";
+import { AssistedOutreachPage } from "./pages/AssistedOutreachPage.jsx";
 import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
 import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
@@ -796,6 +797,20 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
             >
               <RouteErrorBoundaryWrapper routeName="Outreach">
                 <AdminOutreachPage session={session} />
+              </RouteErrorBoundaryWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/assisted-outreach"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="Assisted Outreach">
+                <AssistedOutreachPage session={session} />
               </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }

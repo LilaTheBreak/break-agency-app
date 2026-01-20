@@ -211,7 +211,7 @@ function parseOutreachDrafts(
  * Fallback drafts if AI generation fails
  * Ensures system continues to work
  */
-function generateFallbackDrafts(context: OutreachContext): OutreachDraft[] {
+export function generateFallbackDrafts(context: OutreachContext): OutreachDraft[] {
   const goalText = {
     STRATEGY_AUDIT: "explore creator partnership opportunities",
     CREATIVE_CONCEPTS: "discuss creative collaboration",
@@ -314,7 +314,96 @@ export function detectSentiment(replyText: string): {
   };
 }
 
+/**
+ * Check if an inbound email is a reply to an assisted outreach campaign
+ * Called by Gmail sync when new emails arrive
+ */
+export async function processInboundEmailForOutreach(inboundEmailData: {
+  gmailId?: string;
+  fromEmail?: string;
+  toEmail?: string;
+  subject?: string;
+  body?: string;
+  inReplyTo?: string;
+  references?: string;
+  messageId?: string;
+}): Promise<void> {
+  try {
+    // Try to find matching campaign by email/contact
+    if (!inboundEmailData.fromEmail) {
+      return; // Can't process without sender info
+    }
+
+    // Find campaigns for this contact
+    const contact = await prisma.crmBrandContact.findFirst({
+      where: { email: inboundEmailData.fromEmail }
+    });
+
+    if (!contact) {
+      return; // Contact not in system
+    }
+
+    // Find active campaigns for this contact
+    const campaigns = await prisma.outreachCampaign.findMany({
+      where: {
+        contactId: contact.id,
+        status: { in: ["SENT", "REPLIED"] }
+      },
+      include: { drafts: true }
+    });
+
+    if (campaigns.length === 0) {
+      return; // No matching campaigns
+    }
+
+    // Process each campaign - typically there should be only one active
+    for (const campaign of campaigns) {
+      // Only update if this is first reply or updating existing reply
+      const existingReply = await prisma.outreachReply.findFirst({
+        where: { campaignId: campaign.id }
+      });
+
+      // Detect sentiment
+      const sentimentResult = detectSentiment(
+        `${inboundEmailData.subject || ""} ${inboundEmailData.body || ""}`
+      );
+
+      // Create or update reply
+      if (!existingReply) {
+        const replyData = {
+          campaignId: campaign.id,
+          emailMessageId: inboundEmailData.gmailId || "",
+          replyText: inboundEmailData.body || "",
+          senderEmail: inboundEmailData.fromEmail,
+          sentiment: sentimentResult.sentiment as unknown as string,
+          confidenceScore: sentimentResult.confidence,
+          detectedAt: new Date()
+        };
+        
+        await prisma.outreachReply.create({
+          data: replyData
+        });
+
+        // Update campaign status to REPLIED if not already
+        if (campaign.status === "SENT") {
+          await prisma.outreachCampaign.update({
+            where: { id: campaign.id },
+            data: { status: "REPLIED" }
+          });
+        }
+
+        console.log(`[ASSISTED_OUTREACH] Detected reply to campaign ${campaign.id} from ${inboundEmailData.fromEmail}`);
+      }
+    }
+  } catch (error) {
+    console.error("[ASSISTED_OUTREACH] Error processing inbound email for outreach:", error);
+    // Don't throw - this is a background operation
+  }
+}
+
 export default {
   generateAssistedOutreachDrafts,
-  detectSentiment
+  generateFallbackDrafts,
+  detectSentiment,
+  processInboundEmailForOutreach
 };

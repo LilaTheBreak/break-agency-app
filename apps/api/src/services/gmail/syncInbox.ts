@@ -4,6 +4,7 @@ import prisma from '../../lib/prisma.js';
 import { getOAuthClientForUser, GmailNotConnectedError } from './tokens.js';
 import { mapGmailMessageToDb } from './mappings.js';
 import { linkEmailToCrm } from './linkEmailToCrm.js';
+import { processInboundEmailForOutreach } from '../assistedOutreachService.js';
 // import { logAuditEvent } from '../../lib/auditLogger.js'; // No req context in service
 
 interface SyncStats {
@@ -288,6 +289,23 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
         stats.imported++;
         if (stats.imported % 10 === 0 || stats.imported === 1) {
           console.log(`[GMAIL SYNC] Imported ${stats.imported} message${stats.imported !== 1 ? 's' : ''} so far for user ${userId}...`);
+        }
+
+        // Check if this email is a reply to an assisted outreach campaign
+        try {
+          await processInboundEmailForOutreach({
+            gmailId: gmailMessage.id,
+            fromEmail: inboundEmailData.fromEmail,
+            toEmail: inboundEmailData.toEmail,
+            subject: inboundEmailData.subject,
+            body: inboundEmailData.body,
+            inReplyTo: inboundEmailData.metadata?.inReplyTo,
+            references: inboundEmailData.metadata?.references,
+            messageId: inboundEmailData.metadata?.messageId
+          });
+        } catch (outreachError) {
+          console.warn(`[GMAIL SYNC] Error processing outreach reply for message ${gmailMessage.id}:`, outreachError);
+          // Don't fail the entire sync if outreach processing fails
         }
       } catch (txError: any) {
         const errorCode = txError?.code;

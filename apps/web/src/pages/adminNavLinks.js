@@ -16,6 +16,7 @@ export const ADMIN_NAV_LINKS = [
   // Communication & Operations
   { label: "Messaging", to: "/admin/messaging" },
   { label: "Outreach", to: "/admin/outreach" },
+  { label: "Assisted Outreach", to: "/admin/assisted-outreach" },
   { label: "Calendar", to: "/admin/calendar" },
   { label: "Events", to: "/admin/events" },
   { label: "Tasks", to: "/admin/tasks" },

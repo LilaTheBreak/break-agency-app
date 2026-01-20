@@ -11,22 +11,24 @@ import { ArrowLeft, Mail, Check, AlertCircle, MessageSquare, Calendar, Loader2, 
  * - Booking CTA if positive reply received
  */
 
-export default function OutreachCampaignDetail({ campaign, onBack }) {
+export default function OutreachCampaignDetail({ campaignId, onBack, onApprovalRequest, refreshTrigger = 0 }) {
   const [loading, setLoading] = useState(true);
-  const [campaignData, setCampaignData] = useState(campaign);
+  const [campaignData, setCampaignData] = useState(null);
   const [error, setError] = useState(null);
+  const [booking, setBooking] = useState(false);
+  const [bookingError, setBookingError] = useState(null);
 
   useEffect(() => {
-    if (campaign?.id) {
+    if (campaignId) {
       fetchCampaignDetail();
     }
-  }, [campaign?.id]);
+  }, [campaignId, refreshTrigger]);
 
   const fetchCampaignDetail = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/assisted-outreach/campaigns/${campaign.id}`);
+      const response = await fetch(`/api/assisted-outreach/campaigns/${campaignId}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch campaign details');
@@ -38,6 +40,29 @@ export default function OutreachCampaignDetail({ campaign, onBack }) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBook = async () => {
+    setBooking(true);
+    setBookingError(null);
+    try {
+      const response = await fetch(`/api/assisted-outreach/campaigns/${campaignId}/book`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to book meeting');
+      }
+
+      const data = await response.json();
+      setCampaignData(data.campaign);
+    } catch (err) {
+      setBookingError(err.message);
+    } finally {
+      setBooking(false);
     }
   };
 
@@ -155,13 +180,39 @@ export default function OutreachCampaignDetail({ campaign, onBack }) {
       </div>
 
       {/* CTA for Positive Reply */}
-      {hasPosReply && (
-        <div className="mb-6 p-4 bg-green-50 border-2 border-green-300 rounded-lg flex items-start gap-3">
-          <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+      {hasPosReply && campaignData.status !== 'BOOKED' && (
+        <div className="mb-6 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
+          <div className="flex items-start gap-3">
+            <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-green-900">Positive Response Received!</p>
+              <p className="text-sm text-green-800 mt-1">
+                This contact has responded positively. Book a meeting to continue the conversation.
+              </p>
+              {bookingError && (
+                <p className="text-sm text-red-700 mt-2">Error: {bookingError}</p>
+              )}
+              <button
+                onClick={handleBook}
+                disabled={booking}
+                className="mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
+              >
+                {booking && <Loader2 className="w-4 h-4 animate-spin" />}
+                {booking ? 'Booking...' : '📅 Book Strategy Call'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booked Status */}
+      {campaignData.status === 'BOOKED' && (
+        <div className="mb-6 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg flex items-start gap-3">
+          <Calendar className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-green-900">Positive Response Received!</p>
-            <p className="text-sm text-green-800 mt-1">
-              This contact has responded positively. Consider booking a strategy call or sending additional resources.
+            <p className="font-semibold text-purple-900">✓ Meeting Booked</p>
+            <p className="text-sm text-purple-800 mt-1">
+              This opportunity has been converted to a booked meeting as of {formatDate(campaignData.bookedAt)}.
             </p>
           </div>
         </div>
