@@ -393,21 +393,39 @@ router.patch("/onboarding", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "You are not linked to any brand. Contact your admin to link you to a brand." });
     }
 
-    // Get brand to check for existing onboarding status
+    // Get current brand with onboarding status
     const brand = await prisma.brand.findUnique({
       where: { id: brandUser.brandId },
-      select: { id: true }
+      select: { 
+        id: true,
+        onboardingStatus: true
+      }
     });
 
     if (!brand) {
       return res.status(403).json({ error: "Brand access denied" });
     }
 
-    // For now, just log the update
-    // In future: Add onboardingStatus field to Brand model
+    // Update onboarding status
+    const currentStatus = (brand.onboardingStatus || {}) as Record<string, boolean>;
+    const updatedStatus = {
+      ...currentStatus,
+      [completedStep]: true
+    };
+
+    const updatedBrand = await prisma.brand.update({
+      where: { id: brandUser.brandId },
+      data: { onboardingStatus: updatedStatus },
+      select: { onboardingStatus: true }
+    });
+
     console.log(`[BRAND] PATCH /onboarding - Brand ${brand.id} completed step: ${completedStep}`);
 
-    res.json({ success: true, message: `Step ${completedStep} marked complete` });
+    res.json({ 
+      success: true, 
+      message: `Step ${completedStep} marked complete`,
+      onboardingStatus: updatedBrand.onboardingStatus
+    });
   } catch (error) {
     console.error("[BRAND] Error updating onboarding:", error);
     logError("Failed to update onboarding", error as any);
@@ -437,7 +455,10 @@ router.get("/onboarding", requireAuth, async (req, res) => {
 
     const brand = await prisma.brand.findUnique({
       where: { id: brandUser.brandId },
-      select: { id: true }
+      select: { 
+        id: true,
+        onboardingStatus: true
+      }
     });
 
     if (!brand) {
@@ -446,8 +467,7 @@ router.get("/onboarding", requireAuth, async (req, res) => {
 
     console.log(`[BRAND] GET /onboarding - Brand ${brand.id}`);
     
-    // Return empty object for now (onboardingStatus not yet on Brand model)
-    res.json({});
+    res.json(brand.onboardingStatus || {});
   } catch (error) {
     console.error("[BRAND] Error fetching onboarding:", error);
     logError("Failed to fetch onboarding status", error as any);

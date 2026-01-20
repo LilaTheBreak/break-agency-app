@@ -15,17 +15,23 @@ import { apiFetch } from "../services/apiClient.js";
  * 
  * Features:
  * - Progress bar showing completion
- * - Lock advanced features until steps complete
- * - Replace blank states with "Next step" CTAs
+ * - All steps are clickable and editable
  * - Persist completion state to DB
+ * - Load saved progress on mount
  */
 export function BrandOnboardingChecklist({ onboarding, onComplete }) {
-  const [steps, setSteps] = useState([
+  const initialSteps = [
     {
       id: "profile",
       title: "Complete Brand Profile",
       description: "Tell us about your company",
       fields: ["Company name", "Website", "Industry", "Primary contact"],
+      formFields: {
+        companyName: "",
+        website: "",
+        industry: "",
+        primaryContact: ""
+      },
       completed: false,
       order: 1
     },
@@ -34,78 +40,152 @@ export function BrandOnboardingChecklist({ onboarding, onComplete }) {
       title: "Connect Billing",
       description: "Add payment method",
       fields: ["Payment method", "Billing contact"],
+      formFields: {
+        paymentMethod: "",
+        billingContact: ""
+      },
       completed: false,
-      order: 2,
-      locked: true
+      order: 2
     },
     {
       id: "goals",
       title: "Define Campaign Goals",
       description: "What do you want to achieve?",
       fields: ["Goal type", "Target platforms", "Budget range"],
+      formFields: {
+        goalType: "",
+        targetPlatforms: [],
+        budgetRange: ""
+      },
       completed: false,
-      order: 3,
-      locked: true
+      order: 3
     },
     {
       id: "creators",
       title: "Review Creator Matches",
       description: "See AI-recommended creators",
       fields: ["View recommendations", "Build shortlist"],
+      formFields: {
+        reviewedMatches: false,
+        savedToShortlist: false
+      },
       completed: false,
-      order: 4,
-      locked: true
+      order: 4
     },
     {
       id: "approve",
       title: "Approve First Campaign",
       description: "Launch your first campaign",
       fields: ["Select creators", "Set timeline", "Review deliverables"],
+      formFields: {
+        selectedCreators: [],
+        campaignTimeline: "",
+        deliverables: ""
+      },
       completed: false,
-      order: 5,
-      locked: true
+      order: 5
     }
-  ]);
+  ];
 
+  const [steps, setSteps] = useState(initialSteps);
   const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const completedCount = steps.filter(s => s.completed).length;
   const progressPercent = (completedCount / steps.length) * 100;
 
-  // Unlock steps based on previous completion
+  // Load onboarding status from database on mount
+  useEffect(() => {
+    loadOnboardingStatus();
+  }, []);
+
+  // Update step locking based on completion status
   useEffect(() => {
     setSteps(prevSteps =>
       prevSteps.map((step, idx) => ({
-        ...step,
-        locked: idx > 0 && !prevSteps[idx - 1].completed
+        ...step
       }))
     );
   }, []);
 
+  const loadOnboardingStatus = async () => {
+    try {
+      const response = await apiFetch("/api/brand/onboarding");
+      if (response.ok) {
+        const data = await response.json();
+        // Update steps based on saved status
+        setSteps(prevSteps =>
+          prevSteps.map(step => ({
+            ...step,
+            completed: data[step.id] === true
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Failed to load onboarding status:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const markStepComplete = async (stepId) => {
     try {
-      await apiFetch("/api/brand/onboarding", {
+      setIsSaving(true);
+      const response = await apiFetch("/api/brand/onboarding", {
         method: "PATCH",
         body: JSON.stringify({ completedStep: stepId })
       });
 
-      setSteps(prevSteps =>
-        prevSteps.map(step => ({
-          ...step,
-          completed: step.id === stepId ? true : step.completed
-        }))
-      );
+      if (response.ok) {
+        const result = await response.json();
+        
+        setSteps(prevSteps =>
+          prevSteps.map(step => ({
+            ...step,
+            completed: result.onboardingStatus?.[step.id] === true || step.completed
+          }))
+        );
 
-      // Check if all steps done
-      if (completedCount + 1 === steps.length) {
-        onComplete?.();
+        // Check if all steps done
+        const newCompletedCount = steps.filter(s => s.id === stepId).length + completedCount;
+        if (newCompletedCount === steps.length || Object.keys(result.onboardingStatus || {}).length === steps.length) {
+          onComplete?.();
+        }
       }
     } catch (error) {
       console.error("Failed to mark step complete:", error);
+      alert("Error saving progress. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const updateStepForm = (stepId, field, value) => {
+    setSteps(prevSteps =>
+      prevSteps.map(step => {
+        if (step.id === stepId) {
+          return {
+            ...step,
+            formFields: {
+              ...step.formFields,
+              [field]: value
+            }
+          };
+        }
+        return step;
+      })
+    );
+  };
+
   const currentStepData = steps[currentStep];
-  const isStepLocked = currentStepData?.locked;
+
+  if (loading) {
+    return (
+      <div className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="text-center text-brand-black/60">Loading onboarding progress...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
@@ -136,15 +216,14 @@ export function BrandOnboardingChecklist({ onboarding, onComplete }) {
         {steps.map((step, idx) => (
           <button
             key={step.id}
-            onClick={() => !isStepLocked && setCurrentStep(idx)}
-            disabled={step.locked}
+            onClick={() => setCurrentStep(idx)}
             className={`w-full rounded-2xl border p-4 text-left transition-colors ${
               currentStep === idx
                 ? "border-brand-red bg-brand-red/10"
                 : step.completed
                 ? "border-brand-black/20 bg-brand-linen/30"
                 : "border-brand-black/20 bg-brand-white hover:bg-brand-linen/20"
-            } ${step.locked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+            } cursor-pointer`}
           >
             <div className="flex items-start gap-3">
               {/* Step Number or Checkmark */}
@@ -166,7 +245,7 @@ export function BrandOnboardingChecklist({ onboarding, onComplete }) {
                 <p className="text-xs text-brand-black/60 mt-1">{step.description}</p>
 
                 {/* Fields for current step */}
-                {currentStep === idx && !step.locked && (
+                {currentStep === idx && (
                   <div className="mt-3 space-y-2 pt-3 border-t border-brand-black/10">
                     {step.fields.map((field, fidx) => (
                       <div key={fidx} className="text-xs text-brand-black/70 flex items-center gap-2">
@@ -175,10 +254,6 @@ export function BrandOnboardingChecklist({ onboarding, onComplete }) {
                       </div>
                     ))}
                   </div>
-                )}
-
-                {step.locked && (
-                  <p className="text-xs text-brand-black/50 mt-2">Complete previous steps to unlock</p>
                 )}
               </div>
 
@@ -191,15 +266,152 @@ export function BrandOnboardingChecklist({ onboarding, onComplete }) {
         ))}
       </div>
 
-      {/* Current Step CTA */}
-      {!isStepLocked && currentStepData && (
-        <div className="space-y-3 rounded-2xl bg-brand-linen/30 p-4">
-          <p className="text-sm font-semibold text-brand-black">Next: {currentStepData.title}</p>
+      {/* Current Step Editor */}
+      {currentStepData && (
+        <div className="space-y-4 rounded-2xl bg-brand-linen/30 p-4">
+          <div>
+            <p className="text-sm font-semibold text-brand-black mb-3">{currentStepData.title}</p>
+            
+            {/* Step-specific form fields */}
+            {currentStepData.id === "profile" && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Company name"
+                  value={currentStepData.formFields.companyName || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "companyName", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+                <input
+                  type="url"
+                  placeholder="Website URL"
+                  value={currentStepData.formFields.website || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "website", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Industry"
+                  value={currentStepData.formFields.industry || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "industry", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+                <input
+                  type="email"
+                  placeholder="Primary contact email"
+                  value={currentStepData.formFields.primaryContact || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "primaryContact", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+              </div>
+            )}
+
+            {currentStepData.id === "billing" && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Payment method (e.g., Credit Card)"
+                  value={currentStepData.formFields.paymentMethod || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "paymentMethod", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+                <input
+                  type="email"
+                  placeholder="Billing contact email"
+                  value={currentStepData.formFields.billingContact || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "billingContact", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+              </div>
+            )}
+
+            {currentStepData.id === "goals" && (
+              <div className="space-y-3">
+                <select
+                  value={currentStepData.formFields.goalType || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "goalType", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                >
+                  <option value="">Select campaign goal...</option>
+                  <option value="awareness">Brand Awareness</option>
+                  <option value="conversion">Conversion</option>
+                  <option value="launch">Product Launch</option>
+                  <option value="engagement">Engagement</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Target platforms (e.g., Instagram, TikTok)"
+                  value={currentStepData.formFields.targetPlatforms?.join(", ") || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "targetPlatforms", e.target.value.split(",").map(p => p.trim()))}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Budget range"
+                  value={currentStepData.formFields.budgetRange || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "budgetRange", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+              </div>
+            )}
+
+            {currentStepData.id === "creators" && (
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm text-brand-black cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={currentStepData.formFields.reviewedMatches || false}
+                    onChange={(e) => updateStepForm(currentStepData.id, "reviewedMatches", e.target.checked)}
+                    className="w-4 h-4 rounded border-brand-black/20"
+                  />
+                  I've reviewed the AI-recommended creators
+                </label>
+                <label className="flex items-center gap-2 text-sm text-brand-black cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={currentStepData.formFields.savedToShortlist || false}
+                    onChange={(e) => updateStepForm(currentStepData.id, "savedToShortlist", e.target.checked)}
+                    className="w-4 h-4 rounded border-brand-black/20"
+                  />
+                  I've saved creators to my shortlist
+                </label>
+              </div>
+            )}
+
+            {currentStepData.id === "approve" && (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Selected creators"
+                  value={currentStepData.formFields.selectedCreators?.join(", ") || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "selectedCreators", e.target.value.split(",").map(c => c.trim()))}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Campaign timeline"
+                  value={currentStepData.formFields.campaignTimeline || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "campaignTimeline", e.target.value)}
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+                <textarea
+                  placeholder="Deliverables overview"
+                  value={currentStepData.formFields.deliverables || ""}
+                  onChange={(e) => updateStepForm(currentStepData.id, "deliverables", e.target.value)}
+                  rows="3"
+                  className="w-full rounded-lg border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* CTA Button */}
           <button
             onClick={() => markStepComplete(currentStepData.id)}
-            className="w-full rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-red/90 transition-colors"
+            disabled={isSaving}
+            className="w-full rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-brand-white hover:bg-brand-red/90 disabled:opacity-50 transition-colors"
           >
-            {currentStepData.completed ? "Completed ✓" : "Mark as Complete"}
+            {isSaving ? "Saving..." : currentStepData.completed ? "✓ Completed" : "Save & Mark Complete"}
           </button>
         </div>
       )}

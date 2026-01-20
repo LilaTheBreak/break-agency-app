@@ -155,6 +155,7 @@ model Brand {
   restrictedCategories  String[]
   preferredCreatorTypes String[]
   targetAudience        Json?
+  onboardingStatus      Json     @default("{}")  // { profile: true, billing: true, goals: false, creators: false, approve: false }
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
