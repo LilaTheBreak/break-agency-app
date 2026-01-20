@@ -171,6 +171,7 @@ model Brand {
   SuitabilityResult SuitabilityResult[]
   Contract          Contract[]
   AuditSources      AuditSource[]
+  OutreachCampaigns OutreachCampaign[]  // ASSISTED OUTREACH
 
   @@index([domain])
   @@index([createdAt])
@@ -486,6 +487,9 @@ model CrmBrandContact {
   createdAt                DateTime @default(now())
   updatedAt                DateTime
   CrmBrand                 CrmBrand @relation(fields: [crmBrandId], references: [id], onDelete: Cascade)
+  
+  // Outreach campaigns for this contact
+  OutreachCampaigns        OutreachCampaign[] @relation("ContactOutreach")
 
   @@unique([crmBrandId, email])
   @@index([crmBrandId])
@@ -1909,6 +1913,11 @@ model User {
   CampaignApprovalsActedOn                CampaignApproval[]      @relation("CampaignApprovalActor")
   CampaignFeedbackSubmitted               CampaignFeedback[]      @relation("CampaignFeedbackSubmittedBy")
   ReportsApprovedBy                       CampaignReport[]        @relation("ReportApprovedBy")
+  
+  // ASSISTED OUTREACH RELATIONS (NEW)
+  OutreachCampaignsCreated                OutreachCampaign[]      @relation("OutreachCampaignCreatedBy")
+  OutreachCampaignsSent                   OutreachCampaign[]      @relation("OutreachCampaignSender")
+  OutreachDraftsApproved                  OutreachDraft[]
 }
 
 model WellnessCheckin {
@@ -3663,5 +3672,128 @@ model CampaignReport {
 }
 
 // ============================================================================
-// END ENTERPRISE OPERATING SYSTEM MODELS
+// ASSISTED OUTREACH SYSTEM (Premium Semi-Automated)
+// ============================================================================
+
+model OutreachCampaign {
+  id                String   @id @default(cuid())
+  brandId           String
+  brand             Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  
+  // Contact being reached out to
+  contactId         String
+  contact           CrmBrandContact @relation("ContactOutreach", fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Campaign metadata
+  goal              String   // STRATEGY_AUDIT, CREATIVE_CONCEPTS, CREATOR_MATCHING
+  status            String   @default("DRAFT_REQUIRES_APPROVAL")  // DRAFT_REQUIRES_APPROVAL, APPROVED, SENT, REPLIED, BOOKED, CLOSED
+  
+  // Who created this campaign
+  createdByUserId   String
+  createdByUser     User     @relation("OutreachCampaignCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  
+  // Who is sending (e.g., Lila or Maureen)
+  senderUserId      String
+  senderUser        User     @relation("OutreachCampaignSender", fields: [senderUserId], references: [id], onDelete: Cascade)
+  
+  // Approved draft info
+  approvedDraftId   String?
+  approvedDraft     OutreachDraft? @relation("ApprovedDraft", fields: [approvedDraftId], references: [id])
+  
+  // Drafts for this campaign
+  drafts            OutreachDraft[] @relation("CampaignDrafts")
+  
+  // Replies
+  replies           OutreachReply[] @relation("CampaignReplies")
+  
+  // Timestamps
+  sentAt            DateTime?
+  repliedAt         DateTime?
+  bookedAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([brandId])
+  @@index([contactId])
+  @@index([createdByUserId])
+  @@index([senderUserId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OutreachDraft {
+  id                String   @id @default(cuid())
+  campaignId        String
+  campaign          OutreachCampaign @relation("CampaignDrafts", fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  // Draft metadata
+  version           String   // A (Strategic), B (Creative), C (Founder)
+  subject           String
+  body              String   @db.Text
+  
+  // Approval status
+  isApproved        Boolean  @default(false)
+  approvedByUserId  String?
+  approvedByUser    User?    @relation(fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  approvedAt        DateTime?
+  
+  // Edit tracking
+  wasEdited         Boolean  @default(false)
+  editedBy          String?  // User ID if edited
+  editedAt          DateTime?
+  
+  // Sending info
+  sentAt            DateTime?
+  emailMessageId    String?  // External email service ID
+  
+  // Is this the approved draft for the campaign?
+  isApprovedVersion Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relation for approved draft
+  approvedCampaigns OutreachCampaign[] @relation("ApprovedDraft")
+  
+  @@index([campaignId])
+  @@index([version])
+  @@index([isApproved])
+  @@index([isApprovedVersion])
+  @@index([sentAt])
+}
+
+model OutreachReply {
+  id                String   @id @default(cuid())
+  campaignId        String
+  campaign          OutreachCampaign @relation("CampaignReplies", fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  // Email tracking
+  emailMessageId    String   // Links to the original outreach email
+  
+  // Reply content
+  replyText         String   @db.Text
+  senderEmail       String
+  senderName        String?
+  
+  // Sentiment analysis (lightweight)
+  sentiment         String   // POSITIVE, NEUTRAL, NEGATIVE
+  confidenceScore   Float?   // 0-1
+  
+  // Detected vs recorded
+  detectedAt        DateTime
+  recordedAt        DateTime @default(now())
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([campaignId])
+  @@index([sentiment])
+  @@index([emailMessageId])
+  @@index([detectedAt])
+}
+
+// ============================================================================
+// END ASSISTED OUTREACH SYSTEM MODELS
+// ============================================================================
+
 // ============================================================================

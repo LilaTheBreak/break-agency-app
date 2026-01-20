@@ -54,6 +54,9 @@ import meetingsRouter from './admin/meetings.js';
 import { router as outreachRouter } from './admin/outreach.js';
 import adminReportsRouter from './admin/reports.js';
 
+// Assisted Outreach (Premium feature)
+import assistedOutreachRouter from './assistedOutreach.js';
+
 // ❗ You referenced these in your router but did not import them
 // import agentRouter from './agent.js';
 // import brandCRMRouter from './brandCRM.js';
@@ -160,6 +163,7 @@ router.use("/meetings", meetingsRouter);
 router.use(meetingsRouter); // Also mount without prefix for /api/talent/:talentId/meetings
 router.use("/outreach", outreachRouter);
 router.use(outreachRouter); // Also mount without prefix for convenience
+router.use("/assisted-outreach", assistedOutreachRouter);
 router.use("/admin/campaigns/:campaignId/report", adminReportsRouter);
 
 /* -------------------------------------------------------
