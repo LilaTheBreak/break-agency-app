@@ -148,7 +148,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
       prisma.deal.count({
         where: { 
           userId: user.id,
-          stage: { in: ['WON', 'COMPLETED', 'Won'] }
+          stage: { in: ['PAYMENT_RECEIVED', 'COMPLETED'] }
         }
       })
     ]);

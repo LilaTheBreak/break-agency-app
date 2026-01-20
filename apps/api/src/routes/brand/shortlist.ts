@@ -296,7 +296,7 @@ router.get('/brand/shortlist', requireAuth, async (req: Request, res: Response) 
             profileImageUrl: true,
             SocialAccountConnection: {
               where: { connected: true },
-              select: { platform: true, username: true, followerCount: true }
+              select: { platform: true, handle: true }
             }
           }
         }
@@ -659,13 +659,13 @@ router.post('/admin/campaigns/:campaignId/generate-report', requireAuth, async (
     const report = await prisma.campaignReport.upsert({
       where: { campaignId },
       update: {
-        reportContent,
+        reportContent: reportContent as any,
         generatedAt: new Date()
       },
       create: {
         id: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         campaignId,
-        reportContent,
+        reportContent: reportContent as any,
         tone: 'PROFESSIONAL',
         generatedAt: new Date()
         // Note: NOT setting approvedByAdminId or approvedAt - status is DRAFT

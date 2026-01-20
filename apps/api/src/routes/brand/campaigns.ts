@@ -103,12 +103,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
           label: 'Campaign created by brand user'
         }],
         lastActivityAt: new Date()
-      },
-      include: {
-        Brand: {
-          select: { id: true, name: true }
-        }
-      }
+      } as any
     });
 
     // Log action to audit trail
@@ -137,7 +132,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       campaignName: campaign.campaignName,
       status: campaign.approvalStatus,
       submittedAt: campaign.createdAt,
-      brand: campaign.Brand
+      brandId: campaign.brandId
     });
 
   } catch (error) {
@@ -269,7 +264,7 @@ router.get('/:campaignId', requireAuth, async (req: Request, res: Response) => {
                 profileImageUrl: true,
                 SocialAccountConnection: {
                   where: { connected: true },
-                  select: { platform: true, username: true, followerCount: true }
+                  select: { platform: true, handle: true }
                 }
               }
             }
