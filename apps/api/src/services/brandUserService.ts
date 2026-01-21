@@ -377,13 +377,24 @@ export async function listBrands(
   limit: number = 20,
   offset: number = 0
 ) {
-  const brands = await prisma.brand.findMany({
-    take: limit,
-    skip: offset,
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    console.log(`[listBrands] Querying prisma with limit=${limit}, offset=${offset}`);
+    const brands = await prisma.brand.findMany({
+      take: limit,
+      skip: offset,
+      orderBy: { createdAt: "desc" },
+    });
+    console.log(`[listBrands] Found ${brands?.length || 0} brands`);
 
-  const total = await prisma.brand.count();
+    const total = await prisma.brand.count();
+    console.log(`[listBrands] Total brands in DB: ${total}`);
 
-  return { brands, total };
+    return { brands, total };
+  } catch (err) {
+    console.error(`[listBrands] Error querying brands:`, {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    throw err;
+  }
 }

@@ -259,7 +259,9 @@ export async function listBrandsHandler(
     const limit = Math.min(Number(req.query.limit) || 20, 100);
     const offset = Number(req.query.offset) || 0;
 
+    console.log(`[List Brands] Fetching brands with limit=${limit}, offset=${offset}`);
     const { brands, total } = await brandUserService.listBrands(limit, offset);
+    console.log(`[List Brands] Successfully fetched ${brands?.length || 0} brands`);
 
     res.json({
       brands,
@@ -268,7 +270,10 @@ export async function listBrandsHandler(
       offset,
     });
   } catch (error) {
-    console.error("[List Brands]", error);
+    console.error("[List Brands] Error:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     res.status(500).json({ error: "Failed to list brands" });
   }
 }
