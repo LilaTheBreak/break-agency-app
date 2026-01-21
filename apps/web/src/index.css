@@ -10,11 +10,36 @@
 */
 
 :root {
+  /* Brand Colors */
   --brand-black: #000000;
   --brand-red: #a70f0c;
   --brand-ivory: #fafaf6;
   --brand-linen: #f1ece6;
   --brand-white: #ffffff;
+
+  /* 🎨 ELEVATION SYSTEM - Soft, Diffused, Premium Shadows */
+  /* Use these exclusively for all depth and layering */
+  
+  /* Elevation 0: Flat (no shadow) */
+  --elevation-0: none;
+  
+  /* Elevation 1: Subtle (default for cards, panels) */
+  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.02);
+  
+  /* Elevation 2: Soft (hover state for interactive elements) */
+  --elevation-2: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+  
+  /* Elevation 3: Medium (active state, emphasis, modals) */
+  --elevation-3: 0 10px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+  
+  /* Elevation 4: Strong (priority areas, command center elements) */
+  --elevation-4: 0 16px 32px rgba(0, 0, 0, 0.10), 0 6px 12px rgba(0, 0, 0, 0.06);
+  
+  /* Focus Ring (accessible focus state - never color alone) */
+  --elevation-focus: 0 0 0 3px rgba(167, 15, 12, 0.12);
+  
+  /* Focus Ring Strong (when element has strong focus state) */
+  --elevation-focus-strong: 0 0 0 4px rgba(167, 15, 12, 0.16);
 }
 
 html,
@@ -86,5 +111,192 @@ body {
   }
   .text-brand-red {
     color: var(--brand-red);
+  }
+
+  /* 🎨 ELEVATION UTILITIES - Apply elevation with one class */
+  .elevation-0 {
+    box-shadow: var(--elevation-0);
+  }
+  .elevation-1 {
+    box-shadow: var(--elevation-1);
+  }
+  .elevation-2 {
+    box-shadow: var(--elevation-2);
+  }
+  .elevation-3 {
+    box-shadow: var(--elevation-3);
+  }
+  .elevation-4 {
+    box-shadow: var(--elevation-4);
+  }
+  .elevation-focus {
+    box-shadow: var(--elevation-focus);
+  }
+  .elevation-focus-strong {
+    box-shadow: var(--elevation-focus-strong);
+  }
+
+  /* 🎨 CARD SYSTEM - Premium cards with depth */
+  .card {
+    background: var(--brand-white);
+    border-radius: 12px;
+    box-shadow: var(--elevation-1);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card:hover {
+    box-shadow: var(--elevation-2);
+    transform: translateY(-1px);
+  }
+
+  .card:active,
+  .card.active {
+    box-shadow: var(--elevation-3);
+  }
+
+  /* Card variants */
+  .card-priority {
+    box-shadow: var(--elevation-3);
+    background: #fffdfb;
+    border-top: 3px solid var(--brand-red);
+  }
+
+  .card-priority:hover {
+    box-shadow: var(--elevation-4);
+    transform: translateY(-2px);
+  }
+
+  .card-focus {
+    box-shadow: var(--elevation-3), var(--elevation-focus);
+  }
+
+  /* 🎨 PANEL SYSTEM - Contained sections with hierarchy */
+  .panel {
+    background: var(--brand-white);
+    border-radius: 12px;
+    box-shadow: var(--elevation-1);
+  }
+
+  .panel-elevated {
+    box-shadow: var(--elevation-2);
+  }
+
+  .panel-prominent {
+    box-shadow: var(--elevation-3);
+    background: #fffdfb;
+  }
+
+  /* 🎨 BUTTON & INTERACTIVE FOCUS STATES */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible {
+    outline: none;
+    box-shadow: var(--elevation-focus);
+  }
+
+  .card:focus-within,
+  .panel:focus-within {
+    box-shadow: var(--elevation-3), var(--elevation-focus);
+  }
+
+  /* 🎨 NAVIGATION & ACTIVE STATES */
+  .nav-item {
+    position: relative;
+    transition: box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+
+  .nav-item:hover {
+    box-shadow: var(--elevation-1);
+  }
+
+  .nav-item.active {
+    background: var(--brand-white);
+    box-shadow: var(--elevation-2);
+    border-left: 3px solid var(--brand-red);
+  }
+
+  /* 🎨 MODAL & OVERLAY DEPTH */
+  .modal-overlay {
+    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  .modal-content {
+    background: var(--brand-white);
+    border-radius: 12px;
+    box-shadow: var(--elevation-4);
+  }
+
+  /* 🎨 SECTION HIERARCHY - Clear scanability */
+  .section-background {
+    background: var(--brand-ivory);
+  }
+
+  .section-wrapper {
+    background: var(--brand-white);
+    border-radius: 12px;
+    box-shadow: var(--elevation-1);
+  }
+
+  .section-header {
+    position: relative;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--brand-linen);
+  }
+
+  /* 🎨 ELEVATED CONTENT LAYERS */
+  .layer-base {
+    background: var(--brand-ivory);
+    box-shadow: none;
+  }
+
+  .layer-primary {
+    background: var(--brand-white);
+    box-shadow: var(--elevation-1);
+  }
+
+  .layer-secondary {
+    background: var(--brand-white);
+    box-shadow: var(--elevation-2);
+  }
+
+  .layer-focused {
+    background: var(--brand-white);
+    box-shadow: var(--elevation-3);
+  }
+
+  /* 🎨 ALERT & STATUS EMPHASIS */
+  .status-alert {
+    box-shadow: var(--elevation-3);
+  }
+
+  .status-info {
+    box-shadow: var(--elevation-2);
+  }
+
+  /* 🎨 DROPDOWN & POPOVER DEPTH */
+  .dropdown-menu {
+    background: var(--brand-white);
+    border-radius: 8px;
+    box-shadow: var(--elevation-3);
+    z-index: 1000;
+  }
+
+  .popover {
+    background: var(--brand-white);
+    border-radius: 8px;
+    box-shadow: var(--elevation-3);
+  }
+
+  /* 🎨 SMOOTH TRANSITIONS FOR ELEVATION CHANGES */
+  .transition-elevation {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .transition-elevation-lg {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
   }
 }
