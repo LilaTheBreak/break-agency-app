@@ -26,6 +26,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '../services/apiClient.js';
 
 // Global cache for brands (persist across component mounts)
 let brandsCacheGlobal = null;
@@ -65,17 +66,29 @@ export function useBrands() {
         setIsLoading(true);
         setError(null);
 
-        brandsCachePromise = fetch('/api/crm-brands')
+        brandsCachePromise = apiFetch('/api/crm-brands')
           .then(async (res) => {
             if (!res.ok) {
-              throw new Error(`Failed to fetch brands: ${res.status}`);
+              throw new Error(`Failed to fetch brands: ${res.status} ${res.statusText}`);
             }
-            const data = await res.json();
+            
+            let data;
+            try {
+              data = await res.json();
+            } catch (parseError) {
+              console.error('[useBrands] Failed to parse brands response:', parseError);
+              throw new Error('Failed to parse brands response');
+            }
             
             // Normalize and deduplicate brands
             const normalized = normalizeBrands(data);
+            console.log('[useBrands] Successfully fetched', normalized.length, 'brands');
             brandsCacheGlobal = normalized;
             return normalized;
+          })
+          .catch((err) => {
+            console.error('[useBrands] Fetch error:', err);
+            throw err;
           })
           .finally(() => {
             brandsCachePromise = null;
