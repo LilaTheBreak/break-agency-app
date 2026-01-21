@@ -121,7 +121,7 @@ export function useBrands() {
   // Create brand function - used by BrandSelect for inline creation
   const createBrand = useCallback(async (brandName) => {
     try {
-      const response = await fetch('/api/brands', {
+      const response = await apiFetch('/api/brands', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

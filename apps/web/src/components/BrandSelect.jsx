@@ -181,7 +181,11 @@ export function BrandSelect({
 
           {/* Brand list or empty state */}
           <div className="max-h-72 overflow-y-auto">
-            {filteredBrands.length > 0 ? (
+            {isLoading ? (
+              <div className="px-4 py-8 text-center text-sm text-brand-black/50">
+                <p>Loading brands...</p>
+              </div>
+            ) : filteredBrands.length > 0 ? (
               filteredBrands.map((brand) => (
                 <button
                   key={brand.id}
@@ -190,12 +194,20 @@ export function BrandSelect({
                     value === brand.id ? "bg-brand-red/10 text-brand-red font-medium" : "text-brand-black"
                   }`}
                 >
-                  {brand.name || brand.brandName}
+                  <span className="font-medium">{brand.name || brand.brandName}</span>
                 </button>
               ))
+            ) : searchText.trim() ? (
+              <div className="px-4 py-4 text-sm text-brand-black/60 text-center">
+                <p>No brands match "{searchText}"</p>
+                {shouldShowCreate && (
+                  <p className="text-xs text-brand-black/40 mt-2">Create it below</p>
+                )}
+              </div>
             ) : (
-              <div className="px-3 py-2 text-xs text-brand-black/60">
-                {searchText.trim() ? "No brands match your search" : "No brands available"}
+              <div className="px-4 py-4 text-sm text-brand-black/60 text-center">
+                <p>No brands available</p>
+                <p className="text-xs text-brand-black/40 mt-1">Type to create one</p>
               </div>
             )}
 
