@@ -22,11 +22,30 @@ export async function createBrand(name) {
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(error.error || `Failed to create brand (${response.status})`);
+    // Try to parse error response as JSON, fallback to status text
+    let errorMessage = `Failed to create brand (${response.status})`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error || errorMessage;
+    } catch (parseError) {
+      // Response wasn't valid JSON, use status text
+      console.warn("[brandClient] Error response was not valid JSON:", parseError);
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  // Parse success response as JSON, with better error handling
+  try {
+    const data = await response.json();
+    if (!data || !data.id) {
+      throw new Error("Invalid response: missing brand ID");
+    }
+    return data;
+  } catch (parseError) {
+    console.error("[brandClient] Failed to parse JSON response:", parseError);
+    throw new Error("Failed to parse brand response from server");
+  }
 }
 
 /**

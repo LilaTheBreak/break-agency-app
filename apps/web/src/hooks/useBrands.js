@@ -114,11 +114,30 @@ export function useBrands() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create brand');
+        // Try to parse error response as JSON, fallback to status text
+        let errorMessage = `Failed to create brand (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          console.warn('[useBrands] Error response was not valid JSON:', parseError);
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
-      const newBrand = await response.json();
+      // Parse success response with better error handling
+      let newBrand;
+      try {
+        newBrand = await response.json();
+      } catch (parseError) {
+        console.error('[useBrands] Failed to parse JSON response:', parseError);
+        throw new Error("Failed to parse brand response from server");
+      }
+
+      if (!newBrand || !newBrand.id) {
+        throw new Error("Invalid response: missing brand ID");
+      }
 
       // Add to cache and state
       const updated = [

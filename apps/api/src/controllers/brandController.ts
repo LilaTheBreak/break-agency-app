@@ -313,18 +313,20 @@ export async function createQuickBrandHandler(
 
     // Check if brand already exists (case-insensitive)
     const existingBrands = await brandUserService.listBrands(1000, 0);
-    const duplicate = existingBrands.brands?.find(
-      b => b.name.toLowerCase() === brandName.toLowerCase()
+    
+    // Ensure brands is an array
+    const brandsList = Array.isArray(existingBrands?.brands) ? existingBrands.brands : [];
+    const duplicate = brandsList.find(
+      b => b?.name?.toLowerCase() === brandName.toLowerCase()
     );
 
     if (duplicate) {
       // Brand already exists, return it
-      res.status(200).json({
+      return res.status(200).json({
         id: duplicate.id,
         name: duplicate.name,
         message: "Brand already exists"
       });
-      return;
     }
 
     // Create new brand
@@ -336,7 +338,7 @@ export async function createQuickBrandHandler(
         websiteUrl: `https://${domainName}.example.com`,
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         id: newBrand.id,
         name: newBrand.name,
         message: "Brand created successfully"
@@ -346,22 +348,25 @@ export async function createQuickBrandHandler(
       if (createError.code === 'P2002' && createError.meta?.target?.includes('name')) {
         // Retry lookup
         const retryBrands = await brandUserService.listBrands(1000, 0);
-        const newlyCreated = retryBrands.brands?.find(
-          b => b.name.toLowerCase() === brandName.toLowerCase()
+        const retryList = Array.isArray(retryBrands?.brands) ? retryBrands.brands : [];
+        const newlyCreated = retryList.find(
+          b => b?.name?.toLowerCase() === brandName.toLowerCase()
         );
         if (newlyCreated) {
-          res.status(200).json({
+          return res.status(200).json({
             id: newlyCreated.id,
             name: newlyCreated.name,
             message: "Brand already exists (created by another request)"
           });
-          return;
         }
       }
+      // Log the error and throw to outer handler
+      console.error("[Create Quick Brand - Inner Catch]", createError);
       throw createError;
     }
   } catch (error) {
-    console.error("[Create Quick Brand]", error);
-    res.status(500).json({ error: "Failed to create brand" });
+    console.error("[Create Quick Brand - Outer Catch]", error instanceof Error ? error.message : String(error));
+    const errorMessage = error instanceof Error ? error.message : "Failed to create brand";
+    return res.status(500).json({ error: errorMessage });
   }
 }
