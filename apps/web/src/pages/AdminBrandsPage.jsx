@@ -1217,6 +1217,26 @@ export function AdminBrandsPage({ session }) {
   const autoDiscoverBrandsFromGmail = async () => {
     setAutoDiscoveringBrands(true);
     try {
+      // First, check if Gmail is connected
+      const statusResponse = await fetch('/api/gmail/auth/status', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!statusResponse.ok) {
+        alert('Failed to check Gmail connection status. Please try again.');
+        return;
+      }
+      
+      const statusData = await statusResponse.json();
+      if (!statusData.connected) {
+        alert('Gmail is not connected. Please connect your Gmail account first by going to Settings.');
+        return;
+      }
+      
+      // Gmail is connected, proceed with discovery
       const response = await fetch('/api/gmail/inbox/auto-discover-brands', {
         method: 'POST',
         headers: {
@@ -1226,13 +1246,11 @@ export function AdminBrandsPage({ session }) {
       
       if (!response.ok) {
         const error = await response.json();
-        console.error('[AUTO DISCOVER] HTTP Error:', { status: response.status, error });
         alert(`Failed to discover brands: ${error.message || 'Unknown error'}`);
         return;
       }
       
       const result = await response.json();
-      console.log('[AUTO DISCOVER] Success:', result);
       
       if (result.created > 0) {
         alert(`✅ Discovered ${result.discovered} domains and created ${result.created} new brands!`);
@@ -1244,8 +1262,13 @@ export function AdminBrandsPage({ session }) {
         alert('No business domains found in your inbox');
       }
     } catch (error) {
-      console.error('[AUTO DISCOVER] Network/Parse Error:', error);
-      alert('Failed to auto-discover brands. Make sure Gmail is connected.');
+      console.error('[AUTO DISCOVER] Error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Failed to check Gmail')) {
+        alert('Unable to verify Gmail connection. Please try again.');
+      } else {
+        alert('Failed to auto-discover brands. An unexpected error occurred. Please try again or contact support.');
+      }
     } finally {
       setAutoDiscoveringBrands(false);
     }

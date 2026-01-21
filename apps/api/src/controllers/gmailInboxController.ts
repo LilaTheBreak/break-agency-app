@@ -225,7 +225,6 @@ export async function autoDiscoverBrands(req: Request, res: Response, next: Next
     // Fetch the user's inbox messages
     const messages = await listAndFetchMessages(userId);
     if (!messages) {
-      console.error("[AUTO DISCOVER] Failed to fetch messages for user:", userId);
       res.status(401).json({
         error: "gmail_auth_failed",
         message: "Failed to authenticate with Gmail. Please reconnect your account."
@@ -234,7 +233,6 @@ export async function autoDiscoverBrands(req: Request, res: Response, next: Next
     }
 
     if (messages.length === 0) {
-      console.log("[AUTO DISCOVER] No messages found in inbox for user:", userId);
       res.json({
         success: true,
         discovered: 0,
@@ -245,12 +243,8 @@ export async function autoDiscoverBrands(req: Request, res: Response, next: Next
       return;
     }
 
-    console.log("[AUTO DISCOVER] Found", messages.length, "messages for user:", userId);
-
     // Run auto-discovery
     const result = await autoDiscoverBrandsFromInbox(messages, userId);
-
-    console.log("[AUTO DISCOVER] Discovery complete:", { discovered: result.discovered, created: result.created });
 
     res.json({
       success: true,
@@ -260,7 +254,35 @@ export async function autoDiscoverBrands(req: Request, res: Response, next: Next
       message: `Discovered ${result.discovered} business domains and created ${result.created} new brands.`
     });
   } catch (error) {
-    console.error("[AUTO DISCOVER] Unexpected error:", error);
+    console.error("[AUTO DISCOVER] Unexpected error:", {
+      error: error instanceof Error ? error.message : String(error),
+      userId: req.user?.id,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Handle Gmail auth errors specifically
+    if (error instanceof GmailNotConnectedError) {
+      res.status(404).json({
+        error: "gmail_not_connected",
+        message: "Gmail account is not connected. Please authenticate to continue."
+      });
+      return;
+    }
+    
+    // Handle OAuth expiration
+    if (error instanceof Error && (
+      error.message.includes("invalid_grant") ||
+      error.message.includes("Token has been expired") ||
+      error.message.includes("unauthorized")
+    )) {
+      res.status(401).json({
+        error: "gmail_auth_expired",
+        message: "Gmail authentication has expired. Please reconnect your Gmail account."
+      });
+      return;
+    }
+    
+    // For any other error, pass to next middleware
     next(error);
   }
 }
