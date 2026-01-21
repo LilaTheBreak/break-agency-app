@@ -282,7 +282,7 @@ export function DashboardShell({
           {(navLinks.length > 0 || (navigation || []).length > 0) && (
             <aside
               className={[
-                "w-full rounded-3xl border border-brand-black/10 bg-brand-white p-4 shadow-brand transition-all",
+                "section-wrapper elevation-1 transition-elevation p-4",
                 "lg:sticky lg:top-8 lg:self-start lg:shadow-brand/40",
                 navCollapsed ? "lg:w-[104px]" : "lg:w-[260px]"
               ].join(" ")}
@@ -324,7 +324,7 @@ export function DashboardShell({
               ) : null}
             </aside>
           )}
-          <div className="relative min-w-0 flex-1 rounded-3xl border border-brand-black/10 bg-brand-white/70 p-6 shadow-brand">
+          <div className="section-wrapper elevation-1 transition-elevation relative min-w-0 flex-1 p-6">
             {showApprovalHold ? <ApprovalHoldOverlay onLogout={logout} platforms={connectPlatforms} /> : null}
             <div className={showApprovalHold ? "pointer-events-none blur-[2px] opacity-70" : ""}>
               <div className="space-y-6">
@@ -469,7 +469,7 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error, selectedCurrenc
             <Link
               key={tile.label}
               to={tile.to}
-              className="relative rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 transition hover:-translate-y-0.5 hover:bg-brand-white group"
+              className="card relative p-4 transition-elevation group"
             >
               <div className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
                 <TileMenu tileIndex={tileIndex} />
@@ -479,7 +479,7 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error, selectedCurrenc
           ) : (
             <div
               key={tile.label}
-              className="relative rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 group"
+              className="card relative p-4 transition-elevation group"
             >
               <div className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
                 <TileMenu tileIndex={tileIndex} />
@@ -491,7 +491,7 @@ function DashboardStatusGrid({ tiles, nextSteps, loading, error, selectedCurrenc
           return tileElement;
         })}
       </div>
-      <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-4">
+      <div className="card p-4 transition-elevation">
         <div className="flex items-start justify-between gap-3">
           <p className="text-xs uppercase tracking-[0.35em] text-brand-red">AI-generated next steps</p>
           <span className="rounded-full bg-brand-black/5 px-2 py-0.5 text-[0.6rem] uppercase tracking-wider text-brand-black/50">Beta</span>
@@ -643,14 +643,14 @@ function ApprovalHoldOverlay({ platforms, onLogout }) {
   return (
     <>
       <div className="pointer-events-none absolute inset-0 z-20 flex items-start justify-center rounded-3xl bg-brand-black/30 backdrop-blur-sm">
-      <div className="pointer-events-auto mt-6 w-full max-w-3xl space-y-4 rounded-2xl border border-brand-black/10 bg-white/95 p-6 text-center text-brand-black shadow-[0_18px_70px_rgba(0,0,0,0.25)]">
+      <div className="pointer-events-auto card mt-6 w-full max-w-3xl space-y-4 p-6 text-center text-brand-black">
         <h3 className="font-display text-3xl uppercase leading-tight text-brand-black">Your account is being reviewed</h3>
         <p className="text-sm text-brand-black/80">
           Thanks for completing onboarding. Our team is reviewing your account — you’ll receive an email once you’re approved.
         </p>
         <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">This usually takes 1–2 business days.</p>
         {uniquePlatforms.length ? (
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4 text-left">
+          <div className="card p-4 text-left transition-elevation">
             <p className="text-xs uppercase tracking-[0.3em] text-brand-red">While you wait</p>
             <p className="mt-1 text-sm text-brand-black/80">Connect your socials now so we can calibrate faster.</p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -694,7 +694,7 @@ function ApprovalHoldOverlay({ platforms, onLogout }) {
     {/* Connection Modal */}
     {showConnectModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-black/50 backdrop-blur-sm">
-        <div className="w-full max-w-md rounded-2xl border border-brand-black/10 bg-white p-6 shadow-2xl">
+        <div className="card w-full max-w-md p-6 transition-elevation">
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-display text-xl uppercase text-brand-black">
               Connect {selectedPlatform}
