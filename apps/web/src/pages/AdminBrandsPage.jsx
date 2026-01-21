@@ -421,9 +421,9 @@ function Drawer({ open, title, onClose, children, actions }) {
         }`}
       >
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 border-b border-brand-black/5 bg-brand-white px-6 pb-4 pt-6">
+        <div className="sticky top-0 z-10 border-b border-brand-black/5 bg-brand-white px-6 pb-4 pt-6 flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Brands</p>
               <h3 id="drawer-title" className="font-display text-2xl uppercase text-brand-black">{title}</h3>
             </div>
@@ -450,9 +450,9 @@ function Drawer({ open, title, onClose, children, actions }) {
           </div>
         </div>
 
-        {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="space-y-6">{children}</div>
+        {/* Scrollable Body - Modal Container with proper overflow handling */}
+        <div className="flex-1 modal-container px-6 py-6 overflow-y-auto">
+          <div className="modal-content space-y-6">{children}</div>
         </div>
       </aside>
     </div>

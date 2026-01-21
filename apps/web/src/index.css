@@ -299,4 +299,110 @@ body {
   .transition-elevation-lg {
     transition: box-shadow 0.3s ease, transform 0.3s ease;
   }
+
+  /* 🎨 MODAL CONTAINER SYSTEM - Ensures all modals are readable and scrollable */
+  
+  /**
+   * Modal Container Rules (Global)
+   * Apply to all modal/drawer content areas
+   */
+  .modal-container {
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 24px;
+  }
+
+  /**
+   * Modal Content Wrapper
+   * Ensures consistent spacing inside modals
+   */
+  .modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /**
+   * Modal Layout Structure
+   * 3-part layout: header (sticky) + body (scrollable) + footer (sticky)
+   */
+  .modal {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+  }
+
+  .modal-header {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--brand-white);
+    border-bottom: 1px solid var(--brand-black/10);
+    padding: 24px;
+  }
+
+  .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 24px;
+  }
+
+  .modal-footer {
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: var(--brand-white);
+    border-top: 1px solid var(--brand-black/10);
+    padding: 16px 24px;
+  }
+
+  /**
+   * Form Fields in Modals
+   * Prevent overlap when dropdowns expand
+   */
+  .form-field {
+    position: relative;
+    z-index: 1;
+  }
+
+  .form-field.open {
+    z-index: 10;
+  }
+
+  /**
+   * Dropdowns and Selects in Modals
+   * Must render above modal content using portal/high z-index
+   */
+  .dropdown-in-modal {
+    position: relative;
+    z-index: 100;
+  }
+
+  .dropdown-menu-portal {
+    position: fixed;
+    z-index: 9999;
+    background: var(--brand-white);
+    border: 1px solid var(--brand-black/10);
+    border-radius: 12px;
+    box-shadow: var(--elevation-4);
+  }
+
+  /**
+   * Section Spacing in Modal Body
+   * Ensures content is never cramped
+   */
+  .modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .modal-section:last-child {
+    margin-bottom: 0;
+  }
 }

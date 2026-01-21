@@ -265,7 +265,7 @@ export async function listBrandsHandler(
     console.log(`[List Brands] Fetching all brands for user ${user.id}`);
     
     // Return all brands in the CRM (for dropdowns in modals)
-    // Use prisma directly to get all brands
+    // SINGLE SOURCE OF TRUTH: Returns ALL brands from database, no filtering
     const prisma = (await import("../lib/prisma.js")).default;
     const brands = await prisma.brand.findMany({
       select: {
@@ -275,7 +275,7 @@ export async function listBrandsHandler(
         industry: true,
         createdAt: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { name: 'asc' },  // Sort by name for consistency
     });
     
     console.log(`[List Brands] Successfully fetched ${brands?.length || 0} brands from CRM`);

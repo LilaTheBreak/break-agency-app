@@ -38,85 +38,78 @@ export function useBrands() {
   const [error, setError] = useState(null);
 
   // Fetch brands - use global cache to avoid duplicate requests
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadBrands = async () => {
-      try {
-        // If we have cached data, use it immediately
-        if (brandsCacheGlobal) {
-          if (!cancelled) {
-            setBrands(brandsCacheGlobal);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        // If a request is already in flight, wait for it
-        if (brandsCachePromise) {
-          const result = await brandsCachePromise;
-          if (!cancelled) {
-            setBrands(result);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        // Initiate new request
-        setIsLoading(true);
-        setError(null);
-
-        brandsCachePromise = apiFetch('/api/brands')
-          .then(async (res) => {
-            if (!res.ok) {
-              throw new Error(`Failed to fetch brands: ${res.status} ${res.statusText}`);
-            }
-            
-            let data;
-            try {
-              data = await res.json();
-            } catch (parseError) {
-              console.error('[useBrands] Failed to parse brands response:', parseError);
-              throw new Error('Failed to parse brands response');
-            }
-            
-            // Handle both direct array (from /api/crm-brands) and wrapped object (from /api/brands)
-            let brandsArray = Array.isArray(data) ? data : (data?.brands || []);
-            
-            // Normalize and deduplicate brands
-            const normalized = normalizeBrands(brandsArray);
-            console.log('[useBrands] Successfully fetched', normalized.length, 'brands');
-            brandsCacheGlobal = normalized;
-            return normalized;
-          })
-          .catch((err) => {
-            console.error('[useBrands] Fetch error:', err);
-            throw err;
-          })
-          .finally(() => {
-            brandsCachePromise = null;
-          });
-
-        const result = await brandsCachePromise;
-        if (!cancelled) {
-          setBrands(result);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('[useBrands] Error fetching brands:', err);
-          setError(err.message || 'Failed to fetch brands');
-          setIsLoading(false);
-        }
+  const loadBrands = useCallback(async (forceRefresh = false) => {
+    try {
+      // Clear cache if force refresh requested
+      if (forceRefresh) {
+        brandsCacheGlobal = null;
+        brandsCachePromise = null;
       }
-    };
 
-    loadBrands();
+      // If we have cached data and not force refreshing, use it immediately
+      if (brandsCacheGlobal && !forceRefresh) {
+        setBrands(brandsCacheGlobal);
+        setIsLoading(false);
+        return;
+      }
 
-    return () => {
-      cancelled = true;
-    };
+      // If a request is already in flight, wait for it
+      if (brandsCachePromise) {
+        const result = await brandsCachePromise;
+        setBrands(result);
+        setIsLoading(false);
+        return;
+      }
+
+      // Initiate new request
+      setIsLoading(true);
+      setError(null);
+
+      brandsCachePromise = apiFetch('/api/brands')
+        .then(async (res) => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch brands: ${res.status} ${res.statusText}`);
+          }
+          
+          let data;
+          try {
+            data = await res.json();
+          } catch (parseError) {
+            console.error('[useBrands] Failed to parse brands response:', parseError);
+            throw new Error('Failed to parse brands response');
+          }
+          
+          // Handle both direct array (from /api/crm-brands) and wrapped object (from /api/brands)
+          let brandsArray = Array.isArray(data) ? data : (data?.brands || []);
+          
+          // Normalize and deduplicate brands
+          const normalized = normalizeBrands(brandsArray);
+          console.log('[useBrands] Successfully fetched', normalized.length, 'brands');
+          brandsCacheGlobal = normalized;
+          return normalized;
+        })
+        .catch((err) => {
+          console.error('[useBrands] Fetch error:', err);
+          throw err;
+        })
+        .finally(() => {
+          brandsCachePromise = null;
+        });
+
+      const result = await brandsCachePromise;
+      setBrands(result);
+      setIsLoading(false);
+    } catch (err) {
+      setBrands([]);
+      console.error('[useBrands] Error fetching brands:', err);
+      setError(err.message || 'Failed to fetch brands');
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadBrands();
+  }, [loadBrands]);
 
   // Create brand function - used by BrandSelect for inline creation
   const createBrand = useCallback(async (brandName) => {
@@ -175,18 +168,18 @@ export function useBrands() {
     }
   }, [brands]);
 
+  // Refresh brands function - forces cache clear and reload
+  const refresh = useCallback(async () => {
+    return loadBrands(true);  // forceRefresh = true
+  }, [loadBrands]);
+
   return {
     brands,
     isLoading,
     error,
     createBrand,
-    refetch: async () => {
-      // Clear cache and reload
-      brandsCacheGlobal = null;
-      brandsCachePromise = null;
-      setIsLoading(true);
-      setError(null);
-    }
+    refresh,
+    refetch: refresh,  // Alias for backward compatibility
   };
 }
 
