@@ -321,7 +321,7 @@ export function AdminReportsPage() {
           )}
 
           {/* Filter Controls */}
-          <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+          <div className="card p-4 transition-elevation">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60 mb-2">
@@ -664,7 +664,7 @@ export function AdminReportsPage() {
             <>
               {reportsTab === "overview" && (
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+                  <div className="card p-4 transition-elevation">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60">
                       Total Users
                     </p>
@@ -672,7 +672,7 @@ export function AdminReportsPage() {
                       {reportMetrics.totalUsers || 0}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+                  <div className="card p-4 transition-elevation">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60">
                       Active This Month
                     </p>
@@ -680,7 +680,7 @@ export function AdminReportsPage() {
                       {reportMetrics.activeThisMonth || 0}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+                  <div className="card p-4 transition-elevation">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-black/60">
                       Platform Actions
                     </p>
@@ -693,7 +693,7 @@ export function AdminReportsPage() {
 
               {reportsTab === "users" && (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+                  <div className="card p-4 transition-elevation">
                     <h3 className="font-semibold text-brand-black">User Signups Trend</h3>
                     <p className="mt-2 text-sm text-brand-black/60">
                       New user registrations over the selected period ({reportFilters.groupBy})
@@ -707,7 +707,7 @@ export function AdminReportsPage() {
 
               {reportsTab === "activity" && (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+                  <div className="card p-4 transition-elevation">
                     <h3 className="font-semibold text-brand-black">Platform Activity Breakdown</h3>
                     <p className="mt-2 text-sm text-brand-black/60">
                       Distribution of actions by entity type
@@ -722,7 +722,7 @@ export function AdminReportsPage() {
           )}
 
           {!reportLoading && !reportError && !reportMetrics && (
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-8 text-center">
+            <div className="card p-8 text-center transition-elevation">
               <p className="text-sm text-brand-black/60">No report data available for the selected period.</p>
             </div>
           )}

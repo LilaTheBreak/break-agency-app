@@ -96,7 +96,7 @@ export default function PendingUsersApproval() {
   };
 
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+    <section className="card-priority p-6 transition-elevation">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Admin</p>
@@ -106,23 +106,23 @@ export default function PendingUsersApproval() {
       </div>
 
       {error && (
-        <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        <div className="mt-4 card p-4">
           <p className="text-sm text-brand-black/80">{error}</p>
         </div>
       )}
 
       {successMessage && (
-        <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4">
+        <div className="mt-4 card p-4">
           <p className="text-sm font-semibold text-brand-black">{successMessage}</p>
         </div>
       )}
 
       {loading ? (
-        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <div className="mt-6 card p-8 text-center">
           <p className="text-sm text-brand-black/60">Loading pending approvals...</p>
         </div>
       ) : pendingUsers.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-8 text-center">
+        <div className="mt-6 card p-8 text-center">
           <p className="text-sm text-brand-black/60">No pending user approvals</p>
           <p className="mt-2 text-xs text-brand-black/40">New sign-ups will appear here when awaiting review</p>
         </div>
@@ -131,7 +131,7 @@ export default function PendingUsersApproval() {
           {Array.isArray(pendingUsers) && pendingUsers.map((user) => (
             <div
               key={user.id}
-              className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-4"
+              className="card p-4 transition-elevation"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">

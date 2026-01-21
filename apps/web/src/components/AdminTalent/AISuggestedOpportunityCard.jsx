@@ -45,7 +45,7 @@ export function AISuggestedOpportunityCard({
   };
 
   return (
-    <div className="rounded-2xl border border-brand-black/10 bg-gradient-to-br from-brand-white via-brand-white to-blue-50/30 overflow-hidden transition-all hover:border-brand-black/20">
+    <div className="card overflow-hidden transition-elevation">
       {/* Header - always visible */}
       <div className="p-4 cursor-pointer hover:bg-brand-black/2" onClick={() => setExpanded(!expanded)}>
         <div className="flex items-start justify-between">

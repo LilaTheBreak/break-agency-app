@@ -53,7 +53,7 @@ export function ResourceManager() {
   };
 
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+    <section className="section-wrapper elevation-1 p-6 transition-elevation hover:elevation-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Resource hub</p>
@@ -69,7 +69,7 @@ export function ResourceManager() {
       </div>
 
       {isFormOpen && (
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4 rounded-2xl border border-brand-black/10 bg-brand-linen/30 p-6">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4 card p-6 transition-elevation">
           <div>
             <label htmlFor="title" className="mb-2 block text-sm font-semibold text-brand-black">
               Resource title *

@@ -9,7 +9,7 @@ export function CreatorMessagesPage({ session }) {
       role={session?.user?.role}
     >
       <div className="space-y-6">
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Your Conversations</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             Chat with brands about briefs, ask questions, and get campaign updates.
@@ -22,7 +22,7 @@ export function CreatorMessagesPage({ session }) {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Message Types</h2>
           <div className="mt-4 grid gap-3">
             <div className="rounded-xl bg-brand-linen/40 p-4">

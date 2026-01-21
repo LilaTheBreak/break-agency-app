@@ -258,7 +258,7 @@ export function ProfilePage({ variant = "default" }) {
         </section>
       )}
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <form onSubmit={handleSubmit} className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="card p-6 space-y-4 transition-elevation">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Account</p>
             <h3 className="font-display text-2xl uppercase">{profile.name}</h3>
@@ -415,18 +415,18 @@ export function ProfilePage({ variant = "default" }) {
           </div>
         </form>
         <div className="space-y-4">
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/80 p-5">
+          <div className="panel p-5 transition-elevation">
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Snapshot</p>
             <div className="mt-4 grid gap-3">
               {stats.map((stat) => (
-                <div key={stat.label} className="rounded-2xl border border-brand-black/10 bg-brand-white/70 p-3">
+                <div key={stat.label} className="card p-3 transition-elevation">
                   <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{stat.label}</p>
                   <p className="font-display text-2xl uppercase text-brand-black">{stat.value}</p>
                 </div>
               ))}
             </div>
           </div>
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+          <div className="card p-5 transition-elevation">
             <div className="flex items-center justify-between gap-2">
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-black/70">Suitability demo</p>
               <button
@@ -446,7 +446,7 @@ export function ProfilePage({ variant = "default" }) {
               </div>
             ) : null}
           </div>
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-white/90 p-5">
+          <div className="card p-5 transition-elevation">
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Recent activity</p>
             <ul className="mt-3 space-y-2 text-sm text-brand-black/70">
               {activity.length === 0 ? <li>No activity tracked.</li> : null}
@@ -455,7 +455,7 @@ export function ProfilePage({ variant = "default" }) {
               ))}
             </ul>
           </div>
-          <div className="rounded-3xl border border-brand-black/10 bg-brand-white/90 p-5">
+          <div className="card p-5 transition-elevation">
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Live profile links</p>
             <ul className="mt-3 space-y-2 text-sm text-brand-black/80">
               {links.length === 0 ? <li>No links published yet.</li> : null}

@@ -69,7 +69,7 @@ export function NoteCard({ note, onEdit, onDelete, onTogglePin }) {
   }, [body, expanded, long]);
 
   return (
-    <article className={`rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 ${note?.pinned ? "ring-1 ring-brand-black/20" : ""}`}>
+    <article className={`card px-4 py-3 ${note?.pinned ? "ring-1 ring-brand-red/30" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

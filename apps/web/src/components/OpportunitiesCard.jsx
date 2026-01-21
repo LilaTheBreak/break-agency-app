@@ -49,7 +49,7 @@ export function OpportunitiesCard({ session, role }) {
   // Check feature flag first
   if (!isFeatureEnabled(featureFlag)) {
     return (
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <section className="section-wrapper elevation-1 p-6 transition-elevation">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities</p>
@@ -131,7 +131,7 @@ export function OpportunitiesCard({ session, role }) {
   // Handle loading state
   if (loading) {
     return (
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <section className="section-wrapper elevation-1 p-6 transition-elevation">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities</p>
@@ -148,14 +148,14 @@ export function OpportunitiesCard({ session, role }) {
   // Handle error state (graceful degradation)
   if (error) {
     return (
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <section className="section-wrapper elevation-1 p-6 transition-elevation">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities</p>
             <h3 className="font-display text-2xl uppercase">Opportunities</h3>
           </div>
         </div>
-        <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-6 text-center">
+        <div className="mt-4 card p-6 text-center">
           <p className="text-sm text-brand-black/60">Unable to load opportunities</p>
           <p className="mt-2 text-xs text-brand-black/40">This feature is currently unavailable</p>
         </div>
@@ -166,14 +166,14 @@ export function OpportunitiesCard({ session, role }) {
   // Handle empty state
   if (totalActive === 0) {
     return (
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <section className="section-wrapper elevation-1 p-6 transition-elevation">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities</p>
             <h3 className="font-display text-2xl uppercase">Opportunities</h3>
           </div>
         </div>
-        <div className="mt-4 rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-6 text-center">
+        <div className="mt-4 card p-6 text-center">
           <p className="text-sm text-brand-black/60">No opportunities yet</p>
           <p className="mt-2 text-xs text-brand-black/40">
             {isCreator 
@@ -193,7 +193,7 @@ export function OpportunitiesCard({ session, role }) {
 
   // Render card with data
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+    <section className="section-wrapper elevation-1 p-6 transition-elevation">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Opportunities</p>
@@ -203,7 +203,7 @@ export function OpportunitiesCard({ session, role }) {
       
       <div className="mt-4 space-y-3">
         {/* Primary stat */}
-        <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+        <div className="card p-4">
           <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">Active opportunities</p>
           <p className="mt-2 font-display text-3xl uppercase text-brand-black">{totalActive}</p>
         </div>

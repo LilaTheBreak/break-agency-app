@@ -12,7 +12,7 @@ export function CreatorCampaignsPage({ session }) {
       role={session?.user?.role}
     >
       <div className="space-y-6">
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Active Campaigns</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             Track all your current briefs, deliverables, and campaign timelines.
@@ -41,7 +41,7 @@ export function CreatorCampaignsPage({ session }) {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Campaign Pipeline</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             Signed briefs with budgets, deliverables, and direct messaging with brands.

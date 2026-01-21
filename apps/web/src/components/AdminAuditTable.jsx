@@ -5,7 +5,7 @@ export function AdminAuditTable() {
   const { logs, loading, error, reload } = useAuditLogs();
 
   return (
-    <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+    <section className="mt-6 section-wrapper elevation-1 transition-elevation hover:elevation-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Audit logs</p>

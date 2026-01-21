@@ -167,7 +167,7 @@ export function AISuggestedOpportunitiesSection({
   const activeSuggestions = suggestions.filter(s => s.status !== 'dismissed');
 
   return (
-    <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+    <section className="section-wrapper elevation-1 p-6 transition-elevation hover:elevation-2">
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-2 mb-2">

@@ -95,7 +95,7 @@ export function TalentSocialProfilesAccordion({ talent, onUpdate }) {
   };
 
   return (
-    <div className="rounded-2xl border border-brand-black/10 bg-brand-white overflow-hidden">
+    <div className="card overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}

@@ -139,7 +139,7 @@ export function HealthSnapshotCards({ talent, stats = {}, talentId }) {
           <button
             key={idx}
             onClick={card.onClick}
-            className={`rounded-2xl border border-brand-black/10 ${bgClass} p-4 transition-all duration-300 hover:shadow-md hover:border-brand-black/20 hover:scale-105 cursor-pointer text-left`}
+            className={`card p-4 transition-elevation cursor-pointer text-left`}
             style={{
               animationDelay: `${idx * 50}ms`,
               animation: 'fadeInUp 0.6s ease-out forwards',

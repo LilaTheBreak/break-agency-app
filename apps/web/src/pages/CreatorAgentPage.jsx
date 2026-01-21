@@ -44,7 +44,7 @@ export function CreatorAgentPage({ session }) {
       role={session?.user?.role}
     >
       <div className="space-y-6">
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">AI Agent Configuration</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             <span className="font-medium">For Exclusive Talent:</span> This feature is available exclusively for members of The Break's premium creator network. Set up and manage your personal AI agent for handling briefs, rate cards, and automated responses.
@@ -60,7 +60,7 @@ export function CreatorAgentPage({ session }) {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Agent Features</h2>
           <div className="mt-4 grid gap-3">
             <div className="rounded-xl bg-brand-linen/40 p-4">
@@ -78,7 +78,7 @@ export function CreatorAgentPage({ session }) {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Exclusive Talent Program</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             Unlock premium features and direct collaboration opportunities with The Break by joining our exclusive talent network.

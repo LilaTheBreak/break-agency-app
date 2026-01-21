@@ -181,14 +181,14 @@ export function BrandOnboardingChecklist({ onboarding, onComplete }) {
 
   if (loading) {
     return (
-      <div className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div className="space-y-6 section-wrapper elevation-1 p-6 transition-elevation">
         <p className="text-center text-brand-black/60">Loading onboarding progress...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+    <div className="space-y-6 section-wrapper elevation-1 p-6 transition-elevation">
       {/* Header */}
       <div>
         <div className="mb-4 flex items-center justify-between">

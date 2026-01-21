@@ -138,7 +138,7 @@ export function CreatorSocialsPage({ session }) {
       role={session?.user?.role}
     >
       <div className="space-y-6">
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Connected Platforms</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             Link your social media accounts to unlock exclusive opportunities and track your performance across platforms.
@@ -192,7 +192,7 @@ export function CreatorSocialsPage({ session }) {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Platform Stats</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             Your social media metrics help us match you with the best brand opportunities.
@@ -217,7 +217,7 @@ export function CreatorSocialsPage({ session }) {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Connected Account Details</h2>
           {platformData.length > 0 ? (
             <div className="mt-6 space-y-3">
@@ -249,7 +249,7 @@ export function CreatorSocialsPage({ session }) {
           )}
         </section>
 
-        <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Privacy & Permissions</h2>
           <p className="mt-2 text-sm text-brand-black/70">
             We only access the information needed to match you with brand opportunities. Your data is never shared with third parties.

@@ -88,7 +88,7 @@ export function AdminUserFeedPage() {
       subtitle="Preview the platform surface for each persona, review actions, and jump into their console."
       navLinks={ADMIN_NAV_LINKS}
     >
-      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 shadow-brand">
+      <section className="section-wrapper elevation-1 p-6 transition-elevation">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
@@ -139,7 +139,7 @@ export function AdminUserFeedPage() {
         {profile.stats?.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-3xl border border-brand-black/10 bg-brand-linen/80 p-5 text-center"
+            className="section-wrapper elevation-1 p-5 text-center transition-elevation"
           >
             <p className="text-xs uppercase tracking-[0.35em] text-brand-red">{stat.label}</p>
             <p className="mt-2 font-display text-4xl uppercase text-brand-black">{stat.value}</p>
@@ -147,7 +147,7 @@ export function AdminUserFeedPage() {
         ))}
       </section>
       <section className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+        <div className="card p-5 transition-elevation">
           <h4 className="font-display text-xl uppercase">Account status</h4>
           <p className="mt-2 text-sm text-brand-black/70">{profile.status}</p>
           <div className="mt-4 space-y-2 text-sm text-brand-black/70">
@@ -156,7 +156,7 @@ export function AdminUserFeedPage() {
             <p>Pronouns: {profile.pronouns}</p>
           </div>
         </div>
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+        <div className="card p-5 transition-elevation">
           <h4 className="font-display text-xl uppercase">Recent actions</h4>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-brand-black/80">
             {profile.activity?.map((item, idx) => (
@@ -166,7 +166,7 @@ export function AdminUserFeedPage() {
         </div>
         <form
           onSubmit={handleAdminSave}
-          className="rounded-3xl border border-brand-black/10 bg-brand-white p-5 space-y-4"
+          className="card p-5 space-y-4 transition-elevation"
         >
           <h4 className="font-display text-xl uppercase">Edit profile</h4>
           <div>
@@ -202,7 +202,7 @@ export function AdminUserFeedPage() {
                   (preset) => preset.toLowerCase() === labelText.trim().toLowerCase()
                 );
                 return (
-                  <div key={`${labelText}-${index}`} className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-3">
+                  <div key={`${labelText}-${index}`} className="space-y-2 card p-3 transition-elevation">
                     {isPreset ? (
                       <div className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-black/70">
                         {labelText}
@@ -256,7 +256,7 @@ export function AdminUserFeedPage() {
           </div>
         </form>
       </section>
-      <section className="mt-6 rounded-3xl border border-brand-black/10 bg-brand-white p-5">
+      <section className="mt-6 card p-5 transition-elevation">
         <h4 className="font-display text-xl uppercase">Profile links</h4>
         <ul className="mt-3 space-y-2 text-sm text-brand-black/80">
           {(profile.links || []).length === 0 ? (
