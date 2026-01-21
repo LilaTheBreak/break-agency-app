@@ -1226,11 +1226,13 @@ export function AdminBrandsPage({ session }) {
       
       if (!response.ok) {
         const error = await response.json();
+        console.error('[AUTO DISCOVER] HTTP Error:', { status: response.status, error });
         alert(`Failed to discover brands: ${error.message || 'Unknown error'}`);
         return;
       }
       
       const result = await response.json();
+      console.log('[AUTO DISCOVER] Success:', result);
       
       if (result.created > 0) {
         alert(`✅ Discovered ${result.discovered} domains and created ${result.created} new brands!`);
@@ -1242,7 +1244,7 @@ export function AdminBrandsPage({ session }) {
         alert('No business domains found in your inbox');
       }
     } catch (error) {
-      console.error('[AUTO DISCOVER] Error:', error);
+      console.error('[AUTO DISCOVER] Network/Parse Error:', error);
       alert('Failed to auto-discover brands. Make sure Gmail is connected.');
     } finally {
       setAutoDiscoveringBrands(false);

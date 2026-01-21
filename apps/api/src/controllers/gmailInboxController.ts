@@ -225,6 +225,7 @@ export async function autoDiscoverBrands(req: Request, res: Response, next: Next
     // Fetch the user's inbox messages
     const messages = await listAndFetchMessages(userId);
     if (!messages) {
+      console.error("[AUTO DISCOVER] Failed to fetch messages for user:", userId);
       res.status(401).json({
         error: "gmail_auth_failed",
         message: "Failed to authenticate with Gmail. Please reconnect your account."
@@ -233,6 +234,7 @@ export async function autoDiscoverBrands(req: Request, res: Response, next: Next
     }
 
     if (messages.length === 0) {
+      console.log("[AUTO DISCOVER] No messages found in inbox for user:", userId);
       res.json({
         success: true,
         discovered: 0,
@@ -243,8 +245,12 @@ export async function autoDiscoverBrands(req: Request, res: Response, next: Next
       return;
     }
 
+    console.log("[AUTO DISCOVER] Found", messages.length, "messages for user:", userId);
+
     // Run auto-discovery
     const result = await autoDiscoverBrandsFromInbox(messages, userId);
+
+    console.log("[AUTO DISCOVER] Discovery complete:", { discovered: result.discovered, created: result.created });
 
     res.json({
       success: true,
