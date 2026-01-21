@@ -11,7 +11,7 @@ const DEFAULT_STATE = {
   completedAt: null
 };
 
-const ONBOARDING_ROLES = new Set([Roles.CREATOR, Roles.FOUNDER, Roles.UGC]);
+const ONBOARDING_ROLES = new Set([Roles.BRAND, Roles.CREATOR, Roles.FOUNDER, Roles.UGC, Roles.AGENT]);
 
 function normalizeRole(role) {
   if (!role) return "";
