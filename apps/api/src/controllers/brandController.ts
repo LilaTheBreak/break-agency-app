@@ -322,11 +322,12 @@ export async function createQuickBrandHandler(
 
     if (duplicate) {
       // Brand already exists, return it
-      return res.status(200).json({
+      res.status(200).json({
         id: duplicate.id,
         name: duplicate.name,
         message: "Brand already exists"
       });
+      return;
     }
 
     // Create new brand
@@ -338,7 +339,7 @@ export async function createQuickBrandHandler(
         websiteUrl: `https://${domainName}.example.com`,
       });
 
-      return res.status(201).json({
+      res.status(201).json({
         id: newBrand.id,
         name: newBrand.name,
         message: "Brand created successfully"
@@ -353,11 +354,12 @@ export async function createQuickBrandHandler(
           b => b?.name?.toLowerCase() === brandName.toLowerCase()
         );
         if (newlyCreated) {
-          return res.status(200).json({
+          res.status(200).json({
             id: newlyCreated.id,
             name: newlyCreated.name,
             message: "Brand already exists (created by another request)"
           });
+          return;
         }
       }
       // Log the error and throw to outer handler
@@ -367,6 +369,6 @@ export async function createQuickBrandHandler(
   } catch (error) {
     console.error("[Create Quick Brand - Outer Catch]", error instanceof Error ? error.message : String(error));
     const errorMessage = error instanceof Error ? error.message : "Failed to create brand";
-    return res.status(500).json({ error: errorMessage });
+    res.status(500).json({ error: errorMessage });
   }
 }
