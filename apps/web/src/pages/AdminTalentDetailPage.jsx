@@ -1577,7 +1577,7 @@ export function AdminTalentDetailPage() {
           return (
             <div className="mb-6 rounded-xl border border-brand-black/10 bg-brand-white p-5 flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-brand-black">All clear today for {talent.name} 🎉</p>
+                <p className="text-sm font-semibold text-brand-black">All clear today for {talent.name}</p>
                 <p className="text-xs text-brand-black/50 mt-1">No overdue tasks or urgent deals</p>
               </div>
             </div>
