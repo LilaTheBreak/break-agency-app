@@ -85,16 +85,18 @@ export function markOnboardingSubmitted(email, role, context) {
 }
 
 export function deriveOnboardingStatus(user) {
-  const normalizedRole = normalizeRole(user?.role);
-  const stored = loadOnboardingState(user?.email);
-  if (!user || !normalizedRole || !ONBOARDING_ROLES.has(normalizedRole)) {
-    return user?.onboardingStatus || "approved";
-  }
-  // Prioritize backend status if it's explicitly set
+  // Always trust the backend onboarding_status if it's set
   if (user?.onboardingStatus) {
     return user.onboardingStatus;
   }
-  // Fall back to localStorage status
+  
+  // Fall back to localStorage for role-specific onboarding
+  const normalizedRole = normalizeRole(user?.role);
+  if (!user || !normalizedRole || !ONBOARDING_ROLES.has(normalizedRole)) {
+    return "approved";
+  }
+  
+  const stored = loadOnboardingState(user?.email);
   return stored.status;
 }
 
