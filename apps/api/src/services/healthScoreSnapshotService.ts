@@ -49,18 +49,22 @@ export async function captureHealthScoreSnapshot(talentId, score, issueData = {}
   const triggers = extractTriggers(issueData);
   
   // Create snapshot
+  const issueDataTyped = issueData as any;
+  const factorsData = issueDataTyped?.factors ? issueDataTyped.factors : { summary: 'Health check' };
+  const metadataData = issueDataTyped ? {
+    issueCount: 0,
+    criticalIssues: 0,
+    highIssues: 0,
+  } : { summary: 'Initial health check' };
+
   const snapshot = await prisma.healthScoreSnapshot.create({
     data: {
       talentId,
       score,
       previousScore,
-      factors: issueData ? issueData.factors || {} : {},
+      factors: factorsData as any,
       triggers,
-      metadata: issueData ? {
-        issueCount: 0,
-        criticalIssues: 0,
-        highIssues: 0,
-      } : {}
+      metadata: metadataData as any
     }
   });
 
@@ -168,13 +172,16 @@ async function createAutoHealthTask(talentId, score, triggers, issueData) {
   const task = await prisma.creatorTask.create({
     data: {
       id: `task_${Date.now()}`,
-      creatorId: talentId,
       title: `Health score dropped to ${score}%`,
-      description,
+      description: description || `Review and address health score issues (Score: ${score}%)`,
       priority,
       status: 'pending',
       taskType: 'health_check',
       dueAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // +2 days
+      updatedAt: new Date(),
+      Talent: {
+        connect: { id: talentId as string }
+      }
     }
   });
 
