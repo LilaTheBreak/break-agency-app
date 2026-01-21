@@ -409,8 +409,8 @@ export function BrandSettingsPage() {
 
 function BrandOverviewSection({ session }) {
   // Use analytics hooks for real data
-  const { data: revenueData, loading: revenueLoading } = useRevenue('Month');
-  const { data: metricsData, loading: metricsLoading } = useMetrics();
+  const { data: revenueData, loading: revenueLoading, error: revenueError } = useRevenue('Month');
+  const { data: metricsData, loading: metricsLoading, error: metricsError } = useMetrics();
   const [onboardingStatus, setOnboardingStatus] = useState({});
 
   // Fetch onboarding status
@@ -424,6 +424,9 @@ function BrandOverviewSection({ session }) {
       if (response.ok) {
         const data = await response.json();
         setOnboardingStatus(data);
+      } else if (response.status === 403) {
+        // User not linked to brand - this is expected during onboarding
+        console.log("Brand onboarding not available - user may not be linked to brand yet");
       }
     } catch (error) {
       console.error("Failed to fetch onboarding status:", error);
@@ -436,7 +439,7 @@ function BrandOverviewSection({ session }) {
     progress: 62,
     phase: "Creative production",
     nextSteps: ["Approve creator travel budget", "Upload legal addendum", "Schedule edit review"],
-    results: metricsData ? [
+    results: metricsData && !metricsError ? [
       { label: "Active Campaigns", value: metricsData.activeCampaigns?.toString() || "0", context: "Currently running" },
       { label: "Win Rate", value: metricsData.winRate || "0%", context: "Opportunity success" },
       { label: "Avg Deal Value", value: metricsData.avgDealValue || "£0", context: "Per campaign" }

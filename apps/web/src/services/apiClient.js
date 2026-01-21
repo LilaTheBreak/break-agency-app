@@ -103,6 +103,13 @@ export async function apiFetch(path, options = {}) {
     // IMPORTANT: Suppress errors for campaign endpoints - they handle 403/404 gracefully
     const isAuthMe = path.includes('/auth/me');
     const isCampaignEndpoint = path.includes('/campaign') || path.includes('/campaigns');
+    const isAnalyticsEndpoint = path.includes('/analytics/');
+    
+    // For analytics endpoints, NEVER show error toast - they handle errors gracefully
+    if (isAnalyticsEndpoint && (response.status === 403 || response.status === 404 || response.status === 503)) {
+      console.log(`[API] Suppressing ${response.status} for ${path} (analytics endpoint handles gracefully)`);
+      return response;
+    }
     
     // For campaign endpoints, NEVER show error toast - they handle errors gracefully
     if (isCampaignEndpoint && (response.status === 403 || response.status === 404 || response.status === 503)) {

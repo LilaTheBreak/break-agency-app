@@ -66,13 +66,23 @@ export function AiAssistantCard({ session, role, title = "AI Assistant", descrip
         })
       });
       if (!res.ok) {
+        // Handle permission errors gracefully - don't show global toast
+        if (res.status === 403) {
+          setError("You don't have permission to use this feature. Contact your admin for access.");
+          console.warn("[AI] Permission denied for role:", role);
+          return;
+        }
+        
         const text = await res.text().catch(() => "");
         throw new Error(text || "Request failed");
       }
       const payload = await res.json();
       setResponse(payload.suggestions || "No suggestions returned.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to contact AI assistant");
+      // Suppress global error toasts for AI failures
+      const errMessage = err instanceof Error ? err.message : "Unable to contact AI assistant";
+      setError(errMessage);
+      console.error("[AI Assistant] Error:", errMessage);
     } finally {
       setLoading(false);
     }
