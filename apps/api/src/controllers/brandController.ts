@@ -262,18 +262,27 @@ export async function listBrandsHandler(
       return;
     }
 
-    console.log(`[List Brands] Fetching brands for user ${user.id}`);
+    console.log(`[List Brands] Fetching all brands for user ${user.id}`);
     
-    // For now, return the user's own brands
-    // In the future, this could be expanded to show all brands with filtering
-    const brands = await brandUserService.getUserBrands(user.id);
-    console.log(`[List Brands] Successfully fetched ${brands?.length || 0} brands for user`);
+    // Return all brands in the CRM (for dropdowns in modals)
+    // Use prisma directly to get all brands
+    const prisma = (await import("../lib/prisma.js")).default;
+    const brands = await prisma.brand.findMany({
+      select: {
+        id: true,
+        name: true,
+        brandName: true,
+        description: true,
+        websiteUrl: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    
+    console.log(`[List Brands] Successfully fetched ${brands?.length || 0} brands from CRM`);
 
     res.json({
-      brands: brands.map((bu) => ({
-        ...bu.brand,
-        role: bu.role,
-      })),
+      brands: brands,
       total: brands.length,
     });
   } catch (error) {
