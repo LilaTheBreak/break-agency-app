@@ -541,4 +541,68 @@ router.get("/talents/:talentId/emails", async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/talents/search
+ * Search talents by name or email (admin only)
+ */
+router.get("/talents/search", async (req, res) => {
+  try {
+    const query = (req.query.q as string || "").toLowerCase();
+
+    if (!query || query.length < 2) {
+      return res.json({ talents: [] });
+    }
+
+    const talents = await prisma.talent.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { primaryEmail: { contains: query, mode: "insensitive" } },
+          { TalentEmail: { some: { email: { contains: query, mode: "insensitive" } } } }
+        ]
+      },
+      select: {
+        id: true,
+        name: true,
+        primaryEmail: true,
+        representationType: true,
+        status: true,
+        userId: true
+      },
+      take: 20
+    });
+
+    res.json({ talents });
+  } catch (error) {
+    console.error("[ADMIN SEARCH TALENTS]", error);
+    res.status(500).json({ error: "Failed to search talents" });
+  }
+});
+
+/**
+ * GET /api/admin/talents
+ * Get all talents (admin only)
+ */
+router.get("/talents", async (req, res) => {
+  try {
+    const talents = await prisma.talent.findMany({
+      select: {
+        id: true,
+        name: true,
+        primaryEmail: true,
+        representationType: true,
+        status: true,
+        userId: true
+      },
+      orderBy: { name: "asc" },
+      take: 100
+    });
+
+    res.json({ talents });
+  } catch (error) {
+    console.error("[ADMIN GET TALENTS]", error);
+    res.status(500).json({ error: "Failed to fetch talents" });
+  }
+});
+
 export default router;

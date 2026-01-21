@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { EditUserDrawer } from "../components/EditUserDrawer.jsx";
+import { LinkUserToTalentModal } from "../components/LinkUserToTalentModal.jsx";
 import { DataState } from "../components/DataState.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { getRecentUsers } from "../services/dashboardClient.js";
@@ -40,6 +41,8 @@ export function AdminUsersPage() {
   const [selectedBrandId, setSelectedBrandId] = useState("");
   const [brandLoading, setBrandLoading] = useState(false);
   const [brandLinkingLoading, setBrandLinkingLoading] = useState(false);
+  const [showLinkTalentModal, setShowLinkTalentModal] = useState(false);
+  const [selectedUserForTalent, setSelectedUserForTalent] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -422,6 +425,15 @@ export function AdminUsersPage() {
                           Link Brand
                         </button>
                       )}
+                      <button
+                        className="inline-flex items-center justify-center rounded-full border border-blue-600 px-3 py-1.5 text-xs uppercase tracking-[0.3em] text-blue-600 hover:bg-blue-600 hover:text-white transition-colors whitespace-nowrap"
+                        onClick={() => {
+                          setSelectedUserForTalent(user);
+                          setShowLinkTalentModal(true);
+                        }}
+                      >
+                        Link Talent
+                      </button>
                       {isSuperAdmin && !showArchived && (
                         <button
                           className="inline-flex items-center justify-center rounded-full border border-brand-red px-3 py-1.5 text-xs uppercase tracking-[0.3em] text-brand-red hover:bg-red-50 transition-colors whitespace-nowrap"
@@ -606,6 +618,20 @@ export function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      {/* Link Talent Modal */}
+      <LinkUserToTalentModal
+        isOpen={showLinkTalentModal}
+        user={selectedUserForTalent}
+        onClose={() => {
+          setShowLinkTalentModal(false);
+          setSelectedUserForTalent(null);
+        }}
+        onSuccess={() => {
+          // Refresh users list
+          setUsers(users.filter(u => u.id !== selectedUserForTalent?.id));
+        }}
+      />
     </DashboardShell>
   );
 }
