@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp, DollarSign, CheckSquare, BarChart3 } from "lucide-react";
+import { calculateHealthScore, getScoreColor } from "../../utils/healthScore.js";
+import { HealthBreakdownModal } from "../HealthBreakdownModal.jsx";
 
 // Local currency formatter for GBP formatting
 const formatCompactCurrency = (amount, currency = "GBP") => {
@@ -18,15 +20,17 @@ const formatCompactCurrency = (amount, currency = "GBP") => {
  * - Pipeline (active deals) → Deals Tab
  * - Earnings (total revenue) → Revenue Tab
  * - Tasks (pending actions) → Tasks Tab
- * - Health Score (overall status) → Profile Tab
+ * - Health Score (overall status) → Health Breakdown Modal
  * 
  * All cards are clickable and navigate to the relevant section.
+ * Health Score opens an interactive breakdown modal showing what's affecting the score.
  * 
  * This is the "Health" layer of the 3-tier architecture:
  * Identity → Health → Workspaces
  */
 export function HealthSnapshotCards({ talent, stats = {}, talentId }) {
   const navigate = useNavigate();
+  const [showHealthModal, setShowHealthModal] = useState(false);
   
   if (!talent) return null;
 
@@ -44,32 +48,11 @@ export function HealthSnapshotCards({ talent, stats = {}, talentId }) {
   const pendingTasks = talent.tasks?.filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED") || [];
   const taskCount = pendingTasks.length;
 
-  // Calculate health score (0-100)
-  // Based on: active deals (30%), earnings (30%), no pending tasks (20%), profile completeness (20%)
-  const profileCompleteness = [
-    talent.legalName,
-    talent.primaryEmail,
-    talent.socialAccounts?.length > 0,
-    talent.linkedUser?.id,
-  ].filter(Boolean).length / 4;
+  // Calculate health score using the new system
+  const { score: healthScore, issues: healthIssues, summary: healthSummary } = calculateHealthScore(talent);
 
-  const healthScore = Math.round(
-    Math.min(100,
-      (dealCount > 0 ? 30 : 0) +
-      (totalEarnings > 0 ? 30 : 0) +
-      (pendingTasks.length < 5 ? 20 : pendingTasks.length < 10 ? 10 : 0) +
-      profileCompleteness * 20
-    )
-  );
-
-  // Determine health color
-  const getHealthColor = (score) => {
-    if (score >= 80) return { bg: "bg-green-100", text: "text-green-700", icon: "text-green-600" };
-    if (score >= 60) return { bg: "bg-yellow-100", text: "text-yellow-700", icon: "text-yellow-600" };
-    return { bg: "bg-red-100", text: "text-red-700", icon: "text-red-600" };
-  };
-
-  const healthColor = getHealthColor(healthScore);
+  // Determine health color using the score color system
+  const healthBgColor = getScoreColor(healthScore);
 
   // Click handlers for navigation
   const handlePipelineClick = () => {
@@ -85,7 +68,7 @@ export function HealthSnapshotCards({ talent, stats = {}, talentId }) {
   };
 
   const handleHealthClick = () => {
-    navigate(`/admin/talent/${talentId || talent.id}`, { state: { tab: "profile" } });
+    setShowHealthModal(true);
   };
 
   const cards = [
@@ -121,57 +104,98 @@ export function HealthSnapshotCards({ talent, stats = {}, talentId }) {
     {
       label: "Health Score",
       value: `${healthScore}%`,
-      subtext: "Profile & performance",
+      subtext: healthSummary,
       icon: BarChart3,
-      color: healthColor.icon,
-      bgColor: healthColor.bg,
+      color: "text-white",
+      bgColor: `text-white`,
       onClick: handleHealthClick,
-      action: "View profile →",
+      action: healthIssues.length > 0 ? `${healthIssues.length} issue${healthIssues.length !== 1 ? 's' : ''} →` : "View details →",
+      healthScore: healthScore,
     },
   ];
 
   return (
-    <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card, idx) => {
-        const Icon = card.icon;
-        const bgClass = card.bgColor || "bg-brand-linen/50";
-        return (
-          <button
-            key={idx}
-            onClick={card.onClick}
-            className={`card p-4 transition-elevation cursor-pointer text-left`}
-            style={{
-              animationDelay: `${idx * 50}ms`,
-              animation: 'fadeInUp 0.6s ease-out forwards',
-              opacity: 0,
-            }}
-          >
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60">{card.label}</p>
-              <Icon className={`h-4 w-4 ${card.color} transition-transform duration-300 hover:scale-110`} />
-            </div>
-            <p className="font-display text-2xl uppercase text-brand-black">{card.value}</p>
-            {card.subtext && (
-              <p className="mt-2 text-xs text-brand-black/50">{card.subtext}</p>
-            )}
-            {card.action && (
-              <p className="mt-3 text-xs font-medium text-brand-black/70 hover:text-brand-black transition-colors">{card.action}</p>
-            )}
-          </button>
-        );
-      })}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
+    <>
+      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map((card, idx) => {
+          const Icon = card.icon;
+          const isHealthCard = card.label === "Health Score";
+          
+          return (
+            <button
+              key={idx}
+              onClick={card.onClick}
+              className={`${isHealthCard ? '' : 'card'} p-4 transition-elevation cursor-pointer text-left rounded-2xl border transition-all ${
+                isHealthCard 
+                  ? 'border-none text-white shadow-lg hover:shadow-xl' 
+                  : 'border-brand-black/10 bg-white hover:bg-brand-black/2'
+              }`}
+              style={{
+                animationDelay: `${idx * 50}ms`,
+                animation: 'fadeInUp 0.6s ease-out forwards',
+                opacity: 0,
+                ...(isHealthCard && { backgroundColor: healthBgColor })
+              }}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <p className={`text-xs uppercase tracking-[0.3em] ${isHealthCard ? 'opacity-90' : 'text-brand-black/60'}`}>
+                  {card.label}
+                </p>
+                <Icon className={`h-4 w-4 ${isHealthCard ? 'opacity-80' : card.color} transition-transform duration-300 hover:scale-110`} />
+              </div>
+              <p className={`font-display text-2xl uppercase ${isHealthCard ? 'text-white' : 'text-brand-black'}`}>
+                {card.value}
+              </p>
+              {card.subtext && (
+                <p className={`mt-2 text-xs ${isHealthCard ? 'opacity-80' : 'text-brand-black/50'}`}>
+                  {card.subtext}
+                </p>
+              )}
+              {card.action && (
+                <p className={`mt-3 text-xs font-medium transition-colors ${
+                  isHealthCard 
+                    ? 'opacity-90 hover:opacity-100' 
+                    : 'text-brand-black/70 hover:text-brand-black'
+                }`}>
+                  {card.action}
+                </p>
+              )}
+            </button>
+          );
+        })}
+        <style>{`
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </section>
+        `}</style>
+      </section>
+
+      {/* Health Breakdown Modal */}
+      <HealthBreakdownModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+        talent={talent}
+        onCreateTask={(taskData) => {
+          // Will implement task creation
+          console.log("Create task from health issue:", taskData);
+        }}
+        onAddSocial={(platforms) => {
+          // Will implement social addition
+          console.log("Add social profiles:", platforms);
+        }}
+        onCreateDeal={() => {
+          // Navigate to deals tab and open modal
+          navigate(`/admin/talent/${talentId || talent.id}`, { state: { tab: "deals" } });
+          setShowHealthModal(false);
+        }}
+      />
+    </>
   );
 }
