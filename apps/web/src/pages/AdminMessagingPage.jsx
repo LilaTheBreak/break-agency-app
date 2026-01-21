@@ -528,10 +528,6 @@ function EmailModal({ email, onClose }) {
     classifyEmail();
   }, [email.id, subject, body, senderName, senderEmail, email.attachments, email.participants, classify]);
 
-  useEffect(() => {
-    fetchBrands();
-  }, []);
-
   const handleAddAsBrand = async () => {
     if (!senderEmail) {
       alert('Could not extract email address from sender');
