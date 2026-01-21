@@ -90,8 +90,11 @@ export function deriveOnboardingStatus(user) {
   if (!user || !normalizedRole || !ONBOARDING_ROLES.has(normalizedRole)) {
     return user?.onboardingStatus || "approved";
   }
-  // Prefer backend-supplied approval when present
-  if (user?.onboardingStatus === "approved") return "approved";
+  // Prioritize backend status if it's explicitly set
+  if (user?.onboardingStatus) {
+    return user.onboardingStatus;
+  }
+  // Fall back to localStorage status
   return stored.status;
 }
 
