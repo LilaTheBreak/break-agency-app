@@ -380,10 +380,6 @@ export async function listBrands(
   const brands = await prisma.brand.findMany({
     take: limit,
     skip: offset,
-    include: {
-      // @ts-ignore - Relation exists in schema but TypeScript cache is stale
-      BrandUsers: true,
-    },
     orderBy: { createdAt: "desc" },
   });
 
