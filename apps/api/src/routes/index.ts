@@ -41,6 +41,7 @@ import onboardingRouter from './onboarding.js';
 import adminUsersRouter from './adminUsers.js';
 import talentRouter from './talent.js';
 import brandRouter from './brand.js';
+import brandsRouter from './brands.js';
 
 // Social OAuth routes
 import instagramAuthRouter from './auth/instagram.js';
@@ -143,6 +144,7 @@ router.use("/deck", deckRouter);
 router.use("/opportunities", opportunitiesRouter);
 router.use("/admin", adminUsersRouter);
 router.use("/brand", brandRouter);
+router.use("/brands", brandsRouter);
 
 // Enterprise Operating System routes
 router.use("/enterprise-value", enterpriseValueRouter);
