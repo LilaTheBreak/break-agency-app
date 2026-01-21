@@ -79,7 +79,7 @@ export function AssistedOutreachPage({ session }) {
 
       {currentView === 'approval' && selectedCampaignId && selectedDraftId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-5xl max-h-[90vh] overflow-auto rounded-3xl border border-brand-black/10 bg-white shadow-lg">
+          <div className="w-full max-w-5xl max-h-[90vh] overflow-auto card transition-elevation">
             <div className="sticky top-0 border-b border-brand-black/10 bg-white p-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Review & Approve Draft</h3>
               <button

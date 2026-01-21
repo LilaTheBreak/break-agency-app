@@ -1289,7 +1289,7 @@ function SiteChrome({ session, onRequestSignIn, onSignOut }) {
                   ) : null}
                 </button>
                 {notificationsOpen ? (
-                  <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-brand-black/10 bg-brand-white p-3 text-brand-black shadow-[0_25px_80px_rgba(0,0,0,0.25)]">
+                  <div className="absolute right-0 mt-2 w-80 card p-3 text-brand-black transition-elevation">
                     <div className="flex items-center justify-between">
                       <p className="text-[0.75rem] font-semibold uppercase tracking-[0.3em] text-brand-black">Notifications</p>
                       <button

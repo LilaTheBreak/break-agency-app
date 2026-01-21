@@ -218,7 +218,7 @@ export function ProfilePage({ variant = "default" }) {
         </section>
       )}
       {variant === "exclusive" && (
-        <section className="rounded-[32px] border border-brand-black/10 bg-brand-white p-6 shadow-[0_25px_80px_rgba(0,0,0,0.08)]">
+        <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <div className="grid gap-6 md:grid-cols-[1.2fr,1fr]">
             <div>
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">About / biography</p>
@@ -227,7 +227,7 @@ export function ProfilePage({ variant = "default" }) {
                   "Experienced creator with a signature mix of luxury, travel, and short-form storytelling."}
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-brand-black/10 bg-[#f6f0ea] p-4">
+                <div className="card p-4 transition-elevation">
                   <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">Creator style</p>
                   <p className="text-sm font-semibold text-brand-black">{profile.style || "Lifestyle + travel"}</p>
                   <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60 mt-2">Key differentiators</p>
@@ -235,7 +235,7 @@ export function ProfilePage({ variant = "default" }) {
                     {profile.differentiators || "AI-ready briefs, premium hospitality, hybrid IRL experiences."}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-brand-black/10 bg-[#f6f0ea] p-4">
+                <div className="card p-4 transition-elevation\">
                   <p className="text-xs uppercase tracking-[0.35em] text-brand-black/50">AI summary</p>
                   <p className="text-sm text-brand-black/70">
                     {profile.aiSummary ||
@@ -244,7 +244,7 @@ export function ProfilePage({ variant = "default" }) {
                 </div>
               </div>
             </div>
-            <div className="space-y-3 rounded-2xl border border-brand-black/10 bg-brand-white p-4">
+            <div className="card p-4 transition-elevation space-y-3 rounded-2xl">
               <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Category & contact</p>
               <p className="text-sm text-brand-black/70">
                 {heroCategory} · Status: {statusLabel}
@@ -360,7 +360,7 @@ export function ProfilePage({ variant = "default" }) {
                 return (
                   <div
                     key={`${labelText}-${index}`}
-                    className="flex flex-col gap-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-3 md:flex-row md:items-center"
+                    className="flex flex-col gap-2 card p-3 transition-elevation md:flex-row md:items-center"
                   >
                     {isPreset ? (
                       <div className="flex-1 text-xs font-semibold uppercase tracking-[0.35em] text-brand-black/70">

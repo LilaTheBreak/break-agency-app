@@ -214,13 +214,13 @@ export function AdminSettingsPage() {
       navLinks={ADMIN_NAV_LINKS}
     >
       <section className="space-y-4">
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-white/90 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
+        <div className="section-wrapper elevation-1 p-5 transition-elevation">
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Access control</p>
           <p className="mt-2 text-sm text-brand-black/70">
             Manage who can reach the console and what they can touch.
           </p>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <label className="block space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <label className="card space-y-2 p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">Default role</span>
               <select className="w-full rounded-xl border border-brand-black/20 px-3 py-2 text-sm focus:border-brand-red focus:outline-none">
                 <option>Admin</option>
@@ -230,7 +230,7 @@ export function AdminSettingsPage() {
               </select>
               <p className="text-xs text-brand-black/60">Used for new invites unless overridden.</p>
             </label>
-            <label className="block space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <label className="card space-y-2 p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">Single sign-on</span>
               <div className="flex items-center gap-3">
                 <input type="checkbox" defaultChecked className="h-4 w-4 accent-brand-red" />
@@ -238,7 +238,7 @@ export function AdminSettingsPage() {
               </div>
               <p className="text-xs text-brand-black/60">Enforces IdP login and disables password auth.</p>
             </label>
-            <label className="block space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <label className="card space-y-2 p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">MFA</span>
               <div className="flex items-center gap-3">
                 <input type="checkbox" defaultChecked className="h-4 w-4 accent-brand-red" />
@@ -246,7 +246,7 @@ export function AdminSettingsPage() {
               </div>
               <p className="text-xs text-brand-black/60">Applies to every active user.</p>
             </label>
-            <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <div className="card p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">Invite link</span>
               <div className="mt-2 flex flex-wrap gap-2">
                 <input
@@ -266,7 +266,7 @@ export function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-white/90 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
+        <div className="section-wrapper elevation-1 p-5 transition-elevation">
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Integrations</p>
           <p className="mt-2 text-sm text-brand-black/70">
             Connect tools that keep your workflows in sync.
@@ -287,7 +287,7 @@ export function AdminSettingsPage() {
                 : integration.defaultStatus;
 
               return (
-                <div key={integration.name} className={`space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4 ${!isAvailable ? 'opacity-60' : ''}`}>
+                <div key={integration.name} className={`card space-y-2 p-4 transition-elevation ${!isAvailable ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-brand-black">{integration.name}</span>
@@ -318,7 +318,7 @@ export function AdminSettingsPage() {
             })}
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <label className="block space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <label className="card space-y-2 p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">Webhook URL</span>
               <input
                 type="url"
@@ -327,7 +327,7 @@ export function AdminSettingsPage() {
               />
               <p className="text-xs text-brand-black/60">Receives user and audit events.</p>
             </label>
-            <label className="block space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <label className="card space-y-2 p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">API key</span>
               <div className="flex flex-wrap gap-2">
                 <input
@@ -347,13 +347,13 @@ export function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-white/90 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.05)]">
+        <div className="section-wrapper elevation-1 p-5 transition-elevation">
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Notifications</p>
           <p className="mt-2 text-sm text-brand-black/70">
             Decide how admins and managers get alerted.
           </p>
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <div className="card space-y-2 p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">Channels</span>
               {["Email", "SMS", "Push", "Slack"].map((channel) => (
                 <label key={channel} className="flex items-center gap-3 text-sm text-brand-black/80">
@@ -362,7 +362,7 @@ export function AdminSettingsPage() {
                 </label>
               ))}
             </div>
-            <div className="space-y-2 rounded-2xl border border-brand-black/10 bg-brand-linen/40 p-4">
+            <div className="card space-y-2 p-4 transition-elevation">
               <span className="text-[0.68rem] uppercase tracking-[0.28em] text-brand-black/60">Digest frequency</span>
               <select
                 defaultValue="Daily"
@@ -376,11 +376,11 @@ export function AdminSettingsPage() {
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <label className="flex items-center gap-3 rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black/80">
+            <label className="card px-4 py-3 text-sm text-brand-black/80 transition-elevation flex items-center gap-3">
               <input type="checkbox" defaultChecked className="h-4 w-4 accent-brand-red" />
               Notify me when approvals wait more than 2 hours
             </label>
-            <label className="flex items-center gap-3 rounded-2xl border border-brand-black/10 bg-brand-linen/40 px-4 py-3 text-sm text-brand-black/80">
+            <label className="card px-4 py-3 text-sm text-brand-black/80 transition-elevation flex items-center gap-3">
               <input type="checkbox" className="h-4 w-4 accent-brand-red" />
               Notify me on payment failures
             </label>
