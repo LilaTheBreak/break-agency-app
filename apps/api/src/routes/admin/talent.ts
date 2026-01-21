@@ -1902,7 +1902,7 @@ router.post("/:id/socials", async (req: Request, res: Response) => {
 
 /**
  * GET /api/admin/talent/:id/socials
- * Get all social profiles for a talent
+ * Get all social profiles for a talent (both manually added + OAuth connected)
  */
 router.get("/:id/socials", async (req: Request, res: Response) => {
   try {
@@ -1923,19 +1923,44 @@ router.get("/:id/socials", async (req: Request, res: Response) => {
       return sendError(res, "NOT_FOUND", "Talent not found", 404);
     }
 
-    console.log("[TALENT SOCIALS GET] Fetching socials from database");
-    const socials = await prisma.talentSocial.findMany({
+    console.log("[TALENT SOCIALS GET] Fetching manually added socials");
+    const manualSocials = await prisma.talentSocial.findMany({
       where: { talentId: id },
       orderBy: { createdAt: "desc" },
     });
 
-    if (!Array.isArray(socials)) {
-      console.warn("[TALENT SOCIALS] Expected array but got:", typeof socials);
+    console.log("[TALENT SOCIALS GET] Fetching OAuth-connected accounts");
+    const oauthSocials = await prisma.socialAccountConnection.findMany({
+      where: { talentId: id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Convert OAuth socials to compatible format
+    const formattedOauthSocials = oauthSocials.map(oauth => ({
+      id: oauth.id,
+      talentId: oauth.talentId,
+      platform: oauth.platform.toUpperCase(),
+      displayName: oauth.displayName || oauth.platform,
+      handle: oauth.username || oauth.accountId,
+      url: oauth.profileUrl,
+      profileImageUrl: oauth.profileImageUrl,
+      followers: oauth.followerCount,
+      following: oauth.followingCount,
+      postCount: oauth.postCount,
+      lastScrapedAt: oauth.lastRefreshedAt,
+      isOAuthConnected: true, // Flag to indicate this is OAuth-connected
+    }));
+
+    // Combine both sources
+    const allSocials = [...manualSocials, ...formattedOauthSocials];
+
+    if (!Array.isArray(allSocials)) {
+      console.warn("[TALENT SOCIALS] Expected array but got:", typeof allSocials);
       return res.json([]);
     }
 
-    console.log("[TALENT SOCIALS] Successfully fetched", socials.length, "socials for talent", id);
-    return res.json(socials);
+    console.log("[TALENT SOCIALS] Successfully fetched", allSocials.length, "total socials for talent", id);
+    return res.json(allSocials);
   } catch (error) {
     console.error("[TALENT SOCIALS GET ERROR] Exception caught:", {
       errorName: error instanceof Error ? error.name : typeof error,

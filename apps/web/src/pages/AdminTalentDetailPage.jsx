@@ -1127,75 +1127,119 @@ function TalentSocialSection({ talentId }) {
 
       {loading ? (
         <p className="text-sm text-brand-black/60">Loading...</p>
-      ) : socials.length === 0 ? (
-        <p className="text-sm text-brand-black/60">No social profiles added yet</p>
       ) : (
-        <div className="space-y-3">
-          {socials.map(social => (
-            <div
-              key={social.id}
-              className="flex items-start gap-3 p-3 bg-brand-black/5 rounded-lg"
-            >
-              {social.profileImageUrl && (
-                <img 
-                  src={social.profileImageUrl} 
-                  alt={social.handle}
-                  className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                  onError={(e) => e.target.style.display = 'none'}
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <a
-                  href={social.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block hover:underline"
+        <>
+          {socials.length > 0 && (
+            <div className="space-y-3 mb-4">
+              {socials.map(social => (
+                <div
+                  key={social.id}
+                  className={`flex items-start gap-3 p-3 rounded-lg ${
+                    social.isOAuthConnected 
+                      ? 'bg-brand-green/5 border border-brand-green/20' 
+                      : 'bg-brand-black/5'
+                  }`}
                 >
-                  <p className="font-semibold text-sm text-brand-black">
-                    {social.displayName || social.platform}
-                  </p>
-                  <p className="text-xs text-brand-black/60">@{social.handle}</p>
-                </a>
-                
-                {/* Show scraped Instagram data */}
-                {social.platform === 'INSTAGRAM' && social.lastScrapedAt && (
-                  <div className="mt-2 text-xs text-brand-black/60 space-y-1">
-                    <p className="font-medium italic text-brand-black/50">Public Instagram data</p>
-                    <div className="flex gap-4 flex-wrap">
-                      {social.followers && (
-                        <span>{social.followers.toLocaleString()} followers</span>
-                      )}
-                      {social.following && (
-                        <span>{social.following.toLocaleString()} following</span>
-                      )}
-                      {social.postCount && (
-                        <span>{social.postCount.toLocaleString()} posts</span>
+                  {social.profileImageUrl && (
+                    <img 
+                      src={social.profileImageUrl} 
+                      alt={social.handle}
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <a
+                        href={social.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block hover:underline flex-1"
+                      >
+                        <p className="font-semibold text-sm text-brand-black">
+                          {social.displayName || social.platform}
+                        </p>
+                        <p className="text-xs text-brand-black/60">@{social.handle}</p>
+                      </a>
+                      {social.isOAuthConnected && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-brand-green/20 text-brand-green rounded whitespace-nowrap">
+                          ✓ Connected
+                        </span>
                       )}
                     </div>
-                    <p className="text-xs text-brand-black/40">
-                      Fetched {new Date(social.lastScrapedAt).toLocaleDateString()}
-                    </p>
+                    
+                    {/* Show scraped data for connected accounts */}
+                    {social.isOAuthConnected && social.followers && (
+                      <div className="mt-2 text-xs text-brand-black/60 space-y-1">
+                        <div className="flex gap-4 flex-wrap">
+                          {social.followers && (
+                            <span>{social.followers.toLocaleString()} followers</span>
+                          )}
+                          {social.following && (
+                            <span>{social.following.toLocaleString()} following</span>
+                          )}
+                          {social.postCount && (
+                            <span>{social.postCount.toLocaleString()} posts</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Show scraped Instagram data */}
+                    {social.platform === 'INSTAGRAM' && social.lastScrapedAt && !social.isOAuthConnected && (
+                      <div className="mt-2 text-xs text-brand-black/60 space-y-1">
+                        <p className="font-medium italic text-brand-black/50">Public Instagram data</p>
+                        <div className="flex gap-4 flex-wrap">
+                          {social.followers && (
+                            <span>{social.followers.toLocaleString()} followers</span>
+                          )}
+                          {social.following && (
+                            <span>{social.following.toLocaleString()} following</span>
+                          )}
+                          {social.postCount && (
+                            <span>{social.postCount.toLocaleString()} posts</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-brand-black/40">
+                          Fetched {new Date(social.lastScrapedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-                
-                {/* Show manually set follower count for non-Instagram */}
-                {social.platform !== 'INSTAGRAM' && social.followers && (
-                  <p className="text-xs text-brand-black/60 mt-1">{social.followers.toLocaleString()} followers</p>
-                )}
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDelete(social.id);
-                }}
-                className="text-xs text-brand-red hover:underline flex-shrink-0"
-              >
-                Delete
-              </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+          
+          {socials.length === 0 && (
+            <p className="text-sm text-brand-black/60 mb-4">No social profiles added yet. Add one below to get started.</p>
+          )}
+        </>
+      )}
+                      Fetched {new Date(social.lastScrapedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDelete(social.id);
+                    }}
+                    className="text-xs text-brand-red hover:underline flex-shrink-0 mt-1"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {socials.length === 0 && (
+            <p className="text-sm text-brand-black/60 mb-4">No social profiles added yet. Add one below to get started.</p>
+          )}
+        </>
       )}
     </section>
   );
