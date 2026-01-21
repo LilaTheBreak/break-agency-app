@@ -1796,9 +1796,6 @@ export function AdminTalentDetailPage() {
           aria-label="Add new deal"
         >
           <Plus className="h-7 w-7 transition-transform group-hover:rotate-90 duration-300" />
-          <div className="absolute bottom-full right-0 mb-3 px-3 py-2 bg-brand-black text-white text-xs font-semibold uppercase tracking-[0.15em] rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-            New Deal
-          </div>
         </button>
 
         {/* Task CTA - Blue brand accent */}
@@ -2874,15 +2871,6 @@ function DealsTab({ talent, onDealCreated }) {
             onFiltersChange={setDealFilters}
             dealCount={sortedDeals.length}
           />
-          {sortedDeals.length > 0 && (
-            <button
-              onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-red text-brand-white font-medium text-sm hover:bg-brand-red/90 transition"
-            >
-              <Plus className="w-4 h-4" />
-              New Deal
-            </button>
-          )}
         </div>
       )}
 
