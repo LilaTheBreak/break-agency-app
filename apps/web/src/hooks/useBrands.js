@@ -66,7 +66,7 @@ export function useBrands() {
         setIsLoading(true);
         setError(null);
 
-        brandsCachePromise = apiFetch('/api/crm-brands')
+        brandsCachePromise = apiFetch('/api/brands')
           .then(async (res) => {
             if (!res.ok) {
               throw new Error(`Failed to fetch brands: ${res.status} ${res.statusText}`);
@@ -80,8 +80,11 @@ export function useBrands() {
               throw new Error('Failed to parse brands response');
             }
             
+            // Handle both direct array (from /api/crm-brands) and wrapped object (from /api/brands)
+            let brandsArray = Array.isArray(data) ? data : (data?.brands || []);
+            
             // Normalize and deduplicate brands
-            const normalized = normalizeBrands(data);
+            const normalized = normalizeBrands(brandsArray);
             console.log('[useBrands] Successfully fetched', normalized.length, 'brands');
             brandsCacheGlobal = normalized;
             return normalized;
