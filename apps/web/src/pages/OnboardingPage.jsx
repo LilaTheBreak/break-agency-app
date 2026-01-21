@@ -366,6 +366,37 @@ export default function OnboardingPage() {
         console.warn("Error marking onboarding as completed:", err);
       }
 
+      // For creators, auto-link or create talent record
+      if (resolvedRole === Roles.CREATOR) {
+        try {
+          const talentResponse = await fetch("/api/creator/complete-onboarding", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              displayName: form.displayName,
+              categories: form.categories || [],
+              representationType: form.representationType,
+            }),
+          });
+          
+          if (!talentResponse.ok) {
+            const error = await talentResponse.json().catch(() => ({ error: "Failed to link talent" }));
+            console.error("Failed to link creator talent:", error);
+            // Don't fail onboarding for this, just log it
+            if (talentResponse.status === 409) {
+              console.warn("Email conflict during talent linking:", error);
+            }
+          } else {
+            const talentData = await talentResponse.json();
+            console.log("Creator talent linked/created:", talentData);
+          }
+        } catch (err) {
+          console.error("Error linking creator talent:", err);
+          // Don't fail onboarding for this error
+        }
+      }
+
       // Update local storage
       markOnboardingSubmitted(user.email, resolvedRole, form.context);
       saveCrmOnboarding(user.email, resolvedRole, form.context, form);

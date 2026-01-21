@@ -1665,7 +1665,8 @@ model Talent {
   CalendarWarnings        CalendarWarning[]
   Availability            TalentAvailability?
   BlackoutDates           TalentBlackoutDate[]
-  
+  HealthScoreSnapshots    HealthScoreSnapshot[]
+
   // Enterprise Operating System relations
   EnterpriseValueMetrics  EnterpriseValueMetrics?
   RevenueStreams          RevenueStream[]
@@ -3796,4 +3797,34 @@ model OutreachReply {
 // END ASSISTED OUTREACH SYSTEM MODELS
 // ============================================================================
 
+// ============================================================================// HEALTH SCORE TRACKING
+// ============================================================================
+
+model HealthScoreSnapshot {
+  id              String   @id @default(cuid())
+  talentId        String
+  talent          Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  score           Int      @default(100)
+  previousScore   Int?
+  
+  factors         Json?
+  triggers        String[]
+  
+  metadata        Json?
+  
+  autoTaskCreated Boolean  @default(false)
+  autoTaskId      String?
+  
+  calculatedAt    DateTime @default(now())
+  createdAt       DateTime @default(now())
+  
+  @@index([talentId])
+  @@index([calculatedAt])
+  @@index([score])
+  @@unique([talentId, calculatedAt])
+}
+
+// ============================================================================
+// END HEALTH SCORE TRACKING
 // ============================================================================

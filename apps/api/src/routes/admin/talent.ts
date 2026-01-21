@@ -18,6 +18,7 @@ import { normalizeInstagramHandle } from '../../services/socialScrapers/instagra
 import * as storage from '../../services/storage.js';
 import * as aiOpportunitySuggestionsController from '../../controllers/aiOpportunitySuggestionsController.js';
 import { createTaskNotifications } from '../../services/taskNotifications.js';
+import { getHealthScoreTrend } from '../../services/healthScoreSnapshotService.js';
 
 const router = Router();
 
@@ -2046,6 +2047,64 @@ router.delete("/socials/:socialId", async (req: Request, res: Response) => {
         socialId: req.params.socialId,
         stack: error instanceof Error ? error.stack : undefined,
       } : undefined
+    );
+  }
+});
+
+/**
+ * GET /api/admin/talent/:id/health-trend
+ * Get health score trend data for a talent
+ * 
+ * Query parameters:
+ * - days: Number of days to look back (default: 30)
+ */
+router.get("/:id/health-trend", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { days = 30 } = req.query;
+    const lookbackDays = parseInt(String(days), 10) || 30;
+
+    if (!id || id.trim() === "") {
+      console.warn("[HEALTH TREND] Missing or empty talent ID");
+      return sendError(res, "VALIDATION_ERROR", "Talent ID is required", 400);
+    }
+
+    console.log("[HEALTH TREND] Fetching trend for talent:", id, "days:", lookbackDays);
+
+    // Verify talent exists
+    const talent = await prisma.talent.findUnique({ where: { id } });
+    if (!talent) {
+      console.warn("[HEALTH TREND] Talent not found:", id);
+      return sendError(res, "NOT_FOUND", "Talent not found", 404);
+    }
+
+    // Get trend data from service
+    const trend = await getHealthScoreTrend(id, lookbackDays);
+
+    if (!trend) {
+      console.log("[HEALTH TREND] No trend data available yet for talent:", id);
+      return res.json({
+        snapshots: [],
+        current: null,
+        previous: null,
+        trend: null,
+        message: "Health score tracking will appear once activity begins"
+      });
+    }
+
+    console.log("[HEALTH TREND] Successfully fetched trend with", trend.snapshots?.length || 0, "snapshots");
+    return res.json(trend);
+  } catch (error) {
+    console.error("[HEALTH TREND ERROR]", {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      talentId: req.params.id,
+    });
+    logError("Failed to fetch health trend", error, { talentId: req.params.id });
+    return sendError(
+      res,
+      "HEALTH_TREND_FAILED",
+      error instanceof Error ? error.message : "Failed to fetch health trend",
+      500
     );
   }
 });

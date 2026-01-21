@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { calculateHealthScore, getScoreColor, getCategoryColor } from "../utils/healthScore";
+import { HealthScoreTrendChart } from "./HealthScoreTrendChart";
+import { apiFetch } from "../services/apiClient.js";
 
 /**
  * HealthBreakdownModal - Shows detailed health score breakdown with actionable issues
@@ -22,6 +24,32 @@ export function HealthBreakdownModal({
 }) {
   const [expandedIssue, setExpandedIssue] = useState(null);
   const [creatingTaskFor, setCreatingTaskFor] = useState(null);
+  const [trend, setTrend] = useState(null);
+  const [trendLoading, setTrendLoading] = useState(false);
+
+  // Load health trend when modal opens
+  useEffect(() => {
+    if (isOpen && talent?.id) {
+      loadTrend();
+    }
+  }, [isOpen, talent?.id]);
+
+  const loadTrend = async () => {
+    if (!talent?.id) return;
+    
+    setTrendLoading(true);
+    try {
+      const response = await apiFetch(`/api/admin/talent/${talent.id}/health-trend`);
+      if (response.ok) {
+        const data = await response.json();
+        setTrend(data);
+      }
+    } catch (err) {
+      console.error("Failed to load health trend:", err);
+    } finally {
+      setTrendLoading(false);
+    }
+  };
 
   if (!isOpen || !talent) return null;
 
@@ -107,6 +135,15 @@ export function HealthBreakdownModal({
               </div>
             </div>
           </div>
+
+          {/* Health Trend Chart */}
+          {trendLoading ? (
+            <div className="rounded-xl border border-brand-black/10 bg-brand-white p-6">
+              <p className="text-sm text-brand-black/60">Loading trend data...</p>
+            </div>
+          ) : (
+            <HealthScoreTrendChart trend={trend} days={30} />
+          )}
 
           {/* Issues by Category */}
           {issues.length > 0 ? (

@@ -307,4 +307,171 @@ router.get("/api/creator/analytics/audience", requireCreator, attachCreatorProfi
   }
 });
 
+/**
+ * POST /api/creator/complete-onboarding
+ * 
+ * Called when creator completes onboarding flow.
+ * Automatically links User to existing Talent OR creates new Talent.
+ * 
+ * Behavior:
+ * 1. Normalize email to lowercase
+ * 2. Check if user already has linked talent (prevent duplicates)
+ * 3. Search for existing unlinked Talent by primaryEmail (case-insensitive)
+ * 4. If found: Link existing Talent to this User
+ * 5. If not found: Create new Talent with User link
+ * 6. Update user onboarding status to complete
+ * 
+ * Returns: { action: 'LINKED' | 'CREATED', talentId, talent }
+ */
+router.post("/api/creator/complete-onboarding", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const { displayName, categories = [], representationType = 'NON_EXCLUSIVE' } = req.body;
+
+    if (!user || !user.id) {
+      console.warn('[CREATOR_ONBOARDING] No authenticated user');
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const normalizedEmail = user.email.toLowerCase().trim();
+    console.log('[CREATOR_ONBOARDING] Completing onboarding for user:', user.id, normalizedEmail);
+
+    // STEP 1: Check if user already has a linked talent (safety check)
+    const existingLinked = await prisma.talent.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (existingLinked) {
+      console.log('[CREATOR_ONBOARDING] User already linked to talent:', existingLinked.id);
+      return res.status(200).json({
+        action: 'ALREADY_LINKED',
+        talentId: existingLinked.id,
+        talent: {
+          id: existingLinked.id,
+          name: existingLinked.name,
+          userId: existingLinked.userId,
+          primaryEmail: existingLinked.primaryEmail
+        }
+      });
+    }
+
+    // STEP 2: Search for existing talent by email (case-insensitive)
+    const existingTalent = await prisma.talent.findFirst({
+      where: {
+        primaryEmail: {
+          equals: normalizedEmail,
+          mode: 'insensitive'
+        }
+      }
+    });
+
+    let linkedTalent;
+    let action = 'CREATED';
+
+    if (existingTalent && !existingTalent.userId) {
+      // STEP 3A: Link existing unlinked talent
+      console.log('[CREATOR_ONBOARDING] Found unlinked talent by email, linking:', existingTalent.id);
+      
+      linkedTalent = await prisma.talent.update({
+        where: { id: existingTalent.id },
+        data: {
+          userId: user.id,
+          // Update name if provided and not already set
+          ...(displayName && !existingTalent.name && { name: displayName })
+        }
+      });
+      
+      action = 'LINKED';
+      console.log('[CREATOR_ONBOARDING] Talent linked successfully:', linkedTalent.id);
+      
+    } else if (existingTalent && existingTalent.userId && existingTalent.userId !== user.id) {
+      // STEP 3B: Talent exists but linked to different user
+      console.warn('[CREATOR_ONBOARDING] Talent email exists but linked to different user:', existingTalent.userId);
+      return res.status(409).json({
+        error: "This email is already associated with another account",
+        code: 'EMAIL_CONFLICT'
+      });
+      
+    } else {
+      // STEP 3C: Create new talent
+      console.log('[CREATOR_ONBOARDING] Creating new talent for user:', user.id);
+      
+      linkedTalent = await prisma.talent.create({
+        data: {
+          id: `talent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          userId: user.id,
+          name: displayName?.trim() || user.name || 'Creator',
+          displayName: displayName?.trim(),
+          primaryEmail: normalizedEmail,
+          representationType: representationType || 'NON_EXCLUSIVE',
+          status: 'ACTIVE',
+          categories: categories || [],
+          stage: 'ACTIVE'
+        }
+      });
+      
+      console.log('[CREATOR_ONBOARDING] Talent created successfully:', linkedTalent.id);
+    }
+
+    // STEP 4: Update user onboarding status
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          onboardingComplete: true,
+          onboarding_status: 'approved'
+        }
+      });
+      console.log('[CREATOR_ONBOARDING] User onboarding status updated');
+    } catch (updateErr) {
+      console.warn('[CREATOR_ONBOARDING] Failed to update onboarding status:', updateErr);
+      // Don't fail the request for this
+    }
+
+    // STEP 5: Log audit event (non-blocking)
+    try {
+      console.log('[CREATOR_ONBOARDING] Talent linking event - action:', action, 'talentId:', linkedTalent.id);
+      // Could integrate with audit logger here if needed
+    } catch (logErr) {
+      console.warn('[CREATOR_ONBOARDING] Failed to log audit event:', logErr);
+    }
+
+    console.log('[CREATOR_ONBOARDING] Returning success response - action:', action, 'talentId:', linkedTalent.id);
+    
+    return res.status(200).json({
+      action,
+      talentId: linkedTalent.id,
+      talent: {
+        id: linkedTalent.id,
+        name: linkedTalent.name,
+        userId: linkedTalent.userId,
+        primaryEmail: linkedTalent.primaryEmail,
+        categories: linkedTalent.categories,
+        representationType: linkedTalent.representationType
+      }
+    });
+
+  } catch (error) {
+    console.error('[CREATOR_ONBOARDING] Error:', error);
+    
+    if (error instanceof Error) {
+      // Check for Prisma unique constraint errors
+      if (error.message.includes('Unique constraint failed')) {
+        return res.status(409).json({
+          error: "Talent record already exists for this email",
+          code: 'DUPLICATE_TALENT'
+        });
+      }
+      
+      return res.status(500).json({
+        error: error.message || "Failed to complete onboarding"
+      });
+    }
+    
+    return res.status(500).json({
+      error: "Failed to complete onboarding"
+    });
+  }
+});
+
 export default router;
