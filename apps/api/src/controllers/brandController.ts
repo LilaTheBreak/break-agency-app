@@ -271,9 +271,8 @@ export async function listBrandsHandler(
       select: {
         id: true,
         name: true,
-        brandName: true,
-        description: true,
         websiteUrl: true,
+        industry: true,
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },

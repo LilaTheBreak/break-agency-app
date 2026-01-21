@@ -1932,24 +1932,24 @@ router.get("/:id/socials", async (req: Request, res: Response) => {
 
     console.log("[TALENT SOCIALS GET] Fetching OAuth-connected accounts");
     const oauthSocials = await prisma.socialAccountConnection.findMany({
-      where: { talentId: id },
+      where: { creatorId: id },
       orderBy: { createdAt: "desc" },
     });
 
     // Convert OAuth socials to compatible format
     const formattedOauthSocials = oauthSocials.map(oauth => ({
       id: oauth.id,
-      talentId: oauth.talentId,
+      creatorId: oauth.creatorId,
       platform: oauth.platform.toUpperCase(),
-      displayName: oauth.displayName || oauth.platform,
-      handle: oauth.username || oauth.accountId,
+      displayName: oauth.platform,
+      handle: oauth.handle,
       url: oauth.profileUrl,
-      profileImageUrl: oauth.profileImageUrl,
-      followers: oauth.followerCount,
-      following: oauth.followingCount,
-      postCount: oauth.postCount,
-      lastScrapedAt: oauth.lastRefreshedAt,
-      isOAuthConnected: true, // Flag to indicate this is OAuth-connected
+      profileImageUrl: oauth.profileUrl,
+      followers: 0,
+      following: 0,
+      postCount: 0,
+      lastScrapedAt: oauth.lastSyncedAt,
+      isOAuthConnected: oauth.connected, // Flag to indicate this is OAuth-connected
     }));
 
     // Combine both sources
