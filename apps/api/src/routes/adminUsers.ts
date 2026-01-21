@@ -380,4 +380,165 @@ router.post("/users/:id/link-brand", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/users/:userId/link-talent/:talentId
+ * Link a user to a talent (admin only)
+ * This creates or updates the Talent record with the user's ID
+ */
+router.post("/users/:userId/link-talent/:talentId", async (req, res) => {
+  try {
+    const { userId, talentId } = req.params;
+
+    if (!userId || !talentId) {
+      return res.status(400).json({ error: "userId and talentId are required" });
+    }
+
+    // Verify the user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Verify the talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId }
+    });
+
+    if (!talent) {
+      return res.status(404).json({ error: "Talent not found" });
+    }
+
+    // Update the talent to link it to the user
+    const updatedTalent = await prisma.talent.update({
+      where: { id: talentId },
+      data: { userId }
+    });
+
+    // Update the user to set their role to EXCLUSIVE_TALENT if not already set
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: user.role === "CREATOR" ? user.role : "EXCLUSIVE_TALENT"
+      }
+    });
+
+    console.log(`[ADMIN] Linked user ${userId} (${user.email}) to talent ${talentId} (${talent.name})`);
+    
+    res.json({ 
+      success: true, 
+      message: `User linked to talent successfully`,
+      talent: {
+        id: updatedTalent.id,
+        name: updatedTalent.name,
+        userId: updatedTalent.userId
+      },
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role
+      }
+    });
+  } catch (error) {
+    console.error("[ADMIN LINK TALENT]", error);
+    res.status(500).json({ error: "Failed to link user to talent" });
+  }
+});
+
+/**
+ * POST /api/admin/talents/:talentId/add-email
+ * Add an additional email to a talent (admin only)
+ * Talents can have multiple emails linked
+ */
+router.post("/talents/:talentId/add-email", async (req, res) => {
+  try {
+    const { talentId } = req.params;
+    const { email, label, isPrimary } = req.body;
+
+    if (!talentId || !email) {
+      return res.status(400).json({ error: "talentId and email are required" });
+    }
+
+    // Verify the talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId }
+    });
+
+    if (!talent) {
+      return res.status(404).json({ error: "Talent not found" });
+    }
+
+    // Check if email already exists for this talent
+    const existingEmail = await prisma.talentEmail.findUnique({
+      where: {
+        talentId_email: { talentId, email: email.toLowerCase() }
+      }
+    });
+
+    if (existingEmail) {
+      return res.status(409).json({ error: "Email already linked to this talent" });
+    }
+
+    // If this should be primary, unset primary on other emails
+    if (isPrimary) {
+      await prisma.talentEmail.updateMany({
+        where: { talentId, isPrimary: true },
+        data: { isPrimary: false }
+      });
+    }
+
+    // Create the new email record
+    const talentEmail = await prisma.talentEmail.create({
+      data: {
+        talentId,
+        email: email.toLowerCase(),
+        label: label || null,
+        isPrimary: isPrimary || false
+      }
+    });
+
+    console.log(`[ADMIN] Added email ${email} to talent ${talentId} (${talent.name})`);
+
+    res.json({ 
+      success: true, 
+      message: `Email added to talent successfully`,
+      talentEmail
+    });
+  } catch (error) {
+    console.error("[ADMIN ADD TALENT EMAIL]", error);
+    res.status(500).json({ error: "Failed to add email to talent" });
+  }
+});
+
+/**
+ * GET /api/admin/talents/:talentId/emails
+ * Get all emails linked to a talent (admin only)
+ */
+router.get("/talents/:talentId/emails", async (req, res) => {
+  try {
+    const { talentId } = req.params;
+
+    // Verify the talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id: talentId },
+      include: { TalentEmail: true }
+    });
+
+    if (!talent) {
+      return res.status(404).json({ error: "Talent not found" });
+    }
+
+    res.json({
+      talentId,
+      talentName: talent.name,
+      emails: talent.TalentEmail || []
+    });
+  } catch (error) {
+    console.error("[ADMIN GET TALENT EMAILS]", error);
+    res.status(500).json({ error: "Failed to fetch talent emails" });
+  }
+});
+
 export default router;
