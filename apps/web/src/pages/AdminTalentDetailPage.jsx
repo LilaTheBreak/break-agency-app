@@ -1216,31 +1216,6 @@ function TalentSocialSection({ talentId }) {
           )}
         </>
       )}
-                      Fetched {new Date(social.lastScrapedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleDelete(social.id);
-                    }}
-                    className="text-xs text-brand-red hover:underline flex-shrink-0 mt-1"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {socials.length === 0 && (
-            <p className="text-sm text-brand-black/60 mb-4">No social profiles added yet. Add one below to get started.</p>
-          )}
-        </>
-      )}
     </section>
   );
 }
