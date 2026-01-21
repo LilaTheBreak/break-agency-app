@@ -256,18 +256,25 @@ export async function listBrandsHandler(
   res: Response
 ): Promise<void> {
   try {
-    const limit = Math.min(Number(req.query.limit) || 20, 100);
-    const offset = Number(req.query.offset) || 0;
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
-    console.log(`[List Brands] Fetching brands with limit=${limit}, offset=${offset}`);
-    const { brands, total } = await brandUserService.listBrands(limit, offset);
-    console.log(`[List Brands] Successfully fetched ${brands?.length || 0} brands`);
+    console.log(`[List Brands] Fetching brands for user ${user.id}`);
+    
+    // For now, return the user's own brands
+    // In the future, this could be expanded to show all brands with filtering
+    const brands = await brandUserService.getUserBrands(user.id);
+    console.log(`[List Brands] Successfully fetched ${brands?.length || 0} brands for user`);
 
     res.json({
-      brands,
-      total,
-      limit,
-      offset,
+      brands: brands.map((bu) => ({
+        ...bu.brand,
+        role: bu.role,
+      })),
+      total: brands.length,
     });
   } catch (error) {
     console.error("[List Brands] Error:", {
