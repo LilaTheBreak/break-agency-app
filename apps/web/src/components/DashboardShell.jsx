@@ -256,26 +256,26 @@ export function DashboardShell({
   };
 
   return (
-    <div className="min-h-screen bg-brand-ivory text-brand-black">
-      <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
+    <div className="min-h-screen bg-brand-ivory text-brand-black overflow-x-hidden">
+      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 sm:px-6 py-8 sm:py-12">
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="font-subtitle text-xs uppercase tracking-[0.4em] text-brand-red">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="font-subtitle text-xs uppercase tracking-[0.4em] text-brand-red truncate">
                 Secure console
               </p>
-              <h1 className="font-display text-4xl uppercase tracking-wide text-brand-black">
-                <span className="inline-flex h-1 w-12 rounded-full bg-brand-red align-middle" />
+              <h1 className="font-display text-3xl sm:text-4xl uppercase tracking-wide text-brand-black break-words">
+                <span className="inline-flex h-1 w-12 rounded-full bg-brand-red align-middle flex-shrink-0" />
                 <span className="ml-3">{title}</span>
               </h1>
-              <p className="text-base text-brand-black/70">{subtitle}</p>
+              <p className="text-sm sm:text-base text-brand-black/70 mt-1">{subtitle}</p>
             </div>
           </div>
 
         </div>
         <div
           className={[
-            "mt-2 flex flex-col gap-6 lg:flex-row",
+            "mt-2 flex flex-col gap-4 sm:gap-6 lg:flex-row w-full",
             navCollapsed ? "lg:gap-4" : "lg:gap-6"
           ].join(" ")}
         >
@@ -283,8 +283,9 @@ export function DashboardShell({
             <aside
               className={[
                 "section-wrapper elevation-1 transition-elevation p-4",
-                "lg:sticky lg:top-8 lg:self-start lg:shadow-brand/40",
-                navCollapsed ? "lg:w-[104px]" : "lg:w-[260px]"
+                "lg:sticky lg:top-8 lg:self-start lg:h-fit",
+                navCollapsed ? "lg:w-[104px]" : "lg:w-[260px]",
+                "w-full sm:w-auto"
               ].join(" ")}
             >
               <div className={navCollapsed ? "flex justify-center" : "flex items-center justify-between gap-3"}>
@@ -324,10 +325,10 @@ export function DashboardShell({
               ) : null}
             </aside>
           )}
-          <div className="section-wrapper elevation-1 transition-elevation relative min-w-0 flex-1 p-6">
+          <div className="section-wrapper elevation-1 transition-elevation relative min-w-0 flex-1 p-4 sm:p-6 overflow-hidden flex flex-col">
             {showApprovalHold ? <ApprovalHoldOverlay onLogout={logout} platforms={connectPlatforms} /> : null}
             <div className={showApprovalHold ? "pointer-events-none blur-[2px] opacity-70" : ""}>
-              <div className="space-y-6">
+              <div className="space-y-6 w-full overflow-hidden">
                 {showStatusSummary ? (
                   <DashboardStatusGrid
                     tiles={statusTiles}

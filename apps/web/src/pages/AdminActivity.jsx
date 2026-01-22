@@ -334,9 +334,9 @@ export function AdminActivityPage() {
         </div>
       )}
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-[280px_1fr]">
+      <section className="mt-6 grid gap-4 lg:grid-cols-[280px_1fr] w-full">
         <form
-          className="rounded-3xl border border-brand-black/10 bg-brand-white p-5 h-fit sticky top-6"
+          className="rounded-3xl border border-brand-black/10 bg-brand-white p-5 h-fit sticky top-6 overflow-hidden"
           onSubmit={applyFilters}
         >
           <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Filters</p>
@@ -427,7 +427,7 @@ export function AdminActivityPage() {
           </div>
 
           {/* Buttons */}
-          <div className="mt-6 flex flex-col gap-2 sticky bottom-0 bg-brand-white pt-4 border-t border-brand-black/10">
+          <div className="mt-6 flex flex-col gap-2 bg-brand-white pt-4 border-t border-brand-black/10">
             <button
               type="submit"
               className="w-full rounded-full bg-brand-red px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-white hover:bg-brand-red/90"
@@ -466,13 +466,13 @@ export function AdminActivityPage() {
           </div>
         </form>
 
-        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6 overflow-hidden flex flex-col">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
               <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">Audit</p>
               <h3 className="font-display text-3xl uppercase">Activity table</h3>
             </div>
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex gap-2 flex-shrink-0 whitespace-nowrap">
               <button
                 type="button"
                 onClick={exportCSV}
@@ -501,8 +501,8 @@ export function AdminActivityPage() {
             <p className="mt-4 text-sm text-brand-black/60">Loading audit entries…</p>
           ) : (
             <>
-              <div className="mt-6 overflow-x-auto border border-brand-black/10 rounded-2xl">
-                <table className="w-full text-left text-sm text-brand-black/80 border-collapse" style={{ tableLayout: "fixed", minWidth: "1200px" }}>
+              <div className="mt-6 overflow-x-auto rounded-2xl border border-brand-black/10 -mx-6 -mb-6 px-6 pb-6">
+                <table className="w-full text-left text-sm text-brand-black/80 border-collapse" style={{ tableLayout: "fixed", minWidth: "1000px" }}>
                   <thead>
                     <tr className="bg-brand-linen/50 text-xs uppercase tracking-[0.3em] text-brand-black/50 border-b border-brand-black/10">
                       <th className="w-[120px] px-3 py-3 font-semibold truncate">Timestamp</th>
