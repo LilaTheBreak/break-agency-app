@@ -252,8 +252,11 @@ console.log(">>> GOOGLE_REDIRECT_URI =", process.env.GOOGLE_REDIRECT_URI);
 console.log(">>> WEBHOOK_VERIFY_TOKEN =", process.env.WEBHOOK_VERIFY_TOKEN ? `${process.env.WEBHOOK_VERIFY_TOKEN.slice(0, 4)}****` : "[MISSING]");
 console.log(">>> GCS_PROJECT_ID =", process.env.GCS_PROJECT_ID || "break-agency-storage (default)");
 console.log(">>> GCS_BUCKET_NAME =", process.env.GCS_BUCKET_NAME || "break-agency-app-storage (default)");
+console.log(">>> GOOGLE_CLOUD_PROJECT =", process.env.GOOGLE_CLOUD_PROJECT || "[using GCS_PROJECT_ID]");
+console.log(">>> GOOGLE_WORKLOAD_IDENTITY_PROVIDER =", process.env.GOOGLE_WORKLOAD_IDENTITY_PROVIDER ? "[SET]" : "[NOT SET]");
+console.log(">>> GOOGLE_SERVICE_ACCOUNT_EMAIL =", process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? "[SET]" : "[NOT SET]");
+console.log(">>> OIDC_TOKEN (Railway) =", process.env.OIDC_TOKEN ? "[SET]" : "[NOT SET]");
 console.log(">>> DATABASE_MIGRATION_CHECK - Prisma Client Ready with All Schema Updates");
-console.log(">>> GOOGLE_APPLICATION_CREDENTIALS_JSON =", process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON ? "[SET]" : "[MISSING]");
 
 // ------------------------------------------------------
 // VALIDATE PRODUCTION CREDENTIALS
@@ -274,17 +277,28 @@ if (!process.env.WEBHOOK_VERIFY_TOKEN) {
 // ------------------------------------------------------
 // VALIDATE GOOGLE CLOUD STORAGE CONFIGURATION
 // ------------------------------------------------------
-import { validateGCSConfig } from './services/storage/googleCloudStorage.js';
+import { validateGCSConfig, getAuthMethod } from './services/storage/googleCloudStorage.js';
 
 const gcsValidation = validateGCSConfig();
 if (!gcsValidation.valid) {
   console.warn("\n⚠️  WARNING: GCS CONFIGURATION INCOMPLETE:");
-  gcsValidation.errors.forEach(err => console.warn(`   - ${err}`));
+  gcsValidation.errors.forEach(err => console.warn(`   ❌ ${err}`));
+  gcsValidation.warnings.forEach(warn => console.warn(`   ⚠️  ${warn}`));
   console.warn("   File uploads will fail until GCS is configured");
-  console.warn("   Set GCS_PROJECT_ID, GCS_BUCKET_NAME, and GOOGLE_APPLICATION_CREDENTIALS_JSON to enable file storage");
+  console.warn("   For Workload Identity Federation setup:");
+  console.warn("     1. Create Identity Pool & Provider in Google Cloud");
+  console.warn("     2. Set GOOGLE_WORKLOAD_IDENTITY_PROVIDER environment variable");
+  console.warn("     3. Set GOOGLE_SERVICE_ACCOUNT_EMAIL environment variable");
+  console.warn("     4. Configure IAM binding between service account and OIDC provider");
+  console.warn("     5. Enable OIDC in Railway environment");
   console.warn("   Server will continue to run, but file operations will error");
 } else {
   console.log("✅ GCS configuration validated");
+  console.log(`   Auth method: ${getAuthMethod()}`);
+  if (gcsValidation.warnings.length > 0) {
+    console.warn("   Warnings:");
+    gcsValidation.warnings.forEach(warn => console.warn(`     ⚠️  ${warn}`));
+  }
 }
 
 // Validate and initialize Gmail credentials

@@ -4,46 +4,64 @@ import { safeEnv } from '../../utils/safeEnv.js';
 import { logError } from '../../lib/logger.js';
 
 /**
- * Google Cloud Storage Service
+ * Google Cloud Storage Service with Workload Identity Federation
  * 
  * Handles all file operations for The Break app using GCS.
+ * Authenticates via OIDC (Workload Identity Federation) - no service account keys required.
  * Files are private by default and accessed via signed URLs.
+ * 
+ * Authentication Flow:
+ * 1. Application Default Credentials (ADC) automatically detects OIDC environment
+ * 2. Railway provides OIDC token via OIDC_TOKEN environment variable
+ * 3. Token is exchanged with Google's STS for temporary access credentials
+ * 4. No JSON service account keys are stored or transmitted
  */
 
-// Environment variables
+// Environment variables for Workload Identity Federation
 const GCS_PROJECT_ID = process.env.GCS_PROJECT_ID || "break-agency-storage";
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME || "break-agency-app-storage";
-const GOOGLE_APPLICATION_CREDENTIALS_JSON = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+const GOOGLE_CLOUD_PROJECT = process.env.GOOGLE_CLOUD_PROJECT;
+const GOOGLE_WORKLOAD_IDENTITY_PROVIDER = process.env.GOOGLE_WORKLOAD_IDENTITY_PROVIDER;
+const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 
 // Initialize GCS client
 let storage: Storage | null = null;
 let bucket: Bucket | null = null;
+let authMethod: string = "unknown";
 
 /**
- * Initialize GCS client with service account credentials
+ * Initialize GCS client with Workload Identity Federation (OIDC)
+ * 
+ * Uses Application Default Credentials which automatically detects:
+ * - OIDC environment (Railway provides OIDC_TOKEN)
+ * - Workload Identity Federation setup
+ * - Service account email and identity provider
  */
 function initializeGCS(): { storage: Storage; bucket: Bucket } {
   if (storage && bucket) {
     return { storage, bucket };
   }
 
-  if (!GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-    throw new Error(
-      "GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is required. " +
-      "Please set it in Railway environment variables with your service account JSON."
-    );
-  }
-
   try {
-    // Parse JSON credentials from environment variable
-    const credentials = JSON.parse(GOOGLE_APPLICATION_CREDENTIALS_JSON);
-    
+    // Initialize Storage client with Workload Identity Federation
+    // ADC will automatically use OIDC_TOKEN from Railway environment
     storage = new Storage({
-      projectId: GCS_PROJECT_ID,
-      credentials
+      projectId: GOOGLE_CLOUD_PROJECT || GCS_PROJECT_ID,
     });
 
     bucket = storage.bucket(GCS_BUCKET_NAME);
+
+    // Determine which authentication method is being used
+    if (GOOGLE_WORKLOAD_IDENTITY_PROVIDER && GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+      authMethod = "Workload Identity Federation (OIDC)";
+      console.log(`[GCS] Using Workload Identity Federation`);
+      console.log(`[GCS]   - Identity Provider: ${GOOGLE_WORKLOAD_IDENTITY_PROVIDER}`);
+      console.log(`[GCS]   - Service Account: ${GOOGLE_SERVICE_ACCOUNT_EMAIL}`);
+    } else {
+      authMethod = "Application Default Credentials (ADC)";
+      console.log(`[GCS] Using Application Default Credentials`);
+      console.log(`[GCS] ⚠️  For production, ensure GOOGLE_WORKLOAD_IDENTITY_PROVIDER and GOOGLE_SERVICE_ACCOUNT_EMAIL are set`);
+    }
 
     // Verify bucket exists (async, non-blocking)
     bucket.exists().then(([exists]) => {
@@ -61,20 +79,41 @@ function initializeGCS(): { storage: Storage; bucket: Bucket } {
       }
       console.log(`[GCS] Bucket ${GCS_BUCKET_NAME} verified`);
     }).catch((error) => {
-      console.error(`[GCS] Error checking bucket:`, error);
+      console.error(`[GCS] Error checking bucket:`, error.message);
+      console.error(`[GCS] Error details:`, error);
       // Don't throw - allow app to start, but uploads will fail
     });
 
-    console.log(`[GCS] Initialized for project: ${GCS_PROJECT_ID}, bucket: ${GCS_BUCKET_NAME}`);
+    console.log(`[GCS] Initialized successfully with auth method: ${authMethod}`);
+    console.log(`[GCS]   Project: ${GOOGLE_CLOUD_PROJECT || GCS_PROJECT_ID}, Bucket: ${GCS_BUCKET_NAME}`);
     
     return { storage, bucket };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     logError("Failed to initialize Google Cloud Storage", error);
+    
+    // Provide helpful debugging information
+    console.error(`[GCS] Initialization failed: ${errorMessage}`);
+    console.error(`[GCS] Configuration:`);
+    console.error(`[GCS]   - GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT || "not set"}`);
+    console.error(`[GCS]   - GCS_PROJECT_ID (fallback): ${GCS_PROJECT_ID}`);
+    console.error(`[GCS]   - GCS_BUCKET_NAME: ${GCS_BUCKET_NAME || "not set"}`);
+    console.error(`[GCS]   - GOOGLE_WORKLOAD_IDENTITY_PROVIDER: ${GOOGLE_WORKLOAD_IDENTITY_PROVIDER ? "set" : "not set"}`);
+    console.error(`[GCS]   - GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL ? "set" : "not set"}`);
+    console.error(`[GCS] Ensure Workload Identity Federation is configured in Google Cloud`);
+    
     throw new Error(
-      `GCS initialization failed: ${error instanceof Error ? error.message : String(error)}. ` +
-      "Please check GOOGLE_APPLICATION_CREDENTIALS_JSON is valid JSON."
+      `GCS initialization failed: ${errorMessage}. ` +
+      "Check that Workload Identity Federation is configured and OIDC_TOKEN is available."
     );
   }
+}
+
+/**
+ * Get the current authentication method
+ */
+export function getAuthMethod(): string {
+  return authMethod;
 }
 
 /**
@@ -252,31 +291,57 @@ export async function getFileMetadata(key: string): Promise<{
 
 /**
  * Validate GCS configuration at startup
+ * 
+ * For Workload Identity Federation:
+ * - GOOGLE_CLOUD_PROJECT: GCP project ID
+ * - GCS_BUCKET_NAME: GCS bucket name
+ * - GOOGLE_WORKLOAD_IDENTITY_PROVIDER: Identity provider URL (format: projects/PROJECT_ID/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID)
+ * - GOOGLE_SERVICE_ACCOUNT_EMAIL: Service account email (format: sa-name@project.iam.gserviceaccount.com)
+ * 
+ * OIDC_TOKEN will be automatically provided by Railway in OIDC environment
  */
-export function validateGCSConfig(): { valid: boolean; errors: string[] } {
+export function validateGCSConfig(): { valid: boolean; errors: string[]; warnings: string[] } {
   const errors: string[] = [];
+  const warnings: string[] = [];
 
-  if (!GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-    errors.push("GOOGLE_APPLICATION_CREDENTIALS_JSON is not set");
-  } else {
-    try {
-      JSON.parse(GOOGLE_APPLICATION_CREDENTIALS_JSON);
-    } catch {
-      errors.push("GOOGLE_APPLICATION_CREDENTIALS_JSON is not valid JSON");
-    }
-  }
-
+  // Required for both methods
   if (!GCS_BUCKET_NAME) {
     errors.push("GCS_BUCKET_NAME is not set");
   }
 
-  if (!GCS_PROJECT_ID) {
-    errors.push("GCS_PROJECT_ID is not set");
+  const projectId = GOOGLE_CLOUD_PROJECT || GCS_PROJECT_ID;
+  if (!projectId) {
+    errors.push("GOOGLE_CLOUD_PROJECT or GCS_PROJECT_ID must be set");
+  }
+
+  // Workload Identity Federation specific
+  if (!GOOGLE_WORKLOAD_IDENTITY_PROVIDER) {
+    warnings.push("GOOGLE_WORKLOAD_IDENTITY_PROVIDER is not set - Workload Identity Federation not configured");
+  } else {
+    // Validate format of identity provider
+    if (!GOOGLE_WORKLOAD_IDENTITY_PROVIDER.includes("workloadIdentityPools")) {
+      errors.push("GOOGLE_WORKLOAD_IDENTITY_PROVIDER format invalid - should be: projects/PROJECT_ID/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID");
+    }
+  }
+
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+    warnings.push("GOOGLE_SERVICE_ACCOUNT_EMAIL is not set - Workload Identity Federation not configured");
+  } else {
+    // Validate format of service account email
+    if (!GOOGLE_SERVICE_ACCOUNT_EMAIL.includes("@") || !GOOGLE_SERVICE_ACCOUNT_EMAIL.endsWith(".iam.gserviceaccount.com")) {
+      errors.push("GOOGLE_SERVICE_ACCOUNT_EMAIL format invalid - should be: sa-name@project.iam.gserviceaccount.com");
+    }
+  }
+
+  // Check if OIDC token is available in Railway environment
+  if (!process.env.OIDC_TOKEN) {
+    warnings.push("OIDC_TOKEN not available - ensure running in Railway with OIDC enabled");
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
+    warnings
   };
 }
 
