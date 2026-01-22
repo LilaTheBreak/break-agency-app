@@ -1246,7 +1246,13 @@ export function AdminBrandsPage({ session }) {
       
       if (!response.ok) {
         const error = await response.json();
-        alert(`Failed to discover brands: ${error.message || 'Unknown error'}`);
+        if (error.error === 'gmail_not_connected') {
+          alert('Failed to auto-discover brands. Make sure Gmail is connected');
+        } else if (error.error === 'gmail_auth_expired') {
+          alert('Gmail authentication has expired. Please reconnect your Gmail account in Settings.');
+        } else {
+          alert(`Failed to discover brands: ${error.message || 'Unknown error'}`);
+        }
         return;
       }
       
@@ -1267,7 +1273,7 @@ export function AdminBrandsPage({ session }) {
       if (errorMessage.includes('Failed to check Gmail')) {
         alert('Unable to verify Gmail connection. Please try again.');
       } else {
-        alert('Failed to auto-discover brands. An unexpected error occurred. Please try again or contact support.');
+        alert('Failed to auto-discover brands. Make sure Gmail is connected');
       }
     } finally {
       setAutoDiscoveringBrands(false);
