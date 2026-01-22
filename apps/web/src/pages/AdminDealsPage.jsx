@@ -12,7 +12,7 @@ import { NotesIntelligenceSection } from "../components/NotesIntelligenceSection
 import { DealSnapshotSummary } from "../components/DealSnapshotSummary.jsx";
 import DealClassificationModal from "../components/DealClassificationModal.tsx";
 import { BrandSelect } from "../components/BrandSelect.jsx";
-import { useBrands } from "../hooks/useBrands.js";
+import { useCrmBrands } from "../hooks/useCrmBrands.js";
 import {
   DEAL_CONFIDENCE,
   DEAL_STATUSES,
@@ -252,8 +252,8 @@ export function AdminDealsPage({ session }) {
   const [classificationModalOpen, setClassificationModalOpen] = useState(false);
   const [classifyingDealId, setClassifyingDealId] = useState(null);
 
-  // Use canonical brands hook (single source of truth)
-  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
+  // Use CRM brands hook - fetches from /api/crm-brands (the actual CRM brands table)
+  const { brands, isLoading: brandsLoading, createBrand } = useCrmBrands();
 
   const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
   const campaignById = useMemo(() => new Map((campaigns || []).map((c) => [c.id, c])), [campaigns]);

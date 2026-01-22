@@ -5,7 +5,7 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { ContactChip } from "../components/ContactChip.jsx";
 import { BrandChip } from "../components/BrandChip.jsx";
 import { BrandSelect } from "../components/BrandSelect.jsx";
-import { useBrands } from "../hooks/useBrands.js";
+import { useCrmBrands } from "../hooks/useCrmBrands.js";
 import {
   fetchContacts,
   createContact,
@@ -141,8 +141,8 @@ export function AdminContactsPage({ session }) {
     notes: "",
   });
 
-  // Use canonical brands hook (single source of truth)
-  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
+  // Use CRM brands hook - fetches from /api/crm-brands (the actual CRM brands table)
+  const { brands, isLoading: brandsLoading, createBrand } = useCrmBrands();
 
   // Load data
   useEffect(() => {

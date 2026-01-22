@@ -7,7 +7,7 @@ import { CampaignChip } from "../components/CampaignChip.jsx";
 import { EventChip } from "../components/EventChip.jsx";
 import { DealChip } from "../components/DealChip.jsx";
 import { BrandSelect } from "../components/BrandSelect.jsx";
-import { useBrands } from "../hooks/useBrands.js";
+import { useCrmBrands } from "../hooks/useCrmBrands.js";
 import {
   EVENT_STATUSES,
   EVENT_TYPES,
@@ -243,8 +243,8 @@ export function AdminEventsPage({ session }) {
   const [migrationData, setMigrationData] = useState(null);
   const [isMigrating, setIsMigrating] = useState(false);
 
-  // Use canonical brands hook (single source of truth)
-  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
+  // Use CRM brands hook - fetches from /api/crm-brands (the actual CRM brands table)
+  const { brands, isLoading: brandsLoading, createBrand } = useCrmBrands();
 
   const brandById = useMemo(() => new Map((brands || []).map((b) => [b.id, b])), [brands]);
   const campaignById = useMemo(() => new Map((campaigns || []).map((c) => [c.id, c])), [campaigns]);
