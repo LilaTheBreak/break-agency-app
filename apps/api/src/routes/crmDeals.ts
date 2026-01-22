@@ -126,7 +126,10 @@ router.get("/", async (req, res) => {
 
     const where: any = {};
     // SECURITY FIX: Filter by effectiveUserId to prevent accessing other talents' deals while impersonating
-    where.userId = effectiveUserId;
+    // But only apply this filter if admin is impersonating - admins viewing dashboard should see ALL deals
+    if (req.impersonation?.isImpersonating) {
+      where.userId = effectiveUserId;
+    }
     
     if (brandId) where.brandId = brandId;
     if (status) {
