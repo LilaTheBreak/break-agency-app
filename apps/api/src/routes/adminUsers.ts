@@ -251,6 +251,11 @@ router.get("/users", async (req, res) => {
 /**
  * PATCH /api/admin/users/:id
  * Update user details (role, status, notes)
+ * 
+ * CRITICAL: When changing role to EXCLUSIVE_TALENT:
+ * - Check if user has a linked Talent record
+ * - If not, create one automatically
+ * - This ensures the user appears in admin talent section
  */
 router.patch("/users/:id", async (req, res) => {
   try {
@@ -261,7 +266,7 @@ router.patch("/users/:id", async (req, res) => {
     // Get current user state for audit logging
     const currentUser = await prisma.user.findUnique({
       where: { id },
-      select: { role: true }
+      select: { role: true, name: true, email: true }
     });
 
     const updateData: any = { updatedAt: new Date() };
@@ -282,6 +287,50 @@ router.patch("/users/:id", async (req, res) => {
         admin_notes: true
       }
     });
+
+    // CRITICAL FIX: When role changes to EXCLUSIVE_TALENT, auto-create Talent record if needed
+    if (role === "EXCLUSIVE_TALENT" && currentUser?.role !== "EXCLUSIVE_TALENT") {
+      try {
+        console.log(`[ADMIN USER UPDATE] User ${user.id} promoted to EXCLUSIVE_TALENT, checking for Talent record...`);
+        
+        // Check if user already has a linked Talent record
+        const existingTalent = await prisma.talent.findUnique({
+          where: { userId: user.id }
+        });
+
+        if (!existingTalent) {
+          console.log(`[ADMIN USER UPDATE] No Talent record found, creating one for user ${user.id}`);
+          
+          // Create Talent record for the newly promoted exclusive talent
+          await prisma.talent.create({
+            data: {
+              id: `talent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              userId: user.id,
+              name: user.name || user.email.split("@")[0],
+              displayName: user.name,
+              primaryEmail: user.email,
+              representationType: "EXCLUSIVE",  // Set as EXCLUSIVE since user role is now EXCLUSIVE_TALENT
+              status: "ACTIVE",
+              categories: [],
+              stage: "ACTIVE"
+            }
+          });
+          
+          console.log(`[ADMIN USER UPDATE] Talent record created successfully for user ${user.id}`);
+        } else {
+          console.log(`[ADMIN USER UPDATE] Talent record already exists for user ${user.id}, updating representationType to EXCLUSIVE`);
+          
+          // Update existing talent's representation type to EXCLUSIVE
+          await prisma.talent.update({
+            where: { id: existingTalent.id },
+            data: { representationType: "EXCLUSIVE" }
+          });
+        }
+      } catch (talentError) {
+        console.error("[ADMIN USER UPDATE] Error creating/updating Talent record:", talentError);
+        // Don't fail the user update if talent creation fails - just log the error
+      }
+    }
 
     // Audit log role changes
     if (role && currentUser?.role && currentUser.role !== role) {
