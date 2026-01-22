@@ -35,7 +35,6 @@ export function DashboardShell({
   const activeUser = session || user;
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
   const [navCollapsed, setNavCollapsed] = useState(false);
-  const [userToggledNav, setUserToggledNav] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState("gbp");
   const { summary, loading: summaryLoading, error: summaryError } = useDashboardSummary(role);
   const mergedSummary = useMemo(
@@ -98,43 +97,14 @@ export function DashboardShell({
     return () => window.removeEventListener("hashchange", handler);
   }, []);
 
-  useEffect(() => {
-    // Auto-collapse nav on scroll (only if user hasn't manually toggled)
-    const handleScroll = () => {
-      // NEVER auto-collapse during navigation transitions
-      if (userToggledNav) {
-        return;
-      }
-      
-      const currentScrollY = window.scrollY;
-      
-      if (currentScrollY > 150 && !navCollapsed) {
-        setNavCollapsed(true);
-      } else if (currentScrollY < 50 && navCollapsed) {
-        setNavCollapsed(false);
-      }
-    };
+  // Removed auto-collapse on scroll - menu should only respond to user clicks
+  // Previously caused unexpected collapse during scrolling on smaller screens
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [navCollapsed, userToggledNav]);
-
-  // Reset scroll position and LOCK nav open when navigation changes
+  // Reset scroll position when navigation changes, but preserve nav state
   useEffect(() => {
-    // LOCK: Set userToggledNav to true FIRST before anything else
-    setUserToggledNav(true);
-    
-    // Then force nav open
-    setNavCollapsed(false);
-    
-    // Reset scroll in next frame
     requestAnimationFrame(() => {
       window.scrollTo(0, 0);
     });
-    
-    // KEEP IT LOCKED for 12 seconds to ensure no scroll events interfere
-    const timer = setTimeout(() => setUserToggledNav(false), 12000);
-    return () => clearTimeout(timer);
   }, [location.pathname]);
 
   const showApprovalHold = isAwaitingApproval(user);
@@ -143,9 +113,6 @@ export function DashboardShell({
 
   const handleNavToggle = () => {
     setNavCollapsed((prev) => !prev);
-    setUserToggledNav(true);
-    // Reset user toggle flag after 5 seconds so auto-collapse can resume
-    setTimeout(() => setUserToggledNav(false), 5000);
   };
 
   const labelAbbrev = (label) =>
@@ -283,7 +250,8 @@ export function DashboardShell({
             <aside
               className={[
                 "section-wrapper elevation-1 transition-elevation p-4",
-                "lg:sticky lg:top-8 lg:self-start lg:h-fit",
+                "lg:sticky lg:top-8 lg:self-start lg:h-fit lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto",
+                "sm:max-h-[300px] sm:overflow-y-auto",
                 navCollapsed ? "lg:w-[104px]" : "lg:w-[260px]",
                 "w-full sm:w-auto"
               ].join(" ")}
