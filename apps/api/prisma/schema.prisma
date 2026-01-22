@@ -853,6 +853,27 @@ model GmailToken {
   User              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Inbox {
+  id            String    @id @default(cuid())
+  userId        String
+  provider      String    // "gmail", "outlook", "whatsapp" (future)
+  emailAddress  String
+  ownerType     String    @default("admin") // "admin", "talent", "brand"
+  ownerId       String? // References talent or brand ID for non-admin inboxes
+  isDefault     Boolean   @default(false)
+  syncStatus    String    @default("idle") // "idle", "syncing", "error"
+  lastSyncedAt  DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  User          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider, emailAddress])
+  @@index([userId])
+  @@index([isDefault])
+  @@index([provider])
+}
+
 model GoogleAccount {
   userId       String    @id
   email        String
@@ -919,6 +940,7 @@ model InboxMessage {
   id              String           @id
   threadId        String           @unique
   userId          String
+  inboxId         String?          // Link to specific inbox (for multi-inbox support)
   platform        String           @default("gmail") // "gmail", "instagram", "tiktok", "whatsapp"
   subject         String?
   snippet         String?
@@ -935,6 +957,7 @@ model InboxMessage {
   @@index([lastMessageAt])
   @@index([receivedAt])
   @@index([userId])
+  @@index([inboxId])
   @@index([platform])
 }
 
@@ -1875,6 +1898,7 @@ model User {
   FinanceReconciliation                   FinanceReconciliation[]
   GmailToken                              GmailToken?
   GoogleAccount                           GoogleAccount?
+  Inbox                                   Inbox[]
   InboundEmail                            InboundEmail[]
   InternalTasksAssigned                   InternalQueueTask[]       @relation("InternalTaskAssignedTo")
   InternalTasksCreated                    InternalQueueTask[]       @relation("InternalTaskCreatedBy")

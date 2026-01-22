@@ -43,6 +43,7 @@ import gmailInboxRouter from './routes/gmailInbox.js';
 import gmailMessagesRouter from './routes/gmailMessages.js';
 import gmailWebhookRouter from './routes/gmailWebhook.js';
 import gmailHealthRouter from './routes/gmailHealth.js';
+import messagingRouter from './routes/messaging.js';
 import cronRouter from './routes/cron.js';
 import inboxAwaitingRouter from './routes/inboxAwaitingReply.js';
 import inboxPriorityRouter from './routes/inboxPriority.js';
@@ -539,6 +540,12 @@ if (process.env.NODE_ENV !== 'production') {
 // ------------------------------------------------------
 console.log("[SERVER] Registering auth routes...");
 app.use("/api/auth", authRouter);
+
+// ------------------------------------------------------
+// MESSAGING ROUTES (multi-inbox management)
+// ------------------------------------------------------
+console.log("[SERVER] Registering messaging routes...");
+app.use("/api/messaging", messagingRouter);
 
 // ------------------------------------------------------
 // INBOX ROUTES (all unique, no overlaps)

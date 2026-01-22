@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Settings, Plus } from "lucide-react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { useMessaging } from "../context/messaging.js";
@@ -6,6 +7,8 @@ import { getRecentInbox, getGmailStatus, syncGmailInbox } from "../services/inbo
 import { useGmailAuth } from "../hooks/useGmailAuth.js";
 import { useBrands } from "../hooks/useBrands.js";
 import { BrandSelect } from "../components/BrandSelect.jsx";
+import { MessagingSettingsPanel } from "../components/MessagingSettingsPanel.jsx";
+import { AddInboxModal } from "../components/AddInboxModal.jsx";
 import { useEmailClassifier, ClassificationBadge, UncertainClassificationAlert } from "../hooks/useEmailClassifier.jsx";
 import toast from "react-hot-toast";
 
@@ -33,6 +36,8 @@ export function AdminMessagingPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0, status: '' });
   const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showAddInboxModal, setShowAddInboxModal] = useState(false);
   const { connectGmail } = useGmailAuth();
 
   const filteredThreads = useMemo(() => {
@@ -249,13 +254,29 @@ export function AdminMessagingPage() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              connectionStatus === "connected" ? "bg-green-500" : "bg-amber-400 animate-pulse"
-            }`}
-          />
-          {connectionLabel}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                connectionStatus === "connected" ? "bg-green-500" : "bg-amber-400 animate-pulse"
+              }`}
+            />
+            {connectionLabel}
+          </div>
+          <button
+            onClick={() => setShowAddInboxModal(true)}
+            className="flex items-center gap-2 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] font-semibold text-brand-black hover:border-brand-red hover:bg-brand-red/5 transition-colors"
+          >
+            <Plus size={16} />
+            Add Inbox
+          </button>
+          <button
+            onClick={() => setShowSettingsPanel(true)}
+            className="flex items-center gap-2 rounded-full border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] font-semibold text-brand-black hover:border-brand-red hover:bg-brand-red/5 transition-colors"
+          >
+            <Settings size={16} />
+            Settings
+          </button>
         </div>
       </div>
       <SystemAlerts alerts={alerts} />
@@ -307,6 +328,16 @@ export function AdminMessagingPage() {
           onClose={handleCloseEmail}
         />
       ) : null}
+      
+      <MessagingSettingsPanel
+        isOpen={showSettingsPanel}
+        onClose={() => setShowSettingsPanel(false)}
+      />
+      
+      <AddInboxModal
+        isOpen={showAddInboxModal}
+        onClose={() => setShowAddInboxModal(false)}
+      />
     </DashboardShell>
   );
 }
