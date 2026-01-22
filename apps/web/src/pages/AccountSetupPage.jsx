@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { apiFetch } from "../services/apiClient.js";
 
 export default function AccountSetupPage() {
@@ -10,6 +11,8 @@ export default function AccountSetupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const token = searchParams.get("token");
   const email = searchParams.get("email");
@@ -157,30 +160,48 @@ export default function AccountSetupPage() {
             <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">
               Create Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-              placeholder="At least 6 characters"
-              required
-              minLength={6}
-            />
+            <div className="relative mt-2">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 pr-10 text-sm focus:border-brand-black focus:outline-none"
+                placeholder="At least 6 characters"
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-black/50 hover:text-brand-black"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">
               Confirm Password
             </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-2 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-              placeholder="Re-enter password"
-              required
-              minLength={6}
-            />
+            <div className="relative mt-2">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 pr-10 text-sm focus:border-brand-black focus:outline-none"
+                placeholder="Re-enter password"
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-black/50 hover:text-brand-black"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {error && (

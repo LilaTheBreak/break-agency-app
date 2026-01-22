@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { loadOnboardingState, persistOnboardingState } from "../lib/onboardingState.js";
 
@@ -17,6 +18,7 @@ export default function SignupPage() {
   const [form, setForm] = useState({ email: "", password: "", role: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleGoogleSignup = () => {
     if (!form.role) {
@@ -149,14 +151,23 @@ export default function SignupPage() {
             <label className="block text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60 mb-2">
               Password *
             </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              minLength={8}
-              required
-              className="w-full rounded-2xl border border-brand-black/10 bg-brand-white/90 px-4 py-3 text-sm text-brand-black focus:border-brand-red focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                minLength={8}
+                required
+                className="w-full rounded-2xl border border-brand-black/10 bg-brand-white/90 px-4 py-3 pr-10 text-sm text-brand-black focus:border-brand-red focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-black/50 hover:text-brand-black"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <p className="mt-1 text-xs text-brand-black/50">Minimum 8 characters</p>
           </div>
           

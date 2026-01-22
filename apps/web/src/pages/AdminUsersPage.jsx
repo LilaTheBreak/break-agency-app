@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { EditUserDrawer } from "../components/EditUserDrawer.jsx";
 import { LinkUserToTalentModal } from "../components/LinkUserToTalentModal.jsx";
@@ -27,6 +28,7 @@ export function AdminUsersPage() {
   const [pendingRole, setPendingRole] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [pendingPassword, setPendingPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [modalMode, setModalMode] = useState("edit");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -477,13 +479,22 @@ export function AdminUsersPage() {
               className="mt-4 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
               required
             />
-            <input
-              type="password"
-              value={pendingPassword}
-              onChange={(e) => setPendingPassword(e.target.value)}
-              placeholder="Password (optional)"
-              className="mt-2 w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 text-sm focus:border-brand-black focus:outline-none"
-            />
+            <div className="relative mt-2">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={pendingPassword}
+                onChange={(e) => setPendingPassword(e.target.value)}
+                placeholder="Password (optional)"
+                className="w-full rounded-2xl border border-brand-black/20 bg-brand-white px-4 py-2 pr-10 text-sm focus:border-brand-black focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-black/50 hover:text-brand-black"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
               <label className="block text-xs uppercase tracking-[0.35em] text-brand-red">
                 User Role

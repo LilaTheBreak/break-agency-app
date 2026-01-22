@@ -13,6 +13,7 @@ export function ContactInformationSection({ talent, isEditing = false }) {
   const [unlockedSections, setUnlockedSections] = useState({}); // Track which sections are unlocked
   const [passwordInput, setPasswordInput] = useState("");
   const [lockingPassword, setLockingPassword] = useState(null); // Which section's password is being entered
+  const [showPassword, setShowPassword] = useState(false);
   
   // Personal Details
   const [personalDetails, setPersonalDetails] = useState(null);
@@ -194,16 +195,25 @@ export function ContactInformationSection({ talent, isEditing = false }) {
             <p className="text-sm text-brand-black/70">
               Enter admin password to unlock this section
             </p>
-            <input
-              type="password"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder="Enter password"
-              className="w-full px-4 py-2 rounded-lg border border-brand-black/10 text-sm"
-              onKeyPress={(e) => {
-                if (e.key === "Enter") handlePasswordSubmit(name);
-              }}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Enter password"
+                className="w-full px-4 py-2 pr-10 rounded-lg border border-brand-black/10 text-sm"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") handlePasswordSubmit(name);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-black/50 hover:text-brand-black"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={() => handlePasswordSubmit(name)}
