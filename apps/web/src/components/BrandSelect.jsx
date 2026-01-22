@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Plus } from "lucide-react";
+import { createPortal } from "react-dom";
 
 /**
  * BrandSelect - Searchable brand selector with inline creation
@@ -33,6 +34,8 @@ export function BrandSelect({
   const [searchText, setSearchText] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const buttonRef = useRef(null);
 
   // Get selected brand display name
   const selectedBrand = useMemo(() => {
@@ -84,6 +87,18 @@ export function BrandSelect({
   // Only show if user typed something AND no exact match exists AND we have brands loaded
   const shouldShowCreate = searchText.trim().length > 0 && !exactMatch && !isLoading;
 
+  // Update dropdown position when opened
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [isOpen]);
+
   const handleCreateBrand = useCallback(async () => {
     if (!onCreateBrand) {
       console.warn("onCreateBrand handler not provided");
@@ -131,10 +146,25 @@ export function BrandSelect({
     }
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (buttonRef.current && !buttonRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
   return (
     <div className="relative w-full">
       {/* Main dropdown button */}
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         disabled={disabled || isLoading}
@@ -155,9 +185,18 @@ export function BrandSelect({
         </svg>
       </button>
 
-      {/* Dropdown menu - Portal-like positioning to escape modal scroll */}
-      {isOpen && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-2 z-[100] rounded-lg border border-brand-black/10 bg-brand-white shadow-xl">
+      {/* Dropdown menu - Using portal to break out of scrollable container */}
+      {isOpen && !disabled && createPortal(
+        <div 
+          style={{
+            position: "fixed",
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            zIndex: 9999
+          }}
+          className="rounded-lg border border-brand-black/10 bg-brand-white shadow-xl"
+        >
           {/* Search input */}
           <div className="border-b border-brand-black/10 p-3 sticky top-0 bg-brand-white z-10">
             <input
@@ -223,7 +262,8 @@ export function BrandSelect({
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Error display below dropdown (if not in dropdown) */}
