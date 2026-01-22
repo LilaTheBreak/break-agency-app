@@ -85,20 +85,22 @@ router.get("/users/pending", async (req, res) => {
 
 /**
  * POST /api/admin/users/:id/approve
- * Approve a user
+ * Approve a user - Only ONE super admin approval required
  */
 router.post("/users/:id/approve", async (req, res) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
     
-    console.log("[INTEGRATION] Admin user approval requested", {
+    console.log("[USER APPROVAL] Admin user approval requested", {
       userId: id,
-      adminId: req.user?.id || "unknown",
+      approverAdminId: req.user?.id || "unknown",
+      approverRole: req.user?.role || "unknown",
       hasNotes: !!notes,
       timestamp: new Date().toISOString()
     });
 
+    // Single admin approval is sufficient - approve immediately
     const user = await prisma.user.update({
       where: { id },
       data: {
@@ -115,10 +117,11 @@ router.post("/users/:id/approve", async (req, res) => {
       }
     });
     
-    console.log("[INTEGRATION] User approval completed", {
+    console.log("[USER APPROVAL] User approved successfully", {
       userId: user.id,
       email: user.email,
       role: user.role,
+      approverAdminId: req.user?.id || "unknown",
       timestamp: new Date().toISOString()
     });
 
@@ -130,8 +133,8 @@ router.post("/users/:id/approve", async (req, res) => {
       user
     });
   } catch (error) {
-    console.error("[ADMIN USER APPROVE]", error);
-    console.error("[INTEGRATION] User approval failed", {
+    console.error("[USER APPROVAL] User approval failed", error);
+    console.error("[USER APPROVAL] Details", {
       userId: req.params.id,
       error: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString()
