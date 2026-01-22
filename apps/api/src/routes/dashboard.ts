@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { requireAuth } from '../middleware/auth.js';
 import prisma from '../lib/prisma.js';
+import { generateNextSteps } from '../services/ai/aiNextStepsService.js';
 
 const router = Router();
 
@@ -114,6 +115,19 @@ router.get("/stats", requireAuth, async (req: Request, res: Response) => {
       }
     };
 
+    // Count total active deals
+    const totalDeals = await prisma.deal.count();
+
+    // Generate AI-powered next steps based on current system state
+    const nextSteps = await generateNextSteps({
+      tasksDue: userTasksDue,
+      dueTomorrow: userDueTomorrow,
+      pendingApprovals,
+      contentDue,
+      briefsReview,
+      totalDeals,
+    });
+
     res.json({
       tasksDue: userTasksDue,
       dueTomorrow: userDueTomorrow,
@@ -121,11 +135,7 @@ router.get("/stats", requireAuth, async (req: Request, res: Response) => {
       contentDue,
       briefsReview,
       payoutTotals,
-      nextSteps: [
-        "Review overdue deliverables and follow up with creators",
-        "Check pending user approvals in the admin panel",
-        "Monitor deals approaching proposal stage"
-      ]
+      nextSteps,
     });
   } catch (error) {
     console.error("[DASHBOARD_STATS] Error:", error);
