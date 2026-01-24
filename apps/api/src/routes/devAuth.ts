@@ -52,6 +52,7 @@ if (process.env.NODE_ENV !== 'production') {
 
       return res.json({
         success: true,
+        token, // Return token so web app can store it in localStorage for Bearer auth
         user: {
           id: user.id,
           email: user.email,

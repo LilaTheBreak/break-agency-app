@@ -35,6 +35,11 @@ export default function DevLogin() {
         throw new Error(data.error || 'Login failed');
       }
 
+      // Store auth token in localStorage for Bearer authentication
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+
       const user = data.user || {};
       const needsOnboarding = shouldRouteToOnboarding(user);
       const roleParam = user.role ? `?role=${user.role}` : "";
