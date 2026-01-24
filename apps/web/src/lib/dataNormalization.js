@@ -29,43 +29,45 @@
  * normalizeApiArray(null) // []
  */
 export function normalizeApiArray(input, key) {
-  // Handle empty string, null, undefined
-  if (input === "" || input === null || input === undefined) {
+  // Handle empty string, null, undefined, false
+  if (input === "" || input === null || input === undefined || input === false) {
     return [];
   }
   
-  // Handle direct array
+  // Handle direct array - return as-is
   if (Array.isArray(input)) {
     return input;
   }
   
+  // If not an object at this point, return empty array
+  if (!input || typeof input !== 'object') {
+    return [];
+  }
+  
   // Handle object with specific key (e.g., { brands: [...] })
-  if (key && input && typeof input === 'object') {
-    if (Array.isArray(input[key])) {
-      return input[key];
-    }
+  if (key && Array.isArray(input[key])) {
+    return input[key];
   }
   
   // Handle common wrapper patterns
-  if (input && typeof input === 'object') {
-    if (Array.isArray(input.data)) {
-      return input.data;
-    }
-    if (Array.isArray(input.items)) {
-      return input.items;
-    }
-    // Try common plural keys if no specific key provided
-    if (!key) {
-      const commonKeys = ['brands', 'deals', 'campaigns', 'events', 'contracts', 'contacts', 'tasks', 'users', 'talents'];
-      for (const commonKey of commonKeys) {
-        if (Array.isArray(input[commonKey])) {
-          return input[commonKey];
-        }
+  if (Array.isArray(input.data)) {
+    return input.data;
+  }
+  if (Array.isArray(input.items)) {
+    return input.items;
+  }
+  
+  // Try common plural keys if no specific key provided
+  if (!key) {
+    const commonKeys = ['brands', 'deals', 'campaigns', 'events', 'contracts', 'contacts', 'tasks', 'users', 'talents'];
+    for (const commonKey of commonKeys) {
+      if (Array.isArray(input[commonKey])) {
+        return input[commonKey];
       }
     }
   }
   
-  // Fallback: return empty array
+  // Fallback: return empty array (input is object but doesn't match any pattern)
   return [];
 }
 

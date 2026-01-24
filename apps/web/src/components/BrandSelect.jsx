@@ -39,16 +39,19 @@ export function BrandSelect({
 
   // Get selected brand display name
   const selectedBrand = useMemo(() => {
-    return (brands || []).find(b => b?.id === value);
+    const brandArray = Array.isArray(brands) ? brands : [];
+    return brandArray.find(b => b?.id === value);
   }, [brands, value]);
 
   // Advanced search: starts-with + contains matching (case-insensitive)
   // Searches both 'name' and 'brandName' fields
   const filteredBrands = useMemo(() => {
-    if (!searchText.trim()) return brands || [];
+    // Ensure brands is always an array
+    const brandArray = Array.isArray(brands) ? brands : [];
+    
+    if (!searchText.trim()) return brandArray;
     
     const search = searchText.toLowerCase().trim();
-    const brandArray = (brands || []);
     
     // Helper to get searchable text from brand object
     const getSearchText = (brand) => {
@@ -73,10 +76,11 @@ export function BrandSelect({
   // Check if search text matches any existing brand (case-insensitive)
   // Checks both name and brandName fields
   const exactMatch = useMemo(() => {
+    const brandArray = Array.isArray(brands) ? brands : [];
     const search = searchText.toLowerCase().trim();
     if (!search) return false;
     
-    return (brands || []).some(b => {
+    return brandArray.some(b => {
       const name = (b?.name || '').toLowerCase();
       const brandName = (b?.brandName || '').toLowerCase();
       return name === search || brandName === search;
