@@ -67,13 +67,16 @@ export function useBrands() {
 
       brandsCachePromise = apiFetch('/api/brands')
         .then(async (res) => {
+          console.log('[useBrands] API response status:', res.status, res.statusText);
           if (!res.ok) {
+            console.error('[useBrands] API returned error status:', res.status);
             throw new Error(`Failed to fetch brands: ${res.status} ${res.statusText}`);
           }
           
           let data;
           try {
             data = await res.json();
+            console.log('[useBrands] API response data:', data);
           } catch (parseError) {
             console.error('[useBrands] Failed to parse brands response:', parseError);
             throw new Error('Failed to parse brands response');
@@ -81,10 +84,11 @@ export function useBrands() {
           
           // Handle both direct array (from /api/crm-brands) and wrapped object (from /api/brands)
           let brandsArray = Array.isArray(data) ? data : (data?.brands || []);
+          console.log('[useBrands] Brands array before normalization:', brandsArray);
           
           // Normalize and deduplicate brands
           const normalized = normalizeBrands(brandsArray);
-          console.log('[useBrands] Successfully fetched', normalized.length, 'brands');
+          console.log('[useBrands] Successfully fetched', normalized.length, 'brands after normalization:', normalized);
           brandsCacheGlobal = normalized;
           return normalized;
         })
@@ -197,9 +201,18 @@ function normalizeBrands(data) {
   // Deduplicate by ID and normalize field names
   const seen = new Set();
   const normalized = [];
+  let skippedCount = 0;
 
   for (const brand of data) {
-    if (!brand?.id || seen.has(brand.id)) {
+    if (!brand?.id) {
+      console.warn('[useBrands] Brand missing id field:', brand);
+      skippedCount++;
+      continue; // Skip items without ID
+    }
+    
+    if (seen.has(brand.id)) {
+      console.log('[useBrands] Skipping duplicate brand:', brand.id);
+      skippedCount++;
       continue; // Skip duplicates
     }
 
@@ -211,6 +224,10 @@ function normalizeBrands(data) {
       // Preserve all other fields
       ...brand,
     });
+  }
+  
+  if (skippedCount > 0) {
+    console.log(`[useBrands] Skipped ${skippedCount} invalid brands out of ${data.length}`);
   }
 
   return normalized;
