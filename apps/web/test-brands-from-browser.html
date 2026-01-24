@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Brands Loading</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+    .log { background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #0066cc; }
+    .success { border-left-color: #00aa00; }
+    .error { border-left-color: #cc0000; }
+    button { padding: 10px 20px; margin: 10px 0; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #0052a3; }
+  </style>
+</head>
+<body>
+  <h1>Brands Loading Test</h1>
+  <button onclick="testFullFlow()">Test Full Flow: Login → Store Token → Load Brands</button>
+  <button onclick="location.reload()">Clear & Refresh</button>
+  
+  <div id="output"></div>
+
+  <script>
+    const log = (msg, isError = false) => {
+      const div = document.createElement('div');
+      div.className = `log ${isError ? 'error' : 'success'}`;
+      div.textContent = msg;
+      document.getElementById('output').appendChild(div);
+      console.log(msg);
+    };
+
+    async function testFullFlow() {
+      try {
+        log('🔄 Step 1: Logging in via /api/dev-auth/login');
+        
+        const loginRes = await fetch('http://localhost:5001/api/dev-auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'admin@thebreakco.com' }),
+          credentials: 'include'
+        });
+
+        if (!loginRes.ok) {
+          throw new Error(`Login failed: ${loginRes.status}`);
+        }
+
+        const loginData = await loginRes.json();
+        log(`✅ Login successful: ${loginData.user.email}`);
+
+        if (!loginData.token) {
+          throw new Error('No token in response');
+        }
+
+        log(`✅ Token received: ${loginData.token.substring(0, 20)}...`);
+
+        // Store token like the DevLogin page does
+        localStorage.setItem('auth_token', loginData.token);
+        log('✅ Token stored in localStorage');
+
+        // Test /api/brands with the token
+        log('🔄 Step 2: Fetching brands with Bearer token');
+        
+        const brandsRes = await fetch('http://localhost:5001/api/brands', {
+          headers: {
+            'Authorization': `Bearer ${loginData.token}`
+          }
+        });
+
+        if (!brandsRes.ok) {
+          const error = await brandsRes.json();
+          throw new Error(`Brands API failed: ${brandsRes.status} - ${error.error}`);
+        }
+
+        const brandsData = await brandsRes.json();
+        log(`✅ Brands loaded successfully: ${brandsData.total} brands`);
+        
+        brandsData.brands.forEach((b, i) => {
+          if (i < 3) {
+            log(`   [${i+1}] ${b.name} (id: ${b.id})`);
+          }
+        });
+
+        log('✅ ✅ ✅ FULL FLOW WORKS! ✅ ✅ ✅');
+        log('You can now go to /admin and brands should load in the Create Deal modal');
+        
+      } catch (error) {
+        log(`❌ ERROR: ${error.message}`, true);
+      }
+    }
+
+    // Auto-run on page load
+    window.addEventListener('load', () => {
+      log('Test page loaded. Click button to start test.');
+    });
+  </script>
+</body>
+</html>
