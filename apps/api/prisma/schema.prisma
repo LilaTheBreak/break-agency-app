@@ -1798,12 +1798,15 @@ model TalentAssignment {
 }
 
 model TalentUserAccess {
-  id        String   @id @default(cuid())
-  talentId  String
-  userId    String
-  role      String   @default("VIEW") // VIEW | MANAGE
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  talentId             String
+  userId               String
+  role                 String   @default("VIEW") // VIEW | MANAGE
+  representationType   String   @default("NON_EXCLUSIVE") // EXCLUSIVE | NON_EXCLUSIVE | MANAGEMENT | UGC | OTHER
+  status               String   @default("ACTIVE") // ACTIVE | INACTIVE
+  notes                String? // Notes about this user's relationship to talent
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   Talent Talent @relation("TalentAccess", fields: [talentId], references: [id], onDelete: Cascade)
   User   User   @relation("TalentAccessGiven", fields: [userId], references: [id], onDelete: Cascade)
@@ -1811,6 +1814,8 @@ model TalentUserAccess {
   @@unique([talentId, userId])
   @@index([talentId])
   @@index([userId])
+  @@index([representationType])
+  @@index([status])
 }
 
 model TrackingPixelEvent {

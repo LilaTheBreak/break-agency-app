@@ -1152,6 +1152,295 @@ router.post("/:id/unlink-user", async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/admin/talent/:id/linked-users
+ * Get all linked user accounts for a talent with their roles
+ */
+router.get("/:id/linked-users", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const talent = await prisma.talent.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!talent) {
+      return res.status(404).json({ error: "Talent not found" });
+    }
+
+    const linkedAccounts = await prisma.talentUserAccess.findMany({
+      where: { talentId: id },
+      include: {
+        User: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            avatarUrl: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      linkedAccounts: linkedAccounts.map(access => ({
+        id: access.id,
+        userId: access.userId,
+        user: access.User,
+        role: access.role,
+        representationType: access.representationType,
+        status: access.status,
+        notes: access.notes,
+        createdAt: access.createdAt,
+      })),
+    });
+  } catch (error) {
+    logError("Failed to fetch linked users for talent", error, { userId: req.user?.id, talentId: req.params.id });
+    res.status(500).json({ error: "Failed to fetch linked users" });
+  }
+});
+
+/**
+ * POST /api/admin/talent/:id/linked-users
+ * Add a new linked user account with role assignment
+ */
+router.post("/:id/linked-users", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { userId, role = "VIEW", representationType = "NON_EXCLUSIVE", notes } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    if (!["VIEW", "MANAGE"].includes(role)) {
+      return res.status(400).json({ error: "Invalid role. Must be VIEW or MANAGE" });
+    }
+
+    const validRepresentationTypes = ["EXCLUSIVE", "NON_EXCLUSIVE", "MANAGEMENT", "UGC", "OTHER"];
+    if (!validRepresentationTypes.includes(representationType)) {
+      return res.status(400).json({ error: `Invalid representation type. Must be one of: ${validRepresentationTypes.join(", ")}` });
+    }
+
+    // Check if talent exists
+    const talent = await prisma.talent.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
+
+    if (!talent) {
+      return res.status(404).json({ error: "Talent not found" });
+    }
+
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, avatarUrl: true, role: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if this user is already linked to this talent
+    const existingAccess = await prisma.talentUserAccess.findFirst({
+      where: {
+        talentId: id,
+        userId: userId,
+      },
+    });
+
+    if (existingAccess) {
+      return res.status(400).json({ error: "User is already linked to this talent" });
+    }
+
+    // Create the link
+    const linkedAccess = await prisma.talentUserAccess.create({
+      data: {
+        talentId: id,
+        userId: userId,
+        role: role,
+        representationType: representationType,
+        notes: notes || null,
+        status: "ACTIVE",
+      },
+      include: {
+        User: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            avatarUrl: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Log audit event
+    await logAuditEvent(req, {
+      action: "TALENT_USER_LINKED",
+      entityType: "Talent",
+      entityId: id,
+      metadata: {
+        linkedUserId: userId,
+        linkedUserEmail: user.email,
+        representationType: representationType,
+        role: role,
+        talentName: talent.name,
+      },
+    });
+
+    res.status(201).json({
+      linkedAccount: {
+        id: linkedAccess.id,
+        userId: linkedAccess.userId,
+        user: linkedAccess.User,
+        role: linkedAccess.role,
+        representationType: linkedAccess.representationType,
+        status: linkedAccess.status,
+        notes: linkedAccess.notes,
+        createdAt: linkedAccess.createdAt,
+      },
+    });
+  } catch (error) {
+    logError("Failed to add linked user to talent", error, { userId: req.user?.id, talentId: req.params.id });
+    handleApiError(res, error, 'Failed to add linked user', 'TALENT_LINK_USER_FAILED');
+  }
+});
+
+/**
+ * PATCH /api/admin/talent/:talentId/linked-users/:accessId
+ * Update a linked user account's role or representation type
+ */
+router.patch("/:talentId/linked-users/:accessId", async (req: Request, res: Response) => {
+  try {
+    const { talentId, accessId } = req.params;
+    const { role, representationType, status, notes } = req.body;
+
+    // Validate input
+    if (role && !["VIEW", "MANAGE"].includes(role)) {
+      return res.status(400).json({ error: "Invalid role. Must be VIEW or MANAGE" });
+    }
+
+    const validRepresentationTypes = ["EXCLUSIVE", "NON_EXCLUSIVE", "MANAGEMENT", "UGC", "OTHER"];
+    if (representationType && !validRepresentationTypes.includes(representationType)) {
+      return res.status(400).json({ error: `Invalid representation type. Must be one of: ${validRepresentationTypes.join(", ")}` });
+    }
+
+    if (status && !["ACTIVE", "INACTIVE"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status. Must be ACTIVE or INACTIVE" });
+    }
+
+    // Check if access record exists
+    const access = await prisma.talentUserAccess.findUnique({
+      where: { id: accessId },
+      include: { User: { select: { id: true, email: true } } },
+    });
+
+    if (!access || access.talentId !== talentId) {
+      return res.status(404).json({ error: "Linked account not found" });
+    }
+
+    // Update the access record
+    const updatedAccess = await prisma.talentUserAccess.update({
+      where: { id: accessId },
+      data: {
+        ...(role && { role }),
+        ...(representationType && { representationType }),
+        ...(status && { status }),
+        ...(notes !== undefined && { notes }),
+        updatedAt: new Date(),
+      },
+      include: {
+        User: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            avatarUrl: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Log audit event
+    await logAuditEvent(req, {
+      action: "TALENT_USER_UPDATED",
+      entityType: "Talent",
+      entityId: talentId,
+      metadata: {
+        linkedUserId: access.User.id,
+        linkedUserEmail: access.User.email,
+        updatedFields: { role, representationType, status, notes },
+      },
+    });
+
+    res.json({
+      linkedAccount: {
+        id: updatedAccess.id,
+        userId: updatedAccess.userId,
+        user: updatedAccess.User,
+        role: updatedAccess.role,
+        representationType: updatedAccess.representationType,
+        status: updatedAccess.status,
+        notes: updatedAccess.notes,
+        createdAt: updatedAccess.createdAt,
+      },
+    });
+  } catch (error) {
+    logError("Failed to update linked user for talent", error, { userId: req.user?.id, talentId: req.params.talentId });
+    handleApiError(res, error, 'Failed to update linked user', 'TALENT_UPDATE_USER_FAILED');
+  }
+});
+
+/**
+ * DELETE /api/admin/talent/:talentId/linked-users/:accessId
+ * Remove a linked user account
+ */
+router.delete("/:talentId/linked-users/:accessId", async (req: Request, res: Response) => {
+  try {
+    const { talentId, accessId } = req.params;
+
+    // Check if access record exists
+    const access = await prisma.talentUserAccess.findUnique({
+      where: { id: accessId },
+      include: { User: { select: { id: true, email: true } } },
+    });
+
+    if (!access || access.talentId !== talentId) {
+      return res.status(404).json({ error: "Linked account not found" });
+    }
+
+    // Delete the access record
+    await prisma.talentUserAccess.delete({
+      where: { id: accessId },
+    });
+
+    // Log audit event
+    await logDestructiveAction(req, {
+      action: "TALENT_USER_UNLINKED",
+      entityType: "Talent",
+      entityId: talentId,
+      metadata: {
+        linkedUserId: access.User.id,
+        linkedUserEmail: access.User.email,
+      },
+    });
+
+    res.json({
+      message: "Linked account removed successfully",
+    });
+  } catch (error) {
+    logError("Failed to remove linked user from talent", error, { userId: req.user?.id, talentId: req.params.talentId });
+    handleApiError(res, error, 'Failed to remove linked user', 'TALENT_DELETE_USER_FAILED');
+  }
+});
+
+/**
  * GET /api/admin/talent/:id/opportunities
  * Get opportunities for a talent
  */

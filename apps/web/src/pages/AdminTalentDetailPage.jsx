@@ -8,6 +8,7 @@ import { BrandSelect } from "../components/BrandSelect.jsx";
 import { useBrands } from "../hooks/useBrands.js";
 import { Badge } from "../components/Badge.jsx";
 import { TalentAccessSettings } from "../components/TalentAccessSettings.jsx";
+import { LinkedUserAccountsManager } from "../components/LinkedUserAccountsManager.jsx";
 import { ViewAsTalentButton } from "../components/ViewAsTalentButton.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import AdminRevenueManagement from "../components/AdminRevenueManagement.jsx";
@@ -1541,50 +1542,12 @@ export function AdminTalentDetailPage() {
           </div>
         </CollapsibleDetailSection>
 
-        {/* Linked User Account */}
+        {/* Linked User Accounts */}
         <CollapsibleDetailSection
-          title="Linked User Account"
-          badge={talent.linkedUser ? "Connected" : "Not Linked"}
+          title="Linked User Accounts"
+          badge={talent?.linkedUsers?.length ? `${talent.linkedUsers.length} accounts` : "Not Linked"}
         >
-          <div className="space-y-3">
-            {talent.linkedUser ? (
-              <>
-                <div className="rounded-lg bg-brand-white border border-brand-black/10 p-3">
-                  <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-                    Email
-                  </p>
-                  <p className="text-sm text-brand-black">{talent.linkedUser.email}</p>
-                </div>
-                {talent.linkedUser.name && (
-                  <div className="rounded-lg bg-brand-white border border-brand-black/10 p-3">
-                    <p className="text-xs uppercase tracking-[0.3em] text-brand-black/60 mb-2">
-                      Name
-                    </p>
-                    <p className="text-sm text-brand-black">{talent.linkedUser.name}</p>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    toast.info("Unlink functionality will be available after schema migration");
-                  }}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-brand-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] hover:bg-brand-black/5 transition-colors"
-                >
-                  <Unlink className="h-4 w-4" />
-                  Unlink Account
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setLinkModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-xs uppercase tracking-[0.3em] text-white font-semibold hover:bg-brand-red/90 transition-colors"
-              >
-                <Link2 className="h-4 w-4" />
-                Link User Account
-              </button>
-            )}
-          </div>
+          <LinkedUserAccountsManager talentId={talent.id} />
         </CollapsibleDetailSection>
       </section>
 
