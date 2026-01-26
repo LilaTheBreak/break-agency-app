@@ -39,7 +39,7 @@ export default function DealsDashboard() {
     enabled: Boolean(auth?.user)
   });
 
-  const deals = data?.threads || [];
+  const deals = Array.isArray(data) ? data : data?.threads || [];
 
   const allTalents = useMemo(() => {
     const list = [];
