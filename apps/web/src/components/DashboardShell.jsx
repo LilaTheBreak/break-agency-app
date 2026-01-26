@@ -34,7 +34,14 @@ export function DashboardShell({
   const { user, logout } = useAuth();
   const activeUser = session || user;
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
-  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(() => {
+    // Check localStorage for persisted nav state, default to expanded
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("dashboardNavCollapsed");
+      return stored ? JSON.parse(stored) : false;
+    }
+    return false;
+  });
   const [selectedCurrency, setSelectedCurrency] = useState("gbp");
   const { summary, loading: summaryLoading, error: summaryError } = useDashboardSummary(role);
   const mergedSummary = useMemo(
@@ -96,6 +103,11 @@ export function DashboardShell({
     window.addEventListener("hashchange", handler);
     return () => window.removeEventListener("hashchange", handler);
   }, []);
+
+  // Persist nav collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem("dashboardNavCollapsed", JSON.stringify(navCollapsed));
+  }, [navCollapsed]);
 
   // Removed auto-collapse on scroll - menu should only respond to user clicks
   // Previously caused unexpected collapse during scrolling on smaller screens
@@ -285,12 +297,15 @@ export function DashboardShell({
                   </button>
                 ) : null}
               </div>
-              {!navCollapsed ? (
-                <>
+              {/* Navigation items - always visible */}
+              <div className={navCollapsed ? "flex justify-center" : "block"}>
+                {navCollapsed ? null : (
                   <p className="mt-4 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">Navigation</p>
-                  <div className="mt-3 flex flex-col gap-2">{renderNavigation()}</div>
-                </>
-              ) : null}
+                )}
+                <div className={navCollapsed ? "mt-3 flex flex-col gap-2 items-center" : "mt-3 flex flex-col gap-2"}>
+                  {renderNavigation()}
+                </div>
+              </div>
             </aside>
           )}
           <div className="section-wrapper elevation-1 transition-elevation relative min-w-0 flex-1 p-4 sm:p-6 overflow-hidden flex flex-col">
