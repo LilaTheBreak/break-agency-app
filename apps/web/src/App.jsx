@@ -1142,7 +1142,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute
               session={session}
-              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT]}
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <ExclusiveTalentDashboardLayout basePath="/admin/view/exclusive" session={session} />

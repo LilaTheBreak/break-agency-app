@@ -1279,6 +1279,14 @@ router.post("/:id/linked-users", async (req: Request, res: Response) => {
       },
     });
 
+    // If this is an EXCLUSIVE talent link, update the user's role to EXCLUSIVE_TALENT
+    if (representationType === "EXCLUSIVE" && user.role !== "EXCLUSIVE_TALENT") {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { role: "EXCLUSIVE_TALENT" },
+      });
+    }
+
     // Log audit event
     await logAuditEvent(req, {
       action: "TALENT_USER_LINKED",
@@ -1366,6 +1374,15 @@ router.patch("/:talentId/linked-users/:accessId", async (req: Request, res: Resp
         },
       },
     });
+
+    // If representation type changed to EXCLUSIVE, update the user's role to EXCLUSIVE_TALENT
+    if (representationType === "EXCLUSIVE" && updatedAccess.User.role !== "EXCLUSIVE_TALENT") {
+      await prisma.user.update({
+        where: { id: updatedAccess.userId },
+        data: { role: "EXCLUSIVE_TALENT" },
+      });
+    }
+    // If representation type changed away from EXCLUSIVE and user has no other EXCLUSIVE talents, could revert role (optional - depends on business logic)
 
     // Log audit event
     await logAuditEvent(req, {
