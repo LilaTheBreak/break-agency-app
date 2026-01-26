@@ -183,6 +183,7 @@ router.post("/api/approvals/:id/approve", requireAdmin, async (req: Request, res
       return res.status(404).json({ error: "Approval not found" });
     }
 
+    // Update the approval record
     const updated = await prisma.approval.update({
       where: { id },
       data: {
@@ -198,6 +199,16 @@ router.post("/api/approvals/:id/approve", requireAdmin, async (req: Request, res
         },
       },
     });
+
+    // Also update the User's onboarding status to approved
+    if (updated.Requestor?.id) {
+      await prisma.user.update({
+        where: { id: updated.Requestor.id },
+        data: {
+          onboarding_status: "approved",
+        },
+      });
+    }
 
     await logApprovalAction(req.user!.id, "APPROVAL_APPROVED", id, {
       type: updated.type,
@@ -238,6 +249,16 @@ router.post("/api/approvals/:id/reject", requireAdmin, async (req: Request, res:
         },
       },
     });
+
+    // Update the User's onboarding status to rejected
+    if (updated.Requestor?.id) {
+      await prisma.user.update({
+        where: { id: updated.Requestor.id },
+        data: {
+          onboarding_status: "rejected",
+        },
+      });
+    }
 
     await logApprovalAction(req.user!.id, "APPROVAL_REJECTED", id, {
       type: updated.type,
