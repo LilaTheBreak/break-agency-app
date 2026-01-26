@@ -42,6 +42,7 @@ import { CreatorAgentPage } from "./pages/CreatorAgentPage.jsx";
 import { CreatorCampaignsPage } from "./pages/CreatorCampaignsPage.jsx";
 import { CreatorCalendarPage } from "./pages/CreatorCalendarPage.jsx";
 import { CreatorContractsPage } from "./pages/CreatorContractsPage.jsx";
+import DealsDashboard from "./pages/DealsDashboard.jsx";
 import { CreatorMessagesPage } from "./pages/CreatorMessagesPage.jsx";
 import { CreatorSocialsPage } from "./pages/CreatorSocialsPage.jsx";
 import { AdminDashboard } from "./pages/AdminDashboard.jsx";
@@ -656,6 +657,18 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <CreatorContractsPage session={session} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/creator/deals"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.CREATOR, Roles.ADMIN, Roles.SUPERADMIN, Roles.EXCLUSIVE_TALENT, Roles.UGC]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <DealsDashboard session={session} />
             </ProtectedRoute>
           }
         />
