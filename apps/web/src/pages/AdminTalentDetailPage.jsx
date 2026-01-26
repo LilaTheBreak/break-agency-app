@@ -17,7 +17,7 @@ import {
   User, UserX, Edit2, Link2, Unlink, 
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
-  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock, Calendar,
+  ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock, Calendar, Target,
   Upload, Download, Image, File, Video
 } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -77,6 +77,7 @@ const TAB_GROUPS = [
     tabs: [
       { id: "contact-information", label: "Contact Information", icon: Lock },
       { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
+      { id: "goals", label: "Goals", icon: Target },
       { id: "notes", label: "Notes & History", icon: FileEdit },
     ],
   },
@@ -1700,6 +1701,9 @@ export function AdminTalentDetailPage() {
         )}
         {activeTab === "social-intelligence" && (
           <SocialIntelligenceTab talent={talent} talentId={talentId} onRefreshProfileImage={fetchTalentData} />
+        )}
+        {activeTab === "goals" && (
+          <GoalsTab talentId={talentId} userId={talent?.linkedUserId} />
         )}
         {activeTab === "deals" && (
           <DealsTab talent={talent} onDealCreated={fetchTalentData} />
@@ -3940,6 +3944,273 @@ function NotesTab({ talentId }) {
         }}
         session={null}
       />
+    </section>
+  );
+}
+
+function GoalsTab({ talentId, userId }) {
+  const [onboardingData, setOnboardingData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchOnboardingData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch onboarding data using userId if available
+        const fetchUserId = userId || talentId;
+        const response = await apiFetch(`/api/onboarding/user/${fetchUserId}`, {
+          method: "GET",
+        });
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setOnboardingData(null);
+            return;
+          }
+          throw new Error("Failed to fetch onboarding data");
+        }
+        
+        const data = await response.json();
+        setOnboardingData(data);
+      } catch (err) {
+        console.error("Error fetching onboarding data:", err);
+        setError(err.message || "Failed to load onboarding goals");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (talentId || userId) {
+      fetchOnboardingData();
+    }
+  }, [talentId, userId]);
+
+  if (loading) {
+    return (
+      <section className="space-y-4">
+        <div className="animate-pulse space-y-4">
+          <div className="h-24 rounded-lg bg-gray-200"></div>
+          <div className="h-24 rounded-lg bg-gray-200"></div>
+          <div className="h-24 rounded-lg bg-gray-200"></div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="space-y-4">
+        <div className="rounded-lg border border-brand-red/20 bg-brand-red/5 p-4 text-sm text-brand-red">
+          {error}
+        </div>
+      </section>
+    );
+  }
+
+  if (!onboardingData || !onboardingData.onboarding_responses) {
+    return (
+      <section className="space-y-4">
+        <div className="rounded-lg border border-brand-black/10 bg-brand-black/5 p-6 text-center">
+          <p className="text-brand-black/60">No onboarding data available</p>
+        </div>
+      </section>
+    );
+  }
+
+  const responses = onboardingData.onboarding_responses;
+
+  return (
+    <section className="space-y-6">
+      <div className="space-y-4">
+        {/* Current Reality */}
+        {responses.reality && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Current Inbound Reality</h3>
+            <p className="mt-2 text-sm text-brand-black/70">{responses.reality}</p>
+          </div>
+        )}
+
+        {/* Primary Goal */}
+        {responses.primaryGoal && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Primary Goal</h3>
+            <p className="mt-2 text-sm text-brand-black/70">{responses.primaryGoal}</p>
+          </div>
+        )}
+
+        {/* Target Amount */}
+        {responses.targetAmount && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Target Monthly Amount</h3>
+            <p className="mt-2 text-lg font-bold text-brand-red">£{parseInt(responses.targetAmount).toLocaleString()}</p>
+          </div>
+        )}
+
+        {/* Timeframe */}
+        {responses.timeframe && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Timeframe</h3>
+            <p className="mt-2 text-sm text-brand-black/70">{responses.timeframe} months</p>
+          </div>
+        )}
+
+        {/* Priority */}
+        {responses.priority && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Priority</h3>
+            <p className="mt-2 text-sm text-brand-black/70">{responses.priority}</p>
+          </div>
+        )}
+
+        {/* Current Revenue */}
+        {responses.revenueRange && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Current Revenue Range</h3>
+            <p className="mt-2 text-sm text-brand-black/70">{responses.revenueRange}</p>
+          </div>
+        )}
+
+        {/* Income Predictability */}
+        {responses.incomePredictability && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Income Predictability</h3>
+            <p className="mt-2 text-sm text-brand-black/70">{responses.incomePredictability}</p>
+          </div>
+        )}
+
+        {/* Blockers */}
+        {responses.blockers && responses.blockers.length > 0 && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Current Blockers</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {responses.blockers.map((blocker) => (
+                <span key={blocker} className="inline-block rounded-full bg-brand-red/10 px-3 py-1 text-xs font-semibold text-brand-red">
+                  {blocker}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Niche */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {responses.primaryNiche && (
+            <div className="rounded-lg border border-brand-black/10 p-4">
+              <h3 className="font-semibold text-brand-black">Primary Niche</h3>
+              <p className="mt-2 text-sm text-brand-black/70">{responses.primaryNiche}</p>
+            </div>
+          )}
+
+          {/* Secondary Niches */}
+          {responses.secondaryNiches && responses.secondaryNiches.length > 0 && (
+            <div className="rounded-lg border border-brand-black/10 p-4">
+              <h3 className="font-semibold text-brand-black">Secondary Niches</h3>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {responses.secondaryNiches.map((niche) => (
+                  <span key={niche} className="text-xs font-semibold text-brand-black/70">
+                    {niche}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Platforms */}
+        {responses.platforms && responses.platforms.length > 0 && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Active Platforms</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {responses.platforms.map((platform) => (
+                <span key={platform} className="inline-block rounded-full bg-brand-black/10 px-3 py-1 text-xs font-semibold text-brand-black">
+                  {platform}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Formats */}
+        {responses.formats && responses.formats.length > 0 && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Content Formats</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {responses.formats.map((format) => (
+                <span key={format} className="inline-block rounded-full bg-brand-black/10 px-3 py-1 text-xs font-semibold text-brand-black">
+                  {format}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Content Angles */}
+        {responses.contentAngles && responses.contentAngles.length > 0 && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Content Angles</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {responses.contentAngles.map((angle) => (
+                <span key={angle} className="inline-block rounded-full bg-brand-black/10 px-3 py-1 text-xs font-semibold text-brand-black">
+                  {angle}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Partnership Preferences */}
+        {responses.partnershipPreference && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Partnership Preference</h3>
+            <p className="mt-2 text-sm text-brand-black/70">{responses.partnershipPreference}</p>
+          </div>
+        )}
+
+        {/* Categories Wanted */}
+        {responses.categoriesWanted && responses.categoriesWanted.length > 0 && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Categories Wanted</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {responses.categoriesWanted.map((category) => (
+                <span key={category} className="inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                  {category}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Categories Avoided */}
+        {responses.categoriesAvoided && responses.categoriesAvoided.length > 0 && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Categories to Avoid</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {responses.categoriesAvoided.map((category) => (
+                <span key={category} className="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                  {category}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Proof Points */}
+        {responses.proofPoints && responses.proofPoints.length > 0 && (
+          <div className="rounded-lg border border-brand-black/10 p-4">
+            <h3 className="font-semibold text-brand-black">Proof Points / Strengths</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {responses.proofPoints.map((point) => (
+                <span key={point} className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                  {point}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

@@ -136,4 +136,51 @@ router.patch(
   }
 );
 
+/**
+ * GET /api/onboarding/user/:userId
+ * Fetch onboarding data for a specific user
+ * Admin/Talent Manager can view any user's onboarding
+ * Creators can only view their own
+ */
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUser = req.user!;
+    const isAdmin = currentUser.role === "ADMIN" || currentUser.role === "SUPERADMIN" || currentUser.role === "TALENT_MANAGER";
+
+    // Verify permissions
+    if (!isAdmin && currentUser.id !== userId) {
+      return res.status(403).json({ error: "Not authorized to view this user's onboarding" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        onboarding_responses: true,
+        onboarding_status: true,
+        onboardingComplete: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name || "",
+      onboarding_responses: user.onboarding_responses,
+      onboarding_status: user.onboarding_status,
+      onboardingComplete: user.onboardingComplete,
+    });
+  } catch (err) {
+    console.error("Error fetching onboarding data", err);
+    res.status(500).json({ error: "Failed to fetch onboarding data" });
+  }
+});
+
 export default router;
