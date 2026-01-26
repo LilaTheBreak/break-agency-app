@@ -333,12 +333,14 @@ export function ExclusiveOverviewEnhanced({ session, basePath: basePathProp }) {
 
               case "goals":
                 return (
-                  <GoalsSection
-                    key={section.id}
-                    goals={data.goals}
-                    navigate={navigate}
-                    basePath={basePath}
-                  />
+                  <div key={section.id} className="space-y-6">
+                    <GoalsOnboardingSection userId={session?.id} />
+                    <GoalsSection
+                      goals={data.goals}
+                      navigate={navigate}
+                      basePath={basePath}
+                    />
+                  </div>
                 );
 
               default:
@@ -880,6 +882,110 @@ function GoalsSection({ goals, navigate, basePath }) {
     </section>
   );
 }
+
+/**
+ * Goals Onboarding Section
+ * Displays onboarding responses in pretty card format
+ */
+function GoalsOnboardingSection({ userId }) {
+  const [onboardingData, setOnboardingData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchOnboardingData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/onboarding/user/${userId}`);
+        if (!response.ok) throw new Error("Failed to fetch onboarding data");
+        const data = await response.json();
+        setOnboardingData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOnboardingData();
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+          Your onboarding
+        </p>
+        <div className="mt-4 space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 animate-pulse rounded-2xl bg-brand-black/10" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (error || !onboardingData?.onboarding_responses) {
+    return null;
+  }
+
+  const responses = onboardingData.onboarding_responses;
+  const hasData = Object.values(responses).some(v => v);
+
+  if (!hasData) {
+    return null;
+  }
+
+  // Map onboarding field names to display labels
+  const fieldLabels = {
+    reality: "Current Inbound Reality",
+    primaryGoal: "Primary Goal",
+    targetAmount: "Target Amount",
+    timeframe: "Timeframe",
+    audience: "Your Audience",
+    challenges: "Current Challenges",
+    support: "Support Needed"
+  };
+
+  return (
+    <section id="exclusive-goals" className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+      <div>
+        <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red">
+          Your onboarding
+        </p>
+        <h3 className="font-display text-2xl uppercase text-brand-black">
+          Goals & context
+        </h3>
+        <p className="mt-1 text-sm text-brand-black/60">
+          Information you shared during setup
+        </p>
+      </div>
+
+      <div className="mt-4 space-y-4">
+        {Object.entries(responses).map(([key, value]) => {
+          if (!value) return null;
+
+          const label = fieldLabels[key] || key.replace(/([A-Z])/g, " $1").trim();
+
+          return (
+            <div key={key} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-black/60">
+                {label}
+              </p>
+              <p className="mt-2 text-sm text-brand-black/80">{value}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 /**
  * Revenue Snapshots Section
  * Dynamically renders revenue, commerce, and goal snapshots from unified API

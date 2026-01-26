@@ -4,10 +4,11 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { getOnboardingPathForRole } from "../lib/onboardingState.js";
 
 export function OnboardingReminderBanner() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [dismissed, setDismissed] = React.useState(false);
+  const [hideOptimistically, setHideOptimistically] = React.useState(false);
 
   // Don't show on onboarding pages
   if (location.pathname.includes("/onboarding")) {
@@ -16,6 +17,11 @@ export function OnboardingReminderBanner() {
 
   // Don't show if dismissed (session-only)
   if (dismissed) {
+    return null;
+  }
+
+  // Don't show if hidden optimistically (waiting for auth refresh)
+  if (hideOptimistically) {
     return null;
   }
 
@@ -31,9 +37,20 @@ export function OnboardingReminderBanner() {
     return null;
   }
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    // Hide optimistically immediately
+    setHideOptimistically(true);
+    
+    // Navigate to onboarding
     const onboardingPath = getOnboardingPathForRole(user?.role);
     navigate(onboardingPath);
+    
+    // Refresh user after short delay to ensure backend has time to process
+    setTimeout(() => {
+      if (refreshUser) {
+        refreshUser();
+      }
+    }, 500);
   };
 
   const handleDismiss = () => {
