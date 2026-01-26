@@ -190,7 +190,8 @@ export function AdminUsersPage() {
       const response = await apiFetch("/api/brands");
       if (!response.ok) throw new Error("Failed to fetch brands");
       const brandsData = await response.json();
-      setBrands(Array.isArray(brandsData) ? brandsData : []);
+      // API returns { brands: [...], total: number }
+      setBrands(brandsData.brands || []);
     } catch (error) {
       console.error("Error fetching brands:", error);
       alert("Failed to load brands");

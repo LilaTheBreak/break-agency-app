@@ -14,10 +14,8 @@ const DealCreateSchema = z.object({
 
 export async function createDeal(req: Request, res: Response, next: NextFunction) {
   try {
-    // Block admin actions while impersonating
-    blockAdminActionsWhileImpersonating(req);
-    
     // Use effective user ID (respects impersonation context)
+    // This allows admins to create deals for impersonated users
     const effectiveUserId = getEffectiveUserId(req);
     
     const parsed = DealCreateSchema.safeParse(req.body);

@@ -276,8 +276,10 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Talent ID is required" });
     }
     // Enforce data scoping - if talentId doesn't match effective user, reject
-    if (talentId !== effectiveUserId) {
-      return res.status(403).json({ error: "Cannot create deals for other users while impersonating" });
+    // (This applies whether impersonating or not)
+    const userToModify = getEffectiveUserId(req);
+    if (talentId !== userToModify) {
+      return res.status(403).json({ error: "Cannot create deals for other users" });
     }
     // Ignore userId from body - always use effectiveUserId
     const finalUserId = effectiveUserId;
