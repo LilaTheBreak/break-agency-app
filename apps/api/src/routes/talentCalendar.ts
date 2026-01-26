@@ -17,6 +17,7 @@ const CalendarEventCreateSchema = z.object({
   endTime: z.string().optional(),
   type: z.enum(["meeting", "deadline", "personal", "other"]).default("meeting"),
   description: z.string().optional(),
+  visibleToTalent: z.boolean().optional().default(true),
 });
 
 type CalendarEventInput = z.infer<typeof CalendarEventCreateSchema>;
@@ -44,15 +45,17 @@ function formatDateTimeForFrontend(dt: Date): { date: string; time: string } {
 /**
  * GET /api/talent/:talentId/calendar
  * Fetch all calendar events for a specific talent
+ * - Admins see all events
+ * - Talents see only events marked as visibleToTalent
  */
 router.get("/:talentId/calendar", async (req: Request, res: Response) => {
   try {
     const { talentId } = req.params;
     const user = req.user!;
+    const isRequesterAdmin = isAdmin(user) || isSuperAdmin(user);
 
     // Verify user has permission to view this talent's calendar
-    // Admins can view any talent, but must have access through data scoping
-    if (!isAdmin(user) && !isSuperAdmin(user)) {
+    if (!isRequesterAdmin) {
       // Non-admin users can only view their own calendar
       const effectiveUserId = getEffectiveUserId(req);
       if (talentId !== effectiveUserId) {
@@ -61,12 +64,23 @@ router.get("/:talentId/calendar", async (req: Request, res: Response) => {
     }
 
     // Fetch calendar events for the talent
-    const events = await prisma.calendarEvent.findMany({
-      where: {
-        relatedCreatorIds: {
-          has: talentId,
-        },
+    // Talents only see events marked as visibleToTalent
+    const where: any = {
+      relatedCreatorIds: {
+        has: talentId,
       },
+    };
+
+    // If talent (not admin) is requesting, filter to only visible events
+    if (!isRequesterAdmin) {
+      where.metadata = {
+        path: ["visibleToTalent"],
+        equals: true,
+      };
+    }
+
+    const events = await prisma.calendarEvent.findMany({
+      where,
       orderBy: {
         startAt: "asc",
       },
@@ -80,6 +94,7 @@ router.get("/:talentId/calendar", async (req: Request, res: Response) => {
         location: true,
         status: true,
         isAllDay: true,
+        metadata: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -89,6 +104,7 @@ router.get("/:talentId/calendar", async (req: Request, res: Response) => {
     const formattedEvents = events.map(event => {
       const { date, time } = formatDateTimeForFrontend(event.startAt);
       const { date: endDate, time: endTime } = formatDateTimeForFrontend(event.endAt);
+      const visibleToTalent = (event.metadata as any)?.visibleToTalent ?? true;
       
       return {
         id: event.id,
@@ -101,6 +117,7 @@ router.get("/:talentId/calendar", async (req: Request, res: Response) => {
         location: event.location,
         status: event.status,
         isAllDay: event.isAllDay,
+        visibleToTalent,
       };
     });
 
@@ -138,7 +155,7 @@ router.post("/:talentId/calendar", async (req: Request, res: Response) => {
       });
     }
 
-    const { title, date, startTime, endTime, type, description } = parsed.data;
+    const { title, date, startTime, endTime, type, description, visibleToTalent } = parsed.data;
 
     // Build datetime objects
     const startAt = buildDateTime(date, startTime);
@@ -164,6 +181,9 @@ router.post("/:talentId/calendar", async (req: Request, res: Response) => {
         isAllDay: false,
         createdBy: user.id,
         relatedCreatorIds: [talentId],
+        metadata: {
+          visibleToTalent: visibleToTalent ?? true,
+        },
       },
       select: {
         id: true,
@@ -175,12 +195,14 @@ router.post("/:talentId/calendar", async (req: Request, res: Response) => {
         location: true,
         status: true,
         isAllDay: true,
+        metadata: true,
       },
     });
 
     // Format for frontend
     const { date: formattedDate, time: formattedTime } = formatDateTimeForFrontend(event.startAt);
     const { time: formattedEndTime } = formatDateTimeForFrontend(event.endAt);
+    const responseVisibleToTalent = (event.metadata as any)?.visibleToTalent ?? true;
 
     const response = {
       id: event.id,
@@ -191,6 +213,7 @@ router.post("/:talentId/calendar", async (req: Request, res: Response) => {
       endTime: formattedEndTime !== formattedTime ? formattedEndTime : "",
       type: event.type,
       location: event.location,
+      visibleToTalent: responseVisibleToTalent,
       status: event.status,
       isAllDay: event.isAllDay,
     };
@@ -288,6 +311,7 @@ router.patch("/:talentId/calendar/:eventId", async (req: Request, res: Response)
       type: z.enum(["meeting", "deadline", "personal", "other"]).optional(),
       description: z.string().optional(),
       status: z.enum(["scheduled", "cancelled", "completed"]).optional(),
+      visibleToTalent: z.boolean().optional(),
     });
 
     const parsed = UpdateSchema.safeParse(req.body);
@@ -298,7 +322,7 @@ router.patch("/:talentId/calendar/:eventId", async (req: Request, res: Response)
       });
     }
 
-    const { title, date, startTime, endTime, type, description, status } = parsed.data;
+    const { title, date, startTime, endTime, type, description, status, visibleToTalent } = parsed.data;
 
     // Build update object
     const updateData: any = {};
@@ -306,6 +330,13 @@ router.patch("/:talentId/calendar/:eventId", async (req: Request, res: Response)
     if (type) updateData.type = type;
     if (description !== undefined) updateData.description = description || null;
     if (status) updateData.status = status;
+    if (visibleToTalent !== undefined) {
+      // Update metadata with visibility flag
+      updateData.metadata = {
+        ...((event.metadata as any) || {}),
+        visibleToTalent,
+      };
+    }
 
     // Handle datetime updates
     if (date || startTime) {
@@ -337,12 +368,14 @@ router.patch("/:talentId/calendar/:eventId", async (req: Request, res: Response)
         location: true,
         status: true,
         isAllDay: true,
+        metadata: true,
       },
     });
 
     // Format for frontend
     const { date: formattedDate, time: formattedTime } = formatDateTimeForFrontend(updatedEvent.startAt);
     const { time: formattedEndTime } = formatDateTimeForFrontend(updatedEvent.endAt);
+    const updatedVisibleToTalent = (updatedEvent.metadata as any)?.visibleToTalent ?? true;
 
     const response = {
       id: updatedEvent.id,
@@ -355,6 +388,7 @@ router.patch("/:talentId/calendar/:eventId", async (req: Request, res: Response)
       location: updatedEvent.location,
       status: updatedEvent.status,
       isAllDay: updatedEvent.isAllDay,
+      visibleToTalent: updatedVisibleToTalent,
     };
 
     res.json(response);
