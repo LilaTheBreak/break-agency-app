@@ -97,11 +97,14 @@ export const CONTROL_ROOM_PRESETS = {
     subtitle: "",
     tabs: [
       { label: "Overview", anchor: "#exclusive-overview", default: true }, // Keep first - default tab
+      { label: "Account", anchor: "#exclusive-account" },
+      { label: "Calendar", anchor: "#exclusive-calendar" },
       { label: "Campaigns", anchor: "#exclusive-campaigns" },
       { label: "Contracts", anchor: "#exclusive-contracts" },
+      { label: "Deals", anchor: "#exclusive-deals" },
       { label: "Financials", anchor: "#exclusive-financials" },
+      { label: "Meetings", anchor: "#exclusive-meetings" },
       { label: "Messages", anchor: "#exclusive-messages" },
-      { label: "My Profile", anchor: "#exclusive-profile" },
       { label: "Opportunities", anchor: "#exclusive-opportunities" },
       { label: "Settings", anchor: "#exclusive-settings" }, // Keep last - standard placement
       { label: "Socials", anchor: "#exclusive-socials" }
@@ -135,13 +138,14 @@ export const CONTROL_ROOM_PRESETS = {
     tabs: [
       { label: "Overview", to: "/creator/dashboard" },
       { label: "Account", to: "/creator/account" },
-      { label: "Agent", to: "/creator/agent" },
-      { label: "Campaigns", to: "/creator/campaigns" },
       { label: "Calendar", to: "/creator/calendar" },
+      { label: "Campaigns", to: "/creator/campaigns" },
       { label: "Contracts", to: "/creator/contracts" },
+      { label: "Deals", to: "/creator/deals" },
+      { label: "Meetings", to: "/creator/meetings" },
       { label: "Messages", to: "/creator/messages" },
-      { label: "Socials", to: "/creator/socials" },
-      { label: "Opportunities", to: "/creator/opportunities" }
+      { label: "Opportunities", to: "/creator/opportunities" },
+      { label: "Socials", to: "/creator/socials" }
     ],
     metrics: [],  // Populated dynamically from real data
     queue: {
