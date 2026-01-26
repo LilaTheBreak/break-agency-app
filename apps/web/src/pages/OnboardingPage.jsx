@@ -420,6 +420,7 @@ export default function OnboardingPage() {
 
   const handleSkipOnboarding = async () => {
     setIsSkipping(true);
+    setError(""); // Clear any existing errors
     try {
       const response = await skipOnboarding();
       if (!response.ok) {
@@ -429,6 +430,8 @@ export default function OnboardingPage() {
         setIsSkipping(false);
         return;
       }
+      const data = await response.json();
+      console.log("Onboarding skipped successfully:", data);
       // Navigate to dashboard after skipping
       const path = getDashboardPathForRole(resolvedRole);
       navigate(path, { replace: true });
