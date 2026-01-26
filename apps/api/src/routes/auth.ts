@@ -144,6 +144,19 @@ router.get("/google/callback", authRateLimiter, async (req: Request, res: Respon
         role: assignedRole as any,
         updatedAt: new Date(),
       },
+      include: {
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            representationType: true,
+            status: true,
+            primaryEmail: true,
+            profileImageUrl: true
+          }
+        }
+      }
     });
     if (process.env.NODE_ENV !== 'production') {
       console.log("✔ Google OAuth user upsert completed:", normalizedEmail, "with role:", assignedRole);
@@ -289,6 +302,19 @@ router.post("/signup", authRateLimiter, async (req: Request, res: Response) => {
         role: role, // Required role from signup
         onboarding_status: "in_progress",
         updatedAt: new Date()
+      },
+      include: {
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            representationType: true,
+            status: true,
+            primaryEmail: true,
+            profileImageUrl: true
+          }
+        }
       }
     });
     console.log('[SIGNUP] User created successfully:', user.id);
@@ -320,6 +346,19 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
     const normalizedEmail = email.toLowerCase();
     let user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
+      include: {
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            representationType: true,
+            status: true,
+            primaryEmail: true,
+            profileImageUrl: true
+          }
+        }
+      }
     });
 
     // Check if user is a super admin (same list as Google OAuth)
@@ -346,6 +385,19 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
           role: "SUPERADMIN",
           updatedAt: new Date(),
         },
+        include: {
+          Talent: {
+            select: {
+              id: true,
+              name: true,
+              displayName: true,
+              representationType: true,
+              status: true,
+              primaryEmail: true,
+              profileImageUrl: true
+            }
+          }
+        }
       });
     }
 
@@ -357,6 +409,19 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
           password: hashed,
           updatedAt: new Date(),
         },
+        include: {
+          Talent: {
+            select: {
+              id: true,
+              name: true,
+              displayName: true,
+              representationType: true,
+              status: true,
+              primaryEmail: true,
+              profileImageUrl: true
+            }
+          }
+        }
       });
     }
 
@@ -368,6 +433,19 @@ router.post("/login", authRateLimiter, async (req: Request, res: Response) => {
           role: "SUPERADMIN",
           updatedAt: new Date(),
         },
+        include: {
+          Talent: {
+            select: {
+              id: true,
+              name: true,
+              displayName: true,
+              representationType: true,
+              status: true,
+              primaryEmail: true,
+              profileImageUrl: true
+            }
+          }
+        }
       });
       if (process.env.NODE_ENV !== 'production') {
         console.log("[LOGIN] Upgraded user to SUPERADMIN:", normalizedEmail);
@@ -414,7 +492,20 @@ router.get("/me", async (req: Request, res: Response) => {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
+      where: { id: req.user.id },
+      include: {
+        Talent: {
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            representationType: true,
+            status: true,
+            primaryEmail: true,
+            profileImageUrl: true
+          }
+        }
+      }
     });
 
     return res.json({ user: user ? buildSessionUser(user) : null });
