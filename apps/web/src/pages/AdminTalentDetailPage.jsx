@@ -67,6 +67,7 @@ const TAB_GROUPS = [
       { id: "overview", label: "Overview", icon: User },
       { id: "opportunities", label: "Opportunities", icon: TrendingUp },
       { id: "meetings", label: "Meetings", icon: Calendar },
+      { id: "calendar", label: "Calendar", icon: Calendar },
       { id: "deals", label: "Deal Tracker", icon: Briefcase },
     ],
   },
@@ -1708,6 +1709,9 @@ export function AdminTalentDetailPage() {
         )}
         {activeTab === "meetings" && (
           <MeetingSection talentId={talentId} />
+        )}
+        {activeTab === "calendar" && (
+          <CalendarTab talentId={talentId} />
         )}
         {activeTab === "deliverables" && (
           <DeliverablesTab talent={talent} />
@@ -3936,6 +3940,249 @@ function NotesTab({ talentId }) {
         }}
         session={null}
       />
+    </section>
+  );
+}
+
+function CalendarTab({ talentId }) {
+  const [events, setEvents] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    description: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    type: "meeting", // meeting, deadline, personal, other
+  });
+
+  const fetchCalendarEvents = useCallback(async () => {
+    if (!talentId) return;
+    try {
+      setIsLoading(true);
+      const response = await apiFetch(`/api/talent/${talentId}/calendar`);
+      if (response.ok) {
+        const data = await response.json();
+        setEvents(Array.isArray(data) ? data : data?.events || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch calendar events:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [talentId]);
+
+  useEffect(() => {
+    fetchCalendarEvents();
+  }, [fetchCalendarEvents]);
+
+  const handleAddEvent = async (e) => {
+    e.preventDefault();
+    if (!newEvent.title || !newEvent.date) {
+      toast.error("Please fill in title and date");
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/api/talent/${talentId}/calendar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newEvent),
+      });
+
+      if (response.ok) {
+        toast.success("Calendar event created");
+        setNewEvent({ title: "", description: "", date: "", startTime: "", endTime: "", type: "meeting" });
+        setShowAddEvent(false);
+        fetchCalendarEvents();
+      } else {
+        toast.error("Failed to create event");
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+      toast.error("Error creating calendar event");
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (!window.confirm("Delete this calendar event?")) return;
+
+    try {
+      const response = await apiFetch(`/api/talent/${talentId}/calendar/${eventId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        toast.success("Event deleted");
+        fetchCalendarEvents();
+      } else {
+        toast.error("Failed to delete event");
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      toast.error("Error deleting calendar event");
+    }
+  };
+
+  const eventTypes = [
+    { value: "meeting", label: "Meeting", color: "bg-blue-100 text-blue-700" },
+    { value: "deadline", label: "Deadline", color: "bg-red-100 text-red-700" },
+    { value: "personal", label: "Personal", color: "bg-green-100 text-green-700" },
+    { value: "other", label: "Other", color: "bg-gray-100 text-gray-700" },
+  ];
+
+  const getEventTypeColor = (type) => {
+    return eventTypes.find(et => et.value === type)?.color || "bg-gray-100 text-gray-700";
+  };
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="font-subtitle text-xs uppercase tracking-[0.35em] text-brand-red mb-1">Calendar Management</p>
+            <p className="text-sm text-brand-black/60">Manage talent's calendar, deadlines, and meetings</p>
+          </div>
+          <button
+            onClick={() => setShowAddEvent(!showAddEvent)}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-brand-black/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add Event
+          </button>
+        </div>
+
+        {showAddEvent && (
+          <form onSubmit={handleAddEvent} className="mb-6 p-4 rounded-lg border border-brand-black/10 bg-brand-black/5 space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-brand-black mb-2">Event Title *</label>
+              <input
+                type="text"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                placeholder="e.g., Client Meeting, Content Deadline"
+                className="w-full px-3 py-2 border border-brand-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-brand-black mb-2">Date *</label>
+                <input
+                  type="date"
+                  value={newEvent.date}
+                  onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-brand-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-brand-black mb-2">Event Type</label>
+                <select
+                  value={newEvent.type}
+                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
+                  className="w-full px-3 py-2 border border-brand-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red"
+                >
+                  {eventTypes.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-brand-black mb-2">Start Time</label>
+                <input
+                  type="time"
+                  value={newEvent.startTime}
+                  onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
+                  className="w-full px-3 py-2 border border-brand-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-brand-black mb-2">End Time</label>
+                <input
+                  type="time"
+                  value={newEvent.endTime}
+                  onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                  className="w-full px-3 py-2 border border-brand-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-brand-black mb-2">Description</label>
+              <textarea
+                value={newEvent.description}
+                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                placeholder="Add notes about this event..."
+                className="w-full px-3 py-2 border border-brand-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red resize-none"
+                rows="3"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAddEvent(false)}
+                className="px-4 py-2 text-brand-black hover:bg-brand-black/5 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-brand-black/90 transition-colors"
+              >
+                Create Event
+              </button>
+            </div>
+          </form>
+        )}
+
+        {isLoading ? (
+          <div className="text-center py-8 text-brand-black/50">Loading calendar...</div>
+        ) : events.length > 0 ? (
+          <div className="space-y-3">
+            {events.map((event) => (
+              <div key={event.id} className="flex items-start gap-4 p-4 border border-brand-black/10 rounded-lg hover:bg-brand-black/5 transition-colors">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-semibold text-brand-black">{event.title}</h3>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${getEventTypeColor(event.type)}`}>
+                      {eventTypes.find(et => et.value === event.type)?.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-brand-black/60 mb-1">
+                    {event.date} {event.startTime && `at ${event.startTime}`}
+                  </p>
+                  {event.description && (
+                    <p className="text-sm text-brand-black/70">{event.description}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleDeleteEvent(event.id)}
+                  className="p-2 text-brand-red/60 hover:text-brand-red hover:bg-brand-red/10 rounded-lg transition-colors"
+                  title="Delete event"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Calendar className="h-12 w-12 text-brand-black/20 mx-auto mb-3" />
+            <p className="text-brand-black/60 text-sm">No calendar events yet</p>
+            <button
+              onClick={() => setShowAddEvent(true)}
+              className="mt-4 text-sm text-brand-red hover:underline"
+            >
+              Create the first event
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
