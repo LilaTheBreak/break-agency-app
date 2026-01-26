@@ -229,6 +229,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const ugcFlow = isUgcFlow(resolvedRole, form.context);
   const steps = useMemo(() => buildSteps(ugcFlow), [ugcFlow]);
@@ -408,10 +409,19 @@ export default function OnboardingPage() {
   };
 
   const handleGoToDashboard = async () => {
-    const success = await finishOnboarding();
-    if (success) {
-      const path = getDashboardPathForRole(resolvedRole);
-      navigate(path, { replace: true });
+    if (isLoading) return; // Prevent double-clicks
+    setIsLoading(true);
+    setError("");
+    try {
+      const success = await finishOnboarding();
+      if (success) {
+        const path = getDashboardPathForRole(resolvedRole);
+        navigate(path, { replace: true });
+      }
+    } catch (err) {
+      console.error("Error navigating to dashboard:", err);
+      setError("Failed to navigate to dashboard. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -466,9 +476,10 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={handleGoToDashboard}
-          className="w-full rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white transition hover:-translate-y-0.5 hover:bg-brand-red"
+          disabled={isLoading}
+          className="w-full rounded-full bg-brand-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-brand-white transition hover:-translate-y-0.5 hover:bg-brand-red disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Go to dashboard
+          {isLoading ? "Taking you to dashboard..." : "Go to dashboard"}
         </button>
       );
     }
