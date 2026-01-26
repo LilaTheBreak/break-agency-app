@@ -284,14 +284,11 @@ export default function OnboardingPage() {
   const stepTotal = steps.length;
   const progress = Math.round(((stepIndex + 1) / stepTotal) * 100);
 
-  const handleSelect = (field, value, limit) => {
+  const handleSelect = (field, value) => {
     setForm((prev) => {
       if (Array.isArray(prev[field])) {
         const exists = prev[field].includes(value);
         const nextArray = exists ? prev[field].filter((item) => item !== value) : [...prev[field], value];
-        if (!exists && limit && nextArray.length > limit) {
-          nextArray.shift();
-        }
         return { ...prev, [field]: nextArray };
       }
       return { ...prev, [field]: value };
@@ -674,18 +671,18 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
           <ChoiceGrid
             options={PLATFORM_OPTIONS}
             value={form.platforms}
-            onSelect={(value) => onSelect("platforms", value, 4)}
+            onSelect={(value) => onSelect("platforms", value)}
             multiple
           />
         </QuestionCard>
         <QuestionCard
-          title="Pick up to 3 formats you enjoy"
+          title="Pick the formats you enjoy"
           helper="We prioritise what you can maintain long-term."
         >
           <ChoiceGrid
             options={FORMAT_OPTIONS}
             value={form.formats}
-            onSelect={(value) => onSelect("formats", value, 3)}
+            onSelect={(value) => onSelect("formats", value)}
             multiple
           />
         </QuestionCard>
@@ -704,11 +701,11 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
             columns={3}
           />
         </QuestionCard>
-        <QuestionCard title="Secondary niches (optional)" helper="Pick up to two supporting categories.">
+        <QuestionCard title="Secondary niches (optional)" helper="Pick supporting categories.">
           <ChoiceGrid
             options={NICHE_OPTIONS}
             value={form.secondaryNiches}
-            onSelect={(value) => onSelect("secondaryNiches", value, 2)}
+            onSelect={(value) => onSelect("secondaryNiches", value)}
             multiple
             columns={3}
           />
@@ -717,7 +714,7 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
           <ChoiceGrid
             options={ANGLE_OPTIONS}
             value={form.contentAngles}
-            onSelect={(value) => onSelect("contentAngles", value, 4)}
+            onSelect={(value) => onSelect("contentAngles", value)}
             multiple
             columns={2}
           />
@@ -818,7 +815,7 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
         <ChoiceGrid
           options={UGC_COMMERCIAL_GOALS}
           value={form.ugcGoals}
-          onSelect={(value) => onSelect("ugcGoals", value, 3)}
+          onSelect={(value) => onSelect("ugcGoals", value)}
           multiple
           columns={2}
         />
@@ -858,7 +855,7 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
         <ChoiceGrid
           options={BLOCKER_OPTIONS}
           value={form.blockers}
-          onSelect={(value) => onSelect("blockers", value, 3)}
+          onSelect={(value) => onSelect("blockers", value)}
           multiple
           columns={2}
         />
@@ -892,11 +889,11 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
             columns={4}
           />
         </QuestionCard>
-        <QuestionCard title="Less of this" helper="Pick two things you want to avoid.">
+        <QuestionCard title="Less of this" helper="Pick things you want to avoid.">
           <ChoiceGrid
             options={LESS_OF_OPTIONS}
             value={form.lessOfThis}
-            onSelect={(value) => onSelect("lessOfThis", value, 2)}
+            onSelect={(value) => onSelect("lessOfThis", value)}
             multiple
             columns={2}
           />
@@ -912,7 +909,7 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
           <ChoiceGrid
             options={CATEGORY_OPTIONS}
             value={form.categoriesWanted}
-            onSelect={(value) => onSelect("categoriesWanted", value, 4)}
+            onSelect={(value) => onSelect("categoriesWanted", value)}
             multiple
             columns={3}
           />
@@ -921,7 +918,7 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
           <ChoiceGrid
             options={CATEGORY_OPTIONS}
             value={form.categoriesAvoided}
-            onSelect={(value) => onSelect("categoriesAvoided", value, 3)}
+            onSelect={(value) => onSelect("categoriesAvoided", value)}
             multiple
             columns={3}
           />
@@ -954,7 +951,7 @@ function StepContent({ stepId, form, onSelect, onChange, ugcFlow }) {
           <ChoiceGrid
             options={PROOF_POINTS}
             value={form.proofPoints}
-            onSelect={(value) => onSelect("proofPoints", value, 4)}
+            onSelect={(value) => onSelect("proofPoints", value)}
             multiple
             columns={2}
           />
@@ -1073,8 +1070,8 @@ function validateStep(stepId, form, ugcFlow) {
     if (stepId === "ugc-pricing" && !form.ugcPricingConfidence) return "Share your pricing confidence level.";
   }
   if (stepId === "friction" && !form.blockers.length) return "Pick at least one blocker.";
-  if (stepId === "capacity" && (!form.partnershipsPerMonth || !form.leadTime || form.lessOfThis.length < 2)) {
-    return "Set partnerships per month, lead time, and pick two things you want less of.";
+  if (stepId === "capacity" && (!form.partnershipsPerMonth || !form.leadTime || !form.lessOfThis.length)) {
+    return "Set partnerships per month, lead time, and pick at least one thing you want less of.";
   }
   if (stepId === "brand-fit" && (!form.categoriesWanted.length || !form.partnershipPreference)) {
     return "Choose categories you want and a partnership preference.";
