@@ -165,14 +165,17 @@ export function BrandSelect({
   }, [isOpen]);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full pointer-events-auto">
       {/* Main dropdown button */}
       <button
         ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          console.log('[BrandSelect] Button clicked, current isOpen:', isOpen);
+          setIsOpen(!isOpen);
+        }}
         onKeyDown={handleKeyDown}
         disabled={disabled || isLoading}
-        className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-left focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20 disabled:opacity-50 flex items-center justify-between hover:border-brand-black/20 transition"
+        className="w-full rounded-lg border border-brand-black/10 bg-brand-white px-4 py-3 text-sm text-left focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20 disabled:opacity-50 flex items-center justify-between hover:border-brand-black/20 transition pointer-events-auto"
       >
         <span className={isLoading ? "text-brand-black/50" : "text-brand-black"}>
           {isLoading ? "Loading brands..." : selectedBrand?.name || "Select a brand"}
