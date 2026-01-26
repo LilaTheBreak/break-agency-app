@@ -3948,13 +3948,14 @@ function CalendarTab({ talentId }) {
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
     date: "",
     startTime: "",
     endTime: "",
-    type: "meeting", // meeting, deadline, personal, other
+    type: "meeting",
   });
 
   const fetchCalendarEvents = useCallback(async () => {
@@ -3985,23 +3986,43 @@ function CalendarTab({ talentId }) {
     }
 
     try {
-      const response = await apiFetch(`/api/talent/${talentId}/calendar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newEvent),
-      });
+      if (editingId) {
+        // Update existing event
+        const response = await apiFetch(`/api/talent/${talentId}/calendar/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newEvent),
+        });
 
-      if (response.ok) {
-        toast.success("Calendar event created");
-        setNewEvent({ title: "", description: "", date: "", startTime: "", endTime: "", type: "meeting" });
-        setShowAddEvent(false);
-        fetchCalendarEvents();
+        if (response.ok) {
+          toast.success("Calendar event updated");
+          setEditingId(null);
+          setNewEvent({ title: "", description: "", date: "", startTime: "", endTime: "", type: "meeting" });
+          setShowAddEvent(false);
+          fetchCalendarEvents();
+        } else {
+          toast.error("Failed to update event");
+        }
       } else {
-        toast.error("Failed to create event");
+        // Create new event
+        const response = await apiFetch(`/api/talent/${talentId}/calendar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newEvent),
+        });
+
+        if (response.ok) {
+          toast.success("Calendar event created");
+          setNewEvent({ title: "", description: "", date: "", startTime: "", endTime: "", type: "meeting" });
+          setShowAddEvent(false);
+          fetchCalendarEvents();
+        } else {
+          toast.error("Failed to create event");
+        }
       }
     } catch (error) {
-      console.error("Error creating event:", error);
-      toast.error("Error creating calendar event");
+      console.error("Error saving event:", error);
+      toast.error("Error saving calendar event");
     }
   };
 
@@ -4023,6 +4044,25 @@ function CalendarTab({ talentId }) {
       console.error("Error deleting event:", error);
       toast.error("Error deleting calendar event");
     }
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingId(event.id);
+    setNewEvent({
+      title: event.title,
+      description: event.description || "",
+      date: event.date,
+      startTime: event.startTime || "",
+      endTime: event.endTime || "",
+      type: event.type,
+    });
+    setShowAddEvent(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setNewEvent({ title: "", description: "", date: "", startTime: "", endTime: "", type: "meeting" });
+    setShowAddEvent(false);
   };
 
   const eventTypes = [
@@ -4125,7 +4165,7 @@ function CalendarTab({ talentId }) {
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
-                onClick={() => setShowAddEvent(false)}
+                onClick={handleCancelEdit}
                 className="px-4 py-2 text-brand-black hover:bg-brand-black/5 rounded-lg transition-colors"
               >
                 Cancel
@@ -4134,7 +4174,7 @@ function CalendarTab({ talentId }) {
                 type="submit"
                 className="px-4 py-2 bg-brand-red text-white rounded-lg hover:bg-brand-black/90 transition-colors"
               >
-                Create Event
+                {editingId ? "Update Event" : "Create Event"}
               </button>
             </div>
           </form>
@@ -4160,13 +4200,22 @@ function CalendarTab({ talentId }) {
                     <p className="text-sm text-brand-black/70">{event.description}</p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleDeleteEvent(event.id)}
-                  className="p-2 text-brand-red/60 hover:text-brand-red hover:bg-brand-red/10 rounded-lg transition-colors"
-                  title="Delete event"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEditEvent(event)}
+                    className="p-2 text-brand-black/60 hover:text-brand-black hover:bg-brand-black/5 rounded-lg transition-colors"
+                    title="Edit event"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteEvent(event.id)}
+                    className="p-2 text-brand-red/60 hover:text-brand-red hover:bg-brand-red/10 rounded-lg transition-colors"
+                    title="Delete event"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
