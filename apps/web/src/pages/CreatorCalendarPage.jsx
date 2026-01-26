@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
+import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 
 export function CreatorCalendarPage({ session }) {
+  const config = CONTROL_ROOM_PRESETS.talent;
+  const navLinks = config.tabs || [];
   const [isConnecting, setIsConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
 
@@ -23,6 +26,8 @@ export function CreatorCalendarPage({ session }) {
       title="Calendar"
       subtitle="Manage your schedule and campaign deadlines"
       role={session?.user?.role}
+      navLinks={navLinks}
+      session={session}
     >
       <div className="space-y-6">
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-6">

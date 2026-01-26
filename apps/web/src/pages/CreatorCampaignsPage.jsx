@@ -9,8 +9,8 @@ export function CreatorCampaignsPage({ session }) {
     <DashboardShell
       title="Campaigns"
       subtitle="View and manage your active campaigns"
-      role={session?.user?.role}
-    >
+      role={session?.user?.role}      navLinks={navLinks}
+      session={session}    >
       <div className="space-y-6">
         <section className="section-wrapper elevation-1 p-6 transition-elevation">
           <h2 className="text-xl font-semibold text-brand-black">Active Campaigns</h2>

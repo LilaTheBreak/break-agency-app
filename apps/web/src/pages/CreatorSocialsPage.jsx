@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 import toast from "react-hot-toast";
 
 export function CreatorSocialsPage({ session }) {
+  const config = CONTROL_ROOM_PRESETS.talent;
+  const navLinks = config.tabs || [];
   const { user } = useAuth();
   const [connectedPlatforms, setConnectedPlatforms] = useState({
     instagram: false,
@@ -136,6 +139,8 @@ export function CreatorSocialsPage({ session }) {
       title="Social Media Accounts"
       subtitle="Connect and manage your social media profiles"
       role={session?.user?.role}
+      navLinks={navLinks}
+      session={session}
     >
       <div className="space-y-6">
         <section className="section-wrapper elevation-1 p-6 transition-elevation">

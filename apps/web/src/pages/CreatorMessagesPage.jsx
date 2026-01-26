@@ -1,7 +1,10 @@
 import React from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
+import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 
 export function CreatorMessagesPage({ session }) {
+  const config = CONTROL_ROOM_PRESETS.talent;
+  const navLinks = config.tabs || [];
   return (
     <DashboardShell
       title="Messages"

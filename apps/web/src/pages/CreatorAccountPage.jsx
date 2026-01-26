@@ -2,9 +2,12 @@ import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import toast from "react-hot-toast";
+import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 
 export function CreatorAccountPage({ session }) {
   const { user } = useAuth();
+  const config = CONTROL_ROOM_PRESETS.talent;
+  const navLinks = config.tabs || [];
   const [isSaving, setIsSaving] = useState(false);
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -77,6 +80,8 @@ export function CreatorAccountPage({ session }) {
       title="Account Settings"
       subtitle="Manage your profile and account preferences"
       role={session?.user?.role}
+      navLinks={navLinks}
+      session={session}
     >
       <div className="space-y-6">
         {/* Account Information */}
