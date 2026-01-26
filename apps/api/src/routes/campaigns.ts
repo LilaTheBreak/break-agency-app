@@ -12,10 +12,10 @@ import * as Sentry from "@sentry/node";
 const router = Router();
 
 /**
- * POST /campaigns
+ * POST /
  * Creates a new BrandCampaign.
  */
-router.post("/campaigns", ensureManager, async (req: Request, res: Response) => {
+router.post("/", ensureManager, async (req: Request, res: Response) => {
   try {
     // Validate request body
     const validation = validateRequestSafe(CampaignCreateSchema, req.body);
@@ -57,10 +57,10 @@ router.post("/campaigns", ensureManager, async (req: Request, res: Response) => 
 });
 
 /**
- * POST /campaigns/:id/addBrand
+ * POST /:id/addBrand
  * Adds a brand to an existing campaign.
  */
-router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: Response) => {
+router.post("/:id/addBrand", ensureManager, async (req: Request, res: Response) => {
   const campaignId = req.params.id;
   const { brand } = req.body ?? {};
   if (!brand || typeof brand !== "object") {
@@ -84,11 +84,11 @@ router.post("/campaigns/:id/addBrand", ensureManager, async (req: Request, res: 
 });
 
 /**
- * GET /campaigns/user/:userId
+ * GET /user/:userId
  * Fetches campaigns associated with a specific user (or all for admins).
- * NOTE: This MUST come BEFORE /campaigns/:id to avoid "user" being treated as an ID
+ * NOTE: This MUST come BEFORE /:id to avoid "user" being treated as an ID
  */
-router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Response) => {
+router.get("/user/:userId", ensureUser, async (req: Request, res: Response) => {
   let targetId = req.params.userId;
   try {
     const requester = req.user!;
@@ -194,11 +194,11 @@ router.get("/campaigns/user/:userId", ensureUser, async (req: Request, res: Resp
 });
 
 /**
- * GET /campaigns/:id
+ * GET /:id
  * Fetches a single campaign by its ID.
- * NOTE: This MUST come AFTER /campaigns/user/:userId to avoid route conflicts
+ * NOTE: This MUST come AFTER /user/:userId to avoid route conflicts
  */
-router.get("/campaigns/:id", ensureUser, async (req: Request, res: Response) => {
+router.get("/:id", ensureUser, async (req: Request, res: Response) => {
   try {
     const campaign = await fetchCampaign(req.params.id, req.user!.id);
     if (!campaign) return res.status(404).json({ error: "Campaign not found" });
@@ -220,10 +220,10 @@ const CampaignUpdateSchema = z.object({
 });
 
 /**
- * PUT /campaigns/:id
+ * PUT /:id
  * Updates an existing BrandCampaign.
  */
-router.put("/campaigns/:id", ensureManager, async (req: Request, res: Response) => {
+router.put("/:id", ensureManager, async (req: Request, res: Response) => {
   try {
     const campaignId = req.params.id;
     
