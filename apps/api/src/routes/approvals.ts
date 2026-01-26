@@ -174,6 +174,8 @@ router.delete("/api/approvals/:id", requireAdmin, async (req: Request, res: Resp
 });
 
 // POST /api/approvals/:id/approve - Approve
+// NOTE: Only ONE admin approval is required. A single admin can approve a user.
+// This endpoint sets status to APPROVED and records the admin who approved it.
 router.post("/api/approvals/:id/approve", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -183,7 +185,8 @@ router.post("/api/approvals/:id/approve", requireAdmin, async (req: Request, res
       return res.status(404).json({ error: "Approval not found" });
     }
 
-    // Update the approval record
+    // Update the approval record with a single admin's approval
+    // Only one approverId is recorded - no multi-approval workflow
     const updated = await prisma.approval.update({
       where: { id },
       data: {
@@ -225,6 +228,7 @@ router.post("/api/approvals/:id/approve", requireAdmin, async (req: Request, res
 });
 
 // POST /api/approvals/:id/reject - Reject
+// NOTE: Only ONE admin approval/rejection is required. A single admin can reject a user.
 router.post("/api/approvals/:id/reject", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

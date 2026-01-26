@@ -45,6 +45,8 @@ router.get("/pending", requireAuth, requireAdmin, async (req: Request, res: Resp
 });
 
 // Approve a user
+// NOTE: Only ONE admin approval is required. A single admin can approve a user account.
+// This endpoint directly updates the user's onboarding status to "approved".
 router.post("/:userId/approve", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
@@ -73,6 +75,7 @@ router.post("/:userId/approve", requireAuth, requireAdmin, async (req: Request, 
 });
 
 // Reject a user
+// NOTE: Only ONE admin can reject a user account. A single admin decision is sufficient.
 router.post("/:userId/reject", requireAuth, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
