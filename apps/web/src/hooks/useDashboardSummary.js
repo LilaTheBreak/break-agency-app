@@ -9,6 +9,7 @@ export function useDashboardSummary(role) {
   useEffect(() => {
     // Only fetch for roles that should see the summary
     if (role !== "ADMIN" && role !== "SUPERADMIN") {
+      console.log("[useDashboardSummary] Skipping fetch for role:", role);
       setLoading(false);
       return;
     }
@@ -16,9 +17,12 @@ export function useDashboardSummary(role) {
     async function fetchData() {
       setLoading(true);
       try {
+        console.log("[useDashboardSummary] Fetching dashboard stats...");
         const stats = await getDashboardStats();
+        console.log("[useDashboardSummary] Received stats:", stats);
         setSummary(stats);
       } catch (err) {
+        console.error("[useDashboardSummary] Error fetching stats:", err);
         setError(err.message);
       } finally {
         setLoading(false);

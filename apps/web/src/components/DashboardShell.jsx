@@ -98,6 +98,20 @@ export function DashboardShell({
     }
   ];
 
+  // Debug logging
+  useEffect(() => {
+    if (!loading && summary) {
+      console.log("[DashboardShell] Dashboard metrics:", {
+        tasksDue: mergedSummary.tasksDue,
+        dueTomorrow: mergedSummary.dueTomorrow,
+        pendingApprovals: mergedSummary.pendingApprovals,
+        contentDue: mergedSummary.contentDue,
+        briefsReview: mergedSummary.briefsReview,
+        payoutPending: mergedSummary.payoutTotals?.pending
+      });
+    }
+  }, [summary, loading, mergedSummary]);
+
   useEffect(() => {
     const handler = () => setHash(window.location.hash);
     window.addEventListener("hashchange", handler);

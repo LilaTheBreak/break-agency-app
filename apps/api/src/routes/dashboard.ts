@@ -66,38 +66,76 @@ router.get("/briefs/pending", requireAuth, async (req: Request, res: Response) =
 
 router.get("/stats", requireAuth, async (req: Request, res: Response) => {
   try {
-    // TODO: Implement real task counting once Task model is added to schema
-    const userTasksDue = 0;
-    const userDueTomorrow = 0;
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    // Count pending user approvals (users awaiting onboarding approval)
-    const pendingApprovals = await prisma.user.count({
+    // 1. COUNT TASKS DUE: All open/in_progress CrmTasks across all queues
+    // Task statuses that are "open" or "in_progress"
+    const userTasksDue = await prisma.crmTask.count({
+      where: {
+        status: {
+          in: ["Pending", "In Progress", "Open", "Todo"]
+        }
+      }
+    });
+    console.log("[DASHBOARD] Tasks Due (open/in_progress):", userTasksDue);
+
+    // 2. COUNT DUE TOMORROW: Tasks with dueDate within next 24 hours
+    const userDueTomorrow = await prisma.crmTask.count({
+      where: {
+        dueDate: {
+          gte: now,
+          lte: tomorrow
+        },
+        status: {
+          in: ["Pending", "In Progress", "Open", "Todo"]
+        }
+      }
+    });
+    console.log("[DASHBOARD] Due Tomorrow (24h window):", userDueTomorrow);
+
+    // 3. COUNT PENDING APPROVALS: User signups + content approvals + campaign approvals
+    const pendingUserApprovals = await prisma.user.count({
       where: {
         onboarding_status: "pending_review"
       }
     });
 
-    // Count all deliverables not yet approved as "content due"
+    const pendingContentApprovals = await prisma.approval.count({
+      where: {
+        status: "PENDING"
+      }
+    });
+
+    const pendingApprovals = pendingUserApprovals + pendingContentApprovals;
+    console.log("[DASHBOARD] Pending Approvals (users + content):", pendingApprovals, `(users: ${pendingUserApprovals}, content: ${pendingContentApprovals})`);
+
+    // 4. COUNT CONTENT DUE: All unapproved deliverables
     const contentDue = await prisma.deliverable.count({
       where: {
         approvedAt: null
       }
     });
+    console.log("[DASHBOARD] Content Due (unapproved deliverables):", contentDue);
 
-    // Count deals in contract sent stage as "briefs needing review"
+    // 5. COUNT BRIEFS NEEDING REVIEW: Deals in CONTRACT_SENT stage
     const briefsReview = await prisma.deal.count({
       where: {
         stage: "CONTRACT_SENT"
       }
     });
+    console.log("[DASHBOARD] Briefs Needing Review (stage=CONTRACT_SENT):", briefsReview);
 
-    // Calculate pending payouts
+    // 6. CALCULATE PAYOUTS PENDING: All payments with PENDING or AWAITING_RELEASE status
     const pendingPayments = await prisma.payment.findMany({
       where: {
-        status: "PENDING"
+        status: {
+          in: ["PENDING", "AWAITING_RELEASE"]
+        }
       },
       select: {
         amount: true,
+        currency: true,
         Deal: {
           select: {
             currency: true
@@ -110,10 +148,11 @@ router.get("/stats", requireAuth, async (req: Request, res: Response) => {
       pending: {
         amount: pendingPayments.reduce((sum, p) => sum + p.amount, 0),
         count: pendingPayments.length,
-        currency: "usd",
-        mixedCurrencies: new Set(pendingPayments.map(p => p.Deal.currency.toLowerCase())).size > 1
+        currency: pendingPayments.length > 0 ? (pendingPayments[0].currency || pendingPayments[0].Deal?.currency || "usd") : "usd",
+        mixedCurrencies: new Set(pendingPayments.map(p => (p.currency || p.Deal?.currency || "usd").toLowerCase())).size > 1
       }
     };
+    console.log("[DASHBOARD] Payouts Pending:", payoutTotals.pending.amount, payoutTotals.pending.currency, `(count: ${payoutTotals.pending.count})`);
 
     // Count total active deals
     const totalDeals = await prisma.deal.count();
