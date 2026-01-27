@@ -166,6 +166,7 @@ import dealTimelineRouter from './routes/dealTimeline.js';
 import dealInsightsRouter from './routes/dealInsights.js';
 import dealIntelligenceRouter from './routes/dealIntelligence.js';
 import dealManagementRouter from './routes/dealManagement.js';
+import dealExtractionRouter from './routes/dealExtraction.js';
 // dealPackagesRouter removed - deal packages schema models were removed
 
 // Deliverables / Contracts
@@ -755,6 +756,7 @@ app.use("/api/suitability", suitabilityRouter);
 // ------------------------------------------------------
 app.use("/api/deals", dealManagementRouter); // Deal management (documents, emails, notes, activity)
 app.use("/api/deals", dealsRouter); // Core deal routes
+app.use("/api/deals/extract", dealExtractionRouter); // Deal extraction from emails
 app.use("/api/deal-timeline", dealTimelineRouter);
 app.use("/api/deal-insights", dealInsightsRouter);
 app.use("/api/deals/intelligence", dealIntelligenceRouter);
