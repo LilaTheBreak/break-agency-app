@@ -48,8 +48,12 @@ export function BrandSelect({
   const filteredBrands = useMemo(() => {
     // Ensure brands is always an array
     const brandArray = Array.isArray(brands) ? brands : [];
+    console.log('[BrandSelect] Recalculating filteredBrands, brands:', brandArray, 'searchText:', searchText);
     
-    if (!searchText.trim()) return brandArray;
+    if (!searchText.trim()) {
+      console.log('[BrandSelect] No search text, returning all brands:', brandArray);
+      return brandArray;
+    }
     
     const search = searchText.toLowerCase().trim();
     
@@ -70,7 +74,9 @@ export function BrandSelect({
              !text.split(' ').some(part => part.startsWith(search));
     });
     
-    return [...startsWithMatches, ...containsMatches];
+    const result = [...startsWithMatches, ...containsMatches];
+    console.log('[BrandSelect] Filtered brands result:', result);
+    return result;
   }, [brands, searchText]);
 
   // Check if search text matches any existing brand (case-insensitive)
@@ -193,61 +199,64 @@ export function BrandSelect({
       </button>
 
       {/* Dropdown menu - Using portal to break out of scrollable container */}
-      {isOpen && !disabled && createPortal(
-        <div 
-          style={{
-            position: "fixed",
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
-            zIndex: 9999
-          }}
-          className="rounded-lg border border-brand-black/10 bg-brand-white shadow-xl"
-        >
-          {/* Search input */}
-          <div className="border-b border-brand-black/10 p-3 sticky top-0 bg-brand-white z-10">
-            <input
-              autoFocus
-              type="text"
-              placeholder="Search brands (e.g., 'nut' finds Neutrogena)…"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full rounded-lg px-3 py-2 text-sm border border-brand-black/10 focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
-            />
-          </div>
-
-          {/* Error message */}
-          {createError && (
-            <div className="px-4 py-2 text-xs text-red-600 bg-red-50 border-b border-red-200">
-              <p className="font-medium">Error creating brand:</p>
-              <p>{createError}</p>
-            </div>
-          )}
-
-          {/* Brand list or empty state */}
-          <div className="max-h-72 overflow-y-auto">
-            {isLoading ? (
-              <div className="px-4 py-8 text-center text-sm text-brand-black/50">
-                <p>Loading brands...</p>
+      {isOpen && !disabled && (
+        <>
+          {console.log('[BrandSelect] Dropdown is open, rendering portal. filteredBrands:', filteredBrands, 'isLoading:', isLoading)}
+          {createPortal(
+            <div 
+              style={{
+                position: "fixed",
+                top: `${dropdownPosition.top}px`,
+                left: `${dropdownPosition.left}px`,
+                width: `${dropdownPosition.width}px`,
+                zIndex: 9999
+              }}
+              className="rounded-lg border border-brand-black/10 bg-brand-white shadow-xl"
+            >
+              {/* Search input */}
+              <div className="border-b border-brand-black/10 p-3 sticky top-0 bg-brand-white z-10">
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Search brands (e.g., 'nut' finds Neutrogena)…"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-full rounded-lg px-3 py-2 text-sm border border-brand-black/10 focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/20"
+                />
               </div>
-            ) : filteredBrands.length > 0 ? (
-              filteredBrands.map((brand) => (
-                <button
-                  key={brand.id}
-                  onClick={() => handleSelectBrand(brand.id)}
-                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-linen/60 transition ${
-                    value === brand.id ? "bg-brand-red/10 text-brand-red font-medium" : "text-brand-black"
-                  }`}
-                >
-                  <span className="font-medium">{brand.name || brand.brandName}</span>
-                </button>
-              ))
-            ) : searchText.trim() ? (
-              <div className="px-4 py-4 text-sm text-brand-black/60 text-center">
-                <p>No brands match "{searchText}"</p>
-                {shouldShowCreate && (
-                  <p className="text-xs text-brand-black/40 mt-2">Create it below</p>
+
+              {/* Error message */}
+              {createError && (
+                <div className="px-4 py-2 text-xs text-red-600 bg-red-50 border-b border-red-200">
+                  <p className="font-medium">Error creating brand:</p>
+                  <p>{createError}</p>
+                </div>
+              )}
+
+              {/* Brand list or empty state */}
+              <div className="max-h-72 overflow-y-auto">
+                {isLoading ? (
+                  <div className="px-4 py-8 text-center text-sm text-brand-black/50">
+                    <p>Loading brands...</p>
+                  </div>
+                ) : filteredBrands.length > 0 ? (
+                  filteredBrands.map((brand) => (
+                    <button
+                      key={brand.id}
+                      onClick={() => handleSelectBrand(brand.id)}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-linen/60 transition ${
+                        value === brand.id ? "bg-brand-red/10 text-brand-red font-medium" : "text-brand-black"
+                      }`}
+                    >
+                      <span className="font-medium">{brand.name || brand.brandName}</span>
+                    </button>
+                  ))
+                ) : searchText.trim() ? (
+                  <div className="px-4 py-4 text-sm text-brand-black/60 text-center">
+                    <p>No brands match "{searchText}"</p>
+                    {shouldShowCreate && (
+                      <p className="text-xs text-brand-black/40 mt-2">Create it below</p>
                 )}
               </div>
             ) : (
@@ -268,9 +277,11 @@ export function BrandSelect({
                 {isCreating ? "Creating..." : `Create new brand "${searchText.trim()}"`}
               </button>
             )}
-          </div>
-        </div>,
-        document.body
+              </div>
+            </div>,
+            document.body
+          )}
+        </>
       )}
 
       {/* Error display below dropdown (if not in dropdown) */}
