@@ -10,8 +10,12 @@ import { useDealExtraction } from "../hooks/useDealExtraction.js";
 import { useEffect, useState } from "react";
 import { useNegotiationInsights } from "../hooks/useNegotiationInsights.js";
 import { useCampaignBuilder } from "../hooks/useCampaignBuilder.js";
+import { DashboardShell } from "../components/DashboardShell.jsx";
+import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 
-export default function DealsDashboard() {
+export default function DealsDashboard({ session }) {
+  const config = CONTROL_ROOM_PRESETS.talent;
+  const navLinks = config.tabs || [];
   const { filters, update } = useDealFilters();
   const auth = useAuth();
   const { listDrafts } = useDealExtraction();
@@ -64,19 +68,26 @@ export default function DealsDashboard() {
   if (!auth.user) return null;
 
   return (
-    <div className="space-y-4 px-4 py-6">
-      <div>
-        <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Deals</p>
-        <h1 className="font-display text-3xl uppercase text-brand-black">Pipeline overview</h1>
-      </div>
+    <DashboardShell
+      title="Deals"
+      subtitle="Manage your deal pipeline and negotiations"
+      role={session?.user?.role}
+      navLinks={navLinks}
+      session={session}
+    >
+      <div className="space-y-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Deals</p>
+          <h1 className="font-display text-3xl uppercase text-brand-black">Pipeline overview</h1>
+        </div>
 
-      <DealsFilters filters={filters} update={update} talents={allTalents} brands={allBrands} />
+        <DealsFilters filters={filters} update={update} talents={allTalents} brands={allBrands} />
 
-      {status === "error" ? <p className="text-sm text-brand-red">Unable to load deals.</p> : null}
+        {status === "error" ? <p className="text-sm text-brand-red">Unable to load deals.</p> : null}
 
-      <DealsTable deals={deals} />
+        <DealsTable deals={deals} />
 
-      <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
+        <div className="rounded-3xl border border-brand-black/10 bg-brand-linen/60 p-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-brand-red">Deal drafts</p>
@@ -128,7 +139,8 @@ export default function DealsDashboard() {
             ))}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </DashboardShell>
   );
 }
