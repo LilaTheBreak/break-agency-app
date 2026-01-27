@@ -111,6 +111,46 @@ model Approval {
   @@index([approverId])
 }
 
+// Admin Task Management System
+// Super Admin to Super Admin task assignment with real-time tracking
+model AdminTask {
+  id               String    @id @default(cuid())
+  title            String
+  description      String?
+  
+  // Assignment
+  assignedByUserId String
+  assignedToUserId String
+  
+  // Context/Linking
+  relatedType      String?   // "talent" | "brand" | "deal" | "campaign" | "internal"
+  relatedId        String?
+  
+  // Task properties
+  priority         String    @default("medium") // "low" | "medium" | "high"
+  status           String    @default("pending") // "pending" | "in_progress" | "completed"
+  dueAt            DateTime?
+  
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  completedAt      DateTime?
+  
+  // Relations
+  AssignedBy       User      @relation("AdminTaskAssignedBy", fields: [assignedByUserId], references: [id], onDelete: Cascade)
+  AssignedTo       User      @relation("AdminTaskAssignedTo", fields: [assignedToUserId], references: [id], onDelete: Cascade)
+  
+  // Indexes for common queries
+  @@index([assignedToUserId])
+  @@index([assignedByUserId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueAt])
+  @@index([relatedType, relatedId])
+  @@index([createdAt])
+  @@unique([id])
+}
+
 model AiTokenLog {
   id               String   @id
   userId           String?
@@ -1690,6 +1730,9 @@ model Talent {
   BlackoutDates           TalentBlackoutDate[]
   HealthScoreSnapshots    HealthScoreSnapshot[]
 
+  // Growth Initiatives System
+  GrowthInitiatives       GrowthInitiative[]
+
   // Enterprise Operating System relations
   EnterpriseValueMetrics  EnterpriseValueMetrics?
   RevenueStreams          RevenueStream[]
@@ -1893,6 +1936,8 @@ model User {
   CreatorTask                             CreatorTask[]
   CrmTasksCreated                         CrmTask[]                 @relation("TaskCreatedBy")
   CrmTasksOwned                           CrmTask[]                 @relation("TaskOwner")
+  AdminTasksAssignedBy                    AdminTask[]               @relation("AdminTaskAssignedBy")
+  AdminTasksAssignedTo                    AdminTask[]               @relation("AdminTaskAssignedTo")
   Deal                                    Deal[]
   DealTimeline                            DealTimeline[]
   EmailFeedback                           EmailFeedback[]
@@ -1948,6 +1993,11 @@ model User {
   OutreachCampaignsCreated                OutreachCampaign[]      @relation("OutreachCampaignCreatedBy")
   OutreachCampaignsSent                   OutreachCampaign[]      @relation("OutreachCampaignSender")
   OutreachDraftsApproved                  OutreachDraft[]
+  
+  // GROWTH INITIATIVES RELATIONS (NEW)
+  GrowthInitiativesCreated                GrowthInitiative[]      @relation("GrowthInitiativeCreator")
+  GrowthInputsAsContributor               GrowthInput[]           @relation("GrowthInputContributor")
+  GrowthOutputsAsContributor              GrowthOutput[]          @relation("GrowthOutputContributor")
 }
 
 model WellnessCheckin {
@@ -3856,4 +3906,167 @@ model HealthScoreSnapshot {
 
 // ============================================================================
 // END HEALTH SCORE TRACKING
+// ============================================================================
+
+// ============================================================================
+// GROWTH INITIATIVES SYSTEM
+// ============================================================================
+// Strategic initiatives for talent growth tracking
+// Reframes activity as strategic investment with clear inputs → outputs → impact
+
+model GrowthInitiative {
+  id                String    @id @default(cuid())
+  talentId          String
+  talent            Talent    @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  
+  // Strategic definition
+  name              String
+  description       String?
+  platforms         String[]  // ["LinkedIn", "Instagram", "Press", "Mixed"]
+  objective         String    // "authority_building", "inbound_brand_leads", "higher_deal_value", "long_term_positioning"
+  
+  // Timeline
+  startDate         DateTime
+  endDate           DateTime?
+  
+  // Budget
+  monthlyBudget     Float?
+  totalBudget       Float?
+  
+  // Status & ownership
+  status            String    @default("active") // "active", "testing", "completed", "killed"
+  owner             String    @default("both") // "agent", "talent", "both"
+  
+  // Tracking
+  createdByUserId   String
+  createdByUser     User      @relation("GrowthInitiativeCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  
+  // Relations
+  inputs            GrowthInput[]
+  outputs           GrowthOutput[]
+  performance       GrowthPerformance[]
+  businessImpacts   BusinessImpact[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([talentId])
+  @@index([status])
+  @@index([objective])
+  @@index([createdAt])
+}
+
+// Inputs: cost drivers for each initiative
+model GrowthInput {
+  id                String    @id @default(cuid())
+  initiativeId      String
+  initiative        GrowthInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  
+  // Type of input
+  type              String    // "contributor", "paid_tool", "time_investment", "one_off_cost"
+  name              String    // "LinkedIn Manager", "Editor", "Strategy Session", etc.
+  
+  // Optional contributor link
+  contributorUserId String?
+  contributor       User?     @relation("GrowthInputContributor", fields: [contributorUserId], references: [id], onDelete: SetNull)
+  
+  // Costs
+  costMonthly       Float?
+  costOneOff        Float?
+  
+  // Duration
+  startDate         DateTime?
+  endDate           DateTime?
+  
+  notes             String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([initiativeId])
+  @@index([type])
+}
+
+// Outputs: what was produced by the initiative
+model GrowthOutput {
+  id                String    @id @default(cuid())
+  initiativeId      String
+  initiative        GrowthInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  
+  // What was created
+  platform          String    // "LinkedIn", "Instagram", "Press", "Other"
+  format            String    // "post", "video", "article", "profile_change", "outreach"
+  
+  // Who created it (optional)
+  contributorUserId String?
+  contributor       User?     @relation("GrowthOutputContributor", fields: [contributorUserId], references: [id], onDelete: SetNull)
+  
+  // Content details
+  title             String?
+  url               String?
+  publishedAt       DateTime?
+  notes             String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([initiativeId])
+  @@index([platform])
+  @@index([format])
+}
+
+// Performance: metrics for each initiative
+model GrowthPerformance {
+  id                String    @id @default(cuid())
+  initiativeId      String
+  initiative        GrowthInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  
+  // Metrics
+  totalViews        Int?
+  avgEngagement     Float?
+  followerGrowth    Int?
+  profileVisits     Int?
+  inboundMessages   Int?
+  brandEnquiries    Int?
+  speakingInvites   Int?
+  
+  // Period
+  periodStart       DateTime
+  periodEnd         DateTime
+  
+  notes             String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([initiativeId])
+  @@index([periodStart])
+}
+
+// Business Impact: agent insights on deals, leads, and value
+model BusinessImpact {
+  id                String    @id @default(cuid())
+  initiativeId      String
+  initiative        GrowthInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  
+  // Deal influence
+  dealsInfluencedIds String[] @default([]) // JSON array of deal IDs
+  inboundLeads      Int?
+  
+  // Market positioning
+  brandCategoriesUnlocked String[]
+  avgDealValueChangePct Float?
+  
+  // Agent insight
+  agentNotes        String?
+  
+  recordedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([initiativeId])
+}
+
+// ============================================================================
+// END GROWTH INITIATIVES SYSTEM
 // ============================================================================

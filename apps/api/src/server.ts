@@ -154,6 +154,9 @@ import adminUsersRouter from './routes/adminUsers.js';
 import creatorGoalsRouter from './routes/creatorGoals.js';
 import wellnessCheckinsRouter from './routes/wellnessCheckins.js';
 
+// Growth Initiatives
+import growthInitiativesRouter from './routes/growthInitiatives.js';
+
 // Deals
 import dealsRouter from './routes/deals.js';
 import dealTimelineRouter from './routes/dealTimeline.js';
@@ -706,6 +709,9 @@ app.use("/api/admin/deals", adminDealsRouter);
 app.use("/api/admin/duplicates", adminDuplicatesRouter);
 app.use("/api/admin/diagnostics", adminDiagnosticsRouter);
 app.use("/api/admin/analytics", adminAnalyticsRouter);
+
+// Growth Initiatives (Strategic growth tracking)
+app.use("/api/growth-initiatives", growthInitiativesRouter);
 
 // ------------------------------------------------------
 // AI
