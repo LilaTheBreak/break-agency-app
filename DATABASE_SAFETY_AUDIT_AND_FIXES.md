@@ -203,7 +203,7 @@ No GitHub Actions workflows exist. Empty `.github/workflows/` directory.
 
 ### Vulnerability 1: No Code-Level Production Guard
 **Severity**: 🔴 CRITICAL  
-**Risk**: If someone manually runs `npm run db:safe-reset` with `FORCE_DB_RESET=true`, production could be wiped
+**Risk**: If someone manually runs db reset script, production could be wiped
 
 **Current Protection**: Only environmental confirmation (weak)  
 **Needed**: Code-level hard block
@@ -398,70 +398,9 @@ validateDatabaseEnvironment();
 
 **Create**: `apps/api/src/lib/dbAuditLog.ts`
 
-```typescript
-import fs from 'fs';
-import path from 'path';
+(See DATABASE_SAFETY_HARDENING_COMPLETE.md for implementation details)
 
-const AUDIT_LOG_FILE = path.join(process.cwd(), 'logs', 'db-operations.log');
-
-export interface DatabaseAuditEvent {
-  timestamp: string;
-  operation: 'MIGRATE_DEPLOY' | 'MIGRATE_DEV' | 'DB_PUSH' | 'DB_RESET' | 'DB_SEED' | 'QUERY_EXECUTION';
-  environment: string;
-  nodeEnv: string;
-  status: 'STARTED' | 'COMPLETED' | 'FAILED' | 'BLOCKED';
-  reason?: string;
-  details: Record<string, any>;
-}
-
-export function logDatabaseEvent(event: DatabaseAuditEvent): void {
-  const entry = {
-    ...event,
-    timestamp: new Date().toISOString(),
-    commitHash: process.env.GIT_COMMIT || 'unknown',
-    nodeVersion: process.version,
-    deploymentId: process.env.DEPLOYMENT_ID || 'unknown',
-  };
-  
-  // Console log (picked up by logging service)
-  console.log('[DB_AUDIT]', JSON.stringify(entry));
-  
-  // Also write to local file for backup
-  try {
-    const logDir = path.dirname(AUDIT_LOG_FILE);
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirSync(logDir, { recursive: true });
-    }
-    fs.appendFileSync(AUDIT_LOG_FILE, JSON.stringify(entry) + '\n');
-  } catch (err) {
-    console.error('[DB_AUDIT_ERROR]', 'Failed to write audit log:', err);
-  }
-}
-
-export function getRecentDatabaseEvents(hours: number = 24): DatabaseAuditEvent[] {
-  try {
-    if (!fs.existsSync(AUDIT_LOG_FILE)) return [];
-    
-    const content = fs.readFileSync(AUDIT_LOG_FILE, 'utf-8');
-    const lines = content.split('\n').filter(Boolean);
-    const cutoff = Date.now() - hours * 60 * 60 * 1000;
-    
-    return lines
-      .map(line => {
-        try {
-          const json = JSON.parse(line.replace('[DB_AUDIT] ', ''));
-          return json;
-        } catch {
-          return null;
-        }
-      })
-      .filter((e): e is DatabaseAuditEvent => e !== null && new Date(e.timestamp).getTime() > cutoff);
-  } catch (err) {
-    console.error('[DB_AUDIT_ERROR]', 'Failed to read audit log:', err);
-    return [];
-  }
-}
-```
+Captures: timestamp, commit hash, environment, status, deployment ID
 
 ### Safeguard 6: Separate Neon Branches (Recommendation)
 
@@ -477,36 +416,27 @@ Each should have its own DATABASE_URL with branch-specific credentials.
 
 ---
 
-## IMPLEMENTATION STEPS (DO THESE NOW)
+## Implementation Steps (DO THESE NOW)
 
 ### Step 1: Create dbGuards.ts
-Create `apps/api/src/lib/dbGuards.ts` with code from Safeguard 1 above
+See DATABASE_SAFETY_HARDENING_COMPLETE.md for details
 
-### Step 2: Create dbAuditLog.ts  
-Create `apps/api/src/lib/dbAuditLog.ts` with code from Safeguard 5 above
+### Step 2: Create audit logging  
+See DATABASE_SAFETY_HARDENING_COMPLETE.md for details
 
 ### Step 3: Update safe-db-reset.ts
-Add hard production block from Safeguard 2 above
+Add hard production block and audit logging
 
 ### Step 4: Update server.ts
-Add validation function from Safeguard 4 above
+Add validation function on server startup
 
 ### Step 5: Update package.json
-Update scripts with warnings from Safeguard 3 above
+Update scripts with warnings
 
 ### Step 6: Commit & Deploy
 ```bash
 git add -A
-git commit -m "chore: Add hard database safety guards and audit logging
-
-- Block destructive operations in production at code level
-- Add comprehensive audit logging for all DB operations
-- Validate database environment on server startup
-- Add warnings to dangerous npm scripts
-- Implement environment-specific protections
-
-Closes: Prevent accidental production database wipes"
-
+git commit -m "chore: Add hard database safety guards"
 git push
 railway up
 ```
