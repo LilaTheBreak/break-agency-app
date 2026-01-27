@@ -17,10 +17,12 @@ import { z } from 'zod';
 
 const router = express.Router();
 
-// Extend Express Request to include session userId
+// Extend Express Request to include user from auth middleware
 interface AuthRequest extends Request {
-  session?: {
-    userId: string;
+  user?: {
+    id: string;
+    email: string;
+    role: string;
   };
 }
 
@@ -63,7 +65,7 @@ const step6Schema = z.object({
  */
 router.get('/current', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -90,7 +92,7 @@ router.get('/current', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/start', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -124,7 +126,7 @@ router.post('/start', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/step/1', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -160,7 +162,7 @@ router.post('/step/1', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/step/2', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -193,7 +195,7 @@ router.post('/step/2', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/step/3', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -225,7 +227,7 @@ router.post('/step/3', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/step/4', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -265,7 +267,7 @@ router.post('/step/4', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/step/5', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -327,7 +329,7 @@ router.post('/step/5', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/step/6', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -374,7 +376,7 @@ router.post('/step/6', requireAuth, async (req: AuthRequest, res: Response) => {
  */
 router.post('/skip/:stepNumber', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.session?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
