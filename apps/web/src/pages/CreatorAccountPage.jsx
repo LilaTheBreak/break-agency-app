@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { apiFetch } from "../services/apiClient.js";
 import toast from "react-hot-toast";
 import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 
@@ -36,7 +37,7 @@ export function CreatorAccountPage({ session }) {
   const handleSavePreferences = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch("/api/talent/preferences", {
+      const response = await apiFetch("/api/talent/preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(preferences)
@@ -57,7 +58,7 @@ export function CreatorAccountPage({ session }) {
   const handleSaveProfile = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch("/api/talent/profile", {
+      const response = await apiFetch("/api/talent/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profileSettings)

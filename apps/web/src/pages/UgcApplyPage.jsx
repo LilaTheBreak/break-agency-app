@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../services/apiClient.js';
 
 export default function UgcApplyPage() {
   const [formData, setFormData] = useState({
@@ -15,7 +16,7 @@ export default function UgcApplyPage() {
 
   useEffect(() => {
     // Fetch existing application to pre-fill form
-    fetch('/api/ugc/application/my')
+    apiFetch('/api/ugc/application/my')
       .then(res => res.ok && res.json())
       .then(data => {
         if (data) {
@@ -33,7 +34,7 @@ export default function UgcApplyPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/ugc/apply', {
+      const res = await apiFetch('/api/ugc/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

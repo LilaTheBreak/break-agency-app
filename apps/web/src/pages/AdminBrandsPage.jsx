@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { apiFetch } from "../services/apiClient.js";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { BrandChip } from "../components/BrandChip.jsx";
@@ -1218,7 +1219,7 @@ export function AdminBrandsPage({ session }) {
     setAutoDiscoveringBrands(true);
     try {
       // First, check if Gmail is connected
-      const statusResponse = await fetch('/api/gmail/auth/status', {
+      const statusResponse = await apiFetch('/api/gmail/auth/status', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1237,7 +1238,7 @@ export function AdminBrandsPage({ session }) {
       }
       
       // Gmail is connected, proceed with discovery
-      const response = await fetch('/api/gmail/inbox/auto-discover-brands', {
+      const response = await apiFetch('/api/gmail/inbox/auto-discover-brands', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../services/apiClient.js';
 
 export default function UgcListingEditorPage() {
   const [formData, setFormData] = useState({
@@ -17,7 +18,7 @@ export default function UgcListingEditorPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await fetch('/api/ugc/listings', {
+      await apiFetch('/api/ugc/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
