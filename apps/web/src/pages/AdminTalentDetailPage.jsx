@@ -1431,7 +1431,7 @@ export function AdminTalentDetailPage() {
 
   if (loading) {
     return (
-      <DashboardShell title="Talent Management" navLinks={ADMIN_NAV_LINKS}>
+      <DashboardShell title="Talent Management" navLinks={[]}>
         <section className="rounded-3xl border border-brand-black/10 bg-brand-white p-8 text-center">
           <p className="text-brand-black/60">Loading talent details...</p>
         </section>
@@ -1441,7 +1441,7 @@ export function AdminTalentDetailPage() {
 
   if (error || !talent) {
     return (
-      <DashboardShell title="Talent Management" navLinks={ADMIN_NAV_LINKS}>
+      <DashboardShell title="Talent Management" navLinks={[]}>
         <section className="rounded-3xl border border-brand-red/20 bg-brand-red/10 p-8 text-center">
           <AlertCircle className="h-12 w-12 text-brand-red mx-auto mb-4" />
           <p className="text-brand-red">{error || "Talent not found"}</p>
