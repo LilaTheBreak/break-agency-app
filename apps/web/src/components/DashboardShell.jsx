@@ -311,15 +311,15 @@ export function DashboardShell({
                   </button>
                 ) : null}
               </div>
-              {/* Navigation items - always visible */}
-              <div className={navCollapsed ? "flex justify-center" : "block"}>
-                {navCollapsed ? null : (
+              {/* Navigation items - only visible when expanded */}
+              {!navCollapsed && (
+                <div className="block">
                   <p className="mt-4 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">Navigation</p>
-                )}
-                <div className={navCollapsed ? "mt-3 flex flex-col gap-2 items-center" : "mt-3 flex flex-col gap-2"}>
-                  {renderNavigation()}
+                  <div className="mt-3 flex flex-col gap-2">
+                    {renderNavigation()}
+                  </div>
                 </div>
-              </div>
+              )}
             </aside>
           )}
           <div className="section-wrapper elevation-1 transition-elevation relative min-w-0 flex-1 p-4 sm:p-6 overflow-hidden flex flex-col">
