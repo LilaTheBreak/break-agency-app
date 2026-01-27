@@ -12,6 +12,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import { apiFetch } from '../services/apiClient.js';
 import BrandOnboardingStep1 from '../components/BrandOnboarding/Step1Basics';
 import BrandOnboardingStep2 from '../components/BrandOnboarding/Step2Context';
@@ -23,6 +24,7 @@ import BrandOnboardingProgress from '../components/BrandOnboarding/Progress';
 
 const BrandOnboardingPage = () => {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,6 +95,8 @@ const BrandOnboardingPage = () => {
 
       // Check if onboarding is complete (Step 6)
       if (currentStep === 6) {
+        // Refresh user to update onboarding_status to 'completed'
+        await refreshUser();
         // Redirect to brand dashboard
         navigate('/brand/dashboard');
         return;
