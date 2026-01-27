@@ -201,7 +201,7 @@ export function BrandSelect({
       {/* Dropdown menu - Using portal to break out of scrollable container */}
       {isOpen && !disabled && (
         <>
-          {console.log('[BrandSelect] Dropdown is open, rendering portal. filteredBrands:', filteredBrands, 'isLoading:', isLoading)}
+          {console.log('[BrandSelect] Dropdown is open, rendering portal. filteredBrands:', filteredBrands, 'isLoading:', isLoading, 'position:', dropdownPosition)}
           {createPortal(
             <div 
               style={{
@@ -241,17 +241,20 @@ export function BrandSelect({
                     <p>Loading brands...</p>
                   </div>
                 ) : filteredBrands.length > 0 ? (
-                  filteredBrands.map((brand) => (
-                    <button
-                      key={brand.id}
-                      onClick={() => handleSelectBrand(brand.id)}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-linen/60 transition ${
-                        value === brand.id ? "bg-brand-red/10 text-brand-red font-medium" : "text-brand-black"
-                      }`}
-                    >
-                      <span className="font-medium">{brand.name || brand.brandName}</span>
-                    </button>
-                  ))
+                  <>
+                    {console.log('[BrandSelect] Rendering brand list items, count:', filteredBrands.length)}
+                    {filteredBrands.map((brand) => (
+                      <button
+                        key={brand.id}
+                        onClick={() => handleSelectBrand(brand.id)}
+                        className={`w-full text-left px-4 py-2.5 text-sm hover:bg-brand-linen/60 transition ${
+                          value === brand.id ? "bg-brand-red/10 text-brand-red font-medium" : "text-brand-black"
+                        }`}
+                      >
+                        <span className="font-medium">{brand.name || brand.brandName}</span>
+                      </button>
+                    ))}
+                  </>
                 ) : searchText.trim() ? (
                   <div className="px-4 py-4 text-sm text-brand-black/60 text-center">
                     <p>No brands match "{searchText}"</p>
