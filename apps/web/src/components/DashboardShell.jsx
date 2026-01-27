@@ -100,7 +100,7 @@ export function DashboardShell({
 
   // Debug logging
   useEffect(() => {
-    if (!loading && summary) {
+    if (!summaryLoading && summary) {
       console.log("[DashboardShell] Dashboard metrics:", {
         tasksDue: mergedSummary.tasksDue,
         dueTomorrow: mergedSummary.dueTomorrow,
@@ -110,7 +110,7 @@ export function DashboardShell({
         payoutPending: mergedSummary.payoutTotals?.pending
       });
     }
-  }, [summary, loading, mergedSummary]);
+  }, [summary, summaryLoading, mergedSummary]);
 
   useEffect(() => {
     const handler = () => setHash(window.location.hash);
