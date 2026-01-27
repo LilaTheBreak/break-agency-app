@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardShell } from "../components/DashboardShell.jsx";
-import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { apiFetch } from "../services/apiClient.js";
 import { fetchTalent, createDeal, updateDeal } from "../services/crmClient.js";
 import { BrandSelect } from "../components/BrandSelect.jsx";
@@ -1462,7 +1461,7 @@ export function AdminTalentDetailPage() {
     <DashboardShell
       title="Talent Management"
       subtitle={`Managing ${talent.displayName || talent.name}`}
-      navLinks={ADMIN_NAV_LINKS}
+      navLinks={[]}
     >
       {/* Navigation Bar */}
       <div className="mb-6 flex items-center justify-between">
