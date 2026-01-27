@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { apiFetch } from '../lib/apiFetch.js';
+import { apiFetch } from '../services/apiClient.js';
 
 /**
  * useGrowthInitiatives

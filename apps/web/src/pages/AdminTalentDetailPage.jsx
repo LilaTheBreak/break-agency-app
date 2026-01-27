@@ -17,7 +17,7 @@ import {
   TrendingUp, Briefcase, FileText, Mail, 
   CheckSquare, DollarSign, FileEdit, 
   ArrowLeft, Archive, AlertCircle, Plus, Trash2, MoreVertical, ShoppingCart, BarChart3, Lock, Calendar, Target,
-  Upload, Download, Image, File, Video
+  Upload, Download, Image, File, Video, Zap
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { DealChip } from "../components/DealChip.jsx";
@@ -35,6 +35,7 @@ import { ContactInformationSection } from "../components/AdminTalent/ContactInfo
 import { MeetingSection } from "../components/AdminTalent/MeetingSection.jsx";
 import { HierarchicalTabNavigation } from "../components/AdminTalent/HierarchicalTabNavigation.jsx";
 import { AISuggestedOpportunitiesSection } from "../components/AdminTalent/AISuggestedOpportunitiesSection.jsx";
+import { TalentGrowthInitiativesDashboard } from "../components/AdminTalent/TalentGrowthInitiativesDashboard.jsx";
 import DealFilterPanel from "../components/AdminTalent/DealFilterPanel.jsx";
 import DealManagementPanel from "../components/AdminTalent/DealManagementPanel.jsx";
 import EnterpriseValueDashboard from "../components/EnterpriseValueDashboard.tsx";
@@ -78,6 +79,7 @@ const TAB_GROUPS = [
       { id: "contact-information", label: "Contact Information", icon: Lock },
       { id: "social-intelligence", label: "Social Intelligence", icon: BarChart3 },
       { id: "goals", label: "Goals", icon: Target },
+      { id: "growth-initiatives", label: "Growth Initiatives", icon: Zap },
       { id: "notes", label: "Notes & History", icon: FileEdit },
     ],
   },
@@ -1704,6 +1706,9 @@ export function AdminTalentDetailPage() {
         )}
         {activeTab === "goals" && (
           <GoalsTab talentId={talentId} userId={talent?.linkedUserId} />
+        )}
+        {activeTab === "growth-initiatives" && (
+          <TalentGrowthInitiativesDashboard talentId={talentId} />
         )}
         {activeTab === "deals" && (
           <DealsTab talent={talent} onDealCreated={fetchTalentData} />

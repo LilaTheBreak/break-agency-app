@@ -1,5 +1,24 @@
 import React, { useState } from 'react';
-import { formatDate, formatCurrency } from '../lib/utils.js';
+
+/**
+ * Utility Functions
+ */
+const formatDate = (date) => {
+  if (!date) return '—';
+  return new Date(date).toLocaleDateString('en-GB', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const formatCurrency = (amount, currency = 'GBP') => {
+  if (!amount) return '—';
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: currency,
+  }).format(amount);
+};
 
 /**
  * InitiativeCard
