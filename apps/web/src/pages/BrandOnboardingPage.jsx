@@ -91,6 +91,13 @@ const BrandOnboardingPage = () => {
         return;
       }
 
+      // Check if onboarding is complete (Step 6)
+      if (currentStep === 6) {
+        // Redirect to brand dashboard
+        navigate('/brand/dashboard');
+        return;
+      }
+
       // Move to next step
       setCurrentStep(currentStep + 1);
     } catch (err) {
