@@ -55,10 +55,13 @@ export function ContactSelect({
   // Advanced search: starts-with + contains matching (case-insensitive)
   // Searches firstName, lastName, and email fields
   const filteredContacts = useMemo(() => {
-    if (!searchText.trim()) return contacts || [];
+    // Ensure contacts is always an array
+    const contactArray = Array.isArray(contacts) ? contacts : [];
+    
+    if (!searchText.trim()) return contactArray;
     
     const search = searchText.toLowerCase().trim();
-    const contactArray = (contacts || []).filter(c => c); // Filter out nulls
+    const filtered = contactArray.filter(c => c); // Filter out nulls
     
     // Helper to get searchable text from contact object
     const getSearchText = (contact) => {
