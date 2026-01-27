@@ -2078,7 +2078,14 @@ function DealsTab({ talent, onDealCreated }) {
   const [updateError, setUpdateError] = useState("");
   
   // Use canonical brands hook (single source of truth)
-  const { brands, isLoading: brandsLoading, createBrand } = useBrands();
+  const { brands, isLoading: brandsLoading, createBrand, refresh: refreshBrands } = useBrands();
+
+  // Refresh brands when create modal opens to ensure fresh data
+  useEffect(() => {
+    if (createOpen && refreshBrands) {
+      refreshBrands().catch(err => console.error('Failed to refresh brands:', err));
+    }
+  }, [createOpen, refreshBrands]);
   
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState(null);
