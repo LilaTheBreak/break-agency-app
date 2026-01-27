@@ -36,8 +36,10 @@ export function ProtectedRoute({ allowed = [], children }) {
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
 
   if (!isAdmin && needsOnboarding && !isOnboardingRoute) {
+    // Route to appropriate onboarding based on accountType
+    const onboardingPath = user.accountType === "brand" ? "/onboarding/brand" : "/onboarding";
     const search = userRole ? `?role=${userRole}` : "";
-    return <Navigate to={`/onboarding${search}`} replace />;
+    return <Navigate to={`${onboardingPath}${search}`} replace />;
   }
 
   // Check if user's role is in the allowed list

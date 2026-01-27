@@ -300,6 +300,7 @@ router.post("/signup", authRateLimiter, async (req: Request, res: Response) => {
         email: normalizedEmail,
         password: hashed,
         role: role, // Required role from signup
+        accountType: role === "BRAND" ? "brand" : role === "FOUNDER" ? "founder" : "creator",
         onboarding_status: "in_progress",
         updatedAt: new Date()
       },

@@ -52,8 +52,9 @@ export default function SignupPage() {
         status: "in_progress"
       });
       
-      // Navigate directly to onboarding
-      navigate(`/onboarding?role=${form.role}`, { replace: true });
+      // Navigate to appropriate onboarding based on role
+      const onboardingPath = form.role === "BRAND" ? "/onboarding/brand" : "/onboarding";
+      navigate(`${onboardingPath}?role=${form.role}`, { replace: true });
     } catch (err) {
       console.log('[SIGNUP] Error caught:', err);
       console.log('[SIGNUP] Error code:', err?.code);
