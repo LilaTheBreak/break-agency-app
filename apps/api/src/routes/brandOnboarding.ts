@@ -257,13 +257,10 @@ router.post('/step/4', requireAuth, async (req: AuthRequest, res: Response) => {
 
 /**
  * POST /api/brands/onboarding/step/5
- * Step 5: Founder-Led Check (CRITICAL BRANCHING LOGIC)
+ * Step 5: Founder-Led Brand Growth
  * 
- * If user selects "Founder-led brand building" AND role = Founder/Co-Founder:
- *   → Redirect to Founder Onboarding Flow
- *   → Persist brand data
- * Otherwise:
- *   → Continue to step 6
+ * Determines if the person is a founder wanting to grow their brand
+ * through founder-led social & marketing strategy.
  */
 router.post('/step/5', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -302,6 +299,7 @@ router.post('/step/5', requireAuth, async (req: AuthRequest, res: Response) => {
       where: { userId },
       data: {
         wantsFounderLed: validated.wantsFounderLed,
+        isBrandFounder: validated.wantsFounderLed ? true : false,
         founderLedRedirectedAt: shouldRedirectToFounder ? new Date() : null,
         currentStep: nextStep,
       },

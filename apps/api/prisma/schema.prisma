@@ -4104,6 +4104,7 @@ model BrandProfile {
 
   // Founder-Led Check (Step 5)
   wantsFounderLed         Boolean   @default(false)
+  isBrandFounder          Boolean   @default(false)
   founderLedRedirectedAt  DateTime?
 
   // Activations & Experiences (Step 6)

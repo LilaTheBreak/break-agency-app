@@ -1,11 +1,9 @@
 /**
- * Brand Onboarding - Step 5: Founder-Led Check
+ * Brand Onboarding - Step 5: Founder-Led Brand Growth
  * CRITICAL BRANCHING LOGIC
  * 
- * If user:
- *   - Selects "Want Founder-Led Brand Building"
- *   - AND Role = Founder/Co-Founder
- *   → Automatically redirect to Founder Onboarding Flow
+ * This step determines if the person signing up is a founder and wants to
+ * grow their brand using founder-led social & marketing strategy.
  */
 
 import React, { useState } from 'react';
@@ -13,6 +11,7 @@ import React, { useState } from 'react';
 const BrandOnboardingStep5 = ({ data, onSave, isSaving }) => {
   const [formData, setFormData] = useState({
     wantsFounderLed: data?.wantsFounderLed || false,
+    isBrandFounder: data?.isBrandFounder || false,
   });
 
   const isFounder = 
@@ -23,6 +22,7 @@ const BrandOnboardingStep5 = ({ data, onSave, isSaving }) => {
     setFormData((prev) => ({
       ...prev,
       wantsFounderLed: !prev.wantsFounderLed,
+      isBrandFounder: !prev.wantsFounderLed, // Set to true when selecting founder-led
     }));
   };
 
@@ -36,17 +36,16 @@ const BrandOnboardingStep5 = ({ data, onSave, isSaving }) => {
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            Are You Interested in Founder-Led Brand Building?
+            Are You Interested in Founder-Led Brand Growth?
           </h2>
           <p className="text-gray-600">
-            This program pairs your brand with select founders who actively manage brand partnerships.
+            Founder-led brand growth focuses on building your brand through you — your voice, story, and visibility — rather than relying only on ads or creators.
           </p>
 
           {/* Info Box */}
           <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
             <p className="text-sm text-amber-900">
-              <strong>Founder-Led Building</strong> means working directly with founders who take an active role in partnerships, 
-              strategy development, and content creation. This typically results in more authentic partnerships and deeper engagement.
+              <strong>Founder-Led Strategy</strong> means positioning you, the founder, as part of the brand's growth engine. This includes founder-led content, thought leadership, partnerships, and storytelling designed to build trust, authority, and long-term brand value.
             </p>
           </div>
         </div>
@@ -62,41 +61,21 @@ const BrandOnboardingStep5 = ({ data, onSave, isSaving }) => {
             />
             <div className="ml-3">
               <p className="text-lg font-medium text-gray-900">
-                Yes, I'm interested in founder-led partnerships
+                Yes — I'm a founder and want to grow my brand through founder-led marketing
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                Let us match you with founders who are actively building and can drive real impact
+                We'll work with you on founder-led strategy, positioning, content, and partnerships with you at the centre of the brand.
               </p>
             </div>
           </label>
         </div>
 
-        {/* Conditional Message */}
-        {formData.wantsFounderLed && isFounder && (
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <p className="text-sm text-green-900">
-              ✓ <strong>Great!</strong> Since you're a Founder/Co-Founder, we'll transition you to our specialized 
-              Founder Onboarding program where you can explore founder-to-founder partnership opportunities.
-            </p>
-          </div>
-        )}
-
-        {formData.wantsFounderLed && !isFounder && (
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-            <p className="text-sm text-blue-900">
-              <strong>Next Steps:</strong> We'll introduce you to founders in our network who match your 
-              brand values and objectives. You'll review profiles and we'll facilitate introductions.
-            </p>
-          </div>
-        )}
-
-        {!formData.wantsFounderLed && (
-          <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
-            <p className="text-sm text-gray-700">
-              That's fine! We'll match you with a diverse range of creators across different follower counts and niches.
-            </p>
-          </div>
-        )}
+        {/* Secondary Helper Text */}
+        <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg">
+          <p className="text-sm text-gray-700">
+            That's okay — you can still use The Break for creator partnerships, campaigns, and brand activations without founder-led strategy.
+          </p>
+        </div>
 
         {/* Action Buttons */}
         <div className="flex gap-4 pt-6 border-t border-gray-200">
@@ -115,10 +94,8 @@ const BrandOnboardingStep5 = ({ data, onSave, isSaving }) => {
             {isSaving ? (
               <>
                 <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                {isFounder && formData.wantsFounderLed ? 'Redirecting...' : 'Saving...'}
+                Saving...
               </>
-            ) : isFounder && formData.wantsFounderLed ? (
-              'Proceed to Founder Onboarding'
             ) : (
               'Continue'
             )}
