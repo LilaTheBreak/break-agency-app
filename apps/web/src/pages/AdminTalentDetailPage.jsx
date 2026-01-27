@@ -69,6 +69,7 @@ const TAB_GROUPS = [
       { id: "meetings", label: "Meetings", icon: Calendar },
       { id: "calendar", label: "Calendar", icon: Calendar },
       { id: "deals", label: "Deal Tracker", icon: Briefcase },
+      { id: "tasks", label: "Tasks", icon: CheckSquare },
     ],
   },
   {
@@ -1707,6 +1708,9 @@ export function AdminTalentDetailPage() {
         )}
         {activeTab === "deals" && (
           <DealsTab talent={talent} onDealCreated={fetchTalentData} />
+        )}
+        {activeTab === "tasks" && (
+          <TalentTasksSection talentId={talentId} />
         )}
         {activeTab === "opportunities" && (
           <OpportunitiesTab talentId={talentId} isExclusive={isExclusive} talent={talent} />
