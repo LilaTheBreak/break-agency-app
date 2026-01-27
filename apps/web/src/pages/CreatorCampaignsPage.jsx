@@ -1,15 +1,19 @@
 import React from "react";
 import { DashboardShell } from "../components/DashboardShell.jsx";
 import { useCampaigns } from "../hooks/useCampaigns.js";
+import { CONTROL_ROOM_PRESETS } from "./controlRoomPresets.js";
 
 export function CreatorCampaignsPage({ session }) {
   const { campaigns, loading, error } = useCampaigns({ session });
+  const config = CONTROL_ROOM_PRESETS.talent;
+  const navLinks = config.tabs || [];
 
   return (
     <DashboardShell
       title="Campaigns"
       subtitle="View and manage your active campaigns"
-      role={session?.user?.role}      navLinks={navLinks}
+      role={session?.user?.role}
+      navLinks={navLinks}
       session={session}    >
       <div className="space-y-6">
         <section className="section-wrapper elevation-1 p-6 transition-elevation">
