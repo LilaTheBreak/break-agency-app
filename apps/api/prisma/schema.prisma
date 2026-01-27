@@ -2001,6 +2001,9 @@ model User {
   
   // BRAND ONBOARDING RELATION
   BrandProfile                            BrandProfile?
+  
+  // FOUNDER ONBOARDING RELATION
+  FounderProfile                          FounderProfile?
 }
 
 model WellnessCheckin {
@@ -4123,4 +4126,52 @@ model BrandProfile {
 
 // ============================================================================
 // END BRAND ONBOARDING SYSTEM
+// ============================================================================
+
+// ============================================================================
+// FOUNDER ONBOARDING SYSTEM (NEW)
+// ============================================================================
+
+model FounderProfile {
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Step 1: Founder Stage
+  founderStage            String?   // "pre_launch" | "early" | "scaling" | "established"
+
+  // Step 2: Social Presence Audit
+  isActiveOnSocials       Boolean   @default(false)
+  primaryPlatforms        String[]  @default([])  // ["instagram", "tiktok", "linkedin", "youtube"]
+  currentReach            Json?     // { instagram: 10000, tiktok: 5000, ... }
+  socialBlocker           String?   // If not active: what's stopping them?
+
+  // Step 3: Content & Visibility Confidence
+  contentConfidence       String?   // "low" | "medium" | "high"
+  timeCommitment          String?   // "low" | "medium" | "high"
+
+  // Step 4: Founder Goals
+  primaryFounderGoals     String[]  @default([])
+
+  // Step 5: Commercial Intent
+  commercialIntent        String?   // What will founder-led strategy unlock?
+
+  // Step 6: Biggest Blocker
+  biggestBlocker          String?   // What's holding them back?
+
+  // Service Mapping (Internal - Not shown to user)
+  recommendedServices     String[]  @default([])
+
+  // Status Tracking
+  currentStep             Int       @default(1)
+  onboardingCompletedAt   DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([onboardingCompletedAt])
+}
+
+// ============================================================================
+// END FOUNDER ONBOARDING SYSTEM
 // ============================================================================

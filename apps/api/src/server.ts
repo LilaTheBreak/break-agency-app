@@ -105,6 +105,9 @@ import creatorRouter from './routes/creator.js';
 // Brand Onboarding
 import brandOnboardingRouter from './routes/brandOnboarding.js';
 
+// Founder Onboarding
+import founderOnboardingRouter from './routes/founderOnboarding.js';
+
 // Analytics
 import analyticsRouter from './routes/analytics.js';
 
@@ -688,6 +691,10 @@ app.use("/api/brands", brandsRouter);
 app.use("/api/brands/onboarding", brandOnboardingRouter);
 app.use("/api/brand-team", brandTeamRouter);
 app.use("/api/brand-audit", brandAuditRouter);
+
+// FOUNDER ONBOARDING
+// ------------------------------------------------------
+app.use("/api/founders/onboarding", founderOnboardingRouter);
 
 // COMMUNITY MANAGEMENT (Talent)
 // ------------------------------------------------------
