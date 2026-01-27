@@ -102,6 +102,9 @@ import dashboardExclusiveTalentRouter from './routes/dashboardExclusiveTalent.js
 // Creator Onboarding
 import creatorRouter from './routes/creator.js';
 
+// Brand Onboarding
+import brandOnboardingRouter from './routes/brandOnboarding.js';
+
 // Analytics
 import analyticsRouter from './routes/analytics.js';
 
@@ -681,6 +684,7 @@ app.use("/api/dashboard", dashboardCustomizationRouter);
 // BRANDS (V1.0 - First-class user type)
 // ------------------------------------------------------
 app.use("/api/brands", brandsRouter);
+app.use("/api/brands/onboarding", brandOnboardingRouter);
 app.use("/api/brand-team", brandTeamRouter);
 app.use("/api/brand-audit", brandAuditRouter);
 

@@ -68,6 +68,7 @@ import ExclusiveTalentDashboardLayout, {
 import { UgcTalentDashboard } from "./pages/UgcTalentDashboard.jsx";
 import { FounderDashboard } from "./pages/FounderDashboard.jsx";
 import OnboardingPage from "./pages/OnboardingPage.jsx";
+import BrandOnboardingPage from "./pages/BrandOnboardingPage.jsx";
 import AccountSetupPage from "./pages/AccountSetupPage.jsx";
 import { AdminQueuesPage } from "./pages/AdminQueuesPage.jsx";
 import { AdminApprovalsPage } from "./pages/AdminApprovalsPage.jsx";
@@ -534,6 +535,14 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
           element={
             <ProtectedRoute session={session}>
               <OnboardingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/onboarding/brand"
+          element={
+            <ProtectedRoute session={session}>
+              <BrandOnboardingPage />
             </ProtectedRoute>
           }
         />

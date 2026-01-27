@@ -1998,6 +1998,9 @@ model User {
   GrowthInitiativesCreated                GrowthInitiative[]      @relation("GrowthInitiativeCreator")
   GrowthInputsAsContributor               GrowthInput[]           @relation("GrowthInputContributor")
   GrowthOutputsAsContributor              GrowthOutput[]          @relation("GrowthOutputContributor")
+  
+  // BRAND ONBOARDING RELATION
+  BrandProfile                            BrandProfile?
 }
 
 model WellnessCheckin {
@@ -4069,4 +4072,54 @@ model BusinessImpact {
 
 // ============================================================================
 // END GROWTH INITIATIVES SYSTEM
+// ============================================================================
+
+// ============================================================================
+// BRAND ONBOARDING SYSTEM
+// ============================================================================
+
+model BrandProfile {
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Company Basics (Step 1)
+  companyName             String
+  websiteUrl              String?
+  industry                String?
+  markets                 String[]  @default([])  // Multi-select
+  companySize             String?
+
+  // Sign-Up Context (Step 2)
+  signerRole              String?   // Founder, Head of Marketing, etc.
+  decisionAuthority       String?   // "final" | "influencer" | "research"
+
+  // Platform Goals (Step 3)
+  platformGoals           String[]  @default([])  // Multi-select
+
+  // Commercial Focus (Step 4)
+  primaryObjective        String?   // "New product launch", "Scaling", etc.
+  productFocus            String?   // Free text
+  desiredOutcome          String?   // Free text
+
+  // Founder-Led Check (Step 5)
+  wantsFounderLed         Boolean   @default(false)
+  founderLedRedirectedAt  DateTime?
+
+  // Activations & Experiences (Step 6)
+  interestedInActivations Boolean   @default(false)
+  activationTypes         String[]  @default([])  // ["pop-ups", "events", etc.]
+
+  // Status Tracking
+  currentStep             Int       @default(1)
+  onboardingCompletedAt   DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([onboardingCompletedAt])
+}
+
+// ============================================================================
+// END BRAND ONBOARDING SYSTEM
 // ============================================================================
