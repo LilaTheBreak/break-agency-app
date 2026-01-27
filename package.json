@@ -7,7 +7,7 @@
     "apps/*",
     "packages/*"
   ],
-  "scripts": {
+    "scripts": {
     "dev": "pnpm -r --filter @breakagency/web --filter @breakagency/api --parallel dev",
     "dev:web": "pnpm --filter @breakagency/web dev",
     "dev:api": "pnpm --filter @breakagency/api exec -- tsx watch --require dotenv/config src/server.ts",
@@ -16,11 +16,11 @@
     "build:api": "pnpm --filter @breakagency/api build",
     "lint": "pnpm -r lint",
     "db:migrate": "pnpm --filter @breakagency/api run migrate",
-    "db:reset": "pnpm --filter @breakagency/api exec -- dotenv -e .env -- prisma migrate reset",
+    "db:reset": "echo '⚠️  DANGEROUS: This will DELETE ALL DATA. Verify DATABASE_URL points to development database only.' && pnpm --filter @breakagency/api exec -- dotenv -e .env -- prisma migrate reset",
     "db:generate": "pnpm --filter @breakagency/api exec -- prisma generate",
     "clean": "pnpm -r exec -- rimraf dist",
     "seed:auth": "pnpm --filter @breakagency/api seed:auth",
-    "db:seed": "pnpm --filter @breakagency/api exec -- prisma db seed",
+    "db:seed": "echo '⚠️  WARNING: Verify DATABASE_URL points to development database. Seeding will modify data.' && pnpm --filter @breakagency/api exec -- prisma db seed",
     "dev:local": "bash -lc 'ulimit -n 4096 || true; pnpm dev'",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

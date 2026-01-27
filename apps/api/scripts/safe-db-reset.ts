@@ -4,16 +4,19 @@
  * 
  * This script prevents accidental database resets in production.
  * - Development: Can reset with confirmation
- * - Production: Requires explicit environment variable + double confirmation
- * - Staging: Requires single confirmation
+ * - Production: PERMANENTLY BLOCKED (use manual PITR recovery)
+ * - Staging: Requires double confirmation
  * 
  * Usage:
- *   npm run db:safe-reset
- *   FORCE_DB_RESET=true npm run db:safe-reset  (for production)
+ *   npm run db:safe-reset              (development only)
+ *   NODE_ENV=staging npm run db:reset:staging  (staging with confirmation)
+ * 
+ * Production resets are NOT ALLOWED. Use Neon's PITR recovery instead.
  */
 
 import { execSync } from 'child_process';
 import * as readline from 'readline';
+import { assertNotProduction, logDatabaseOperation } from '../src/lib/dbGuards.js';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -37,14 +40,44 @@ async function safeReset() {
   console.log(`Environment: ${env.toUpperCase()}`);
   console.log(`Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'unknown'}\n`);
 
-  // Production requires explicit environment variable
-  if (isProduction && !forceEnv) {
-    console.error(
-      '❌ PRODUCTION DATABASE PROTECTION ACTIVE\n' +
-      'To reset production database, you must:\n' +
-      '1. Set environment variable: FORCE_DB_RESET=true\n' +
-      '2. Run: FORCE_DB_RESET=true npm run db:safe-reset\n'
-    );
+  // HARD BLOCK for production - NO EXCEPTIONS
+  if (isProduction) {
+    const blockedMsg = `
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║        🚨 PRODUCTION DATABASE RESET PERMANENTLY BLOCKED 🚨                 ║
+║                                                                            ║
+║  This script will NOT reset the production database under ANY circumstances║
+║                                                                            ║
+║  If production database recovery is needed:                                ║
+║    1. Contact DevOps team immediately                                      ║
+║    2. Do NOT attempt manual resets                                         ║
+║    3. Use Neon's Point-In-Time Recovery (PITR) instead                    ║
+║    4. Get written approval before recovery                                 ║
+║                                                                            ║
+║  Environment: PRODUCTION (${env})                                          ║
+║  Timestamp: ${new Date().toISOString()}                                   ║
+║                                                                            ║
+║  This protection cannot be overridden.                                     ║
+║  Even if FORCE_DB_RESET=true is set, production resets are blocked.       ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+    `;
+    
+    console.error(blockedMsg);
+    
+    logDatabaseOperation({
+      operation: 'ATTEMPTED_DB_RESET',
+      environment: env,
+      status: 'BLOCKED',
+      reason: 'Production resets permanently blocked',
+      additionalInfo: {
+        forceEnvSet: forceEnv,
+        timestamp: new Date().toISOString(),
+        permanentlyBlocked: true,
+      },
+    });
+    
     rl.close();
     process.exit(1);
   }
@@ -96,14 +129,43 @@ async function safeReset() {
 
   try {
     console.log('\n⏳ Resetting database...');
+    
+    logDatabaseOperation({
+      operation: 'DB_RESET_STARTED',
+      environment: env,
+      status: 'STARTED',
+      additionalInfo: {
+        commitHash: process.env.GIT_COMMIT || 'unknown',
+      },
+    });
+    
     execSync('npx prisma migrate reset --force', {
       stdio: 'inherit',
       cwd: process.cwd(),
     });
+    
     console.log('✅ Database reset complete!');
+    
+    logDatabaseOperation({
+      operation: 'DB_RESET_COMPLETED',
+      environment: env,
+      status: 'COMPLETED',
+      additionalInfo: {
+        timestamp: new Date().toISOString(),
+      },
+    });
+    
     console.log('💡 Consider running: npm run seed:auth');
   } catch (error) {
     console.error('❌ Reset failed:', error);
+    
+    logDatabaseOperation({
+      operation: 'DB_RESET_FAILED',
+      environment: env,
+      status: 'FAILED',
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    
     process.exit(1);
   } finally {
     rl.close();

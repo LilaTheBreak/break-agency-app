@@ -243,6 +243,27 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
 
+// CRITICAL: Database environment validation MUST RUN IMMEDIATELY
+// This prevents accidental use of wrong database in any environment
+import { validateDatabaseEnvironment, logDatabaseOperation } from './lib/dbGuards.js';
+
+try {
+  validateDatabaseEnvironment();
+  logDatabaseOperation({
+    operation: 'SERVER_STARTUP',
+    environment: process.env.NODE_ENV || 'development',
+    status: 'STARTED',
+    additionalInfo: {
+      timestamp: new Date().toISOString(),
+      nodeVersion: process.version,
+    },
+  });
+} catch (dbError) {
+  console.error('❌ FATAL: Database environment validation failed');
+  console.error(dbError);
+  process.exit(1);
+}
+
 // ------------------------------------------------------
 // ENV DEBUG LOGGING
 // ------------------------------------------------------
