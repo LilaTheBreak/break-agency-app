@@ -122,7 +122,14 @@ export function useContacts() {
     // If cache is being fetched, wait for that promise
     if (contactsCachePromise) {
       contactsCachePromise.then(() => {
-        setContacts(contactsCacheGlobal);
+        // CRITICAL: Ensure we only set arrays
+        const safeContacts = Array.isArray(contactsCacheGlobal) ? contactsCacheGlobal : [];
+        setContacts(safeContacts);
+        setIsLoading(false);
+      }).catch((err) => {
+        console.error("[useContacts] Cache promise rejected:", err);
+        setContacts([]);
+        setError(err.message || 'Failed to fetch contacts');
         setIsLoading(false);
       });
       return;
@@ -130,7 +137,9 @@ export function useContacts() {
 
     // If cache already populated, use it
     if (contactsCacheGlobal.length > 0) {
-      setContacts(contactsCacheGlobal);
+      // CRITICAL: Ensure we only set arrays
+      const safeContacts = Array.isArray(contactsCacheGlobal) ? contactsCacheGlobal : [];
+      setContacts(safeContacts);
       setIsLoading(false);
       return;
     }
@@ -145,8 +154,10 @@ export function useContacts() {
         }
 
         const normalized = normalizeContacts(data);
-        contactsCacheGlobal = normalized;
-        setContacts(normalized);
+        // CRITICAL: Ensure normalized is an array
+        const safeNormalized = Array.isArray(normalized) ? normalized : [];
+        contactsCacheGlobal = safeNormalized;
+        setContacts(safeNormalized);
         setError(null);
       })
       .catch((err) => {
@@ -212,9 +223,12 @@ export function useContacts() {
       }
 
       // Update cache
-      const updated = normalizeContacts([...contacts, newContact]);
-      contactsCacheGlobal = updated;
-      setContacts(updated);
+      // CRITICAL: Ensure contacts is an array before spreading
+      const currentContacts = Array.isArray(contacts) ? contacts : [];
+      const updated = normalizeContacts([...currentContacts, newContact]);
+      const safeUpdated = Array.isArray(updated) ? updated : [];
+      contactsCacheGlobal = safeUpdated;
+      setContacts(safeUpdated);
 
       return newContact;
     },
@@ -235,12 +249,16 @@ export function useContacts() {
       }
 
       const normalized = normalizeContacts(data);
-      contactsCacheGlobal = normalized;
-      setContacts(normalized);
+      // CRITICAL: Ensure normalized is an array before setting state
+      const safeNormalized = Array.isArray(normalized) ? normalized : [];
+      contactsCacheGlobal = safeNormalized;
+      setContacts(safeNormalized);
       setError(null);
     } catch (err) {
       console.error("[useContacts] Failed to refetch:", err);
       setError(err.message);
+      // CRITICAL: Always set empty array on error, never undefined/null
+      setContacts([]);
     } finally {
       setIsLoading(false);
     }
