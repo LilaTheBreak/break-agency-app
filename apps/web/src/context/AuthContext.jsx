@@ -92,10 +92,12 @@ export function AuthProvider({ children }) {
     refreshUser();
   }, [refreshUser]);
 
-  const loginWithGoogle = useCallback(async () => {
+  const loginWithGoogle = useCallback(async (role) => {
     setError(null);
-    console.log("Fetching Google OAuth URL...");
-    const response = await apiFetch("/api/auth/google/url");
+    console.log("Fetching Google OAuth URL...", role ? `with role: ${role}` : "(no role)");
+    // Include role as query parameter if provided (for signup flow)
+    const url = role ? `/api/auth/google/url?role=${encodeURIComponent(role)}` : "/api/auth/google/url";
+    const response = await apiFetch(url);
     console.log("Response status:", response.status);
     const payload = await response.json().catch(() => ({}));
     console.log("Payload:", payload);

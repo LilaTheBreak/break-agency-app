@@ -114,6 +114,7 @@ import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
 import EmailOpportunities from "./pages/EmailOpportunities.jsx";
 import SignupPage from "./pages/Signup.jsx";
 import LoginPage from "./pages/Login.jsx";
+import RoleSelectionPage from "./pages/RoleSelectionPage.jsx";
 import UgcProfileSetup from "./pages/UgcProfileSetup.jsx";
 import AgentCvUpload from "./pages/AgentCvUpload.jsx";
 import DevLogin from "./pages/DevLogin.jsx";
@@ -523,6 +524,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         <Route path="/book-founder" element={<BookFounderPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/role-selection" element={<RoleSelectionPage />} />
         <Route path="/dev-login" element={<DevLogin />} />
         <Route path="/setup" element={<AccountSetupPage />} />
         

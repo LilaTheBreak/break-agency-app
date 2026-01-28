@@ -45,7 +45,7 @@ const TEST_LOGIN_PASSWORD = process.env.TEST_LOGIN_PASSWORD ?? DEFAULT_TEST_ADMI
 /* ---------------------------------------------------------
    1. GOOGLE AUTH URL (LOGIN)
 --------------------------------------------------------- */
-router.get("/google/url", (_req, res) => {
+router.get("/google/url", (req, res) => {
   console.log(">>> HIT /auth/google/url");
 
   const { clientId, clientSecret, redirectUri } = googleOAuthConfig;
@@ -59,7 +59,13 @@ router.get("/google/url", (_req, res) => {
     return res.status(500).json({ error: "Google OAuth not configured" });
   }
 
-  const url = buildGoogleAuthUrl(clientId, redirectUri);
+  // Extract role from query parameter (for signup flow)
+  const role = typeof req.query.role === "string" ? req.query.role : null;
+  if (role) {
+    console.log(">>> ROLE SELECTED FOR OAUTH:", role);
+  }
+
+  const url = buildGoogleAuthUrl(clientId, redirectUri, role);
   console.log(">>> FINAL OAUTH URL =", url);
 
   return res.json({ url });
@@ -71,6 +77,7 @@ router.get("/google/url", (_req, res) => {
 router.get("/google/callback", authRateLimiter, async (req: Request, res: Response) => {
   console.log("[INTEGRATION] Google OAuth callback received", {
     hasCode: !!req.query.code,
+    hasState: !!req.query.state,
     timestamp: new Date().toISOString()
   });
   try {
@@ -78,6 +85,20 @@ router.get("/google/callback", authRateLimiter, async (req: Request, res: Respon
     if (!code) {
       console.error("[INTEGRATION] Google OAuth failed: Missing authorization code");
       return res.status(400).json({ error: "Missing authorization code" });
+    }
+
+    // Parse state parameter to extract role (if provided during signup)
+    let stateRole: string | null = null;
+    if (req.query.state && typeof req.query.state === "string") {
+      try {
+        const state = JSON.parse(req.query.state);
+        stateRole = state.role || null;
+        if (stateRole) {
+          console.log("[OAUTH] Role from state:", stateRole);
+        }
+      } catch (err) {
+        console.warn("[OAUTH] Failed to parse state parameter:", err);
+      }
     }
 
     // Minimal debug: show that we received a code and masked client config
@@ -113,16 +134,27 @@ router.get("/google/callback", authRateLimiter, async (req: Request, res: Respon
 
     // For admin emails, assign appropriate admin role
     // For existing users, keep their role
-    // For new non-admin users, default to CREATOR (they can request role change later)
+    // For new users: use role from state parameter (signup flow) or require role selection
     let assignedRole: string;
     if (isSuperAdmin) {
       assignedRole = "SUPERADMIN";
       console.log("[AUTH] SUPERADMIN login detected:", normalizedEmail);
     } else if (existingUser) {
+      // Existing user: keep their existing role (never override)
       assignedRole = existingUser.role;
+      console.log("[AUTH] Existing user login:", normalizedEmail, "role:", assignedRole);
     } else {
-      // New user, default to CREATOR
-      assignedRole = "CREATOR";
+      // New user: use role from OAuth state (signup flow)
+      if (stateRole) {
+        assignedRole = stateRole;
+        console.log("[AUTH] New user signup with role from state:", stateRole);
+      } else {
+        // No role in state - redirect to role selection
+        console.warn("[AUTH] New OAuth user without role - redirecting to role selection");
+        const frontendUrl = getFrontendUrl();
+        const token = createAuthToken({ id: crypto.randomUUID() }); // Temporary token
+        return res.redirect(`${frontendUrl}/role-selection?email=${encodeURIComponent(normalizedEmail)}&name=${encodeURIComponent(profile.name || '')}&temp=true`);
+      }
     }
 
     /* ------------------------------------------
@@ -525,6 +557,63 @@ router.post("/logout", (_req: Request, res: Response) => {
 });
 
 /* ---------------------------------------------------------
+   4.5 COMPLETE OAUTH SIGNUP (for role-selection fallback)
+--------------------------------------------------------- */
+router.post("/complete-oauth-signup", authRateLimiter, async (req: Request, res: Response) => {
+  try {
+    const { email, role } = req.body;
+
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    if (!role || typeof role !== "string") {
+      return res.status(400).json({ error: "Role is required" });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email: normalizedEmail }
+    });
+
+    if (!user) {
+      // Create new user with selected role
+      user = await prisma.user.create({
+        data: {
+          id: crypto.randomUUID(),
+          email: normalizedEmail,
+          role: role,
+          accountType: role === "BRAND" ? "brand" : role === "FOUNDER" ? "founder" : "creator",
+          onboardingComplete: false,
+          onboarding_status: "in_progress",
+          updatedAt: new Date()
+        }
+      });
+      console.log("[COMPLETE OAUTH] Created new user:", normalizedEmail, "with role:", role);
+    } else {
+      // User exists (maybe created in callback without role) - update role
+      user = await prisma.user.update({
+        where: { email: normalizedEmail },
+        data: { role: role }
+      });
+      console.log("[COMPLETE OAUTH] Updated existing user:", normalizedEmail, "with role:", role);
+    }
+
+    // Create session token
+    const sessionUser = buildSessionUser(user);
+    const token = createAuthToken(sessionUser);
+    setAuthCookie(res, token);
+
+    return res.json({ success: true, user: sessionUser });
+  } catch (error) {
+    console.error("[COMPLETE OAUTH] Error:", error);
+    return res.status(500).json({ error: "Failed to complete signup" });
+  }
+});
+
+/* ---------------------------------------------------------
    PASSWORD RESET FLOW
 --------------------------------------------------------- */
 
@@ -717,7 +806,7 @@ export default router;
 /* ---------------------------------------------------------
    HELPERS
 --------------------------------------------------------- */
-function buildGoogleAuthUrl(clientId: string, redirectUri: string) {
+function buildGoogleAuthUrl(clientId: string, redirectUri: string, role?: string | null) {
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -726,6 +815,13 @@ function buildGoogleAuthUrl(clientId: string, redirectUri: string) {
     access_type: "offline",
     prompt: "select_account",
   });
+  
+  // Include role in state parameter if provided (for signup flow)
+  if (role) {
+    const state = JSON.stringify({ role });
+    params.set("state", state);
+  }
+  
   return `${GOOGLE_AUTH_BASE}?${params.toString()}`;
 }
 

@@ -25,7 +25,8 @@ export default function SignupPage() {
       setError("Please select a role first");
       return;
     }
-    loginWithGoogle().catch(() => {});
+    // Pass role to Google OAuth flow via state parameter
+    loginWithGoogle(form.role).catch(() => {});
   };
 
   const handleSubmit = async (event) => {
