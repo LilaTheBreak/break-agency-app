@@ -147,6 +147,7 @@ export function ControlRoomView({ config, children, session, showStatusSummary =
       ) : title}
       subtitle={subtitle}
       role={config.role}
+      theme={config.theme}
       navLinks={navLinks}
       navigation={navLinks.length ? undefined : tabs}
       showStatusSummary={showStatusSummary}

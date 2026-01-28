@@ -10,6 +10,7 @@ import { BrandSelect } from "../components/BrandSelect.jsx";
 import { MessagingSettingsPanel } from "../components/MessagingSettingsPanel.jsx";
 import { AddInboxModal } from "../components/AddInboxModal.jsx";
 import { useEmailClassifier, ClassificationBadge, UncertainClassificationAlert } from "../hooks/useEmailClassifier.jsx";
+import { useEmailOpportunity } from "../hooks/useEmailOpportunity.js";
 import toast from "react-hot-toast";
 
 const FILTERS = ["All", "Brands", "Creators", "External", "Talent Managers"]; // Alphabetized, "All" kept first
@@ -909,6 +910,9 @@ function EmailRow({ email, onOpen }) {
   const [classification, setClassification] = React.useState(email.classification || null);
   const [classifyError, setClassifyError] = React.useState(null);
   const { classify, getBadgeDetails } = useEmailClassifier();
+  
+  // Check if this email has a detected opportunity
+  const { hasOpportunity, opportunity } = useEmailOpportunity(email.id);
 
   // Classify on mount if not already classified
   React.useEffect(() => {
@@ -959,6 +963,15 @@ function EmailRow({ email, onOpen }) {
                   type={classification.primary.type}
                   compact={true}
                 />
+              </div>
+            )}
+            {hasOpportunity && (
+              <div 
+                className="flex-shrink-0 px-2 py-0.5 rounded-full bg-green-100 border border-green-300 flex items-center gap-1"
+                title={`Detected as potential deal · Confidence: ${Math.round((opportunity?.confidence || 0) * 100)}%`}
+              >
+                <span className="text-xs">💼</span>
+                <span className="text-[0.6rem] uppercase tracking-wider text-green-700 font-semibold">Deal</span>
               </div>
             )}
           </div>

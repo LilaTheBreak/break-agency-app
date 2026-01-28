@@ -79,8 +79,11 @@ export default function NotificationBell() {
       }
     }
 
-    // Navigate to task if it's a task notification
-    if (notification.type?.includes("task") && notification.entityId) {
+    // Navigate based on notification type
+    if (notification.type === "OPPORTUNITY_DETECTED") {
+      setIsOpen(false);
+      navigate("/admin/opportunities/inbox");
+    } else if (notification.type?.includes("task") && notification.entityId) {
       setIsOpen(false);
       navigate("/admin/tasks");
     }
@@ -104,6 +107,8 @@ export default function NotificationBell() {
         return "📋";
       case "task_ownership":
         return "👤";
+      case "OPPORTUNITY_DETECTED":
+        return "💼";
       default:
         return "🔔";
     }

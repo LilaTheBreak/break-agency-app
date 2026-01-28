@@ -89,6 +89,7 @@ import AdminCalendarPage from "./pages/AdminCalendarPage.jsx";
 import { AdminOutreachPage } from "./pages/AdminOutreachPage.jsx";
 import { AssistedOutreachPage } from "./pages/AssistedOutreachPage.jsx";
 import { AdminMessagingPage } from "./pages/AdminMessagingPage.jsx";
+import { AdminOpportunitiesInboxPage } from "./pages/AdminOpportunitiesInboxPage.jsx";
 import { AdminContractsPage } from "./pages/AdminContractsPage.jsx";
 import { AdminFinancePage } from "./pages/AdminFinancePage.jsx";
 import { AdminRevenuePage } from "./pages/AdminRevenuePage.jsx";
@@ -1181,6 +1182,20 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
               onRequestSignIn={() => setAuthModalOpen(true)}
             >
               <AdminSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/opportunities/inbox"
+          element={
+            <ProtectedRoute
+              session={session}
+              allowed={[Roles.ADMIN, Roles.SUPERADMIN]}
+              onRequestSignIn={() => setAuthModalOpen(true)}
+            >
+              <RouteErrorBoundaryWrapper routeName="OpportunitiesInbox">
+                <AdminOpportunitiesInboxPage />
+              </RouteErrorBoundaryWrapper>
             </ProtectedRoute>
           }
         />

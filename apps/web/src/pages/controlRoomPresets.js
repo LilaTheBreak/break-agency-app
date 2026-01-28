@@ -3,6 +3,7 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 export const CONTROL_ROOM_PRESETS = {
   admin: {
     role: "admin",
+    theme: "tech",
     title: "Admin Control Room",
     subtitle: "Monitor pipelines, unblock campaigns, and dispatch briefings across the platform.",
     navLinks: ADMIN_NAV_LINKS,

@@ -1108,11 +1108,26 @@ model Opportunity {
   createdBy              String
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime
+  
+  // Email-sourced opportunity fields (optional, backwards compatible)
+  source                 String?                  // "email", "manual", "ai_suggested"
+  sourceEmailId          String?                  // Links to InboundEmail.id
+  confidence             Float?                   // Classification confidence (0-1)
+  detectedType           String?                  // "DEAL", "CAMPAIGN", "GIFTING", "INQUIRY"
+  detectedBrandId        String?                  // Auto-detected brand FK
+  detectedTalentId       String?                  // Auto-detected talent FK
+  reviewStatus           String?                  @default("unreviewed") // "unreviewed", "approved", "dismissed"
+  reviewedBy             String?                  // User ID who reviewed
+  reviewedAt             DateTime?
+  metadata               Json?                    // Additional classification data
+  
   OpportunityApplication OpportunityApplication[]
   Submission             Submission[]
 
   @@index([createdBy])
   @@index([isActive, createdAt])
+  @@index([source, reviewStatus])
+  @@index([sourceEmailId])
 }
 
 model OpportunityApplication {

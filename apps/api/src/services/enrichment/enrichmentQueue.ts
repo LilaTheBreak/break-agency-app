@@ -12,112 +12,152 @@ import { logError } from '../../lib/logger.js';
 import prisma from '../../lib/prisma.js';
 import { enrichmentOrchestrator } from './enrichmentOrchestrator.js';
 
-// Redis connection (configured via environment)
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
-});
+// Check if Redis is configured (optional in dev mode)
+const isRedisEnabled = process.env.REDIS_URL || process.env.REDIS_HOST;
+const isDev = process.env.NODE_ENV !== 'production';
 
-redis.on('error', (err) => {
-  logError('[ENRICHMENT QUEUE] Redis connection error:', err);
-});
+let redis: any = null;
+let enrichmentQueue: any = null;
+let queueEvents: any = null;
 
-// BullMQ Queue for enrichment jobs
-export const enrichmentQueue = new Queue('enrichment', {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
+if (isRedisEnabled) {
+  // Redis connection (configured via environment)
+  redis = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    maxRetriesPerRequest: null,
+  });
+
+  redis.on('error', (err) => {
+    if (isDev) {
+      console.warn('[ENRICHMENT QUEUE] Redis connection error (non-blocking in dev):', err.message);
+    } else {
+      logError('[ENRICHMENT QUEUE] Redis connection error:', err);
+    }
+  });
+
+  // BullMQ Queue for enrichment jobs
+  enrichmentQueue = new Queue('enrichment', {
+    connection: redis,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 2000,
+      },
+      removeOnComplete: true,
+      removeOnFail: false,
     },
-    removeOnComplete: true,
-    removeOnFail: false,
-  },
-});
+  });
 
-// Queue events for monitoring
-const queueEvents = new QueueEvents('enrichment', { connection: redis });
+  // Queue events for monitoring
+  queueEvents = new QueueEvents('enrichment', { connection: redis });
 
-queueEvents.on('completed', ({ jobId }) => {
-  console.log(`[ENRICHMENT QUEUE] Job ${jobId} completed successfully`);
-});
+  queueEvents.on('completed', ({ jobId }) => {
+    console.log(`[ENRICHMENT QUEUE] Job ${jobId} completed successfully`);
+  });
 
-queueEvents.on('failed', ({ jobId, failedReason }) => {
-  console.error(`[ENRICHMENT QUEUE] Job ${jobId} failed: ${failedReason}`);
-});
+  queueEvents.on('failed', ({ jobId, failedReason }) => {
+    console.error(`[ENRICHMENT QUEUE] Job ${jobId} failed: ${failedReason}`);
+  });
+} else {
+  console.log('[ENRICHMENT QUEUE] Redis not configured - enrichment queue disabled (dev mode)');
+  
+  // Mock queue for development
+  enrichmentQueue = {
+    add: async () => {
+      console.log('[ENRICHMENT QUEUE] Mock: job would be added (Redis disabled)');
+      return { id: 'mock-job-id' };
+    },
+    getJob: async () => null,
+    getJobs: async () => [],
+    close: async () => {},
+  };
+}
 
-// Worker to process enrichment jobs
-export const enrichmentWorker = new Worker(
-  'enrichment',
-  async (job) => {
-    try {
-      const { jobType, brandId, brandName, linkedInCompanyUrl, userId, regionCode } = job.data;
+export { enrichmentQueue };
 
-      console.log(`[ENRICHMENT QUEUE] Processing job ${job.id}: ${jobType}`);
+let enrichmentWorker: any = null;
 
-      // Update job status to RUNNING
-      const dbJob = await prisma.enrichmentJob.update({
-        where: { id: jobType === 'discover' ? brandId : job.id },
-        data: { status: 'running', startedAt: new Date() },
-      });
-
-      // Process based on job type
-      let result;
-      if (jobType === 'discover') {
-        result = await enrichmentOrchestrator.startEnrichmentJob({
-          brandName,
-          linkedInCompanyUrl,
-          brandId,
-          regionCode,
-          userId,
-        });
-      } else if (jobType === 'enrich_emails') {
-        result = await enrichmentOrchestrator.enrichEmails(brandId);
-      } else if (jobType === 'validate_compliance') {
-        result = await enrichmentOrchestrator.validateCompliance(brandId, regionCode);
-      }
-
-      // Update job status to COMPLETE
-      await prisma.enrichmentJob.update({
-        where: { id: dbJob.id },
-        data: {
-          status: 'complete',
-          completedAt: new Date(),
-          contactsEnriched: result?.contactsEnriched || 0,
-        },
-      });
-
-      return result;
-    } catch (error) {
-      logError('[ENRICHMENT QUEUE] Job processing failed:', error);
-
-      // Update job status to FAILED
+if (isRedisEnabled) {
+  // Worker to process enrichment jobs
+  enrichmentWorker = new Worker(
+    'enrichment',
+    async (job) => {
       try {
-        const { jobType, brandId } = job.data;
+        const { jobType, brandId, brandName, linkedInCompanyUrl, userId, regionCode } = job.data;
+
+        console.log(`[ENRICHMENT QUEUE] Processing job ${job.id}: ${jobType}`);
+
+        // Update job status to RUNNING
+        const dbJob = await prisma.enrichmentJob.update({
+          where: { id: jobType === 'discover' ? brandId : job.id },
+          data: { status: 'running', startedAt: new Date() },
+        });
+
+        // Process based on job type
+        let result;
+        if (jobType === 'discover') {
+          result = await enrichmentOrchestrator.startEnrichmentJob({
+            brandName,
+            linkedInCompanyUrl,
+            brandId,
+            regionCode,
+            userId,
+          });
+        } else if (jobType === 'enrich_emails') {
+          result = await enrichmentOrchestrator.enrichEmails(brandId);
+        } else if (jobType === 'validate_compliance') {
+          result = await enrichmentOrchestrator.validateCompliance(brandId, regionCode);
+        }
+
+        // Update job status to COMPLETE
         await prisma.enrichmentJob.update({
-          where: { id: brandId },
+          where: { id: dbJob.id },
           data: {
-            status: 'failed',
-            errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            errorCode: 'JOB_PROCESSING_ERROR',
+            status: 'complete',
             completedAt: new Date(),
+            contactsEnriched: result?.contactsEnriched || 0,
           },
         });
-      } catch (updateError) {
-        logError('[ENRICHMENT QUEUE] Could not update job status:', updateError);
-      }
 
-      throw error;
+        return result;
+      } catch (error) {
+        logError('[ENRICHMENT QUEUE] Job processing failed:', error);
+
+        // Update job status to FAILED
+        try {
+          const { jobType, brandId } = job.data;
+          await prisma.enrichmentJob.update({
+            where: { id: brandId },
+            data: {
+              status: 'failed',
+              errorMessage: error instanceof Error ? error.message : 'Unknown error',
+              errorCode: 'JOB_PROCESSING_ERROR',
+              completedAt: new Date(),
+            },
+          });
+        } catch (updateError) {
+          logError('[ENRICHMENT QUEUE] Could not update job status:', updateError);
+        }
+
+        throw error;
+      }
+    },
+    {
+      connection: redis,
+      concurrency: 5, // Process max 5 jobs simultaneously
     }
-  },
-  {
-    connection: redis,
-    concurrency: 5, // Process max 5 jobs simultaneously
-  }
-);
+  );
+} else {
+  // Mock worker for development
+  enrichmentWorker = {
+    close: async () => {},
+  };
+}
+
+export { enrichmentWorker };
 
 enrichmentWorker.on('error', (err) => {
   logError('[ENRICHMENT QUEUE] Worker error:', err);

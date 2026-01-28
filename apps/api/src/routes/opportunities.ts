@@ -527,4 +527,163 @@ async function createDealFromApplication(application: any) {
   }
 }
 
+// ============================================
+// EMAIL-SOURCED OPPORTUNITIES (NEW)
+// ============================================
+
+import {
+  getInboxDetectedOpportunities,
+  approveOpportunity,
+  dismissOpportunity,
+  createOpportunityFromEmail,
+} from '../services/opportunityFromEmailService.js';
+import { classifyEmailForOpportunity } from '../lib/emailIntelligence.js';
+
+/**
+ * GET /api/opportunities/by-email/:emailId
+ * Get opportunity for a specific email (if exists)
+ * Public endpoint - allows inbox to check for opportunities
+ */
+router.get('/by-email/:emailId', requireAuth, async (req, res) => {
+  try {
+    const { emailId } = req.params;
+    
+    const opportunity = await prisma.opportunity.findFirst({
+      where: { sourceEmailId: emailId },
+    });
+
+    if (!opportunity) {
+      return sendError(res, "NOT_FOUND", "No opportunity found for this email", 404);
+    }
+
+    sendSuccess(res, opportunity);
+  } catch (error) {
+    logError('Error fetching opportunity by email', error, { userId: req.user?.id, emailId: req.params.emailId });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/by-email/:emailId', method: 'GET' },
+    });
+    handleApiError(res, error, 'Failed to fetch opportunity', 'OPPORTUNITY_BY_EMAIL_FAILED');
+  }
+});
+
+/**
+ * GET /api/opportunities/inbox-detected
+ * Get all opportunities detected from inbox emails
+ * Requires: deals:read permission
+ */
+router.get('/inbox-detected', requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req, res) => {
+  try {
+    const { minConfidence, status } = req.query;
+    
+    const filters = {
+      minConfidence: minConfidence ? parseFloat(minConfidence as string) : 0,
+      status: (status as string) || 'unreviewed',
+    };
+
+    const opportunities = await getInboxDetectedOpportunities(filters);
+    
+    sendList(res, opportunities);
+  } catch (error) {
+    logError('Error fetching inbox-detected opportunities', error, { userId: req.user?.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/inbox-detected', method: 'GET' },
+    });
+    handleApiError(res, error, 'Failed to fetch inbox opportunities', 'INBOX_OPPORTUNITIES_FETCH_FAILED');
+  }
+});
+
+/**
+ * POST /api/opportunities/from-email
+ * Manually create an opportunity from a specific email
+ * Requires: deals:write permission
+ */
+router.post('/from-email', requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req, res) => {
+  try {
+    const { emailId } = req.body;
+    
+    if (!emailId) {
+      return sendError(res, "VALIDATION_ERROR", "emailId is required", 400);
+    }
+
+    // Fetch email
+    const email = await prisma.inboundEmail.findUnique({
+      where: { id: emailId },
+    });
+
+    if (!email) {
+      return sendError(res, "NOT_FOUND", "Email not found", 404);
+    }
+
+    // Classify email
+    const classification = classifyEmailForOpportunity(email);
+
+    if (!classification.isDealRelated) {
+      return sendError(res, "VALIDATION_ERROR", "Email is not classified as deal-related", 400, {
+        classification,
+      });
+    }
+
+    // Create opportunity
+    const opportunity = await createOpportunityFromEmail(email, classification);
+
+    if (!opportunity) {
+      return sendError(res, "CONFLICT", "Opportunity already exists for this email", 409);
+    }
+
+    sendSuccess(res, opportunity, 201);
+  } catch (error) {
+    logError('Error creating opportunity from email', error, { userId: req.user?.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/from-email', method: 'POST' },
+    });
+    handleApiError(res, error, 'Failed to create opportunity from email', 'OPPORTUNITY_FROM_EMAIL_FAILED');
+  }
+});
+
+/**
+ * PATCH /api/opportunities/:id/approve
+ * Approve an inbox-detected opportunity
+ * Requires: deals:write permission
+ */
+router.patch('/:id/approve', requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const updates = req.body || {};
+
+    const opportunity = await approveOpportunity(id, userId, updates);
+
+    sendSuccess(res, opportunity);
+  } catch (error) {
+    logError('Error approving opportunity', error, { userId: req.user?.id, opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id/approve', method: 'PATCH' },
+    });
+    handleApiError(res, error, 'Failed to approve opportunity', 'OPPORTUNITY_APPROVE_FAILED');
+  }
+});
+
+/**
+ * PATCH /api/opportunities/:id/dismiss
+ * Dismiss an inbox-detected opportunity (false positive)
+ * Requires: deals:write permission
+ */
+router.patch('/:id/dismiss', requireAuth, requireRole(['ADMIN', 'SUPERADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const { reason } = req.body;
+
+    const opportunity = await dismissOpportunity(id, userId, reason);
+
+    sendSuccess(res, opportunity);
+  } catch (error) {
+    logError('Error dismissing opportunity', error, { userId: req.user?.id, opportunityId: req.params.id });
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: '/opportunities/:id/dismiss', method: 'PATCH' },
+    });
+    handleApiError(res, error, 'Failed to dismiss opportunity', 'OPPORTUNITY_DISMISS_FAILED');
+  }
+});
+
 export default router;

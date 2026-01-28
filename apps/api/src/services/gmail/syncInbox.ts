@@ -307,6 +307,67 @@ export async function syncInboxForUser(userId: string): Promise<SyncStats> {
           console.warn(`[GMAIL SYNC] Error processing outreach reply for message ${gmailMessage.id}:`, outreachError);
           // Don't fail the entire sync if outreach processing fails
         }
+
+        // Check if email should trigger an opportunity (NEW: Email Intelligence)
+        try {
+          const { classifyEmailForOpportunity } = await import('../../lib/emailIntelligence.js');
+          const { createOpportunityFromEmail } = await import('../opportunityFromEmailService.js');
+          
+          const classification = classifyEmailForOpportunity({
+            id: createdEmail.id,
+            subject: inboundEmailData.subject,
+            snippet: inboundEmailData.snippet,
+            body: inboundEmailData.body,
+            fromEmail: inboundEmailData.fromEmail,
+            toEmail: inboundEmailData.toEmail,
+            threadId: inboundEmailData.threadId,
+            metadata: inboundEmailData.metadata,
+          });
+
+          if (classification.isDealRelated && classification.confidence >= 0.4) {
+            console.log(`[GMAIL SYNC] Email ${createdEmail.id} classified as deal-related (confidence: ${classification.confidence})`);
+            
+            const opportunity = await createOpportunityFromEmail(
+              {
+                id: createdEmail.id,
+                subject: inboundEmailData.subject,
+                snippet: inboundEmailData.snippet,
+                body: inboundEmailData.body,
+                fromEmail: inboundEmailData.fromEmail,
+                toEmail: inboundEmailData.toEmail,
+                threadId: inboundEmailData.threadId,
+                receivedAt: inboundEmailData.receivedAt,
+                metadata: inboundEmailData.metadata,
+              },
+              classification
+            );
+
+            if (opportunity) {
+              console.log(`[GMAIL SYNC] Created opportunity ${opportunity.id} from email ${createdEmail.id}`);
+              
+              // Create notification for admin (NEW: Notification System)
+              try {
+                await prisma.notification.create({
+                  data: {
+                    id: `notif_opp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    userId: userId, // Notify the user who synced the inbox
+                    title: "💼 Deal opportunity detected",
+                    body: `Potential deal email from ${classification.detectedBrand || 'unknown brand'}`,
+                    type: "OPPORTUNITY_DETECTED",
+                    entityId: opportunity.id,
+                    isRead: false,
+                  },
+                });
+                console.log(`[GMAIL SYNC] Created notification for opportunity ${opportunity.id}`);
+              } catch (notifError) {
+                console.warn(`[GMAIL SYNC] Failed to create notification for opportunity ${opportunity.id}:`, notifError);
+              }
+            }
+          }
+        } catch (opportunityError) {
+          console.warn(`[GMAIL SYNC] Error detecting opportunity for email ${createdEmail.id}:`, opportunityError);
+          // Don't fail sync on opportunity detection errors
+        }
       } catch (txError: any) {
         const errorCode = txError?.code;
         const errorMessage = txError instanceof Error ? txError.message : String(txError);

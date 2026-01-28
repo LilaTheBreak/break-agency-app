@@ -28,11 +28,13 @@ export function DashboardShell({
   statusSummary = {},
   role,
   showStatusSummary = false,
-  session
+  session,
+  theme = "classic"
 }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const activeUser = session || user;
+  const isTech = theme === "tech";
   const [hash, setHash] = useState(() => (typeof window !== "undefined" ? window.location.hash : ""));
   const [navCollapsed, setNavCollapsed] = useState(() => {
     // Check localStorage for persisted nav state, default to expanded
@@ -152,7 +154,8 @@ export function DashboardShell({
 
   const navBaseClasses = [
     "flex items-center rounded-2xl border text-[0.72rem] font-semibold uppercase tracking-[0.3em] transition",
-    navCollapsed ? "justify-center px-3 py-3" : "justify-start px-4 py-2"
+    navCollapsed ? "justify-center px-3 py-3" : "justify-start px-4 py-2",
+    isTech ? "backdrop-blur-sm" : ""
   ].join(" ");
 
   const renderNavItemContent = (label) =>
@@ -194,8 +197,12 @@ export function DashboardShell({
               "w-full",
               navBaseClasses,
               isActive
-                ? "border-brand-red bg-brand-red text-white"
-                : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+                ? isTech
+                  ? "border-brand-red/30 bg-brand-red/10 text-brand-black shadow-[0_0_0_1px_rgba(167,15,12,0.10),0_18px_60px_rgba(0,0,0,0.12)]"
+                  : "border-brand-red bg-brand-red text-white"
+                : isTech
+                  ? "border-brand-black/15 bg-brand-white text-brand-black/70 hover:-translate-y-0.5 hover:bg-brand-black/5 hover:border-brand-red/20"
+                  : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
             ].join(" ")
           }
         >
@@ -213,7 +220,9 @@ export function DashboardShell({
               className={[
                 "w-full",
                 navBaseClasses,
-                "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+                isTech
+                  ? "border-brand-black/15 bg-brand-white text-brand-black/70 hover:-translate-y-0.5 hover:bg-brand-black/5 hover:border-brand-red/20"
+                  : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
               ].join(" ")}
             >
               {renderNavItemContent(item.label)}
@@ -222,19 +231,23 @@ export function DashboardShell({
         }
         if (item.anchor) {
           const isActive = hash === item.anchor || (!hash && item.default);
-          return (
-            <a
-              key={item.anchor}
-              href={item.anchor}
-              className={`w-full ${navBaseClasses} ${
-                isActive
-                  ? "border-brand-red bg-brand-red text-brand-white"
-                  : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
-              }`}
-            >
-              {renderNavItemContent(item.label)}
-            </a>
-          );
+            return (
+              <a
+                key={item.anchor}
+                href={item.anchor}
+                className={`w-full ${navBaseClasses} ${
+                  isActive
+                    ? isTech
+                      ? "border-brand-red/30 bg-brand-red/10 text-brand-black shadow-[0_0_0_1px_rgba(167,15,12,0.10),0_18px_60px_rgba(0,0,0,0.12)]"
+                      : "border-brand-red bg-brand-red text-brand-white"
+                    : isTech
+                      ? "border-brand-black/15 bg-brand-white text-brand-black/70 hover:-translate-y-0.5 hover:bg-brand-black/5 hover:border-brand-red/20"
+                      : "border-brand-black/20 text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+                }`}
+              >
+                {renderNavItemContent(item.label)}
+              </a>
+            );
         }
       }
       return (
@@ -249,8 +262,14 @@ export function DashboardShell({
   };
 
   return (
-    <div className="min-h-screen bg-brand-ivory text-brand-black overflow-x-hidden">
-      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 sm:px-6 py-8 sm:py-12">
+    <div
+      className={[
+        "min-h-screen overflow-x-hidden",
+        isTech ? "dashboard-shell--tech" : "bg-brand-ivory text-brand-black"
+      ].join(" ")}
+      data-dashboard-theme={theme}
+    >
+      <div className="relative z-10 mx-auto w-full max-w-7xl space-y-6 px-4 sm:px-6 py-8 sm:py-12">
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 min-w-0">
@@ -263,6 +282,17 @@ export function DashboardShell({
               </h1>
               <p className="text-sm sm:text-base text-brand-black/70 mt-1">{subtitle}</p>
             </div>
+            {isTech ? (
+              <div className="hidden sm:flex flex-col items-end gap-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-white px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-brand-black/70 backdrop-blur-sm">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.55)]" />
+                  System online
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-brand-black/10 bg-brand-white px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-brand-black/60 backdrop-blur-sm">
+                  Access: {activeUser?.role || role || "—"}
+                </div>
+              </div>
+            ) : null}
           </div>
 
         </div>
@@ -289,8 +319,12 @@ export function DashboardShell({
                   className={[
                     "flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold uppercase tracking-[0.2em] transition",
                     navCollapsed
-                      ? "bg-brand-red text-brand-white shadow-brand hover:-translate-y-0.5"
-                      : "border border-brand-black/20 bg-brand-ivory text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
+                      ? isTech
+                        ? "bg-brand-red/10 text-brand-black border border-brand-red/25 shadow-[0_0_0_1px_rgba(167,15,12,0.10),0_18px_50px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 hover:bg-brand-red/15"
+                        : "bg-brand-red text-brand-white shadow-brand hover:-translate-y-0.5"
+                      : isTech
+                        ? "border border-brand-black/15 bg-brand-white text-brand-black shadow-[0_0_0_1px_rgba(0,0,0,0.04),0_18px_50px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 hover:bg-brand-black/5"
+                        : "border border-brand-black/20 bg-brand-ivory text-brand-black hover:-translate-y-0.5 hover:bg-brand-black/5"
                   ].join(" ")}
                   aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
                   aria-pressed={navCollapsed}
@@ -298,14 +332,22 @@ export function DashboardShell({
                   <img
                     src="/B-Logo-Mark.png"
                     alt="Break logo"
-                    className="h-8 w-8 object-contain"
+                    className={[
+                      "h-8 w-8 object-contain",
+                      isTech ? "opacity-90" : ""
+                    ].join(" ")}
                   />
                 </button>
                 {!navCollapsed ? (
                   <button
                     type="button"
                     onClick={handleNavToggle}
-                    className="rounded-2xl border border-brand-black/20 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] text-brand-black transition hover:-translate-y-0.5 hover:bg-brand-black/5"
+                    className={[
+                      "rounded-2xl border px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.25em] transition hover:-translate-y-0.5",
+                      isTech
+                        ? "border-brand-black/15 bg-brand-white text-brand-black/60 hover:bg-brand-black/5"
+                        : "border-brand-black/20 text-brand-black hover:bg-brand-black/5"
+                    ].join(" ")}
                   >
                     Collapse
                   </button>
@@ -314,7 +356,9 @@ export function DashboardShell({
               {/* Navigation items - only visible when expanded */}
               {!navCollapsed && (
                 <div className="block">
-                  <p className="mt-4 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">Navigation</p>
+                  <p className="mt-4 text-[0.65rem] uppercase tracking-[0.35em] text-brand-black/60">
+                    Navigation
+                  </p>
                   <div className="mt-3 flex flex-col gap-2">
                     {renderNavigation()}
                   </div>
