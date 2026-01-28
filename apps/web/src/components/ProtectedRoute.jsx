@@ -41,8 +41,10 @@ export function ProtectedRoute({ allowed = [], children }) {
   
   // UGC and AGENT users: redirect to their setup if they haven't completed it
   if (requiresSpecialSetup && !isOnSpecialSetupRoute && !isAdmin) {
-    // TODO: Check if profile/CV already exists to skip this redirect
-    return <Navigate to={specialSetupPath} replace />;
+    // Only redirect if setup is incomplete
+    if (!user.onboardingComplete) {
+      return <Navigate to={specialSetupPath} replace />;
+    }
   }
   
   const needsOnboarding = shouldRouteToOnboarding(user);
