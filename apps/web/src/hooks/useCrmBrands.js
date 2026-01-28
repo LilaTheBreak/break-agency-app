@@ -169,7 +169,9 @@ export function useCrmBrands() {
   }, [loadBrands]);
 
   return {
-    brands,
+    // CRITICAL: Guarantee brands is always an array
+    // If state is corrupted or null, return empty array to prevent crashes
+    brands: Array.isArray(brands) ? brands : [],
     isLoading,
     error,
     createBrand,
@@ -224,6 +226,9 @@ export function clearCrmBrandsCache() {
  * Search CRM brands helper function
  * Case-insensitive partial matching on name and brandName
  * 
+ * CRITICAL FIX: Validates input is array before filtering
+ * Returns empty array if input is not a valid array
+ * 
  * Usage:
  * ```jsx
  * const filtered = searchCrmBrands(brands, "nut");
@@ -231,12 +236,22 @@ export function clearCrmBrandsCache() {
  * ```
  */
 export function searchCrmBrands(brands, searchText) {
+  // DEFENSIVE CHECK: Input validation
+  // Fail safely if brands is not an array - prevents runtime crashes
+  if (!Array.isArray(brands)) {
+    console.error('[useCrmBrands] searchCrmBrands: Input is not an array', {
+      type: typeof brands,
+      value: brands,
+      isArray: Array.isArray(brands)
+    });
+    return [];
+  }
+
   if (!searchText.trim()) return brands;
 
   const query = searchText.toLowerCase().trim();
-  const brandArray = Array.isArray(brands) ? brands : [];
 
-  return brandArray.filter(b => {
+  return brands.filter(b => {
     const name = (b?.name || b?.brandName || '')
       .toLowerCase();
     

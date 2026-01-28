@@ -45,9 +45,21 @@ export function BrandSelect({
 
   // Advanced search: starts-with + contains matching (case-insensitive)
   // Searches both 'name' and 'brandName' fields
+  // CRITICAL FIX: Guard against non-array brands prop at the source
   const filteredBrands = useMemo(() => {
-    // Ensure brands is always an array
-    const brandArray = Array.isArray(brands) ? brands : [];
+    // DEFENSIVE CHECK: Ensure brands is always an array
+    // If not array, log error and return empty (prevents crash at .filter())
+    if (!Array.isArray(brands)) {
+      console.error('[BrandSelect] CRITICAL: brands prop is not an array', {
+        type: typeof brands,
+        value: brands,
+        isArray: Array.isArray(brands),
+        stack: new Error().stack
+      });
+      return [];
+    }
+    
+    const brandArray = brands;
     console.log('[BrandSelect] Recalculating filteredBrands, brands:', brandArray, 'searchText:', searchText);
     
     if (!searchText.trim()) {
@@ -81,12 +93,18 @@ export function BrandSelect({
 
   // Check if search text matches any existing brand (case-insensitive)
   // Checks both name and brandName fields
+  // CRITICAL FIX: Guard against non-array brands at the source
   const exactMatch = useMemo(() => {
-    const brandArray = Array.isArray(brands) ? brands : [];
+    // DEFENSIVE CHECK: Ensure brands is array before calling .some()
+    if (!Array.isArray(brands)) {
+      console.warn('[BrandSelect] exactMatch check: brands is not array', { type: typeof brands });
+      return false;
+    }
+    
     const search = searchText.toLowerCase().trim();
     if (!search) return false;
     
-    return brandArray.some(b => {
+    return brands.some(b => {
       const name = (b?.name || '').toLowerCase();
       const brandName = (b?.brandName || '').toLowerCase();
       return name === search || brandName === search;
