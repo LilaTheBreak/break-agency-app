@@ -1,0 +1,28 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open Local App in Simple Browser",
+      "type": "shell",
+      "command": "echo",
+      "args": ["Opening http://localhost:5173 in VS Code Simple Browser..."],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": [],
+      "dependsOn": []
+    },
+    {
+      "label": "Start Dev Server",
+      "type": "npm",
+      "script": "dev",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}

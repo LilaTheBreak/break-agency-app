@@ -92,6 +92,7 @@ export const PERMISSIONS = {
  * can(user, "users:delete") // true only for SUPERADMIN
  */
 export function can(user, capability) {
+  // Null-safe: Handle missing user or role gracefully
   if (!user || !user.role) {
     return false;
   }

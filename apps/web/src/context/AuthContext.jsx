@@ -18,10 +18,45 @@ import { setSentryUser, setSentryTags } from "../lib/sentry.js";
 
 const AuthContext = createContext(null);
 
+/**
+ * DEV SAFE MODE - For local development only
+ * Returns a mock user to bypass auth and prevent white screens
+ * ⚠️ NEVER runs in production (guarded by import.meta.env.DEV)
+ */
+const DEV_SAFE_MODE = import.meta.env.DEV && import.meta.env.VITE_DEV_SAFE_MODE === 'true';
+
+const DEV_MOCK_USER = {
+  id: 'dev-local-user',
+  email: 'dev@local.test',
+  name: 'Local Dev Admin',
+  role: 'SUPERADMIN', // Full permissions for testing
+  onboardingComplete: true,
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // 🚨 DEV SAFE MODE - Skip auth and return mock user
+  if (DEV_SAFE_MODE) {
+    console.log('[AUTH] DEV SAFE MODE active - using mock user');
+    const devValue = useMemo(
+      () => ({
+        user: DEV_MOCK_USER,
+        loading: false,
+        error: null,
+        refreshUser: async () => console.log('[DEV] refreshUser (no-op)'),
+        loginWithGoogle: async () => console.log('[DEV] loginWithGoogle (no-op)'),
+        loginWithEmail: async () => { console.log('[DEV] loginWithEmail (no-op)'); return DEV_MOCK_USER; },
+        signupWithEmail: async () => console.log('[DEV] signupWithEmail (no-op)'),
+        logout: async () => console.log('[DEV] logout (no-op)'),
+        hasRole: (...roles) => !roles.length || roles.includes('SUPERADMIN')
+      }),
+      []
+    );
+    return <AuthContext.Provider value={devValue}>{children}</AuthContext.Provider>;
+  }
 
   const refreshUser = useCallback(async () => {
     setLoading(true);
