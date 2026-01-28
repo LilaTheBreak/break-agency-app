@@ -3,8 +3,31 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { NoAccessCard } from "./NoAccessCard.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { shouldRouteToOnboarding, needsSpecialSetup, getSpecialSetupPath } from "../lib/onboardingState.js";
+import { can, canAny, canAll } from "../lib/permissions.js";
 
-export function ProtectedRoute({ allowed = [], children }) {
+/**
+ * Protected route with BOTH capability-based AND role-based checks
+ * Supports incremental migration from role-based to capability-based permissions
+ * 
+ * @param {Object} props
+ * @param {string[]} props.allowed - (Legacy) Role-based access list
+ * @param {string|string[]} props.require - (New) Capability-based access
+ * @param {boolean} props.requireAll - If array, require ALL capabilities (default: false = ANY)
+ * @param {React.ReactNode} props.children - Route content
+ * 
+ * @example
+ * // Legacy (still works)
+ * <ProtectedRoute allowed={[Roles.ADMIN, Roles.SUPERADMIN]}>
+ * 
+ * @example
+ * // New (recommended)
+ * <ProtectedRoute require="finance:read">
+ * 
+ * @example
+ * // Both (during migration)
+ * <ProtectedRoute allowed={[Roles.ADMIN]} require="finance:read">
+ */
+export function ProtectedRoute({ allowed = [], require: capability, requireAll = false, children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,7 +85,26 @@ export function ProtectedRoute({ allowed = [], children }) {
     return <Navigate to={`${onboardingPath}${search}`} replace />;
   }
 
-  // Check if user's role is in the allowed list
+  // NEW: Capability-based check (takes precedence if provided)
+  if (capability) {
+    let hasPermission;
+    
+    if (Array.isArray(capability)) {
+      hasPermission = requireAll 
+        ? canAll(user, capability) 
+        : canAny(user, capability);
+    } else {
+      hasPermission = can(user, capability);
+    }
+
+    if (!hasPermission) {
+      return <NoAccessCard description="You don't have permission to access this resource. Contact operations if you believe this is an error." />;
+    }
+
+    return children;
+  }
+
+  // LEGACY: Role-based check (backward compatible)
   // CRITICAL: SUPERADMIN always has access
   const isSuperAdmin = userRole === 'SUPERADMIN' || userRole === 'SUPER_ADMIN';
   const canAccess = isSuperAdmin || !allowed?.length || allowed.includes(userRole);
