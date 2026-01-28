@@ -76,6 +76,21 @@ model AgentProfile {
   User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Agent application (CV submission)
+model AgentApplication {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  cvFileUrl       String
+  experienceNotes String?
+  status          String   @default("pending") // pending, reviewed, approved, rejected
+  submittedAt     DateTime @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  
+  @@index([userId])
+  @@index([status])
+}
+
 // Agent policy configuration
 model AgentPolicy {
   id        String   @id @default(cuid())

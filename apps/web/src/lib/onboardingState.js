@@ -11,7 +11,10 @@ const DEFAULT_STATE = {
   completedAt: null
 };
 
-const ONBOARDING_ROLES = new Set([Roles.BRAND, Roles.CREATOR, Roles.FOUNDER, Roles.UGC, Roles.AGENT]);
+const ONBOARDING_ROLES = new Set([Roles.BRAND, Roles.CREATOR, Roles.FOUNDER]);
+
+// UGC and AGENT have special flows (profile setup and CV upload respectively)
+const SPECIAL_FLOW_ROLES = new Set([Roles.UGC, Roles.AGENT]);
 
 function normalizeRole(role) {
   if (!role) return "";
@@ -115,7 +118,13 @@ export function getDashboardPathForRole(role) {
   if (normalizedRole === Roles.BRAND || normalizedRole === Roles.FOUNDER) {
     return "/brand/dashboard";
   }
-  if (normalizedRole === Roles.CREATOR || normalizedRole === Roles.EXCLUSIVE_TALENT || normalizedRole === Roles.UGC) {
+  if (normalizedRole === Roles.UGC) {
+    return "/ugc/dashboard";
+  }
+  if (normalizedRole === Roles.AGENT) {
+    return "/careers"; // Agents redirected to careers after CV upload
+  }
+  if (normalizedRole === Roles.CREATOR || normalizedRole === Roles.EXCLUSIVE_TALENT) {
     return "/creator/dashboard";
   }
   return "/dashboard";
@@ -140,6 +149,16 @@ export function getActiveOnboardingRole(user, fallbackRole) {
 export function getOnboardingPathForRole(role) {
   const normalizedRole = normalizeRole(role);
   
+  // UGC creators go to profile setup
+  if (normalizedRole === Roles.UGC) {
+    return "/ugc/setup";
+  }
+  
+  // Agents go to CV upload
+  if (normalizedRole === Roles.AGENT) {
+    return "/agent/upload-cv";
+  }
+  
   // Exclusive talent has a separate onboarding flow
   if (normalizedRole === Roles.EXCLUSIVE_TALENT) {
     return "/admin/view/exclusive/goals";
@@ -147,4 +166,20 @@ export function getOnboardingPathForRole(role) {
   
   // All other roles use the standard onboarding
   return "/onboarding";
+}
+
+export function needsSpecialSetup(user) {
+  const normalizedRole = normalizeRole(user?.role);
+  return SPECIAL_FLOW_ROLES.has(normalizedRole);
+}
+
+export function getSpecialSetupPath(user) {
+  const normalizedRole = normalizeRole(user?.role);
+  if (normalizedRole === Roles.UGC) {
+    return "/ugc/setup";
+  }
+  if (normalizedRole === Roles.AGENT) {
+    return "/agent/upload-cv";
+  }
+  return null;
 }

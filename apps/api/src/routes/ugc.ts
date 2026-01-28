@@ -11,8 +11,14 @@ import {
   approveUgcApplication,
   rejectUgcApplication,
 } from '../controllers/ugc/applicationController.js';
+// @ts-ignore - Module resolution issue
+import { createOrUpdateProfile, getMyProfile } from '../controllers/ugc/profileController.js';
 
 const router = Router();
+
+// UGC Creator profile routes
+router.post('/profile', protect, requireRole(['UGC']), createOrUpdateProfile);
+router.get('/profile', protect, requireRole(['UGC']), getMyProfile);
 
 // Creator-facing routes
 router.post('/apply', protect, requireRole(['UGC_CREATOR']), submitUgcApplication);

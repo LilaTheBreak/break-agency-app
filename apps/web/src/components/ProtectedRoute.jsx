@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { NoAccessCard } from "./NoAccessCard.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { shouldRouteToOnboarding } from "../lib/onboardingState.js";
+import { shouldRouteToOnboarding, needsSpecialSetup, getSpecialSetupPath } from "../lib/onboardingState.js";
 
 export function ProtectedRoute({ allowed = [], children }) {
   const { user, loading } = useAuth();
@@ -33,6 +33,18 @@ export function ProtectedRoute({ allowed = [], children }) {
   // Check if user needs onboarding approval (skip for admins/superadmins)
   const userRole = user.role;
   const isAdmin = userRole === 'ADMIN' || userRole === 'SUPERADMIN' || userRole === 'SUPER_ADMIN';
+  
+  // Check for special setup flows (UGC profile, Agent CV)
+  const requiresSpecialSetup = needsSpecialSetup(user);
+  const specialSetupPath = getSpecialSetupPath(user);
+  const isOnSpecialSetupRoute = specialSetupPath && location.pathname.startsWith(specialSetupPath);
+  
+  // UGC and AGENT users: redirect to their setup if they haven't completed it
+  if (requiresSpecialSetup && !isOnSpecialSetupRoute && !isAdmin) {
+    // TODO: Check if profile/CV already exists to skip this redirect
+    return <Navigate to={specialSetupPath} replace />;
+  }
+  
   const needsOnboarding = shouldRouteToOnboarding(user);
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
 

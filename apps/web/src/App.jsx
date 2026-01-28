@@ -114,6 +114,8 @@ import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
 import EmailOpportunities from "./pages/EmailOpportunities.jsx";
 import SignupPage from "./pages/Signup.jsx";
 import LoginPage from "./pages/Login.jsx";
+import UgcProfileSetup from "./pages/UgcProfileSetup.jsx";
+import AgentCvUpload from "./pages/AgentCvUpload.jsx";
 import DevLogin from "./pages/DevLogin.jsx";
 import { MessagingContext } from "./context/messaging.js";
 import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
@@ -523,6 +525,37 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dev-login" element={<DevLogin />} />
         <Route path="/setup" element={<AccountSetupPage />} />
+        
+        {/* UGC Creator Setup */}
+        <Route
+          path="/ugc/setup"
+          element={
+            <ProtectedRoute allowed={[Roles.UGC]}>
+              <UgcProfileSetup />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Agent CV Upload */}
+        <Route
+          path="/agent/upload-cv"
+          element={
+            <ProtectedRoute allowed={[Roles.AGENT]}>
+              <AgentCvUpload />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* UGC Dashboard */}
+        <Route
+          path="/ugc/dashboard"
+          element={
+            <ProtectedRoute allowed={[Roles.UGC, Roles.ADMIN, Roles.SUPERADMIN]}>
+              <UgcTalentDashboard session={session} />
+            </ProtectedRoute>
+          }
+        />
+        
         <Route path="/creator" element={<CreatorPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
         <Route
           path="/creator/opportunities"

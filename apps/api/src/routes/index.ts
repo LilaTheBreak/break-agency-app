@@ -43,6 +43,10 @@ import talentRouter from './talent.js';
 import brandRouter from './brand.js';
 import brandsRouter from './brands.js';
 
+// UGC & Agent routes
+import ugcRouter from './ugc.js';
+import agentTalentRouter from './agentTalent.js';
+
 // Social OAuth routes
 import instagramAuthRouter from './auth/instagram.js';
 import tiktokAuthRouter from './auth/tiktok.js';
@@ -145,7 +149,9 @@ router.use("/opportunities", opportunitiesRouter);
 router.use("/admin", adminUsersRouter);
 router.use("/brand", brandRouter);
 router.use("/brands", brandsRouter);
-
+// UGC & Agent
+router.use("/ugc", ugcRouter);
+router.use("/agent-talent", agentTalentRouter);
 // Enterprise Operating System routes
 router.use("/enterprise-value", enterpriseValueRouter);
 router.use("/revenue-classification", revenueClassificationRouter);

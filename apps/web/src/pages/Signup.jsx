@@ -58,6 +58,10 @@ export default function SignupPage() {
         onboardingPath = "/onboarding/brand";
       } else if (form.role === "FOUNDER") {
         onboardingPath = "/onboarding/founder";
+      } else if (form.role === "UGC") {
+        onboardingPath = "/ugc/setup";
+      } else if (form.role === "AGENT") {
+        onboardingPath = "/agent/upload-cv";
       }
       navigate(`${onboardingPath}?role=${form.role}`, { replace: true });
     } catch (err) {
