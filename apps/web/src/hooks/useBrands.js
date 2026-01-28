@@ -27,6 +27,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '../services/apiClient.js';
+import { normalizeArray, normalizeApiResponse } from '../lib/apiNormalization.js';
 
 // Global cache for brands (persist across component mounts)
 let brandsCacheGlobal = null;
@@ -67,26 +68,24 @@ export function useBrands() {
 
       brandsCachePromise = apiFetch('/api/brands')
         .then(async (res) => {
-          console.log('[useBrands] API response status:', res.status, res.statusText);
-          if (!res.ok) {
-            console.error('[useBrands] API returned error status:', res.status);
-            throw new Error(`Failed to fetch brands: ${res.status} ${res.statusText}`);
+          const { data, error } = await normalizeApiResponse(res, '/api/brands');
+          
+          if (error) {
+            console.error('[useBrands] API error:', error);
+            throw new Error(error.message || 'Failed to fetch brands');
           }
           
-          let data;
-          try {
-            data = await res.json();
-            console.log('[useBrands] API response data:', data);
-          } catch (parseError) {
-            console.error('[useBrands] Failed to parse brands response:', parseError);
-            throw new Error('Failed to parse brands response');
-          }
+          console.log('[useBrands] API response data:', data);
           
-          // Handle both direct array (from /api/crm-brands) and wrapped object (from /api/brands)
-          let brandsArray = Array.isArray(data) ? data : (data?.brands || []);
+          // Normalize response - handle both direct array and wrapped object
+          const brandsArray = normalizeArray(data, { 
+            context: 'useBrands',
+            warnOnInvalid: true 
+          });
+          
           console.log('[useBrands] Brands array before normalization:', brandsArray);
           
-          // Normalize and deduplicate brands
+          // Deduplicate and normalize brands
           const normalized = normalizeBrands(brandsArray);
           console.log('[useBrands] Successfully fetched', normalized.length, 'brands after normalization:', normalized);
           brandsCacheGlobal = normalized;
@@ -126,26 +125,10 @@ export function useBrands() {
         body: JSON.stringify({ name: brandName }),
       });
 
-      if (!response.ok) {
-        // Try to parse error response as JSON, fallback to status text
-        let errorMessage = `Failed to create brand (${response.status})`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (parseError) {
-          console.warn('[useBrands] Error response was not valid JSON:', parseError);
-          errorMessage = response.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
+      const { data: newBrand, error } = await normalizeApiResponse(response, '/api/brands POST');
 
-      // Parse success response with better error handling
-      let newBrand;
-      try {
-        newBrand = await response.json();
-      } catch (parseError) {
-        console.error('[useBrands] Failed to parse JSON response:', parseError);
-        throw new Error("Failed to parse brand response from server");
+      if (error) {
+        throw new Error(error.message || 'Failed to create brand');
       }
 
       if (!newBrand || !newBrand.id) {

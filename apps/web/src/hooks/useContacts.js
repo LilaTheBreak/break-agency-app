@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { normalizeArray, normalizeApiResponse } from '../lib/apiNormalization.js';
 
 // Global cache to persist contacts across component mounts
 let contactsCacheGlobal = [];
@@ -9,12 +10,15 @@ let contactsCachePromise = null;
  * Handles API inconsistencies and duplicate entries
  */
 function normalizeContacts(data) {
-  if (!Array.isArray(data)) {
-    return [];
-  }
+  // Use normalizeArray helper for consistent handling
+  const array = normalizeArray(data, { 
+    context: 'useContacts', 
+    warnOnInvalid: true 
+  });
 
+  // Deduplicate by ID
   const seen = new Set();
-  return data.filter((contact) => {
+  return array.filter((contact) => {
     if (!contact || !contact.id) return false;
     if (seen.has(contact.id)) return false;
     seen.add(contact.id);
@@ -133,11 +137,13 @@ export function useContacts() {
 
     // Fetch from API and populate cache
     contactsCachePromise = fetch("/api/crm-contacts")
-      .then((res) => {
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
+      .then(async (res) => {
+        const { data, error } = await normalizeApiResponse(res, '/api/crm-contacts');
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch contacts');
+        }
+
         const normalized = normalizeContacts(data);
         contactsCacheGlobal = normalized;
         setContacts(normalized);
@@ -193,15 +199,13 @@ export function useContacts() {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `Failed to create contact (${response.status})`
-        );
+      const { data, error } = await normalizeApiResponse(response, '/api/crm-contacts POST');
+
+      if (error) {
+        throw new Error(error.message || 'Failed to create contact');
       }
 
-      const result = await response.json();
-      const newContact = result.contact || result;
+      const newContact = data?.contact || data;
 
       if (!newContact || !newContact.id) {
         throw new Error("Invalid response from server");
@@ -224,8 +228,12 @@ export function useContacts() {
     setIsLoading(true);
     try {
       const response = await fetch("/api/crm-contacts");
-      if (!response.ok) throw new Error(`API returned ${response.status}`);
-      const data = await response.json();
+      const { data, error } = await normalizeApiResponse(response, '/api/crm-contacts');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+
       const normalized = normalizeContacts(data);
       contactsCacheGlobal = normalized;
       setContacts(normalized);
