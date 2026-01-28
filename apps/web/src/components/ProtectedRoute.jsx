@@ -1,12 +1,13 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { NoAccessCard } from "./NoAccessCard.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { shouldRouteToOnboarding } from "../lib/onboardingState.js";
 
 export function ProtectedRoute({ allowed = [], children }) {
-  const { user, loading, loginWithGoogle } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Show loading state only on initial load when user is not yet known
   if (loading && !user) {
@@ -24,7 +25,7 @@ export function ProtectedRoute({ allowed = [], children }) {
         title="You're signed out"
         description="Your Break Console session has ended. Sign back in whenever you're ready to keep working."
         actionLabel="Sign in"
-        onAction={loginWithGoogle}
+        onAction={() => navigate("/login", { state: { from: location } })}
       />
     );
   }

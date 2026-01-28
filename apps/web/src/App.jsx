@@ -113,6 +113,7 @@ import { BookFounderPage } from "./pages/BookFounder.jsx";
 import { ResourceHubPage } from "./pages/ResourceHubPage.jsx";
 import EmailOpportunities from "./pages/EmailOpportunities.jsx";
 import SignupPage from "./pages/Signup.jsx";
+import LoginPage from "./pages/Login.jsx";
 import DevLogin from "./pages/DevLogin.jsx";
 import { MessagingContext } from "./context/messaging.js";
 import { useRemoteMessaging } from "./hooks/useRemoteMessaging.js";
@@ -519,6 +520,7 @@ function AppRoutes({ session, authModalOpen, setAuthModalOpen, handleSignOut, au
         <Route path="/press" element={<PressPage />} />
         <Route path="/book-founder" element={<BookFounderPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/dev-login" element={<DevLogin />} />
         <Route path="/setup" element={<AccountSetupPage />} />
         <Route path="/creator" element={<CreatorPage onRequestSignIn={() => setAuthModalOpen(true)} />} />
