@@ -29,7 +29,7 @@ export function DashboardShell({
   role,
   showStatusSummary = false,
   session,
-  theme = "classic"
+  theme = "tech"
 }) {
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -265,7 +265,7 @@ export function DashboardShell({
     <div
       className={[
         "min-h-screen overflow-x-hidden",
-        isTech ? "dashboard-shell--tech" : "bg-brand-ivory text-brand-black"
+        isTech ? "text-brand-black" : "bg-brand-ivory text-brand-black"
       ].join(" ")}
       data-dashboard-theme={theme}
     >

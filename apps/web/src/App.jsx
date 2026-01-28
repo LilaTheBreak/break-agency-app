@@ -395,16 +395,20 @@ function App() {
                 </div>
               </div>
             )}
-            <OnboardingReminderBanner />
-            <ImpersonationBanner />
-            <DevModeBanner />
-            <AppRoutes
-              session={session}
-              authModalOpen={authModalOpen}
-              setAuthModalOpen={setAuthModalOpen}
-              handleSignOut={handleSignOut}
-              authLoading={authLoading}
-            />
+            <div className="dashboard-shell--tech" data-dashboard-theme="tech">
+              <div className="relative z-10 min-h-screen">
+                <OnboardingReminderBanner />
+                <ImpersonationBanner />
+                <DevModeBanner />
+                <AppRoutes
+                  session={session}
+                  authModalOpen={authModalOpen}
+                  setAuthModalOpen={setAuthModalOpen}
+                  handleSignOut={handleSignOut}
+                  authLoading={authLoading}
+                />
+              </div>
+            </div>
           </MessagingContext.Provider>
         </AppErrorBoundary>
       </Sentry.ErrorBoundary>
