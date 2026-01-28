@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../services/apiClient.js";
 import { getCurrentUser, login as loginWithEmailClient, signup as signupWithEmailClient } from "../services/authClient.js";
-import { deriveOnboardingStatus } from "../lib/onboardingState.js";
+import { clearLocalOnboardingDrafts } from "../lib/onboardingState.js";
 import { setSentryUser, setSentryTags } from "../lib/sentry.js";
 
 /**
@@ -47,12 +47,13 @@ export function AuthProvider({ children }) {
       }
       
       const payload = await response.json();
-      const newUser = payload.user
-        ? {
-            ...payload.user,
-            onboardingStatus: deriveOnboardingStatus(payload.user)
-          }
-        : null;
+      const newUser = payload.user || null;
+      
+      // If user has completed onboarding, clear any local drafts
+      if (newUser?.onboardingComplete) {
+        clearLocalOnboardingDrafts(newUser.email);
+      }
+      
       setUser(newUser);
       
       // Update Sentry user context
@@ -141,18 +142,21 @@ export function AuthProvider({ children }) {
       }
       
       const loggedInUser = payload.user || null;
-      const normalizedUser = loggedInUser
-        ? { ...loggedInUser, onboardingStatus: deriveOnboardingStatus(loggedInUser) }
-        : null;
-      setUser(normalizedUser);
       
-      // Update Sentry user context
-      if (normalizedUser) {
-        setSentryUser({ id: normalizedUser.id, role: normalizedUser.role });
-        setSentryTags({ role: normalizedUser.role || "unknown" });
+      // If user has completed onboarding, clear any local drafts
+      if (loggedInUser?.onboardingComplete) {
+        clearLocalOnboardingDrafts(loggedInUser.email);
       }
       
-      return normalizedUser;
+      setUser(loggedInUser);
+      
+      // Update Sentry user context
+      if (loggedInUser) {
+        setSentryUser({ id: loggedInUser.id, role: loggedInUser.role });
+        setSentryTags({ role: loggedInUser.role || "unknown" });
+      }
+      
+      return loggedInUser;
     },
     []
   );
@@ -180,13 +184,6 @@ export function AuthProvider({ children }) {
     [refreshUser]
   );
 
-  const syncOnboardingFromLocal = useCallback(() => {
-    setUser((prev) => {
-      if (!prev) return prev;
-      return { ...prev, onboardingStatus: deriveOnboardingStatus(prev) };
-    });
-  }, []);
-
   const hasRole = useCallback(
     (...roles) => {
       if (!user?.role) return false;
@@ -206,10 +203,9 @@ export function AuthProvider({ children }) {
       loginWithEmail,
       signupWithEmail,
       logout,
-      hasRole,
-      syncOnboardingFromLocal
+      hasRole
     }),
-    [user, loading, error, refreshUser, loginWithGoogle, loginWithEmail, signupWithEmail, logout, hasRole, syncOnboardingFromLocal]
+    [user, loading, error, refreshUser, loginWithGoogle, loginWithEmail, signupWithEmail, logout, hasRole]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

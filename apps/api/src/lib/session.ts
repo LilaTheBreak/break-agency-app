@@ -25,8 +25,17 @@ export type SessionUser = {
   };
 };
 
+/**
+ * Build session user from database user.
+ * CRITICAL: Always include onboardingComplete and onboarding_status.
+ * Frontend relies on backend as single source of truth.
+ */
 export function buildSessionUser(user: User & { Talent?: any }): SessionUser {
   const isApproved = user.onboarding_status?.toLowerCase() === "approved";
+  
+  // Ensure onboarding fields are always present (backend is source of truth)
+  const onboardingComplete = user.onboardingComplete ?? false;
+  const onboardingStatus = user.onboarding_status || (onboardingComplete ? "approved" : "not_started");
   
   const sessionUser: SessionUser = {
     id: user.id,
@@ -34,8 +43,8 @@ export function buildSessionUser(user: User & { Talent?: any }): SessionUser {
     name: user.name,
     avatarUrl: user.avatarUrl,
     role: user.role, // Single role from User.role enum
-    onboardingStatus: user.onboarding_status,
-    onboardingComplete: user.onboardingComplete ?? false,
+    onboardingStatus, // Always present
+    onboardingComplete, // Always present
     isApproved
   };
   

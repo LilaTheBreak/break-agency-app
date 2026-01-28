@@ -1,3 +1,22 @@
+/**
+ * Onboarding State Management
+ * 
+ * PRINCIPLE: Backend is the single source of truth for onboarding status.
+ * 
+ * localStorage usage:
+ * ✅ ALLOWED: Draft form data (autosave, resume incomplete forms)
+ * ❌ FORBIDDEN: Status decisions, approval state, redirect logic
+ * 
+ * Backend decides:
+ * - onboardingComplete (boolean)
+ * - onboarding_status (not_started | in_progress | pending_review | approved)
+ * 
+ * Frontend must never:
+ * - Fall back to localStorage for status
+ * - Gate dashboards based on localStorage
+ * - Make approval decisions locally
+ */
+
 import { Roles } from "../constants/roles.js";
 
 const STORAGE_KEY = "break-onboarding-v2";
@@ -87,25 +106,38 @@ export function markOnboardingSubmitted(email, role, context) {
   });
 }
 
+/**
+ * Get onboarding status from backend ONLY.
+ * Backend is the single source of truth.
+ * localStorage is for draft data only, never for status decisions.
+ */
 export function deriveOnboardingStatus(user) {
-  // Always trust the backend onboarding_status if it's set
+  // Backend is the ONLY source of truth for onboarding status
   if (user?.onboardingStatus) {
     return user.onboardingStatus;
   }
   
-  // Fall back to localStorage for role-specific onboarding
+  // If backend didn't provide status, assume approved for non-onboarding roles
   const normalizedRole = normalizeRole(user?.role);
   if (!user || !normalizedRole || !ONBOARDING_ROLES.has(normalizedRole)) {
     return "approved";
   }
   
-  const stored = loadOnboardingState(user?.email);
-  return stored.status;
+  // If backend should have status but doesn't, this is a backend bug
+  // Default to not_started rather than checking localStorage
+  console.warn("[ONBOARDING] Backend missing onboarding_status for user:", user.email);
+  return "not_started";
 }
 
+/**
+ * Check if user should be routed to onboarding.
+ * Uses backend state only - never localStorage.
+ */
 export function shouldRouteToOnboarding(user) {
   const normalizedRole = normalizeRole(user?.role);
   if (!user || !ONBOARDING_ROLES.has(normalizedRole)) return false;
+  
+  // Backend is source of truth
   const status = deriveOnboardingStatus(user);
   return status === "not_started" || status === "in_progress";
 }
@@ -130,6 +162,10 @@ export function getDashboardPathForRole(role) {
   return "/dashboard";
 }
 
+/**
+ * Check if user is awaiting approval.
+ * Uses backend state only - never localStorage.
+ */
 export function isAwaitingApproval(user) {
   // Admins and superadmins should never see approval hold
   const normalizedRole = normalizeRole(user?.role);
@@ -137,6 +173,7 @@ export function isAwaitingApproval(user) {
     return false;
   }
   
+  // Backend is source of truth
   const status = deriveOnboardingStatus(user);
   return status === "pending_review";
 }
@@ -182,4 +219,20 @@ export function getSpecialSetupPath(user) {
     return "/agent/upload-cv";
   }
   return null;
+}
+
+/**
+ * Clear local onboarding drafts for completed users.
+ * Called on successful auth to prevent stale data.
+ * localStorage is for drafts only - once backend says complete, clear drafts.
+ */
+export function clearLocalOnboardingDrafts(email) {
+  if (!email) return;
+  const key = email.toLowerCase();
+  const store = readStore();
+  if (store[key]) {
+    console.log("[ONBOARDING] Clearing local drafts for completed user:", email);
+    delete store[key];
+    writeStore(store);
+  }
 }
