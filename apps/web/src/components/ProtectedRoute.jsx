@@ -37,7 +37,12 @@ export function ProtectedRoute({ allowed = [], children }) {
 
   if (!isAdmin && needsOnboarding && !isOnboardingRoute) {
     // Route to appropriate onboarding based on accountType
-    const onboardingPath = user.accountType === "brand" ? "/onboarding/brand" : "/onboarding";
+    let onboardingPath = "/onboarding"; // Default to creator onboarding
+    if (user.accountType === "brand") {
+      onboardingPath = "/onboarding/brand";
+    } else if (user.accountType === "founder") {
+      onboardingPath = "/onboarding/founder";
+    }
     const search = userRole ? `?role=${userRole}` : "";
     return <Navigate to={`${onboardingPath}${search}`} replace />;
   }

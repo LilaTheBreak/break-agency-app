@@ -53,7 +53,12 @@ export default function SignupPage() {
       });
       
       // Navigate to appropriate onboarding based on role
-      const onboardingPath = form.role === "BRAND" ? "/onboarding/brand" : "/onboarding";
+      let onboardingPath = "/onboarding"; // Default to creator onboarding
+      if (form.role === "BRAND") {
+        onboardingPath = "/onboarding/brand";
+      } else if (form.role === "FOUNDER") {
+        onboardingPath = "/onboarding/founder";
+      }
       navigate(`${onboardingPath}?role=${form.role}`, { replace: true });
     } catch (err) {
       console.log('[SIGNUP] Error caught:', err);
