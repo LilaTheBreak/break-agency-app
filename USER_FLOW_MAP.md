@@ -351,10 +351,10 @@ Auto-redirect to /careers (after 2 seconds)
    YES → Skip all onboarding checks, proceed
    
 3. Check: Needs special setup? (UGC or AGENT)
-   YES → Redirect to special setup path:
+   YES → Redirect to special setup path ONLY if onboardingComplete = false:
      - UGC → /ugc/setup
      - AGENT → /agent/upload-cv
-   (⚠️ TODO: Check if profile/CV already exists to skip redirect)
+   (✅ FIXED: Now checks onboardingComplete, commit 4a611e2)
    
 4. Check: Needs onboarding? (BRAND, CREATOR, FOUNDER only)
    YES → Redirect to appropriate onboarding:
@@ -573,36 +573,34 @@ Option C: Remove Google OAuth from Signup
 
 ---
 
-### 🚨 ISSUE 2: UGC/Agent Setup Redirect Loop Risk
+### ✅ RESOLVED: UGC/Agent Setup Redirect Loop (Fixed 28 Jan 2026)
 
-**Problem:**
-- `ProtectedRoute` always redirects UGC/AGENT to setup pages
-- No check if profile/CV already exists
+**Problem (RESOLVED):**
+- `ProtectedRoute` always redirected UGC/AGENT to setup pages
+- No check if profile/CV already existed
 - Users could be trapped in redirect loop after completing setup
 
-**Current Code:**
+**Solution Implemented (Commit 4a611e2):**
 ```javascript
-// ProtectedRoute.jsx lines 37-43
+// ProtectedRoute.jsx lines 37-45
 if (requiresSpecialSetup && !isOnSpecialSetupRoute && !isAdmin) {
-  // TODO: Check if profile/CV already exists to skip this redirect
-  return <Navigate to={specialSetupPath} replace />;
-}
-```
-
-**Impact:** MEDIUM
-- Could prevent UGC/Agents from accessing dashboard after setup
-- TODO comment indicates this is known but not implemented
-
-**Recommended Fix:**
-```javascript
-// Check database for completed profile/application
-if (requiresSpecialSetup && !isOnSpecialSetupRoute && !isAdmin) {
-  const hasCompletedSetup = user.onboardingComplete === true;
-  if (!hasCompletedSetup) {
+  // Only redirect if setup is incomplete
+  if (!user.onboardingComplete) {
     return <Navigate to={specialSetupPath} replace />;
   }
 }
 ```
+
+**Impact:** RESOLVED
+- UGC creators with completed profiles can now access `/ugc/dashboard`
+- Agents who uploaded CV are not redirected again
+- No infinite redirect loops
+- Both `createOrUpdateProfile` (UGC) and `submitAgentApplication` (Agent) controllers set `onboardingComplete: true`
+
+**Verification:**
+- UGC profile controller: Sets `onboardingComplete: true` on line 31
+- Agent application controller: Sets `onboardingComplete: true` on line 61
+- ProtectedRoute now checks this flag before redirecting
 
 ---
 
@@ -933,19 +931,20 @@ The Break platform has **well-structured role-based flows** with **clear separat
 - ✅ Separate flows for different user types
 - ✅ Immediate access for UGC creators (no approval delay)
 - ✅ Google OAuth role selection using state parameter (FIXED 28 Jan 2026)
+- ✅ UGC/Agent redirect loop prevention (FIXED 28 Jan 2026)
 
 **Critical Issues:**
 - ✅ **RESOLVED:** Google OAuth role selection (commit 17b23b2, 28 Jan 2026)
-- ⚠️ UGC/Agent setup redirect loop risk (documented but not fixed)
-- ⚠️ Multiple sources of truth for onboarding status
+- ✅ **RESOLVED:** UGC/Agent redirect loop (commit 4a611e2, 28 Jan 2026)
+- ⚠️ Multiple sources of truth for onboarding status (low priority)
 
-**Overall Assessment:** The flows are **well-designed** and now **production-ready for all user types**. Remaining issues are edge cases that can be addressed iteratively.
+**Overall Assessment:** The flows are **well-designed** and now **production-ready for all user types**. All critical issues have been resolved.
 
 ---
 
 **Document Maintainer:** AI Assistant  
 **Review Cadence:** After any routing/auth changes  
-**Last Updated:** 28 January 2026 (Google OAuth fix deployed)  
+**Last Updated:** 28 January 2026 (UGC/Agent redirect loop fix deployed)  
 **Related Docs:**
 - [AUTHENTICATION_AUDIT_REPORT.md](AUTHENTICATION_AUDIT_REPORT.md)
 - [ADMIN_AUDIT_QUICK_START.md](ADMIN_AUDIT_QUICK_START.md)
