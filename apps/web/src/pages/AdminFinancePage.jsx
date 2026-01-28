@@ -5,6 +5,8 @@ import { ADMIN_NAV_LINKS } from "./adminNavLinks.js";
 import { Badge } from "../components/Badge.jsx";
 import { FeatureGate, DisabledNotice } from "../components/FeatureGate.jsx";
 import { isFeatureEnabled } from "../config/features.js";
+import { usePermission } from "../hooks/usePermission.js";
+import { PermissionGate } from "../components/PermissionGate.jsx";
 import {
   fetchFinanceSummary,
   fetchCashFlow,
@@ -351,6 +353,10 @@ const SEED = {
 
 export function AdminFinancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Permission checks using capability-based system
+  const canRead = usePermission("finance:read");
+  const canWrite = usePermission("finance:write");
 
   // Phase 5: All state initialized as empty - data comes from API
   const [payouts, setPayouts] = useState([]);
@@ -823,14 +829,16 @@ export function AdminFinancePage() {
           </div>
 
           <div className="sticky top-3 z-10 flex flex-wrap items-center gap-2 rounded-3xl border border-brand-black/10 bg-brand-white/95 p-2 backdrop-blur">
-            <ActionButton label="Add Invoice" onClick={() => openModal("add-invoice")} />
-            <ActionButton label="Add Payout" onClick={() => openModal("add-payout")} />
+            {canWrite && <ActionButton label="Add Invoice" onClick={() => openModal("add-invoice")} />}
+            {canWrite && <ActionButton label="Add Payout" onClick={() => openModal("add-payout")} />}
             <FeatureGate feature="XERO_INTEGRATION_ENABLED" mode="button">
-              <ActionButton
-                label={xeroButtonLabel}
-                onClick={syncXero}
-                disabled={!xero.connected || !isFeatureEnabled('XERO_INTEGRATION_ENABLED')}
-              />
+              {canWrite && (
+                <ActionButton
+                  label={xeroButtonLabel}
+                  onClick={syncXero}
+                  disabled={!xero.connected || !isFeatureEnabled('XERO_INTEGRATION_ENABLED')}
+                />
+              )}
             </FeatureGate>
             {!isFeatureEnabled('XERO_INTEGRATION_ENABLED') && (
               <DisabledNotice feature="XERO_INTEGRATION_ENABLED" />
@@ -964,7 +972,7 @@ export function AdminFinancePage() {
           subtitle="What we owe creators, grouped by expected payout date."
           loading={loadingBySection.payouts}
           headerRight={
-            payoutSelection.size ? (
+            payoutSelection.size && canWrite ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{payoutSelection.size} selected</span>
                 <button
@@ -1002,18 +1010,20 @@ export function AdminFinancePage() {
                   <li key={item.id} className="rounded-2xl border border-brand-black/10 bg-brand-linen/60 px-4 py-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={(event) => {
-                            const next = new Set(payoutSelection);
-                            if (event.target.checked) next.add(item.id);
-                            else next.delete(item.id);
-                            setPayoutSelection(next);
-                          }}
-                          className="mt-1 h-4 w-4"
-                          aria-label="Select payout"
-                        />
+                        {canWrite && (
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={(event) => {
+                              const next = new Set(payoutSelection);
+                              if (event.target.checked) next.add(item.id);
+                              else next.delete(item.id);
+                              setPayoutSelection(next);
+                            }}
+                            className="mt-1 h-4 w-4"
+                            aria-label="Select payout"
+                          />
+                        )}
                         <div>
                           <button
                             type="button"
@@ -1032,15 +1042,17 @@ export function AdminFinancePage() {
                         <ActionMenu
                           actions={[
                             { label: "View details", onClick: () => openEntity({ type: "payout", id: item.id }) },
-                            { label: "Edit payout", onClick: () => openModal("edit-payout", { payoutId: item.id }) },
-                            {
-                              label: "Mark as paid",
-                              onClick: () => {
-                                if (confirm("Mark this payout as paid?")) markPayoutPaid(item.id);
+                            ...(canWrite ? [
+                              { label: "Edit payout", onClick: () => openModal("edit-payout", { payoutId: item.id }) },
+                              {
+                                label: "Mark as paid",
+                                onClick: () => {
+                                  if (confirm("Mark this payout as paid?")) markPayoutPaid(item.id);
+                                },
+                                disabled: item.status === "Paid"
                               },
-                              disabled: item.status === "Paid"
-                            },
-                            { label: "Attach proof", onClick: () => handleAttachProof({ linkedType: "payout", linkedId: item.id }) },
+                              { label: "Attach proof", onClick: () => handleAttachProof({ linkedType: "payout", linkedId: item.id }) }
+                            ] : []),
                             { label: "Open linked deal", onClick: () => openEntity({ type: "deal", id: item.dealId }) }
                           ]}
                         />
@@ -1083,6 +1095,7 @@ export function AdminFinancePage() {
                   showToast("Reminder queued (no send)");
                 }}
                 xero={xero}
+                canWrite={canWrite}
               />
               <InvoiceColumn
                 title="Due"
@@ -1101,6 +1114,7 @@ export function AdminFinancePage() {
                   showToast("Reminder queued (no send)");
                 }}
                 xero={xero}
+                canWrite={canWrite}
               />
               <InvoiceColumn
                 title="Paid"
@@ -1108,6 +1122,7 @@ export function AdminFinancePage() {
                 onOpen={(id) => openEntity({ type: "invoice", id })}
                 onEdit={(id) => openModal("edit-invoice", { invoiceId: id })}
                 onMarkPaid={markInvoicePaid}
+                canWrite={canWrite}
                 onReminder={() => {}}
                 xero={xero}
               />
@@ -1146,23 +1161,25 @@ export function AdminFinancePage() {
                       <ActionMenu
                         actions={[
                           { label: "Open", onClick: () => openEntity({ type: "cashin", id: item.id }) },
-                          { label: "Mark payment received", onClick: () => markCashInReceived(item.id) },
-                          { label: "Upload confirmation", onClick: () => handleAttachProof({ linkedType: "cashin", linkedId: item.id }) },
-                          {
-                            label: "Add internal note",
-                            onClick: () => {
-                              const next = prompt("Internal note");
-                              if (!next) return;
-                              setCashInRisks((prev) => prev.map((c) => (c.id === item.id ? { ...c, note: next, updatedAt: new Date().toISOString() } : c)));
-                              addTimelineEvent({
-                                type: "Note",
-                                label: `Note added · ${item.brand}`,
-                                details: next,
-                                link: { type: "cashin", id: item.id }
-                              });
-                              showToast("Note saved");
+                          ...(canWrite ? [
+                            { label: "Mark payment received", onClick: () => markCashInReceived(item.id) },
+                            { label: "Upload confirmation", onClick: () => handleAttachProof({ linkedType: "cashin", linkedId: item.id }) },
+                            {
+                              label: "Add internal note",
+                              onClick: () => {
+                                const next = prompt("Internal note");
+                                if (!next) return;
+                                setCashInRisks((prev) => prev.map((c) => (c.id === item.id ? { ...c, note: next, updatedAt: new Date().toISOString() } : c)));
+                                addTimelineEvent({
+                                  type: "Note",
+                                  label: `Note added · ${item.brand}`,
+                                  details: next,
+                                  link: { type: "cashin", id: item.id }
+                                });
+                                showToast("Note saved");
+                              }
                             }
-                          },
+                          ] : []),
                           { label: "Open invoice", onClick: () => openEntity({ type: "invoice", id: item.invoiceId }) }
                         ]}
                       />
@@ -1242,13 +1259,15 @@ export function AdminFinancePage() {
           subtitle="Drag-and-drop uploads with clear linkage."
           loading={loadingBySection.documents}
           headerRight={
-            <button
-              type="button"
-              className="rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]"
-              onClick={() => openModal("upload-document")}
-            >
-              Upload
-            </button>
+            canWrite ? (
+              <button
+                type="button"
+                className="rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]"
+                onClick={() => openModal("upload-document")}
+              >
+                Upload
+              </button>
+            ) : null
           }
         >
           <DocumentDropzone
@@ -1295,7 +1314,9 @@ export function AdminFinancePage() {
                       <ActionMenu
                         actions={[
                           { label: "Open details", onClick: () => openEntity({ type: "document", id: doc.id }) },
-                          { label: "Relink", onClick: () => openModal("relink-document", { docId: doc.id }) }
+                          ...(canWrite ? [
+                            { label: "Relink", onClick: () => openModal("relink-document", { docId: doc.id }) }
+                          ] : [])
                         ]}
                       />
                     </div>
@@ -1420,13 +1441,15 @@ export function AdminFinancePage() {
                   Last sync: {xero.lastSyncAt ? formatDateTime(xero.lastSyncAt) : "Not yet synced"}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={syncXero}
-                    className="rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]"
-                  >
-                    Sync now
-                  </button>
+                  {canWrite && (
+                    <button
+                      type="button"
+                      onClick={syncXero}
+                      className="rounded-full border border-brand-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em]"
+                    >
+                      Sync now
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -1798,7 +1821,7 @@ function ActionMenu({ actions }) {
   );
 }
 
-function InvoiceColumn({ title, items, onOpen, onEdit, onMarkPaid, onReminder, xero }) {
+function InvoiceColumn({ title, items, onOpen, onEdit, onMarkPaid, onReminder, xero, canWrite = false }) {
   return (
     <div className="rounded-2xl border border-brand-black/10 bg-brand-linen/50 p-3">
       <p className="text-xs uppercase tracking-[0.35em] text-brand-black/60">{title}</p>
@@ -1830,13 +1853,15 @@ function InvoiceColumn({ title, items, onOpen, onEdit, onMarkPaid, onReminder, x
                 <ActionMenu
                   actions={[
                     { label: "View invoice", onClick: () => onOpen(inv.id) },
-                    { label: "Edit invoice", onClick: () => onEdit(inv.id) },
-                    { label: "Mark as paid", onClick: () => onMarkPaid(inv.id), disabled: inv.status === "Paid" },
-                    {
-                      label: "Send reminder",
-                      onClick: () => onReminder(inv.id),
-                      disabled: inv.status === "Paid"
-                    },
+                    ...(canWrite ? [
+                      { label: "Edit invoice", onClick: () => onEdit(inv.id) },
+                      { label: "Mark as paid", onClick: () => onMarkPaid(inv.id), disabled: inv.status === "Paid" },
+                      {
+                        label: "Send reminder",
+                        onClick: () => onReminder(inv.id),
+                        disabled: inv.status === "Paid"
+                      }
+                    ] : []),
                     { label: "Open linked deal", onClick: () => onOpen(`deal:${inv.dealId}`) }
                   ]}
                 />
